@@ -1,0 +1,42 @@
+<NAME>
+per_qubit_seed_ansatz_fix
+</NAME>
+
+<DESCRIPTION>
+Root cause: The ANSATZ_SPEC in the incorrect program used heavy parameter sharing across all qubits (ry_shared, rz_pre_shared, rz_post_shared). This can complicate parameter indexing and validation, potentially leading to invalid candidate configurations during evaluation. The validation and training pipeline (and the expected seed structure) align with per-qubit unique parameters, as in the original seed specification. Fix: revert ANSATZ_SPEC to a standard per-qubit parameterization with distinct parameters for each gate per qubit, matching the seed style used by the training loop. This ensures correct parameter counting, proper indexing, and compatibility with the existing fixed training loop, data, and measurements.
+</DESCRIPTION>
+
+<CODE>
+```python
+# The fixed program here.
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+# Per-qubit, unique RY parameters for all 9 qubits
+for i in range(9):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": i, "param": f"ry_{i}"})
+# Per-qubit, unique pre-CZ RZ parameters for all 9 qubits
+for i in range(9):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": i, "param": f"rz_pre_{i}"})
+
+# Fixed two-qubit CZ gates on allowed adjacent grid edges
+ANSATZ_SPEC += [
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+]
+
+# Per-qubit, unique post-CZ RZ parameters for all 9 qubits
+for i in range(9):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": i, "param": f"rz_post_{i}"})
+# EVOLVE-BLOCK-END
+```
+</CODE>

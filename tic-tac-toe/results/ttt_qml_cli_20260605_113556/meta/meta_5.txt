@@ -1,0 +1,84 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Quantum Tic-Tac-Toe Classifier**  
+- **Implementation**: It enumerates legal tic-tac-toe boards and encodes cell values via RX rotations, then applies a fixed ansatz of RY single-qubit rotations and CZ entanglers on adjacent grid edges across three uploads and two repeats—totaling 18 trainable parameters—optimized with Adam on an L2 loss.  
+- **Performance**: Combined score 0.50 with train/validation/test accuracies ~0.42/0.49/0.43, a 0.02 generalization gap, depth 58, and 153 gates.  
+- **Feedback**: Accuracy remains near random baseline, suggesting the shallow, low-parameter ansatz lacks expressivity and is inefficient relative to its gate count; balanced sampling addresses class imbalance but introduces duplicates in underrepresented classes.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: QML Tic-Tac-Toe Ansatz Classifier**  
+- **Implementation**: Encodes 9-cell boards via RX feature rotations and applies a repeated re-uploading ansatz block—global RY rotations, CZ entanglers on all grid edges, and CRX parameterized gates—across 3 uploads × 2 repeats (42 total parameters), trained with Adam on L2 loss over balanced tic-tac-toe splits.  
+- **Performance**: Achieved ~0.35 train/validation/test accuracy (combined score 0.43), loss ~5.0, zero generalization gap, depth 72, 177 gates, and parameter efficiency 0.01.  
+- **Feedback**: The limited parameter diversity and shallow entangling structure yield near-random performance and underfitting; adopting deeper entanglement, richer gate layouts, or more parameters could improve classification accuracy.
+**Program Identifier:** Generation 1 - Patch Name center_crx_entangler - Correct Program: True
+
+**Program Name: Tic-Tac-Toe QML Ansatz Classifier**  
+- **Implementation**: Encodes 9-cell tic-tac-toe boards via RX feature rotations, then applies three uploads × two repeats of a fixed ansatz spec combining per-wire RY/RZ rotations and CZ/CRZ entangling gates on adjacent grid edges. The circuit’s 42 parameters are optimized with an L2 loss and Adam on class-balanced train/validation/test splits.  
+- **Performance**: Achieved a combined score of 0.40 with test accuracy 0.43, validation accuracy 0.31, generalization gap 0.05, circuit depth 78, 231 gates, and parameter efficiency 0.01.  
+- **Feedback**: Consistently low validation accuracy and efficiency indicate underfitting from shared parameter tying and limited entanglement; diversifying parameter assignments or adding layers could boost expressivity and performance.
+**Program Identifier:** Generation 2 - Patch Name enhanced_ansatz_with_rx_and_crz - Correct Program: True
+
+**Program Name: QML Tic-Tac-Toe Classifier**  
+- **Implementation**: Encodes tic-tac-toe boards as RX rotations on nine qubits, then applies a 24-parameter ansatz block of RY, CZ, and CRX gates over 3 uploads and 2 repeats, training via PennyLane autograd with an L2 loss on Z-expectations mapped to three classes.  
+- **Performance**: Achieved train/validation/test accuracies ~35–38% (combined score 0.44) with 24 parameters, circuit depth 72, gate count 177, and generalization gap 0.02.  
+- **Feedback**: The shallow, sparsely entangled ansatz underfits, yielding high loss (~5.1) and low parameter efficiency (0.02); adding deeper or more expressive entangling layers may improve classification.
+**Program Identifier:** Generation 3 - Patch Name crx_center_shared - Correct Program: True
+
+**Program Name: Tic-Tac-Toe QML Ansatz Classifier**
+- **Implementation**: Nine-qubit classifier encodes board cells with RX rotations and applies an ANSATZ_SPEC consisting of shared RY rotations, dense CZ entangling layers and peripheral CRX gates over 3 uploads × 2 repeats (30 total parameters), trained via Pennylane autograd and Adam on class-balanced splits.  
+- **Performance**: Achieved combined score 0.44 with train/validation/test accuracies ≈35%/38%/32%, depth 118, 30 parameters, generalization gap 0.03, and parameter efficiency 0.01.  
+- **Feedback**: High entanglement depth but poor accuracy indicates that shared rotation parameters and symmetric layout limit expressivity; diversifying per-wire parameters or reconfiguring the entangler topology may improve classification performance.
+**Program Identifier:** Generation 4 - Patch Name augment_crx_split_and_duplicate_cz - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Compact, repeated single-qubit rotations with minimal distinct parameters  
+  • Generation 0’s ANSATZ_SPEC uses only three tied RY parameters (ry_0 on even perimeter wires, ry_1 on odd perimeter wires, and ry_8 at the center) per block, yielding 18 total trainable parameters and the best combined score 0.50 (vs 0.43–0.40 in later gens).  
+- Shallow, uniform entanglement on the tic-tac-toe grid  
+  • A single CZ layer on all adjacent grid edges per block (circuit depth 58, 153 gates) produced higher accuracy (~0.49 validation) than deeper or denser entanglers in other variants.  
+- Re-uploading feature map between ansatz blocks  
+  • All top performers re-encoded the RX feature map three times, but Gen 0’s combination of 3 uploads × 2 repeats balanced expressivity and trainability most effectively.  
+
+## Ineffective Approaches  
+- Adding parameterized two-qubit gates (CRX/CRZ) on grid edges  
+  • Gen 1 (42 params, depth 72) dropped to combined 0.43; Gen 2 (42 params, depth 78) fell to 0.40; Gen 3 (24 params, depth 72) only 0.44; Gen 4 (30 params, depth 118) also 0.44. None outperformed the simple CZ-only entanglement of Gen 0.  
+- Increasing circuit depth and gate count without structural insight  
+  • Raising depth from 58 to 72–118 and gates from 153 to 177–231 did not improve—and often hurt—validation accuracy (down to 31–38%), indicating diminishing returns from deeper, denser layouts.  
+- Full per-wire parameter diversity in single-qubit layers  
+  • Gen 2’s unique RY/RZ per wire led to underfitting (validation 0.31) despite 231 gates; over-parameterization without guided tying degraded performance.  
+
+## Implementation Insights  
+- Parameter-tying topology matters more than sheer parameter count  
+  • Alternating ry_0/ry_1 on perimeter wires plus ry_8 at center (Gen 0) achieved better generalization (gap 0.02) than fully unique or fully shared schemes in later gens.  
+- CZ gate uniformity maintains symmetry without blow-up in depth  
+  • A single CZ pass on all grid edges per block preserves the problem’s graph structure and avoids the noise/overhead of extra CRX/CRZ layers.  
+- Balanced sampling with replacement keeps dataset size while controlling class imbalance  
+  • Gen 0’s sampling (450 train, 600 test) with replacement maintained class balance and ensured no train–test leakage beyond 2% overlap, supporting a low generalization gap.  
+
+## Performance Analysis  
+- Best vs. next best combined score  
+  • Gen 0: combined 0.50 at depth 58, 18 params, 153 gates.  
+  • Gen 3: combined 0.44 at depth 72, 24 params, 177 gates.  
+- Depth/performance trade-off  
+  • Every increase in depth beyond 58 (to 72, 78, 118) coincided with a 0.06–0.10 drop in combined score, despite added parametric expressivity.  
+- Parameter efficiency correlates with structured tying  
+  • Although Gen 3 matches Gen 0’s parameter efficiency (0.02), its lower overall accuracy (≈0.38 vs. Gen 0’s 0.43 test) underscores that efficiency alone isn’t sufficient—parameter layout and entangling pattern are critical.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Introduce a corner–edge–center tying topology for your RY layer: replace the alternating ry_0/ry_1 perimeter scheme with three tied parameters—“ry_corner” on wires {0,2,4,6}, “ry_edge” on {1,3,5,7}, and “ry_center” on wire 8. This still yields 3 parameters per block (18 total) but aligns more directly with the grid’s geometric symmetries, potentially improving generalization.  
+
+2. Augment each ansatz block with a single global RZ rotation after the CZ layer: add qml.RZ(param="rz", wires=wire) on every qubit, where “rz” is a new per-block scalar parameter. This injects extra phase flexibility without blowing up parameter count (now 4 per block, 24 total) and preserves the shallow, uniform structure that drove Gen 0’s success.  
+
+3. Between the two repeats in each upload, re-encode the feature map: within the upload loop do feature_map → block → feature_map → block instead of only at the upload boundaries. This mid-block re-upload reinforces input information and may boost expressivity while keeping circuit depth close to 58 per upload cycle.  
+
+4. Vary the CZ entanglement pattern across blocks by splitting GRID_EDGES into two disjoint matchings (e.g. alternating “horizontal + vertical” vs “star” around the center) and apply only one matching per block in alternation. You’ll maintain a single CZ layer per block (153 gates overall) but introduce richer correlations over successive layers.  
+
+5. Swap the upload/repeat schedule to 4 uploads × 1 repeat (still 4 blocks) or 2 uploads × 3 repeats (6 blocks), keeping total blocks constant at 6. This tests whether more frequent re-uploads with fewer repeats (or vice versa) better balances feature encoding and variational depth, building directly on the 3×2 split that proved optimal in Gen 0.

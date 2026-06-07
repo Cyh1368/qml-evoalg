@@ -1,0 +1,175 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Reuploading Tic-Tac-Toe QML Classifier**  
+- **Implementation**: Enumerates legal 9-qubit tic-tac-toe boards and encodes cell values via RX rotations, then applies three feature-reupload cycles each with two repeats of an ansatz block (9 RY, pre- and post-RZ rotations and ring CZ entangling) as specified by ANSATZ_SPEC. It maps per-qubit Pauli-Z expectations to cross/circle/draw outputs, trains with L2 loss using Adam on balanced splits, and validates ansatz structure.  
+- **Performance**: Combined score 0.43 (train 0.41, val 0.38, test 0.43), generalization gap 0.02, depth ≈ 70, gate count ≈ 261, and 162 parameters.  
+- **Feedback**: The deep, highly-parameterized ansatz achieves only modest accuracy near random chance, yielding very low parameter efficiency; the small generalization gap indicates consistent underfitting rather than overfitting.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Hierarchical tic-tac-toe QML classifier**  
+- **Implementation**: Built a symmetry-aware hierarchical ansatz with shared pre/post RZ and RY rotations, CZ ring entanglement and CRZ hub couplings on 9 qubits, repeated over 3 data uploads and 2 ansatz repeats for a total of 60 parameters in Pennylane.  
+- **Performance**: Combined score of 0.57 with mean validation accuracy 0.60, test accuracy 0.48, a small generalization gap of 0.06, circuit depth 70, and 261 gates.  
+- **Feedback**: The parameter-sharing design keeps the model compact but appears under-expressive, yielding modest test accuracy and suggesting richer entanglement patterns or additional repeats may be needed to boost generalization.
+**Program Identifier:** Generation 1 - Patch Name hierarchical_entanglement_ansatz - Correct Program: True
+
+**Program Name: Hierarchical Param-Shared Tic-Tac-Toe Quantum Classifier**  
+- **Implementation**: Implements a 9-qubit QML classifier with 3 data uploads × 2 repeats, encoding tic-tac-toe boards via RX feature rotations and applying a hierarchical ansatz of shared pre- and post-entanglement RZ/RY layers, perimeter CZ entanglement, and hub-specific CRX gates, totaling 78 parameters.  
+- **Performance**: Achieved mean train/validation/test accuracies of 0.51/0.55/0.47, a generalization gap of 0.04, depth 70, gate count 261, and combined score 0.55.  
+- **Feedback**: Heavy parameter sharing kept the circuit compact and yielded a small generalization gap but underfitting limited test accuracy; increasing expressivity via more parameters or deeper entanglement may boost performance.
+**Program Identifier:** Generation 2 - Patch Name hierarchical_hub_crx - Correct Program: True
+
+**Program Name: Symmetry-Aware Hierarchical Tic-Tac-Toe Ansatz**  
+- **Implementation**: Defines a nine-qubit variational circuit with three data uploads and two ansatz repeats, using group-shared RZ/RY layers on corners, edges, and center, fixed CZ ring entanglement, and per-edge CRZ “hub” entanglement; inputs are encoded via RX rotations and nine Z-expectations are pooled into cross, circle, and draw outputs.  
+- **Performance**: Combined score 0.55 with mean train/validation/test accuracies of 0.56/0.53/0.52, 78 parameters, depth 70, and gate count 261.  
+- **Feedback**: The symmetry-aware design yields a small generalization gap (0.04) but only modest accuracy and low parameter efficiency (0.01), suggesting the ansatz may underfit and benefit from richer entanglement or deeper layers.
+**Program Identifier:** Generation 3 - Patch Name none - Correct Program: True
+
+**Program Name: Symmetric Hierarchical QML Ansatz for Tic-Tac-Toe**  
+- **Implementation**: Defines a hierarchical, symmetry-aware ansatz combining shared pre-/post-RZ and RY rotations, ring-CZ and hub-CRX entanglement across three data reuploads with two repeats. Boards are encoded by RX rotations, and the QNode is trained via the Adam optimizer on an L2 classification loss over Z-expectation-based class outputs.  
+- **Performance**: Achieved combined score 0.52 with validation accuracy 0.52, test accuracy 0.50, using 60 parameters in a depth-70, 261-gate circuit.  
+- **Feedback**: Symmetry-based parameter sharing reduced parameter count but the ansatz underfits, yielding near-chance accuracy and low parameter efficiency (0.01) with a small generalization gap (0.06), indicating limited expressivity for this classification task.
+**Program Identifier:** Generation 4 - Patch Name crx-shared-hub-tictactoe - Correct Program: True
+
+**Program Name: Hierarchical Tic-Tac-Toe QNN Ansatz**  
+- **Implementation**: Encodes 9-cell tic-tac-toe boards via equidistant RX rotations, then applies three uploads of a hierarchical ansatz block combining group-shared RZ/RY/RX rotations on corners, edges, and center with structured CZ (ring and diagonal) and CRZ hub entanglement. Training uses Pennylane’s autograd Adam optimizer on an L₂ loss over class-balanced splits sampled (with replacement) from legal board states.  
+- **Performance**: Combined score 0.0; specification validation fails and no metrics are reported.  
+- **Feedback**: The validate_ansatz_spec function rejects diagonal CZ gates (0-4, 2-6) as non-adjacent edges, invalidating the ansatz; relaxing adjacency constraints or updating GRID_EDGE_SET is needed to pass validation.
+**Program Identifier:** Generation 5 - Patch Name enhanced_ansatz_with_diagonal_entanglement - Correct Program: False
+
+**Program Name: Hierarchical Symmetric QML Ansatz for Tic-Tac-Toe**
+- **Implementation**: Defines a 9-qubit variational circuit with 66 parameters using a five-layer hierarchical ansatz: symmetry-shared RZ/RY rotations on corners, edges, and center; ring and hub CRZ entanglement; repeated over three feature uploads and two ansatz repeats; boards are encoded via RX feature maps.  
+- **Performance**: Achieved a combined score of 0.53 with train/validation accuracies ≈0.54/0.55, test accuracy 0.45, generalization gap 0.09, and parameter efficiency 0.01.  
+- **Feedback**: Strong parameter sharing reduced model size but limited expressivity, causing underfitting on test data; introducing richer entanglement patterns or relaxing symmetry constraints may improve generalization.
+**Program Identifier:** Generation 6 - Patch Name crz_ring_perimeter_shared - Correct Program: True
+
+**Program Name: Symmetric Hierarchical Quantum Ansatz for Tic-Tac-Toe**  
+- **Implementation**: Constructs a nine-qubit circuit with symmetry-aware shared RZ/RY rotations on corners, edges, and center, adds ring CZ entanglement on the outer loop, per-edge CRX hub entanglement, and inter-edge CNOTs, and repeats this ansatz over three feature re-uploads and two repeats for a total of 78 trainable parameters.  
+- **Performance**: Achieved a combined score of 0.48 with mean train/validation/test accuracies of 0.51/0.43/0.47, a small generalization gap of 0.04, circuit depth 76, and 285 gates.  
+- **Feedback**: The symmetry-driven parameter sharing kept the model compact but limited expressivity, resulting in only modest accuracy and no convergence to the 0.90 threshold; richer entanglement patterns or increased repeat depth may be needed to improve performance.
+**Program Identifier:** Generation 7 - Patch Name none - Correct Program: True
+
+**Program Name: Hierarchical symmetric QML Tic-Tac-Toe classifier**  
+- **Implementation**: Nine-qubit Pennylane qnode encodes Tic-Tac-Toe boards via RX feature rotations, then applies a hierarchical ansatz of shared RZ/RY layers and CRZ ring/hub entanglement repeated over three uploads × two repeats, totaling 90 parameters; training uses autograd with an Adam optimizer on class-balanced L2-loss splits.  
+- **Performance**: Achieves a combined score of 0.45 with test accuracy 0.43, validation accuracy 0.42, generalization gap 0.10, circuit depth 84, and 285 gates.  
+- **Feedback**: Rotational symmetry and heavy parameter sharing reduce parameter count but likely limit expressivity, resulting in near-random classification and underfitting; the small generalization gap indicates stable training, but a more flexible ansatz or tuned hyperparameters may be needed.
+**Program Identifier:** Generation 8 - Patch Name enhance_hub_cross_entanglement - Correct Program: True
+
+**Program Name: Hierarchical Entanglement Ansatz for Tic-Tac-Toe Classification**  
+- **Implementation**: Employs a 9-qubit Pennylane circuit that encodes board states with RX feature rotations, then applies three uploads of a two-repeat hierarchical ansatz block comprising symmetry-shared pre/post RZ and RY rotations, perimeter CZ entanglement, and hub CRX/CRY gates. Training uses balanced class splits, an Adam optimizer on an L2 loss, and evaluation by per-qubit Z expectations mapped to win/draw logits.  
+- **Performance**: Combined score 0.55 with mean train accuracy 0.57, validation 0.55, test 0.50; generalization gap 0.07; depth 70; 261 gates; 78 parameters; parameter efficiency 0.01.  
+- **Feedback**: The symmetry-aware ansatz delivered moderate fit on training but struggled to generalize, as reflected in lower test accuracy and a small parameter efficiency, suggesting the circuit’s depth and parameter count may be excessive for the task.
+**Program Identifier:** Generation 9 - Patch Name hybrid-hub-crx-cry-mixed - Correct Program: True
+
+**Program Name: Hierarchical Parameter-Sharing QML Ansatz**  
+- **Implementation**: Encodes 9-cell tic-tac-toe boards via RX feature maps and applies a five-layer hierarchical ansatz with shared pre-/post-RZ and RY rotations, a CRX perimeter ring, and CRY hub entanglement, repeated over three uploads and two repeats; trained end-to-end with L2 loss and an Adam optimizer.  
+- **Performance**: Combined score 0.60, with train/validation/test accuracies of 0.57/0.65/0.50, a 0.07 generalization gap, 66 parameters, depth 70, and 261 gates.  
+- **Feedback**: Parameter sharing kept the circuit compact but constrained expressivity, yielding moderate validation accuracy at the expense of test performance; richer entanglement or additional layers may improve generalization.
+**Program Identifier:** Generation 10 - Patch Name crx-ring_shared-cry-hub - Correct Program: True
+
+**Program Name: Hierarchical QML Tic-Tac-Toe Ansatz**  
+- **Implementation**: Implements a 9-qubit hierarchical variational ansatz with shared-parameter pre/post RZ and RY rotations, ring CRX entanglement and hub CRX/CRY gates applied across three feature-map uploads with two repeats each. Board states are RX-encoded and classification logits are derived from regional Pauli-Z expectations, with training via an Autograd QNode, class-balanced sampling (with replacement), and the Adam optimizer on an L2 loss.  
+- **Performance**: Achieved a combined score of 0.55 with 0.48 train, 0.53 validation, and 0.45 test accuracies, a small generalization gap (0.03), using 72 parameters in a depth-70, 261-gate circuit.  
+- **Feedback**: The low generalization gap indicates minimal overfitting but the overall accuracies suggest the heavily shared-parameter ansatz may lack expressivity. Class-balanced sampling with replacement maintains target split sizes but reduces unique example diversity, particularly for circle-win states.
+**Program Identifier:** Generation 12 - Patch Name shared_ring_crx_hub_cry - Correct Program: True
+
+**Program Name: Hierarchical Symmetric Tic-Tac-Toe QML Ansatz**  
+- **Implementation**: Encodes board states via RX feature map and applies a five-layer hierarchical ansatz with symmetry-based parameter sharing across corners, edges, and center, ring and hub CRX entanglements, repeated over three uploads and two repeats using Pennylane and Adam optimization.  
+- **Performance**: Combined score 0.56 with train/validation/test accuracies of 0.56/0.55/0.52, generalization gap 0.04, 84 parameters, depth 132, and 333 gates.  
+- **Feedback**: Symmetry-driven parameter sharing and repeated ansatz blocks yield stable but modest classification accuracy; the large circuit depth and gate count constrain parameter efficiency and limit further improvements.
+**Program Identifier:** Generation 13 - Patch Name deeper_symmetry_ring_with_shared_crx - Correct Program: True
+
+**Program Name: Hierarchical Entanglement Ansatz for Tic-Tac-Toe**
+- **Implementation**: Defines a five-layer QML ansatz with symmetry-based parameter sharing (pre/post RZ, RY, ring CRX, hub CRY) over 9 qubits, repeated across 3 uploads and 2 repeats, encoding board states via RX feature maps and training with autograd-backprop Adam on an L2 loss.  
+- **Performance**: Combined score 0.47 with train accuracy 0.57, validation 0.48, test 0.40, a generalization gap of 0.17 over 48 parameters, depth 70, and 261 gates.  
+- **Feedback**: Strong parameter sharing reduces model size but limits expressivity, resulting in modest accuracy and a notable generalization gap; increasing ansatz depth or diversifying entanglement patterns may improve performance.
+**Program Identifier:** Generation 14 - Patch Name consolidate_pre_post_rz_sharing - Correct Program: True
+
+**Program Name: Hierarchical Parameter-Shared Tic-Tac-Toe QML Ansatz**  
+- **Implementation**: Defines a nine-qubit quantum circuit with rotational-symmetry parameter sharing across pre/post-entanglement RZ and RY layers, ring CZ and hub CRZ/CRX two-qubit gates, repeated over three feature-map uploads and two ansatz repeats; board states are encoded via RX rotations and trained with an Adam optimizer on a class-balanced tic-tac-toe dataset using Z-expectation outputs.  
+- **Performance**: Achieved a combined score of 0.55 with mean validation accuracy 0.53, test accuracy 0.47, a small generalization gap of 0.02, 66 parameters, circuit depth 70, and 261 gates.  
+- **Feedback**: The symmetry-driven parameter sharing produces a compact circuit with minimal generalization gap, but overall accuracy and parameter efficiency remain low, suggesting that increased expressivity or extended training may be required to boost performance.
+**Program Identifier:** Generation 15 - Patch Name mixed_hub_crz_crx_perimeter - Correct Program: True
+
+**Program Name: Hybrid Ring-Hub Ansatz for Tic-Tac-Toe**  
+- **Implementation**: Encodes 9-cell boards via RX feature-map rotations and applies three uploads of a two-repeat ansatz block, each block consisting of group-shared RZ pre/post rotations, group-shared RY rotations, a CRX ring entanglement, and a CRZ hub entanglement, all tied by symmetry-based parameters and trained with Adam on an L₂ loss.  
+- **Performance**: Achieved mean validation accuracy 0.55 (train 0.52, test 0.48) with a combined score of 0.55, using 66 parameters, circuit depth 70, and 261 gates.  
+- **Feedback**: The shared-parameter ring and hub design cut down parameter count but produced modest test accuracy and low parameter efficiency (0.01), suggesting limited expressivity or underfitting despite a small generalization gap (0.04).
+**Program Identifier:** Generation 16 - Patch Name hybrid_crx_crz_hub_ansatz - Correct Program: True
+
+**Program Name: Hybrid Ring-Hub QML Ansatz for Tic-Tac-Toe**  
+- **Implementation**: Defines a 9-qubit variational circuit with group-shared RZ/RY rotations on corners, edges, and center, followed by a CRY-based outer ring and CRX-based hub entanglement motif, repeated over three data uploads and two ansatz repeats; uses an RX feature map, class-balanced data splits, and Adam optimization on an L2 loss.  
+- **Performance**: Achieved mean train/validation/test accuracies of 0.58/0.57/0.53 (combined score 0.57) with 66 parameters, circuit depth 70, and gate count 261.  
+- **Feedback**: The symmetric shared-parameter design yielded a small generalization gap (0.04), but the low parameter efficiency (0.01) and modest test accuracy indicate the ansatz may be under-parameterized for capturing complex tic-tac-toe states.
+**Program Identifier:** Generation 17 - Patch Name ring_hub_axis_swap - Correct Program: True
+
+**Program Name: Hybrid Ring-Hub Quantum Ansatz**  
+- **Implementation**: Defines a 9-qubit symmetric hybrid ansatz with shared per-group RZ/RY rotations on corners, edges, and center, CRY outer-ring and CRX hub entanglement with added CZ gates, repeated over 3 uploads × 2 repeats; uses a Pauli-X feature map on enumerated legal boards and maps averaged Pauli-Z expectations to cross/circle/draw outputs via balanced class splits.  
+- **Performance**: Achieved combined score 0.46 with train accuracy 0.61, validation 0.50, test 0.40, generalization gap 0.21, depth 82, gate count 273, 66 parameters, and parameter efficiency 0.01.  
+- **Feedback**: The shared-parameter ring-hub motif reduced parameter count but yielded only modest training performance and poor generalization, indicating limited expressivity; the model never reached the specified convergence threshold.
+**Program Identifier:** Generation 18 - Patch Name add_center_edge_cz_gates - Correct Program: True
+
+**Program Name: Hierarchical Symmetric Quantum Ansatz for Tic-Tac-Toe**  
+- **Implementation**: Defines a five-layer ansatz with symmetry-shared pre/post RZ and RY rotations on corners, edges, and center, ring CZ entanglement on the outer qubits, and a hub CRZ/CRX layer sharing a single “hub_angle,” repeated over three uploads and two repeats; inputs are encoded via RX feature maps and the circuit is built as a PennyLane QNode.  
+- **Performance**: Achieved a combined score of 0.57 (train 0.57, validation 0.60, test 0.50) using 60 parameters, depth 84, and 285 gates.  
+- **Feedback**: Aggressive symmetry and parameter sharing kept the ansatz compact but limited expressivity, yielding moderate validation accuracy and low test performance; a small generalization gap (0.07) and low parameter efficiency (0.01) suggest that relaxing symmetry or adding parameters could improve results.
+**Program Identifier:** Generation 19 - Patch Name hybrid60_hubcrzcrx - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Parameterized CRX perimeter ring combined with a shared-parameter CRY hub entanglement.  
+  • First realized in Generation 10 (Combined 0.60; train 0.57→val 0.65→test 0.50) and retained in the Current Best Program, this two-line swap from (static CZ + CRZ) to (CRX + CRY) yielded a +0.03 boost over prior bests.  
+- Five-layer hierarchical rotation–entanglement–rotation block (pre-RZ → RY → entangle → post-RZ) repeated 3 uploads×2 repeats.  
+  • Current Best (depth 70, 261 gates, 66 params) and all top contenders (Gen 10, Gen 12, Gen 13) share this backbone, balancing expressivity and trainability.  
+- Symmetry-driven parameter sharing across corners/edges/center groups.  
+  • Fixing N_PARAMS_PER_BLOCK=11 (total N_PARAMS=66) via shared RZ/RY rotations and single “crx_ring”/“cry_hub_edge” angles hit the performance sweet spot; deviations above/below 66 params degrade results.  
+- Fixed re-upload (N_UPLOADS=3) and repeat (N_REPEATS=2) schedule.  
+  • Retaining depth ≈ 70 consistently aligns with Combined ≥ 0.55; modifications to uploads or repeats correlate with both depth shifts and score drops.  
+
+## Ineffective Approaches  
+- Mixing multiple two-qubit parameter types or adding extra CZ layers.  
+  • Gen 12 (ring CRX + hub CRX/CRY, 72 params) and Gen 15 (perimeter CZ + hub CRZ/CRX, 66 params) both capped at Combined 0.55; Gen 18’s added center–edge CZs plunged to Combined 0.46 with a large generalization gap (0.21).  
+- Over-aggressive parameter sharing (under-parametrization).  
+  • Gen 14 collapsed too many single-qubit angles (48 params) and fell to Combined 0.47 with gap 0.17, a clear underfitting signal.  
+- Excessive parameters and depth (over-parametrization).  
+  • Gen 13 doubled to 84 params and depth 132 but only reached Combined 0.56—diminishing returns beyond the 66-param, depth 70 regime.  
+- Parameterized perimeter CRZ entanglement.  
+  • Gen 6’s CRZ ring (66 params) underperformed the static-CZ ring (Combined 0.53 vs 0.57), reinforcing judicious placement of two-qubit parameters.  
+
+## Implementation Insights  
+- Centralized ANSATZ_SPEC builder enables rapid, low-risk gate-type swaps.  
+  • In Gen 10/Current Best, switching perimeter CZ→CRX and hub CRZ→CRY was a two-line change in `_build_hierarchical_ansatz_spec()`, directly driving the +0.03 Combined improvement.  
+- Deterministic parameter ordering via `dict.fromkeys` in `validate_ansatz_spec`.  
+  • Guarantees N_PARAMS_PER_BLOCK=11 and consistent indexing across 3×2 blocks, simplifying `apply_ansatz_block` logic and avoiding off-by-one errors.  
+- Early structural checks with `validate_ansatz_spec`.  
+  • Catches non-adjacent grid edges or malformed gate entries before training, preventing wasted GPU/CPU time (no GRID_EDGE_SET violations in top programs).  
+- Depth/gate profiling with `qml.queuing.AnnotatedQueue`.  
+  • Ties circuit design directly to measured depth (70 gates) and gate_count (261), validating that the hierarchical 3×2 design matches the empirically optimal resource budget.  
+
+## Performance Analysis  
+- Peak Combined score (0.60) achieved at 66 params, depth 70.  
+  • Current Best = Gen 10 outperforms the next best (Gen 17 & Gen 19 at 0.57) and worst (Gen 18 at 0.46).  
+- Parameter sweet spot at 66:  
+  • Reducing to 60 params (Gen 19) stalls at 0.57; increasing beyond (84 params in Gen 13) only hits 0.56.  
+- Depth ≈ 70 remains optimal:  
+  • Circuits deepened to 82–84 (Gen 18/19) underperform (0.46/0.57), while shallower or equivalent designs align with top scores.  
+- Consistent parameter efficiency (~0.008 test_accuracy/param) across best programs.  
+  • Maintained by the 3×2 hierarchical, symmetry-shared architecture, reflecting balanced utilization of every added parameter.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Insert a mid‐block RZ “phase‐alignment” layer immediately after the eight perimeter CRX gates by reusing the existing pre‐entanglement keys. In `_build_hierarchical_ansatz_spec`, append RZ rotations on corners (`rz_pre_corner`), edges (`rz_pre_edge`), and center (`rz_pre_center`) just before the hub CRY entanglement. This two‐line edit leverages proven symmetry‐driven sharing to condition the ring outputs without changing N_PARAMS=11 per block and tests whether extra phase alignment boosts validation accuracy.  
+
+2. Swap the two‐qubit rotation axes between the ring and the hub entanglement to probe axis‐specific expressivity. In the ANSATZ_SPEC builder, change the ring gates from CRX→CRY (using key `cry_ring`) and the hub gates from CRY→CRX (using key `crx_hub_edge`), renaming the parameter keys accordingly but keeping all eight ring wires and four hub wires intact. This maintains depth 70 and 11 params per block while exploring whether reversing axis assignments yields a higher Combined score.  
+
+3. Enhance non‐local mixing by appending two additional CRY diagonal entangling gates after each block’s hub CRY layer. In `_build_hierarchical_ansatz_spec`, after the four hub CRY entries, add CRY on wires `[1,3]` and `[5,7]` using the existing `cry_hub_edge` key. This symmetry‐preserving tweak introduces extra cross‐board correlations—shown beneficial in other top programs—without increasing the total parameter count or depth significantly.  
+
+4. Reorder the entanglement sequence to test early central coupling. Modify the block spec so that the four hub CRY gates occur immediately after the RY rotations (Layer 2) and move the ring CRX gates (Layer 3) to follow. Because neither the number of gates nor the parameters change, this simple reordering evaluates whether prioritizing hub entanglement accelerates convergence or lifts validation performance.  
+
+5. Introduce mild heterogeneity on the perimeter by splitting the ring parameter into two alternating angles. First, merge `rz_pre_center` and `rz_post_center` into a single key `rz_center` (freeing one param slot per block), then allocate that slot to a new `crx_ring_alt` parameter applied to every other CRX ring gate (e.g., gates on wires [1,2],[3,4],[5,6],[7,0]). This 1-for-1 swap keeps N_PARAMS_PER_BLOCK=11 (66 total) but tests whether alternating‐edge flexibility improves expressivity without over-parametrization.

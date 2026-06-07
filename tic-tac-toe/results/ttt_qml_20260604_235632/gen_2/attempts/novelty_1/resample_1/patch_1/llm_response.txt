@@ -1,0 +1,61 @@
+<NAME>
+param-sharing-block-ansatz
+</NAME>
+
+<DESCRIPTION>
+The failure was due to the seed ANSATZ_SPEC using a large, per-qubit parameter budget (27 parameters per block) which increases the search space and can hinder validation/training dynamics. The fix switches to deliberate parameter sharing within each ansatz block: all 9 RY gates share a single parameter, all 9 pre-CZ RZ gates share another, and all 9 post-CZ RZ gates share a third. This reduces N_PARAMS_PER_BLOCK from 27 to 3 while preserving the overall block structure and the allowed gate set. The CZ gates remain unchanged and adjacency constraints are preserved. This should improve train efficiency and stability without altering the fixed training loop, data, feature map, l, p, or measurements.
+</DESCRIPTION>
+
+<CODE>
+```python
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Shared-parameter RY block: all 9 qubits use the same "ry_shared" parameter
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RY", "wire": 8, "param": "ry_shared"},
+
+    # Shared-parameter pre-CZ RZ block: all 9 qubits use the same "rz_pre_shared" parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre_shared"},
+
+    # Fixed two-qubit CZ gates on allowed adjacent grid edges
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+
+    # Shared-parameter post-CZ RZ block: all 9 qubits use the same "rz_post_shared" parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_shared"},
+]
+# EVOLVE-BLOCK-END
+``` 
