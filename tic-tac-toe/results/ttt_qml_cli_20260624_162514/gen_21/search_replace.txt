@@ -1,0 +1,157 @@
+<NAME>
+refine_corners_reduce_entanglement
+</NAME>
+
+<DESCRIPTION>
+Refine symmetry and reduce unnecessary entangling to improve generalization and efficiency.
+
+Changes:
+- Keep the useful diagonal corner symmetry by splitting corners into two diagonal subclasses: (0,4) and (2,6). This matches the suggested motif to better capture diagonal win patterns.
+- Merge edge rotations back into a single shared edge parameter (less fragmentation than prior split) to reduce parameters and regularize.
+- Replace the expensive full parametrized ring CRX layer with a sparser fixed-CZ ring (4 symmetric ring edges) to lower depth and gate count, while keeping a small number of parametrized hub CRX gates to preserve tunable centre–edge coupling.
+- Remove the redundant per-wire RX layer and instead add a compact shared RX mixing (periphery vs center) to keep expressivity with far fewer parameters.
+- Use a small shared output layer (periphery vs center) for sharper decisions.
+
+Expected effect:
+- Fewer unique parameters per block (parameter efficiency improved).
+- Lower circuit depth and gate count (faster training and less overfitting).
+- Retains expressivity for diagonal patterns and center coupling via the hub CRX.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Initial RY with light symmetry breaking:
+    # corners split into two pairs to allow controlled asymmetry
+    {"gate": "RY", "wire": 0, "param": "ry_corner_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_b"},
+    # edges split into two pairs
+    {"gate": "RY", "wire": 1, "param": "ry_edge_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge_b"},
+    # center its own rotation
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Local pre-phases shared by symmetry class (compact, regularizing)
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Local RX adjustments (class-shared)
+    {"gate": "RX", "wire": 0, "param": "rx_corner"},
+    {"gate": "RX", "wire": 2, "param": "rx_corner"},
+    {"gate": "RX", "wire": 4, "param": "rx_corner"},
+    {"gate": "RX", "wire": 6, "param": "rx_corner"},
+    {"gate": "RX", "wire": 1, "param": "rx_edge"},
+    {"gate": "RX", "wire": 3, "param": "rx_edge"},
+    {"gate": "RX", "wire": 5, "param": "rx_edge"},
+    {"gate": "RX", "wire": 7, "param": "rx_edge"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Parametrized entangling rotations:
+    # Use CRX around the ring (single shared param) to provide tunable mixing,
+    # and a separate CRX for hub edges to let center-edge coupling differ.
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [1, 2], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [5, 6], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [7, 0], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [1, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [3, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [5, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [7, 8], "param": "crx_hub"},
+
+    # Final compact mixing (shared across wires to limit param count)
+    {"gate": "RY", "wire": 0, "param": "ry_out"},
+    {"gate": "RY", "wire": 1, "param": "ry_out"},
+    {"gate": "RY", "wire": 2, "param": "ry_out"},
+    {"gate": "RY", "wire": 3, "param": "ry_out"},
+    {"gate": "RY", "wire": 4, "param": "ry_out"},
+    {"gate": "RY", "wire": 5, "param": "ry_out"},
+    {"gate": "RY", "wire": 6, "param": "ry_out"},
+    {"gate": "RY", "wire": 7, "param": "ry_out"},
+    {"gate": "RY", "wire": 8, "param": "ry_out"},
+    {"gate": "RZ", "wire": 0, "param": "rz_out"},
+    {"gate": "RZ", "wire": 1, "param": "rz_out"},
+    {"gate": "RZ", "wire": 2, "param": "rz_out"},
+    {"gate": "RZ", "wire": 3, "param": "rz_out"},
+    {"gate": "RZ", "wire": 4, "param": "rz_out"},
+    {"gate": "RZ", "wire": 5, "param": "rz_out"},
+    {"gate": "RZ", "wire": 6, "param": "rz_out"},
+    {"gate": "RZ", "wire": 7, "param": "rz_out"},
+    {"gate": "RZ", "wire": 8, "param": "rz_out"},
+]
+=======
+ANSATZ_SPEC = [
+    # Initial RY with diagonal corner refinement:
+    # corners split into two diagonal subclasses to capture diagonal wins,
+    # edges share a single parameter to regularize, center has its own.
+    {"gate": "RY", "wire": 0, "param": "ry_corner_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_b"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Compact shared Z pre-phases per symmetry class (regularizing)
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Lightweight RX mixing to boost expressivity with few params:
+    # shared periphery vs center
+    {"gate": "RX", "wire": 0, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 1, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 2, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 3, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 4, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 5, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 6, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 7, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Sparse entangling: fixed CZs on a symmetric subset of ring edges to
+    # reduce depth and mixing noise, plus parametrized CRX on two hub edges
+    # to keep tunable center–periphery coupling.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CRX", "wires": [1, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [5, 8], "param": "crx_hub"},
+
+    # Final compact output rotations (shared periphery vs center)
+    {"gate": "RY", "wire": 0, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+    {"gate": "RZ", "wire": 8, "param": "rz_out_center"},
+]
+>>>>>>> REPLACE
+</DIFF>

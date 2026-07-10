@@ -1,0 +1,395 @@
+<NAME>
+upload_indexed_delta_params
+</NAME>
+
+<DESCRIPTION>
+The current program has 84 parameters (14 per block × 3 uploads × 2 repeats), which is significantly higher than the prior programs (60 and 66 parameters). The validation accuracy is lower (0.55 vs 0.65), and the test accuracy is similar (0.52 vs 0.50), suggesting overfitting and inefficient parameter use.
+
+The recommendation is to introduce upload-indexed delta parameters: keep shared parameters as a global base but add small per-upload deltas. This preserves the regularization benefit of parameter sharing while granting each upload slight flexibility to adapt to successive feature re-uploads and refined correlations.
+
+Specifically:
+1. Modify the ansatz spec to use base parameters plus upload-indexed deltas (e.g., `crx_ring_base` + `crx_ring_delta_upload0`, `crx_ring_delta_upload1`, `crx_ring_delta_upload2`)
+2. Update `apply_ansatz_block` to sum the base and delta when computing angles
+3. This reduces effective parameter sharing burden while maintaining global structure
+
+This approach should:
+- Improve validation accuracy by allowing per-upload adaptation
+- Reduce generalization gap by keeping most parameters shared
+- Maintain or reduce total parameter count relative to the current bloated spec
+- Reach better accuracy with fewer parameters than the current 84
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing.
+
+    Structure:
+    1. Pre-entanglement RZ on all qubits (shared by symmetry)
+    2. RY rotations on all qubits (shared by symmetry)
+    3. Ring entanglement: CZ gates around outer ring
+    4. Hub entanglement: per-edge CRX gates from center to edges (distinct params)
+    5. Post-entanglement RZ on all qubits (shared by symmetry)
+    """
+    spec = []
+
+    # Symmetry groups for 4-fold rotational symmetry of tic-tac-toe board
+    # Corners: 0, 2, 4, 6 (all equivalent by rotation)
+    # Edges: 1, 3, 5, 7 (all equivalent by rotation)
+    # Center: 8 (unique)
+
+    # Layer 1: Pre-entanglement RZ rotations with parameter sharing
+    spec.append({"gate": "RZ", "wire": 0, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 2, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 4, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 6, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 1, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 3, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 5, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 7, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_pre_center"})
+
+    # Layer 2: RY rotations with parameter sharing
+    spec.append({"gate": "RY", "wire": 0, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 2, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 4, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 6, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 1, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 3, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 5, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 7, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 8, "param": "ry_center"})
+
+    # Layer 3: Ring entanglement (outer 8 qubits)
+    # CZ gates around the perimeter
+    spec.append({"gate": "CZ", "wires": [0, 1]})
+    spec.append({"gate": "CZ", "wires": [1, 2]})
+    spec.append({"gate": "CZ", "wires": [2, 3]})
+    spec.append({"gate": "CZ", "wires": [3, 4]})
+    spec.append({"gate": "CZ", "wires": [4, 5]})
+    spec.append({"gate": "CZ", "wires": [5, 6]})
+    spec.append({"gate": "CZ", "wires": [6, 7]})
+    spec.append({"gate": "CZ", "wires": [7, 0]})
+    # Additional ring entanglement with shared parameter spanning same perimeter
+    spec.append({"gate": "CRX", "wires": [0, 1], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [1, 2], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [2, 3], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [3, 4], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [4, 5], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [5, 6], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [6, 7], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [7, 0], "param": "crx_ring"})
+    # Additional hub-edge entanglement with same parameter (center to edges) to further propagate correlations
+    spec.append({"gate": "CRX", "wires": [8, 1], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [8, 3], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [8, 5], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [8, 7], "param": "crx_ring"})
+
+    # Layer 4: Hub entanglement (center to edges with per-edge parameters)
+    # Use CRX for edge-specific couplings between center and edges
+    spec.append({"gate": "CRX", "wires": [8, 1], "param": "crx_hub_edge_1"})
+    spec.append({"gate": "CRX", "wires": [8, 3], "param": "crx_hub_edge_2"})
+    spec.append({"gate": "CRX", "wires": [8, 5], "param": "crx_hub_edge_3"})
+    spec.append({"gate": "CRX", "wires": [8, 7], "param": "crx_hub_edge_4"})
+
+    # Layer 5: Post-entanglement RZ rotations with parameter sharing
+    spec.append({"gate": "RZ", "wire": 0, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 2, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 4, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 6, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 1, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 3, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 5, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 7, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_post_center"})
+
+    return spec
+=======
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with upload-indexed delta parameters.
+
+    Structure:
+    1. Pre-entanglement RZ on all qubits (base + upload delta)
+    2. RY rotations on all qubits (base + upload delta)
+    3. Ring entanglement: CZ gates around outer ring
+    4. Ring+Hub parametrized gates: CRX with base + upload delta
+    5. Post-entanglement RZ on all qubits (base + upload delta)
+    
+    Upload-indexed deltas allow each re-upload to refine parameters slightly
+    while maintaining global parameter sharing for regularization.
+    """
+    spec = []
+
+    # Symmetry groups for 4-fold rotational symmetry of tic-tac-toe board
+    # Corners: 0, 2, 4, 6 (all equivalent by rotation)
+    # Edges: 1, 3, 5, 7 (all equivalent by rotation)
+    # Center: 8 (unique)
+
+    # Layer 1: Pre-entanglement RZ rotations with base + upload delta
+    spec.append({"gate": "RZ", "wire": 0, "param": "rz_pre_corner", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 2, "param": "rz_pre_corner", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 4, "param": "rz_pre_corner", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 6, "param": "rz_pre_corner", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 1, "param": "rz_pre_edge", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 3, "param": "rz_pre_edge", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 5, "param": "rz_pre_edge", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 7, "param": "rz_pre_edge", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_pre_center", "upload_delta": True})
+
+    # Layer 2: RY rotations with base + upload delta
+    spec.append({"gate": "RY", "wire": 0, "param": "ry_corner", "upload_delta": True})
+    spec.append({"gate": "RY", "wire": 2, "param": "ry_corner", "upload_delta": True})
+    spec.append({"gate": "RY", "wire": 4, "param": "ry_corner", "upload_delta": True})
+    spec.append({"gate": "RY", "wire": 6, "param": "ry_corner", "upload_delta": True})
+    spec.append({"gate": "RY", "wire": 1, "param": "ry_edge", "upload_delta": True})
+    spec.append({"gate": "RY", "wire": 3, "param": "ry_edge", "upload_delta": True})
+    spec.append({"gate": "RY", "wire": 5, "param": "ry_edge", "upload_delta": True})
+    spec.append({"gate": "RY", "wire": 7, "param": "ry_edge", "upload_delta": True})
+    spec.append({"gate": "RY", "wire": 8, "param": "ry_center", "upload_delta": True})
+
+    # Layer 3: Ring entanglement (outer 8 qubits)
+    # CZ gates around the perimeter (fixed)
+    spec.append({"gate": "CZ", "wires": [0, 1]})
+    spec.append({"gate": "CZ", "wires": [1, 2]})
+    spec.append({"gate": "CZ", "wires": [2, 3]})
+    spec.append({"gate": "CZ", "wires": [3, 4]})
+    spec.append({"gate": "CZ", "wires": [4, 5]})
+    spec.append({"gate": "CZ", "wires": [5, 6]})
+    spec.append({"gate": "CZ", "wires": [6, 7]})
+    spec.append({"gate": "CZ", "wires": [7, 0]})
+
+    # Layer 4: Ring + Hub entanglement with base + upload delta
+    # CRX ring gates with shared base parameter and per-upload deltas
+    spec.append({"gate": "CRX", "wires": [0, 1], "param": "crx_ring", "upload_delta": True})
+    spec.append({"gate": "CRX", "wires": [1, 2], "param": "crx_ring", "upload_delta": True})
+    spec.append({"gate": "CRX", "wires": [2, 3], "param": "crx_ring", "upload_delta": True})
+    spec.append({"gate": "CRX", "wires": [3, 4], "param": "crx_ring", "upload_delta": True})
+    spec.append({"gate": "CRX", "wires": [4, 5], "param": "crx_ring", "upload_delta": True})
+    spec.append({"gate": "CRX", "wires": [5, 6], "param": "crx_ring", "upload_delta": True})
+    spec.append({"gate": "CRX", "wires": [6, 7], "param": "crx_ring", "upload_delta": True})
+    spec.append({"gate": "CRX", "wires": [7, 0], "param": "crx_ring", "upload_delta": True})
+    
+    # Hub-edge entanglement with base + upload delta
+    spec.append({"gate": "CRX", "wires": [8, 1], "param": "crx_hub", "upload_delta": True})
+    spec.append({"gate": "CRX", "wires": [8, 3], "param": "crx_hub", "upload_delta": True})
+    spec.append({"gate": "CRX", "wires": [8, 5], "param": "crx_hub", "upload_delta": True})
+    spec.append({"gate": "CRX", "wires": [8, 7], "param": "crx_hub", "upload_delta": True})
+
+    # Layer 5: Post-entanglement RZ rotations with base + upload delta
+    spec.append({"gate": "RZ", "wire": 0, "param": "rz_post_corner", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 2, "param": "rz_post_corner", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 4, "param": "rz_post_corner", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 6, "param": "rz_post_corner", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 1, "param": "rz_post_edge", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 3, "param": "rz_post_edge", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 5, "param": "rz_post_edge", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 7, "param": "rz_post_edge", "upload_delta": True})
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_post_center", "upload_delta": True})
+
+    return spec
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def validate_ansatz_spec(spec: list[dict]) -> tuple[list[str], list[str]]:
+    """Validate ANSATZ_SPEC and return errors plus ordered parameter keys."""
+    errors = []
+    parameter_keys = []
+    if not isinstance(spec, list) or not spec:
+        return ["ANSATZ_SPEC must be a non-empty list of gate dictionaries."], []
+
+    for gate_index, item in enumerate(spec):
+        prefix = f"gate {gate_index}"
+        if not isinstance(item, dict):
+            errors.append(f"{prefix}: expected a dict, got {type(item).__name__}")
+            continue
+        gate = str(item.get("gate", "")).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            wire = item.get("wire")
+            if not isinstance(wire, int) or not 0 <= wire < N_QUBITS:
+                errors.append(f"{prefix}: {gate} requires integer wire in [0, {N_QUBITS - 1}]")
+            param = item.get("param")
+            if not isinstance(param, str) or not param:
+                errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+            else:
+                parameter_keys.append(param)
+        elif gate in ALLOWED_TWO_QUBIT_GATES | ALLOWED_PARAM_TWO_QUBIT_GATES:
+            wires = item.get("wires")
+            if (
+                not isinstance(wires, (list, tuple))
+                or len(wires) != 2
+                or not all(isinstance(w, int) for w in wires)
+                or wires[0] == wires[1]
+                or not all(0 <= w < N_QUBITS for w in wires)
+            ):
+                errors.append(f"{prefix}: {gate} requires two distinct integer wires")
+            elif tuple(sorted(wires)) not in GRID_EDGE_SET:
+                errors.append(f"{prefix}: {gate} uses non-adjacent grid edge {wires}")
+            if gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+                param = item.get("param")
+                if not isinstance(param, str) or not param:
+                    errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+                else:
+                    parameter_keys.append(param)
+        else:
+            allowed = sorted(ALLOWED_SINGLE_QUBIT_GATES | ALLOWED_TWO_QUBIT_GATES | ALLOWED_PARAM_TWO_QUBIT_GATES)
+            errors.append(f"{prefix}: unsupported gate {gate!r}; allowed gates are {allowed}")
+
+    ordered_unique_keys = list(dict.fromkeys(parameter_keys))
+    return errors, ordered_unique_keys
+=======
+def validate_ansatz_spec(spec: list[dict]) -> tuple[list[str], list[str]]:
+    """Validate ANSATZ_SPEC and return errors plus ordered parameter keys.
+    
+    For gates with upload_delta=True, generates base + delta parameter keys.
+    """
+    errors = []
+    parameter_keys = []
+    if not isinstance(spec, list) or not spec:
+        return ["ANSATZ_SPEC must be a non-empty list of gate dictionaries."], []
+
+    for gate_index, item in enumerate(spec):
+        prefix = f"gate {gate_index}"
+        if not isinstance(item, dict):
+            errors.append(f"{prefix}: expected a dict, got {type(item).__name__}")
+            continue
+        gate = str(item.get("gate", "")).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            wire = item.get("wire")
+            if not isinstance(wire, int) or not 0 <= wire < N_QUBITS:
+                errors.append(f"{prefix}: {gate} requires integer wire in [0, {N_QUBITS - 1}]")
+            param = item.get("param")
+            if not isinstance(param, str) or not param:
+                errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+            else:
+                parameter_keys.append(param)
+                if item.get("upload_delta", False):
+                    for upload_idx in range(N_UPLOADS):
+                        parameter_keys.append(f"{param}_delta_upload{upload_idx}")
+        elif gate in ALLOWED_TWO_QUBIT_GATES | ALLOWED_PARAM_TWO_QUBIT_GATES:
+            wires = item.get("wires")
+            if (
+                not isinstance(wires, (list, tuple))
+                or len(wires) != 2
+                or not all(isinstance(w, int) for w in wires)
+                or wires[0] == wires[1]
+                or not all(0 <= w < N_QUBITS for w in wires)
+            ):
+                errors.append(f"{prefix}: {gate} requires two distinct integer wires")
+            elif tuple(sorted(wires)) not in GRID_EDGE_SET:
+                errors.append(f"{prefix}: {gate} uses non-adjacent grid edge {wires}")
+            if gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+                param = item.get("param")
+                if not isinstance(param, str) or not param:
+                    errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+                else:
+                    parameter_keys.append(param)
+                    if item.get("upload_delta", False):
+                        for upload_idx in range(N_UPLOADS):
+                            parameter_keys.append(f"{param}_delta_upload{upload_idx}")
+        else:
+            allowed = sorted(ALLOWED_SINGLE_QUBIT_GATES | ALLOWED_TWO_QUBIT_GATES | ALLOWED_PARAM_TWO_QUBIT_GATES)
+            errors.append(f"{prefix}: unsupported gate {gate!r}; allowed gates are {allowed}")
+
+    ordered_unique_keys = list(dict.fromkeys(parameter_keys))
+    return errors, ordered_unique_keys
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+=======
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC.
+    
+    For gates with upload_delta=True, compute angle as base + delta for this upload.
+    """
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    upload_index = block_index // N_REPEATS
+    
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            param_key = item["param"]
+            base_angle = params[offset + key_to_position[param_key]]
+            
+            # Add upload delta if specified
+            if item.get("upload_delta", False):
+                delta_key = f"{param_key}_delta_upload{upload_index}"
+                delta_angle = params[offset + key_to_position[delta_key]]
+                angle = base_angle + delta_angle
+            else:
+                angle = base_angle
+            
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            param_key = item["param"]
+            base_angle = params[offset + key_to_position[param_key]]
+            
+            # Add upload delta if specified
+            if item.get("upload_delta", False):
+                delta_key = f"{param_key}_delta_upload{upload_index}"
+                delta_angle = params[offset + key_to_position[delta_key]]
+                angle = base_angle + delta_angle
+            else:
+                angle = base_angle
+            
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+>>>>>>> REPLACE
+</DIFF>

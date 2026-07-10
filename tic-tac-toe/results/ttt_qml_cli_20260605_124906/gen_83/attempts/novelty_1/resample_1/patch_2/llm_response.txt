@@ -1,0 +1,59 @@
+<NAME>ring_axis_alternation</NAME>
+
+<DESCRIPTION>Introduce alternating ring entanglement axes for the outer perimeter CRX ring using a single shared parameter crx_ring. The alternation is implemented by applying CRX on ring edges for even block_index and CRY for odd block_index, reusing the same parameter. This adds richer correlations without increasing the parameter count. The hub-edge entanglement remains CRY with its own parameter. All changes stay inside the EVOLVE-BLOCK so training remains unchanged.</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing.
+
+    Structure:
+    1. Pre-entanglement RZ on all qubits (shared by symmetry)
+    2. RY rotations on all qubits (shared by symmetry)
+    3. Ring entanglement: CZ gates around outer ring
+    4. Hub entanglement: per-edge CRX gates from center to edges (distinct params)
+    5. Post-entanglement RZ on all qubits (shared by symmetry)
+    """
+=======
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing.
+
+    Structural changes:
+    1) Pre-entanglement RZ on all qubits (shared by symmetry)
+    2) RY rotations on all qubits (shared by symmetry)
+    3) Ring entanglement: CRX/CRY gates around outer ring with a single shared angle
+    4) Hub entanglement: per-edge CRX gates from center to edges (distinct params)
+    5) Post-entanglement RZ on all qubits (shared by symmetry)
+    """
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+=======
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if item.get("param") == "crx_ring" and gate == "CRX":
+                # Alternate ring axis between CRX and CRY on successive repeats
+                if (block_index % 2) == 0:
+                    qml.CRX(angle, wires=wires)
+                else:
+                    qml.CRY(angle, wires=wires)
+            elif gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+>>>>>>> REPLACE
+</DIFF>

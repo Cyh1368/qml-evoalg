@@ -1,0 +1,121 @@
+<NAME>shared-prepost-rz</NAME>
+<DESCRIPTION>consolidate pre- and post-entanglement rz gates by sharing a single parameter per group (rz_corner, rz_edge, rz_center) across both layers. This reduces parameter count from 11 to 8 per block, increases parameter efficiency, and enforces stronger symmetry. Implement by updating the hybrid ansatz to apply rz_corner/rz_edge/rz_center in both the pre- and post-entanglement layers using the same parameter keys.</DESCRIPTION>
+<DIFF>
+<<<<<<< SEARCH
+def _build_hybrid_ansatz_spec() -> list[dict]:
+    """Build hybrid ansatz combining parametrized ring (CRY) and shared hub (CRX).
+    
+    Structure:
+    1. Pre-entanglement RZ on corners/edges/center (shared per group)
+    2. RY rotations on corners/edges/center (shared per group)
+    3. Ring entanglement: parametrized CRY gates with shared parameter
+    4. Hub entanglement: CRX gates from center to edges with shared parameter
+    5. Post-entanglement RZ on corners/edges/center (shared per group)
+    
+    This explores axis-swapped ring/hub motif while preserving parameter budget.
+    """
+    spec: list[dict] = []
+
+    # Group indices by board symmetry
+    corners = (0, 2, 4, 6)
+    edges = (1, 3, 5, 7)
+    center = 8
+
+    # Layer 1: Pre-entanglement RZ (shared per group)
+    for w in corners:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_pre_corner"})
+    for w in edges:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": center, "param": "rz_pre_center"})
+
+    # Layer 2: RY rotations (shared per group)
+    for w in corners:
+        spec.append({"gate": "RY", "wire": w, "param": "ry_corner"})
+    for w in edges:
+        spec.append({"gate": "RY", "wire": w, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": center, "param": "ry_center"})
+
+    # Layer 3: Ring entanglement (outer ring) - CRY with shared parameter
+    spec.append({"gate": "CRY", "wires": [0, 1], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [1, 2], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [2, 3], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [3, 4], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [4, 5], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [5, 6], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [6, 7], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [7, 0], "param": "cry_ring"})
+
+    # Layer 4: Hub entanglement (center to edges) - CRX with shared parameter
+    spec.append({"gate": "CRX", "wires": [center, 1], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 3], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 5], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 7], "param": "crx_hub_edge"})
+
+    # Layer 5: Post-entanglement RZ (shared per group)
+    for w in corners:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_post_corner"})
+    for w in edges:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": center, "param": "rz_post_center"})
+
+    return spec
+=======
+def _build_hybrid_ansatz_spec() -> list[dict]:
+    """Build hybrid ansatz combining parametrized ring (CRY) and shared hub (CRX).
+    
+    Structure:
+    1. Pre-entanglement RZ on corners/edges/center (shared per group)
+    2. RY rotations on corners/edges/center (shared per group)
+    3. Ring entanglement: parametrized CRY gates with shared parameter
+    4. Hub entanglement: CRX gates from center to edges with shared parameter
+    5. Post-entanglement RZ on corners/edges/center (shared per group)
+    
+    This explores axis-swapped ring/hub motif while preserving parameter budget.
+    """
+    spec: list[dict] = []
+
+    # Group indices by board symmetry
+    corners = (0, 2, 4, 6)
+    edges = (1, 3, 5, 7)
+    center = 8
+
+    # Layer 1: Pre-entanglement RZ (shared per group)
+    for w in corners:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_corner"})
+    for w in edges:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_edge"})
+    spec.append({"gate": "RZ", "wire": center, "param": "rz_center"})
+
+    # Layer 2: RY rotations (shared per group)
+    for w in corners:
+        spec.append({"gate": "RY", "wire": w, "param": "ry_corner"})
+    for w in edges:
+        spec.append({"gate": "RY", "wire": w, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": center, "param": "ry_center"})
+
+    # Layer 3: Ring entanglement (outer ring) - CRY with shared parameter
+    spec.append({"gate": "CRY", "wires": [0, 1], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [1, 2], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [2, 3], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [3, 4], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [4, 5], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [5, 6], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [6, 7], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [7, 0], "param": "cry_ring"})
+
+    # Layer 4: Hub entanglement (center to edges) - CRX with shared parameter
+    spec.append({"gate": "CRX", "wires": [center, 1], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 3], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 5], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 7], "param": "crx_hub_edge"})
+
+    # Layer 5: Post-entanglement RZ (shared per group)
+    for w in corners:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_corner"})
+    for w in edges:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_edge"})
+    spec.append({"gate": "RZ", "wire": center, "param": "rz_center"})
+
+    return spec
+>>>>>>> REPLACE
+</DIFF>

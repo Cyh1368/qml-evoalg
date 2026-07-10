@@ -1,0 +1,72 @@
+Looking at the metrics, the current program (0.45) underperforms the prior best (0.53). The prior best used CRY-based trainable entanglers with shared params and an RY-decode/RY-RX-readout structure at 72 params. The current version added fixed CNOTs and CRX which hurt performance (train acc dropped to 0.33, suggesting the fixed CNOTs scramble information and barotren-like behavior). Let me revert toward the proven CRY motif while improving expressivity by distinguishing decoders per direction and avoiding wasteful fixed entanglers.
+
+<NAME>
+restore_cry_motif_with_dual_decode
+</NAME>
+
+<DESCRIPTION>
+The current candidate (score 0.45) regressed below the prior best (0.53) because it added non-parametric CNOT line aggregators and CRX gates that scramble the Y-quadrature encoding before the trainable layers can decode the player sign. The fixed CNOTs create strong fixed entanglement that the limited shared params cannot undo, lowering even train accuracy to 0.33.
+
+I revert to the proven CRY-based motif of the prior best (72-param, score 0.53) but keep a useful improvement: separate RX-sign + RY-decode local layers (sign-sensitive decode) which align with the RX feature map. I remove all fixed CNOTs (they were the regression cause) and replace the CRX entanglers with CRY (which empirically worked best in the prior champions). This keeps parameter count efficient (~84) while restoring the expressive, symmetry-respecting line-segment structure. The combination of a learnable RX offset plus the CRY line entanglers should both fit better and generalize, targeting the 0.53+ regime.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# 2) Fixed CNOT line aggregators.
+# These supply non-parametric nonlinear pair features immediately from step 0.
+# Endpoints feed the legal midpoint cells on all outer row/column segments.
+for a, b in (
+    (0, 1), (2, 1),
+    (2, 3), (4, 3),
+    (4, 5), (6, 5),
+    (6, 7), (0, 7),
+):
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [a, b]})
+
+# Middle row/column evidence is compressed into the center draw readout.
+for a, b in ((1, 8), (3, 8), (5, 8), (7, 8)):
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [a, b]})
+
+# 3) Trainable controlled rotations.
+# CRX is aligned with the RX feature encoding and acts like a learnable
+# conditional re-upload on midpoint/center targets.  CRY adds a complementary
+# mixer that empirically helped the prior best circuit.
+for a, b in (
+    (0, 1), (2, 1),
+    (2, 3), (4, 3),
+    (4, 5), (6, 5),
+    (6, 7), (0, 7),
+):
+    ANSATZ_SPEC.append({"gate": "CRX", "wires": [a, b], "param": "crx_endpoint_to_mid"})
+
+for a, b in ((1, 8), (3, 8), (5, 8), (7, 8)):
+    ANSATZ_SPEC.append({"gate": "CRX", "wires": [a, b], "param": "crx_mid_to_center"})
+
+for a, b in ((8, 1), (8, 3), (8, 5), (8, 7)):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_center_to_mid"})
+=======
+# 2) Trainable line-segment entanglers (CRY only).
+# CRY builds genuine nonlinear "two cells agree on a line" features while
+# preserving the Y-quadrature information from the RX feature map.  This was
+# the key ingredient of the strongest prior ansatz (score 0.53).  Fixed CNOTs
+# were removed because they scrambled the encoding and lowered train accuracy.
+for a, b in (
+    (0, 1), (2, 1),
+    (2, 3), (4, 3),
+    (4, 5), (6, 5),
+    (6, 7), (0, 7),
+):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_endpoint_to_mid"})
+
+# Center aggregation for the center row and center column feeds the draw
+# readout with explicit line context while remaining adjacency-valid.
+for a, b in ((1, 8), (3, 8), (5, 8), (7, 8)):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_mid_to_center"})
+
+# Gentle center broadcast back to edge readouts approximates diagonal/middle
+# line evidence under repeated re-uploading without illegal diagonal gates.
+for a, b in ((8, 1), (8, 3), (8, 5), (8, 7)):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_center_to_mid"})
+>>>>>>> REPLACE
+
+</DIFF>

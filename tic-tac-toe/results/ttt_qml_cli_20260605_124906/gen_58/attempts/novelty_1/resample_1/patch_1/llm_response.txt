@@ -1,0 +1,239 @@
+<NAME>
+adaptive_feature_scale_per_upload
+</NAME>
+
+<DESCRIPTION>
+The current program uses a fixed FEATURE_SCALE (2π/3) for encoding board values across all data re-uploads. Prior runs show validation accuracy around 0.55–0.65 but test accuracy lags significantly (0.48–0.52), indicating poor generalization.
+
+The recommendation to make the feature-map scale upload-adaptive is well-motivated:
+1. **Gradient smoothing**: Different uploads can learn different encoding sensitivities. Early uploads might benefit from aggressive encoding, while later uploads refine with gentler scaling.
+2. **Convergence acceleration**: Upload-specific deltas allow the optimizer to adjust encoding per stage without adding circuit depth.
+3. **Reduced overfitting**: Adaptive encoding can help the model learn more robust representations, narrowing the train-test gap.
+
+Implementation:
+- Replace the fixed `FEATURE_SCALE` constant with a trainable `feature_scale_base` parameter.
+- Add three per-upload delta parameters: `feature_scale_delta_0`, `feature_scale_delta_1`, `feature_scale_delta_2`.
+- In the `feature_map` function, compute each wire's angle as `(feature_scale_base + feature_scale_delta_upload_index) * board[wire]`.
+- Initialize `feature_scale_base` to the original 2π/3 and deltas to small values (e.g., ±0.01).
+
+This adds only 4 new trainable parameters (1 base + 3 deltas) per block, scaling to 24 total parameters across all 6 blocks (3 uploads × 2 repeats). The modest parameter increase should improve generalization without significant computational overhead.
+
+Expected improvements:
+- Smoother gradient flow during training
+- Better test accuracy by learning upload-specific encoding strategies
+- Reduced generalization gap
+- Faster convergence in early epochs
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Problem constants
+N_QUBITS = 9
+N_UPLOADS = 3
+N_REPEATS = 2
+FEATURE_SCALE = 2 * np.pi / 3
+=======
+# Problem constants
+N_QUBITS = 9
+N_UPLOADS = 3
+N_REPEATS = 2
+FEATURE_SCALE_BASE = 2 * np.pi / 3
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+N_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS
+=======
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+# Add 4 feature-scale parameters per block: 1 base + 3 upload-specific deltas
+N_FEATURE_SCALE_PARAMS_PER_BLOCK = 4
+N_PARAMS_PER_BLOCK_WITH_FEATURE_SCALE = N_PARAMS_PER_BLOCK + N_FEATURE_SCALE_PARAMS_PER_BLOCK
+N_PARAMS = N_PARAMS_PER_BLOCK_WITH_FEATURE_SCALE * N_UPLOADS * N_REPEATS
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def feature_map(board: np.ndarray) -> None:
+    """Encode cell values -1, 0, +1 as equidistant Pauli-X rotations."""
+    for wire in range(N_QUBITS):
+        qml.RX(float(FEATURE_SCALE * int(board[wire])), wires=wire)
+=======
+def feature_map(board: np.ndarray, upload_index: int, params, block_index: int) -> None:
+    """Encode cell values -1, 0, +1 with upload-adaptive feature scaling.
+    
+    Computes angle as: (feature_scale_base + feature_scale_delta_upload) * board_value
+    """
+    # Extract feature-scale parameters from the block's parameter vector
+    offset = block_index * N_PARAMS_PER_BLOCK_WITH_FEATURE_SCALE
+    # Indices within the block: first N_PARAMS_PER_BLOCK are ansatz params,
+    # then 4 feature-scale params (base + 3 deltas)
+    feature_scale_base_idx = offset + N_PARAMS_PER_BLOCK
+    feature_scale_delta_idx = offset + N_PARAMS_PER_BLOCK + 1 + upload_index
+    
+    feature_scale_base = params[feature_scale_base_idx]
+    feature_scale_delta = params[feature_scale_delta_idx]
+    effective_scale = feature_scale_base + feature_scale_delta
+    
+    for wire in range(N_QUBITS):
+        qml.RX(float(effective_scale * int(board[wire])), wires=wire)
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(board, params):
+    """Full simulated circuit returning per-qubit Z expectations."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(board)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+=======
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(board, params):
+    """Full simulated circuit returning per-qubit Z expectations."""
+    for upload_index in range(N_UPLOADS):
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            feature_map(board, upload_index, params, block_index)
+            apply_ansatz_block(params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+=======
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK_WITH_FEATURE_SCALE
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def circuit_metadata(params) -> dict:
+    with qml.queuing.AnnotatedQueue() as queue:
+        for upload_index in range(N_UPLOADS):
+            feature_map(np.zeros(N_QUBITS, dtype=np.int8))
+            for repeat_index in range(N_REPEATS):
+                block_index = upload_index * N_REPEATS + repeat_index
+                apply_ansatz_block(params, block_index)
+    tape = qml.tape.QuantumScript.from_queue(queue)
+    operations = [(op.name, op.wires.tolist()) for op in tape.operations]
+    depth = tape.graph.get_depth() if hasattr(tape.graph, "get_depth") else len(operations)
+    return {
+        "operations": operations,
+        "depth": int(depth),
+        "gate_count": int(len(operations)),
+    }
+=======
+def circuit_metadata(params) -> dict:
+    with qml.queuing.AnnotatedQueue() as queue:
+        for upload_index in range(N_UPLOADS):
+            for repeat_index in range(N_REPEATS):
+                block_index = upload_index * N_REPEATS + repeat_index
+                feature_map(np.zeros(N_QUBITS, dtype=np.int8), upload_index, params, block_index)
+                apply_ansatz_block(params, block_index)
+    tape = qml.tape.QuantumScript.from_queue(queue)
+    operations = [(op.name, op.wires.tolist()) for op in tape.operations]
+    depth = tape.graph.get_depth() if hasattr(tape.graph, "get_depth") else len(operations)
+    return {
+        "operations": operations,
+        "depth": int(depth),
+        "gate_count": int(len(operations)),
+    }
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    params = pnp.array(rng.uniform(-0.05, 0.05, size=N_PARAMS), requires_grad=True)
+=======
+    # Initialize feature-scale parameters: base near FEATURE_SCALE_BASE, deltas near 0
+    params_init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    # For each block, set the feature_scale_base to be near FEATURE_SCALE_BASE
+    for block_idx in range(N_UPLOADS * N_REPEATS):
+        base_idx = block_idx * N_PARAMS_PER_BLOCK_WITH_FEATURE_SCALE + N_PARAMS_PER_BLOCK
+        params_init[base_idx] = float(FEATURE_SCALE_BASE) + rng.uniform(-0.01, 0.01)
+        # Deltas stay small (already in [-0.05, 0.05])
+    params = pnp.array(params_init, requires_grad=True)
+>>>>>>> REPLACE
+
+</DIFF>

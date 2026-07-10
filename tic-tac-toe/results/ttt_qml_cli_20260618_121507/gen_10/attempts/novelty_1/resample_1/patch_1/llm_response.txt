@@ -1,0 +1,48 @@
+Looking at the metrics, the best prior program (score 0.53) used a clean design: RY decoders, CRY line entanglers, and RY+RX readouts with 72 params. The current program (0.44) added redundant RX+RY input layers that hurt performance and increased params to 90.
+
+The key insight from the best performer: avoid wasted parametrization (RZ commutes with Z readout along feature direction), focus parameters on the line-segment entanglers and meaningful readout mixers. Let me adopt the winning structure but improve it.
+
+<NAME>
+ry_decoder_cry_lines_compact
+</NAME>
+
+<DESCRIPTION>
+The current program's extra RX input layer (alongside RY) adds parameters without clear benefit and matched the weaker 90-param design. The strongest prior program (0.53) used: a single RY orbit-shared sign decoder, CRY line entanglers (endpoint→edge, pair→center, center→edge broadcast), and RY+RX orbit-shared readouts — 12 params/block, 72 total.
+
+I restore that proven compact structure but add one improvement: instead of having both `ry_corner_out` AND `rx_corner_out` as separate full readout layers, I keep the RY+RX readout (which the best program used) but tie the decoder to be RY-only (removing the wasteful RX input layer in the current code). This removes the 3 extra RX-input params (rx_corner_in/rx_edge_in/rx_center_in) per block that the current 0.44 program introduced, bringing us back to the efficient 12 params/block × 6 = 72 total configuration that scored 0.53.
+
+This is parameter-efficient (fewer params, lower depth) and matches the architecture that demonstrably generalized best.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Orbit-shared local sign decoders.
+    # The fixed feature map is RX(±2π/3); trainable RX offsets help distinguish
+    # cross/circle signs, while sharing by board orbit improves parameter
+    # efficiency and respects tic-tac-toe symmetries.
+    {"gate": "RX", "wire": 0, "param": "rx_corner_in"},
+    {"gate": "RX", "wire": 2, "param": "rx_corner_in"},
+    {"gate": "RX", "wire": 4, "param": "rx_corner_in"},
+    {"gate": "RX", "wire": 6, "param": "rx_corner_in"},
+    {"gate": "RX", "wire": 1, "param": "rx_edge_in"},
+    {"gate": "RX", "wire": 3, "param": "rx_edge_in"},
+    {"gate": "RX", "wire": 5, "param": "rx_edge_in"},
+    {"gate": "RX", "wire": 7, "param": "rx_edge_in"},
+    {"gate": "RX", "wire": 8, "param": "rx_center_in"},
+
+    {"gate": "RY", "wire": 0, "param": "ry_corner_in"},
+=======
+ANSATZ_SPEC = [
+    # Orbit-shared local sign decoders.
+    # The fixed feature map is RX(±2π/3) which stores player sign in the Y
+    # quadrature; a single trainable RY layer (no wasted RX) converts that sign
+    # into measurable Z evidence.  Sharing by board orbit respects tic-tac-toe
+    # symmetry and keeps the block parameter-efficient (this matched the
+    # strongest prior ansatz at 72 total params).
+    {"gate": "RY", "wire": 0, "param": "ry_corner_in"},
+>>>>>>> REPLACE
+
+</DIFF>
+
+This change removes the redundant RX input layer (3 shared params per block), reverting to the proven 12-params-per-block / 72-total structure that achieved the best score (0.53) while lowering circuit depth and gate count. The RY decoder is the physically meaningful operation since the RX feature map encodes sign information in the Y-rotation quadrature that RY can extract into the Z basis.

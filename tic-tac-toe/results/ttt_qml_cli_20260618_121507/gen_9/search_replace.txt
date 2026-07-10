@@ -1,0 +1,101 @@
+Looking at the metrics, the best prior program (score 0.44) used CRY pair-to-middle gates with orbit-shared parameters and only 90 params. The current program (0.39) uses a fixed CZ kernel + RZ decoder that underperforms (train acc only 0.25, basically random).
+
+The key insight: the fixed CZ kernel and pure RZ decoder don't help because RZ commutes with the RX feature map's Z-readout in a way that wastes capacity. The best-performing program used **trainable CRY entanglers** that directly create nonlinear line features. I'll combine the best of both: keep the orbit-shared structure but replace the dead CZ-kernel/RZ-decode with productive trainable entanglers, and crucially add an RY decoder *before* entanglement to rotate sign-evidence into Z, plus distinct CRY motifs.
+
+<NAME>
+trainable_cry_line_features
+</NAME>
+
+<DESCRIPTION>
+The current program scores poorly (test acc 0.25, essentially random) because its first layer is pure RZ rotations which commute trivially with the RX feature map and PauliZ measurements, contributing almost nothing. The CZ "kernel" on all 12 edges also adds depth without trainable signal extraction.
+
+The best prior program (score 0.44) instead used trainable CRY entanglers on winning-line segments plus center aggregation/broadcast, giving useful nonlinear features. I rebuild the block around that proven recipe while keeping the compact D4-orbit parameter sharing:
+
+1. Replace the leading RZ decoders with RY decoders (RY rotates the player-sign Y-quadrature info toward measurable Z) — this is the productive direction, unlike RZ.
+2. Drop the heavy 12-edge CZ kernel (dead weight) and instead use trainable CRY entanglers along legal line segments (endpoint→midpoint), which directly build "two cells agree on a line" features.
+3. Keep the center aggregation and center broadcast CRY motifs that worked in the 0.44 program.
+4. Keep orbit-shared readout mixers (RY+RX) aligned with the measurement grouping.
+
+This keeps parameter count low (efficient) while restoring genuine trainable nonlinearity, which should lift accuracy well above the random baseline.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = []
+
+# D4-orbit local decoder.  The RX feature map stores player sign in the
+# transverse quadrature; a compact RZ/RY decoder lets repeated uploads convert
+# that sign into measurable Z evidence without using wire-specific overfit.
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": w, "param": "rz_corner_decode"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": w, "param": "rz_edge_decode"})
+ANSATZ_SPEC.append({"gate": "RZ", "wire": CENTER, "param": "rz_center_decode"})
+
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_corner_decode"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_edge_decode"})
+ANSATZ_SPEC.append({"gate": "RY", "wire": CENTER, "param": "ry_center_decode"})
+
+# Fixed phase interaction kernel on the legal tic-tac-toe adjacency graph.
+# Unlike the previous CNOT compressor, CZ preserves local readout channels while
+# injecting pairwise line correlations that become useful after re-uploading.
+for a, b in GRID_EDGES:
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [a, b]})
+
+# Soft line aggregation: endpoints feed their legal row/column midpoint qubits.
+# These midpoint qubits are exactly the fixed cross-readout pool.
+for a, b in (
+    (0, 1), (2, 1),
+    (2, 3), (4, 3),
+    (4, 5), (6, 5),
+    (6, 7), (0, 7),
+):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_endpoint_to_mid"})
+
+# Center aggregation for the center row and center column.  This supplies the
+# draw readout with explicit line-context while remaining adjacency-valid.
+for a, b in ((1, 8), (3, 8), (5, 8), (7, 8)):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_mid_to_center"})
+
+# Gentle center broadcast back to edge readouts.  Repeated uploads allow this
+# to approximate diagonal/middle-line evidence without illegal diagonal gates.
+for a, b in ((8, 1), (8, 3), (8, 5), (8, 7)):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_center_to_mid"})
+=======
+ANSATZ_SPEC = []
+
+# D4-orbit local sign decoder.  The RX feature map stores player sign in the
+# Y quadrature; trainable RY rotations convert that sign into measurable Z
+# evidence.  (Plain RZ here is wasted because it commutes with the Z readout
+# along the feature direction, which crippled the previous version.)
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_corner_decode"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_edge_decode"})
+ANSATZ_SPEC.append({"gate": "RY", "wire": CENTER, "param": "ry_center_decode"})
+
+# Trainable line-segment entanglers: each endpoint feeds its legal row/column
+# midpoint.  These CRY gates build genuine nonlinear "two cells agree on a
+# line" features and were the key ingredient of the strongest prior ansatz.
+for a, b in (
+    (0, 1), (2, 1),
+    (2, 3), (4, 3),
+    (4, 5), (6, 5),
+    (6, 7), (0, 7),
+):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_endpoint_to_mid"})
+
+# Center aggregation for the center row and center column.  This supplies the
+# draw readout with explicit line-context while remaining adjacency-valid.
+for a, b in ((1, 8), (3, 8), (5, 8), (7, 8)):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_mid_to_center"})
+
+# Gentle center broadcast back to edge readouts.  Repeated uploads allow this
+# to approximate diagonal/middle-line evidence without illegal diagonal gates.
+for a, b in ((8, 1), (8, 3), (8, 5), (8, 7)):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_center_to_mid"})
+>>>>>>> REPLACE
+
+</DIFF>

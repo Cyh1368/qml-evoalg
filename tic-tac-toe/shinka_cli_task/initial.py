@@ -494,7 +494,23 @@ def run_experiment(
         verbose,
     )
 
+    # Convergence protocol (2026-06 methodology fix): train to convergence via
+    # validation-L2-loss early stopping with restore-best-weights, instead of a
+    # fixed n_epochs budget.  ``n_epochs`` is now the HARD CAP (max_epochs).  The
+    # reported metrics are taken at the lowest-validation-loss epoch, matching the
+    # cemoid paper-replication analyses.  Env-overridable so eval presets can tune.
+    early_stopping = bool(int(os.environ.get("EARLY_STOPPING", "1")))
+    patience = int(os.environ.get("PATIENCE", "75"))
+    min_delta = float(os.environ.get("MIN_DELTA", "1e-4"))
+    best_val_loss = float("inf")
+    best_params = params.copy()
+    best_epoch = 0
+    epochs_no_improve = 0
+    stop_reason = "max_epochs"
+    stopped_epoch = 0
+
     for epoch in range(1, n_epochs + 1):
+        stopped_epoch = epoch
         order = rng.permutation(len(x_train))
         last_batch_loss = None
         for step in range(steps_per_epoch):
@@ -507,28 +523,42 @@ def run_experiment(
             )
             global_step += 1
 
-        if epoch == 1 or epoch == n_epochs or epoch % eval_every_epochs == 0:
-            train_metrics = evaluate_split(params, x_train, y_train)
-            validation_metrics = evaluate_split(params, x_validation, y_validation)
-            test_metrics = evaluate_split(params, x_test, y_test)
-            if convergence_epoch is None and validation_metrics["accuracy"] >= convergence_threshold:
-                convergence_epoch = epoch
-                convergence_step = global_step
-            record = {
-                "event": "epoch",
-                "epoch": int(epoch),
-                "global_step": int(global_step),
-                "batch_loss": float(last_batch_loss),
-                "train_accuracy": train_metrics["accuracy"],
-                "validation_accuracy": validation_metrics["accuracy"],
-                "test_accuracy": test_metrics["accuracy"],
-                "train_loss": train_metrics["loss"],
-                "validation_loss": validation_metrics["loss"],
-                "test_loss": test_metrics["loss"],
-            }
-            history.append(record)
-            _log(record, log_file, verbose)
+        # Evaluate every epoch: validation loss drives early stopping.
+        train_metrics = evaluate_split(params, x_train, y_train)
+        validation_metrics = evaluate_split(params, x_validation, y_validation)
+        test_metrics = evaluate_split(params, x_test, y_test)
+        if convergence_epoch is None and validation_metrics["accuracy"] >= convergence_threshold:
+            convergence_epoch = epoch
+            convergence_step = global_step
+        record = {
+            "event": "epoch",
+            "epoch": int(epoch),
+            "global_step": int(global_step),
+            "batch_loss": float(last_batch_loss),
+            "train_accuracy": train_metrics["accuracy"],
+            "validation_accuracy": validation_metrics["accuracy"],
+            "test_accuracy": test_metrics["accuracy"],
+            "train_loss": train_metrics["loss"],
+            "validation_loss": validation_metrics["loss"],
+            "test_loss": test_metrics["loss"],
+        }
+        history.append(record)
+        _log(record, log_file, verbose)
 
+        # Validation-loss early stopping with restore-best-weights.
+        if validation_metrics["loss"] < best_val_loss - min_delta:
+            best_val_loss = validation_metrics["loss"]
+            best_params = params.copy()
+            best_epoch = epoch
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+            if early_stopping and epochs_no_improve >= patience:
+                stop_reason = "early_stopping"
+                break
+
+    # Restore best-validation weights; all reported metrics are taken there.
+    params = best_params
     final_train = evaluate_split(params, x_train, y_train)
     final_validation = evaluate_split(params, x_validation, y_validation)
     final_test = evaluate_split(params, x_test, y_test)
@@ -558,6 +588,17 @@ def run_experiment(
         "convergence_epoch": convergence_epoch,
         "convergence_step": convergence_step,
         "max_steps": max_steps,
+        "best_epoch": best_epoch,
+        "stopped_epoch": stopped_epoch,
+        "stop_reason": stop_reason,
+        "best_val_loss": float(best_val_loss),
+        "early_stopping_cfg": {
+            "monitor": "val_loss",
+            "patience": patience,
+            "min_delta": min_delta,
+            "max_epochs": n_epochs,
+            "restore_best_weights": True,
+        },
         "history_tail": history[-10:],
     }
     _log({"event": "final", **result}, log_file, verbose)

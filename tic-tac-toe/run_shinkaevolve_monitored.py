@@ -28,6 +28,20 @@ DEFAULT_GENERATIONS = 20
 DEFAULT_STALE_SECONDS = 30 * 60
 DEFAULT_POLL_SECONDS = 10
 DEFAULT_EVAL_PRESET = "quick"
+DEFAULT_LLM_PRESET = "expensive"
+
+LLM_PRESETS = {
+    "expensive": [
+        "openrouter/anthropic/claude-opus-4.8",
+        "openrouter/openai/gpt-5.5",
+        "openrouter/google/gemini-3.5-flash",
+    ],
+    "cheap": [
+        "openrouter/anthropic/claude-haiku-4.5",
+        "openrouter/openai/gpt-5-mini",
+        "openrouter/google/gemini-3-flash-preview",
+    ],
+}
 
 
 WRITEFILE_RE = re.compile(r"^%%writefile\s+(?P<target>\S+)\s*$")
@@ -85,6 +99,26 @@ EVAL_PRESETS = {
         "LEARNING_RATE": "0.03",
         "CONVERGENCE_THRESHOLD": "0.90",
         "EVAL_EVERY_EPOCHS": "1",
+        "VERBOSE_TRAINING": "1",
+    },
+    # Correct stopping criterion (2026-06): the seed program now trains to
+    # convergence via validation-loss early stopping + restore-best-weights, so
+    # N_EPOCHS here is the HARD CAP (max_epochs) — matching the cemoid analyses.
+    # This replaces the flawed fixed-3-epoch "quick" eval used by earlier runs.
+    "converged": {
+        "NUM_RUNS": "1",
+        "TRAIN_SIZE": "450",
+        "VALIDATION_SIZE": "300",
+        "TEST_SIZE": "600",
+        "N_EPOCHS": "1000",
+        "STEPS_PER_EPOCH": "30",
+        "BATCH_SIZE": "15",
+        "LEARNING_RATE": "0.03",
+        "CONVERGENCE_THRESHOLD": "0.90",
+        "EVAL_EVERY_EPOCHS": "1",
+        "EARLY_STOPPING": "1",
+        "PATIENCE": "75",
+        "MIN_DELTA": "1e-4",
         "VERBOSE_TRAINING": "1",
     },
 }
@@ -274,6 +308,11 @@ def write_eval_activate_script(
         "set -e\n",
         f"source {shlex.quote(str(venv_activate_script))}\n",
     ]
+    # Bake the OpenRouter key in so evaluator subprocesses always have it,
+    # regardless of whether they inherit the parent environment.
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
+    if openrouter_key:
+        lines.append(f'export OPENROUTER_API_KEY="${{OPENROUTER_API_KEY:-{openrouter_key}}}"\n')
     for key in sorted(eval_settings):
         value = eval_settings[key]
         lines.append(f'export {key}="${{{key}:-{value}}}"\n')
@@ -289,6 +328,7 @@ def write_shinka_config(
     task_dir: Path,
     activate_script: Path,
     max_api_costs: float,
+    llm_preset: str = DEFAULT_LLM_PRESET,
 ) -> Path:
     task_sys_msg = extract_task_prompt(notebook_path)
     config = {
@@ -298,10 +338,7 @@ def write_shinka_config(
             "patch_type_probs": [0.65, 0.25, 0.10],
             "max_patch_resamples": 3,
             "max_patch_attempts": 2,
-            "llm_models": [
-                "openrouter/anthropic/claude-haiku-4-5",
-                "openrouter/openai/gpt-5-nano",
-            ],
+            "llm_models": LLM_PRESETS[llm_preset],
             "llm_kwargs": {
                 "temperatures": [0.0, 0.5, 1.0],
                 "max_tokens": 16384,
@@ -627,6 +664,7 @@ def write_report(
     finished_at: float,
     stale_seconds: int,
     eval_preset: str,
+    llm_preset: str,
     eval_settings: dict[str, str],
 ) -> None:
     payload = {
@@ -638,6 +676,7 @@ def write_report(
         "results_dir": str(results_dir),
         "command": command,
         "eval_preset": eval_preset,
+        "llm_preset": llm_preset,
         "eval_settings": eval_settings,
         "extracted_files": [asdict(item) for item in extracted_files],
         "progress": asdict(progress),
@@ -674,6 +713,12 @@ def parse_args() -> argparse.Namespace:
         "--smoke-eval",
         action="store_true",
         help="Alias for --eval-preset smoke.",
+    )
+    parser.add_argument(
+        "--llm-preset",
+        choices=sorted(LLM_PRESETS),
+        default=DEFAULT_LLM_PRESET,
+        help="LLM model preset for proposals. 'expensive' uses Opus/GPT-5.5/Gemini-3.5-flash; 'cheap' uses Haiku/GPT-5-mini/Gemini-3-flash-preview.",
     )
     parser.add_argument("--num-runs", type=int, default=None)
     parser.add_argument("--num-workers", type=int, default=None)
@@ -719,6 +764,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    # Load .env from the repo root before any API key checks.
+    try:
+        import dotenv
+        dotenv.load_dotenv(repo_root() / ".env", override=False)
+    except Exception:
+        pass
+
     args = parse_args()
     repo = repo_root()
     notebook_path = (repo / args.notebook).resolve()
@@ -726,7 +778,8 @@ def main() -> int:
     run_id = datetime.now().strftime("ttt_qml_cli_%Y%m%d_%H%M%S")
     results_dir = (repo / args.results_dir).resolve() if args.results_dir else repo / "results" / run_id
     activate_script = (repo / ".venv-shinka-ttt" / "bin" / "activate").resolve()
-    shinka_run = (repo / ".venv-shinka-ttt" / "bin" / "shinka_run").resolve()
+    # Use the venv python directly (don't resolve — the symlink itself sets sys.prefix correctly).
+    venv_python = repo / ".venv-shinka-ttt" / "bin" / "python3"
 
     if args.num_generations <= 0:
         raise ValueError("--num-generations must be > 0")
@@ -738,8 +791,8 @@ def main() -> int:
         raise FileNotFoundError(f"Notebook not found: {notebook_path}")
     if not activate_script.exists():
         raise FileNotFoundError(f"Activation script not found: {activate_script}")
-    if not shinka_run.exists():
-        raise FileNotFoundError(f"shinka_run not found: {shinka_run}")
+    if not venv_python.exists():
+        raise FileNotFoundError(f"venv python3 not found: {venv_python}")
     if not args.allow_missing_api_key and not os.environ.get("OPENROUTER_API_KEY"):
         raise RuntimeError(
             "OPENROUTER_API_KEY is not set. Export it, or pass "
@@ -760,6 +813,7 @@ def main() -> int:
         task_dir=task_dir,
         activate_script=eval_activate_script,
         max_api_costs=args.max_api_costs,
+        llm_preset=args.llm_preset,
     )
     manifest_path = task_dir / "notebook_extract_manifest.json"
     manifest_path.write_text(
@@ -770,6 +824,7 @@ def main() -> int:
                 "files": [asdict(item) for item in extracted_files],
                 "config": str(config_path),
                 "eval_preset": eval_preset,
+                "llm_preset": args.llm_preset,
                 "eval_settings": eval_settings,
                 "eval_activate_script": str(eval_activate_script),
             },
@@ -781,7 +836,7 @@ def main() -> int:
 
     env = build_environment(repo=repo, eval_settings=eval_settings)
     command = [
-        str(shinka_run),
+        str(venv_python), "-m", "shinka.cli.run",
         "--task-dir",
         str(task_dir),
         "--results_dir",
@@ -797,6 +852,7 @@ def main() -> int:
         print(f"  {item.notebook_target} -> {item.output_path} ({item.sha256[:12]})")
     print(f"Config: {config_path}")
     print(f"Eval preset: {eval_preset}")
+    print(f"LLM preset: {args.llm_preset} {LLM_PRESETS[args.llm_preset]}")
     print(f"Eval activation wrapper: {eval_activate_script}")
     print(f"Results: {results_dir}")
     print(f"Stale timeout: {args.stale_seconds}s")
@@ -819,7 +875,7 @@ def main() -> int:
         bufsize=1,
         start_new_session=True,
     )
-    print(f"Started shinka_run PID {process.pid}")
+    print(f"Started shinka PID {process.pid}")
 
     try:
         status, progress = monitor_process(
@@ -847,6 +903,7 @@ def main() -> int:
         finished_at=finished_at,
         stale_seconds=args.stale_seconds,
         eval_preset=eval_preset,
+        llm_preset=args.llm_preset,
         eval_settings=eval_settings,
     )
 

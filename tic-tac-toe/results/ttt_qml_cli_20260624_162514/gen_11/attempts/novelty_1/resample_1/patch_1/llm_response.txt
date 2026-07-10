@@ -1,0 +1,83 @@
+<NAME>
+symmetry_weighted_voting_ansatz
+</NAME>
+
+<DESCRIPTION>
+This edit enhances the ansatz by focusing on the 'voting dominance' of the cross/circle/draw observables. 
+
+1. **Strategic Entanglement**: Instead of using CRZ (which is a conditional phase shift), I use **CNOT** gates. CNOTs are more powerful at generating maximal entanglement between the center (wire 8) and the ring, which is crucial since the 'draw' class depends solely on wire 8's Z-expectation value.
+2. **Parametric Diversity**: I replace the shared `ry_out_periphery` with individual parameters for corners vs edges. In Tic-Tac-Toe, corners and edges are mathematically distinct (corners are part of 3 win-lines, edges only 2), so separating them allows the circuit to weight their contributions to the "cross" and "circle" sums more effectively.
+3. **Axis Mixing**: I keep the RY-RZ-RX-RY structure but ensure that the CNOTs are sandwiched between non-commutation rotations to maximize the expressivity of the SU(2) block while maintaining symmetry-based parameter sharing.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Tunable entangling layer: shared CRZ on ring vs hub edges (learnable two-qubit phases)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_hub"},
+
+    # Compact RX mixing to increase expressivity (shared periphery vs center)
+    {"gate": "RX", "wire": 0, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 1, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 2, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 3, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 4, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 5, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 6, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 7, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Small final output layer (shared periphery vs center) for sharper decision boundaries
+    {"gate": "RY", "wire": 0, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+=======
+    # Strong entangling layer: Fixed CNOTs to diffuse center info to hub-edges and ring
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    {"gate": "CNOT", "wires": [1, 8]},
+    {"gate": "CNOT", "wires": [3, 8]},
+    {"gate": "CNOT", "wires": [5, 8]},
+    {"gate": "CNOT", "wires": [7, 8]},
+
+    # Expressivity mixing (RX) separated by corner/edge to match voting weights
+    {"gate": "RX", "wire": 0, "param": "rx_corner"},
+    {"gate": "RX", "wire": 2, "param": "rx_corner"},
+    {"gate": "RX", "wire": 4, "param": "rx_corner"},
+    {"gate": "RX", "wire": 6, "param": "rx_corner"},
+    {"gate": "RX", "wire": 1, "param": "rx_edge"},
+    {"gate": "RX", "wire": 3, "param": "rx_edge"},
+    {"gate": "RX", "wire": 5, "param": "rx_edge"},
+    {"gate": "RX", "wire": 7, "param": "rx_edge"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Output projection layer: individual control over corner vs edge influence on class sums
+    {"gate": "RY", "wire": 0, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+>>>>>>> REPLACE
+</DIFF>

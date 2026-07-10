@@ -1,0 +1,70 @@
+<NAME>
+symmetry_breaking_ring_ansatz
+</NAME>
+
+<DESCRIPTION>
+This ansatz improves upon previous iterations by combining grid-symmetry-aware parameter sharing with a more robust entangling structure. 
+Key improvements:
+1. **Symmetry-Specific Initial Rotations**: Uses distinct parameters for corners, edges, and the center to reflect the different roles these cells play in Tic-Tac-Toe strategies.
+2. **Double-Layer Entanglement**: Implements a 'ring' of CZ gates (connecting the perimeter) followed by a 'spoke' of CRZ gates (connecting edges to the center). This ensures information from the board's center (qubit 8) propagates efficiently to all decision boundaries.
+3. **Asymmetric Parameterization**: While gates are applied symmetrically, we use separate parameters for 'corner' and 'edge' groups to allow the model to learn the distinct importance of corner control versus edge blocking.
+4. **Output Sharpening**: A final RY layer with shared parameters acts as a trainable decision-boundary refiner before measurement.
+</DESCRIPTION>
+
+<CODE>
+```python
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # 1. Initial Symmetry-Aware RY Layer
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # 2. Ring Entanglement (Fixed CZ for depth efficiency)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # 3. Hub-and-Spoke Parametrized Entanglement
+    # Connects edges to center to allow center-state to influence all lines.
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_hub"},
+
+    # 4. Local Phase Correction
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # 5. Final Mixing and Output Alignment
+    {"gate": "RX", "wire": 0, "param": "rx_final"},
+    {"gate": "RX", "wire": 1, "param": "rx_final"},
+    {"gate": "RX", "wire": 2, "param": "rx_final"},
+    {"gate": "RX", "wire": 3, "param": "rx_final"},
+    {"gate": "RX", "wire": 4, "param": "rx_final"},
+    {"gate": "RX", "wire": 5, "param": "rx_final"},
+    {"gate": "RX", "wire": 6, "param": "rx_final"},
+    {"gate": "RX", "wire": 7, "param": "rx_final"},
+    {"gate": "RX", "wire": 8, "param": "rx_final"},
+]
+# EVOLVE-BLOCK-END
+```
+</CODE>

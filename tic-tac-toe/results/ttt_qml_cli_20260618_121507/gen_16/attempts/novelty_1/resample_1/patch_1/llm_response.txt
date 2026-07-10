@@ -1,0 +1,72 @@
+<NAME>
+distinct_per_orbit_entanglers_with_pre_phase
+</NAME>
+
+<DESCRIPTION>
+The current ansatz shares a single parameter across all 8 perimeter CRY gates, all 4 center-aggregator CRY gates, and all 4 center-broadcast CRY gates. While symmetry-inspired, this over-sharing severely limits expressivity (train accuracy is only 0.43, indicating underfitting). The key insight from the prior programs is that distinguishing the perimeter segments by *direction* (endpoint→mid vs mid→endpoint) and adding a pre-entanglement phase layer raised expressivity.
+
+This edit:
+1. Splits the single perimeter `cry_pair_to_edge` into two directional families (endpoint→mid and mid→endpoint), giving bidirectional coupling along winning-line segments — the strongest motif from prior top circuits.
+2. Adds a lightweight orbit-shared RZ pre-entanglement phase layer (only 3 params) so each qubit has a 2-axis frame before the CRY mixers, which does not commute through them (unlike a terminal RZ near a Z readout).
+
+This adds only ~5 params per block (72 → ~102 total), keeping us within the gate budget while substantially raising expressivity to close the underfitting gap.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RY", "wire": 8, "param": "ry_center_in"},
+
+    # Pair-to-middle controlled rotations on adjacent cells belonging to
+    # tic-tac-toe winning-line segments.  These gates create trainable nonlinear
+    # features for "two cells agree around a line midpoint".
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_pair_to_edge"},
+    {"gate": "CRY", "wires": [2, 1], "param": "cry_pair_to_edge"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_pair_to_edge"},
+    {"gate": "CRY", "wires": [4, 3], "param": "cry_pair_to_edge"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_pair_to_edge"},
+    {"gate": "CRY", "wires": [6, 5], "param": "cry_pair_to_edge"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_pair_to_edge"},
+    {"gate": "CRY", "wires": [0, 7], "param": "cry_pair_to_edge"},
+=======
+    {"gate": "RY", "wire": 8, "param": "ry_center_in"},
+
+    # Orbit-shared pre-entanglement phase layer.  RZ after the RY decoder gives
+    # each qubit a 2-axis local frame before the CRY mixers; because RZ does not
+    # commute through the subsequent CRY gates, this adds genuine expressivity
+    # at the cost of only 3 shared parameters.
+    {"gate": "RZ", "wire": 0, "param": "rz_corner_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge_pre"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center_pre"},
+
+    # Endpoint -> midpoint controlled rotations on adjacent cells belonging to
+    # tic-tac-toe winning-line segments.  These gates create trainable nonlinear
+    # features for "two cells agree around a line midpoint".
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_endpoint_to_mid"},
+    {"gate": "CRY", "wires": [2, 1], "param": "cry_endpoint_to_mid"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_endpoint_to_mid"},
+    {"gate": "CRY", "wires": [4, 3], "param": "cry_endpoint_to_mid"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_endpoint_to_mid"},
+    {"gate": "CRY", "wires": [6, 5], "param": "cry_endpoint_to_mid"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_endpoint_to_mid"},
+    {"gate": "CRY", "wires": [0, 7], "param": "cry_endpoint_to_mid"},
+
+    # Reverse perimeter entanglers: midpoint feeds its corner endpoints, giving
+    # bidirectional coupling along every perimeter winning-line segment so the
+    # corner readouts can absorb edge evidence (one extra shared parameter).
+    {"gate": "CRY", "wires": [1, 0], "param": "cry_mid_to_endpoint"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_mid_to_endpoint"},
+    {"gate": "CRY", "wires": [3, 2], "param": "cry_mid_to_endpoint"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_mid_to_endpoint"},
+    {"gate": "CRY", "wires": [5, 4], "param": "cry_mid_to_endpoint"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_mid_to_endpoint"},
+    {"gate": "CRY", "wires": [7, 6], "param": "cry_mid_to_endpoint"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_mid_to_endpoint"},
+>>>>>>> REPLACE
+
+</DIFF>
