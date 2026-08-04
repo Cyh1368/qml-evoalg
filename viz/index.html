@@ -280,12 +280,19 @@
   .patch-actions { margin-top: 14px; }
 
   /* ---------- detail grid ---------- */
-  .detail-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; align-items: start; }
-  @media (max-width: 900px) { .detail-grid { grid-template-columns: 1fr; } }
+  .detail-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+  @media (max-width: 900px) { .detail-grid { grid-template-columns: minmax(0, 1fr); } }
+  .detail-grid > * { min-width: 0; }
 
   .circuit-body { overflow: auto; max-width: 100%; }
   .circuit-svg-wrap { overflow: auto; max-width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px; background: var(--page); }
-  .circuit-svg-wrap svg { display: block; max-width: none; }
+  /* scale the circuit down to the card width; wrap still scrolls if a
+     drawing is too dense to stay legible when shrunk */
+  .circuit-svg-wrap svg { display: block; max-width: 100%; height: auto; min-width: 420px; }
+  .circuit-svg-wrap { cursor: zoom-in; }
+  .circuit-svg-wrap.natural { cursor: zoom-out; }
+  .circuit-svg-wrap.natural svg { max-width: none; }
+  .circuit-hint { font-size: 12px; margin-top: 6px; }
   .circuit-pre {
     font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     background: var(--page);
@@ -1235,7 +1242,10 @@
     if (p.circuit_svg && looksLikeSvg(p.circuit_svg)) {
       var wrap = el("div", "circuit-svg-wrap");
       wrap.innerHTML = p.circuit_svg; // contract: trusted inline <svg> markup, guarded by looksLikeSvg()
+      wrap.title = "Click to toggle fit / actual size";
+      wrap.addEventListener("click", function () { wrap.classList.toggle("natural"); });
       body.appendChild(wrap);
+      body.appendChild(el("p", "muted circuit-hint", "Gate boxes show parameter names; repeated names = shared parameters. Click the circuit to toggle fit ↔ actual size."));
     } else if (p.circuit_text) {
       var pre = document.createElement("pre");
       pre.className = "circuit-pre";

@@ -150,6 +150,52 @@ def param_value_table(spec: list) -> dict:
     return {p: round(0.15 + 0.083 * i, 3) for i, p in enumerate(order)}
 
 
+# While True (the mpl drawer), parameter names are appended on a second line
+# inside the gate box; the text drawer chokes on newlines, so it gets an
+# inline "RZ(rz_3)" form instead.
+_MULTILINE_LABELS = True
+
+# Synthetic angle value -> parameter name for the circuit currently being
+# drawn. The drawer pipeline rebuilds ops (map_wires on controlled gates),
+# so per-instance label overrides get lost; the parameter VALUE survives any
+# rebuild, and param_value_table() makes it unique per name. Class-level
+# label patches below use this map.
+_VALUE2NAME: dict = {}
+
+
+def _value_key(op):
+    try:
+        if op.parameters:
+            return round(float(op.parameters[0]), 6)
+    except Exception:
+        pass
+    return None
+
+
+def _install_label_patches() -> None:
+    """Patch label() on our gate classes to append the parameter name
+    (angles here are synthetic placeholders, so names — i.e. which gates
+    share a parameter — are the only meaningful thing to display)."""
+    from pennylane.ops.op_math.controlled import Controlled
+
+    classes = set(GATE_1Q.values()) | set(GATE_2Q_PARAM.values())
+    classes |= {qml.MultiRZ, Controlled}
+    for cls in classes:
+        if "_viz_patched" in cls.__dict__:  # own-dict check: subclasses of a
+            continue                        # patched class still need their own wrap
+        orig = cls.label
+
+        def label(self, decimals=None, base_label=None, cache=None, _orig=orig):
+            base = _orig(self, decimals=None, base_label=base_label, cache=cache)
+            name = _VALUE2NAME.get(_value_key(self))
+            if not name or name in base:  # 'in base': Controlled delegates to
+                return base               # its base op, which is also patched
+            return f"{base}\n{name}" if _MULTILINE_LABELS else f"{base}({name})"
+
+        cls.label = label
+        cls._viz_patched = True  # noqa: B010 — must land in cls.__dict__
+
+
 def apply_spec(spec: list, values: dict) -> None:
     for item in spec:
         gate = str(item.get("gate", "")).strip().upper()
@@ -157,17 +203,18 @@ def apply_spec(spec: list, values: dict) -> None:
         param = item.get("param")
         angle = values.get(param, 0.5) if isinstance(param, str) else 0.5
         if gate in GATE_1Q:
-            GATE_1Q[gate](angle, wires=wires[0])
+            op = GATE_1Q[gate](angle, wires=wires[0])
         elif gate in GATE_2Q_FIXED:
-            GATE_2Q_FIXED[gate](wires=wires)
+            op = GATE_2Q_FIXED[gate](wires=wires)
         elif gate in GATE_2Q_PARAM:
-            GATE_2Q_PARAM[gate](angle, wires=wires)
+            op = GATE_2Q_PARAM[gate](angle, wires=wires)
         elif gate == "ZZZ":
-            qml.MultiRZ(angle, wires=wires)
+            op = qml.MultiRZ(angle, wires=wires)
         elif gate == "CCRZ":
-            qml.ctrl(qml.RZ, control=wires[:2])(angle, wires=wires[2])
+            op = qml.ctrl(qml.RZ, control=wires[:2])(angle, wires=wires[2])
         else:
             raise ValueError(f"unsupported gate type {gate!r}")
+        del op  # labels come from _VALUE2NAME via the class-level patches
 
 
 def build_qnode(spec: list, n_qubits: int | None):
@@ -175,6 +222,9 @@ def build_qnode(spec: list, n_qubits: int | None):
     n_wires = max(int(n_qubits or 0), max_wire + 1)
     dev = qml.device("default.qubit", wires=n_wires, shots=None)
     values = param_value_table(spec)
+    _install_label_patches()
+    _VALUE2NAME.clear()
+    _VALUE2NAME.update({round(v, 6): p for p, v in values.items()})
 
     @qml.qnode(dev)
     def circuit():
@@ -201,6 +251,8 @@ def render_one(code: str) -> dict:
                 "error": f"{type(exc).__name__}: {exc}"}
 
     svg_error = None
+    global _MULTILINE_LABELS
+    _MULTILINE_LABELS = True
     try:
         with _alarm_guard():
             fig, _ax = draw_mpl(circuit)()
@@ -217,6 +269,7 @@ def render_one(code: str) -> dict:
             pass
 
     try:
+        _MULTILINE_LABELS = False
         with _alarm_guard():
             text = qml.draw(circuit, max_length=200)()
         return {"circuit_svg": None, "circuit_text": text,
