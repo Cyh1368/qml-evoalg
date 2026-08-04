@@ -1,0 +1,99 @@
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 0. Pre-entanglement rotation layer, axis RX: ALL 8 qubits share the SAME
+#    single trainable parameter "theta". Combined with the RY layer below
+#    (different, non-commuting axis, no entangler in between) this gives a
+#    richer per-qubit rotation while keeping only ONE trainable parameter
+#    for the entire block.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+
+# 1. Pre-entanglement rotation layer, axis RY, reusing the SAME "theta".
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 2. Nearest-neighbor ring, alternating between a parametrized XX
+#    interaction (reusing the SAME shared "theta" parameter, no new
+#    trainable name introduced) and a fixed, zero-parameter CZ gate. This
+#    non-commuting tunable interaction directly inside the entangling
+#    ring is the key ingredient behind the fastest observed convergence
+#    (30 steps) among prior single-parameter, perfect-accuracy designs.
+for i in range(N_QUBITS):
+    a, b = i, (i + 1) % N_QUBITS
+    if i % 2 == 0:
+        ANSATZ_SPEC.append({"gate": "XX", "wires": [a, b], "param": "theta"})
+    else:
+        ANSATZ_SPEC.append({"gate": "CZ", "wires": [a, b]})
+
+# 3. Fixed, zero-parameter antipodal shortcuts (distance-4 on the
+#    8-cycle) for long-range connectivity. Kept lightweight (only 4
+#    gates, no extra skip-2 sub-ring) to minimize depth/gate-count while
+#    preserving global connectivity across the register.
+for i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + N_QUBITS // 2]})
+
+# 4. Post-entanglement rotation layer, axis RZ, reusing the SAME "theta"
+#    parameter, keeping the total unique parameter count per block at
+#    exactly 1.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+
+# 5. Second stacked sub-block, fully reusing the SAME shared "theta"
+#    parameter (no new trainable name), to deepen the circuit and boost
+#    expressivity/convergence speed while keeping parameter economy
+#    identical to the single-block design.
+
+# 5a. Rotation layer, axis RX then RY, both reusing "theta".
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 5b. Nearest-neighbor ring, alternating parametrized XX (theta) and
+#     fixed CZ, mirroring the first block's entangling ring.
+for i in range(N_QUBITS):
+    a, b = i, (i + 1) % N_QUBITS
+    if i % 2 == 0:
+        ANSATZ_SPEC.append({"gate": "XX", "wires": [a, b], "param": "theta"})
+    else:
+        ANSATZ_SPEC.append({"gate": "CZ", "wires": [a, b]})
+
+# 5c. Lightweight zero-parameter skip-2 sub-ring for extra connectivity.
+for i in range(0, N_QUBITS, 2):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 2) % N_QUBITS]})
+
+# 5d. Antipodal shortcuts, alternating fixed CZ and parametrized CRX
+#     (theta) for long-range tunable interaction without new parameters.
+for i in range(N_QUBITS // 2):
+    a, b = i, i + N_QUBITS // 2
+    if i % 2 == 0:
+        ANSATZ_SPEC.append({"gate": "CZ", "wires": [a, b]})
+    else:
+        ANSATZ_SPEC.append({"gate": "CRX", "wires": [a, b], "param": "theta"})
+
+# 5e. Closing rotation layer, axis RZ, reusing "theta".
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

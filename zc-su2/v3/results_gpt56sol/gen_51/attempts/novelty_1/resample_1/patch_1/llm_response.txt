@@ -1,0 +1,59 @@
+<NAME>
+shared_global_staggered
+</NAME>
+
+<DESCRIPTION>
+Use a strongly regularized, symmetry-aware ansatz with one shared trainable angle instead of separate even/odd parameters. Alternating RY/RX rotations retain axis diversity without increasing parameter count. Antipodal CZ links first establish global correlations, followed by staggered ring links and then nearest-neighbor brickwork; this tests a different information-flow ordering while reducing depth and gate count relative to the current program.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Shared-parameter global-to-local quantum ansatz."""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # A single shared angle provides strong small-data regularization while
+    # alternating axes avoids collapsing all qubits onto one local operation.
+    {"gate": "RY", "wire": 0, "param": "shared_mix"},
+    {"gate": "RX", "wire": 1, "param": "shared_mix"},
+    {"gate": "RY", "wire": 2, "param": "shared_mix"},
+    {"gate": "RX", "wire": 3, "param": "shared_mix"},
+    {"gate": "RY", "wire": 4, "param": "shared_mix"},
+    {"gate": "RX", "wire": 5, "param": "shared_mix"},
+    {"gate": "RY", "wire": 6, "param": "shared_mix"},
+    {"gate": "RX", "wire": 7, "param": "shared_mix"},
+
+    # Establish diameter-scale correlations first.
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Propagate correlations through staggered ring boundaries.
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Finish with disjoint nearest-neighbor refinement.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

@@ -1,0 +1,32 @@
+<NAME>
+diameter_alternating_split
+</NAME>
+
+<DESCRIPTION>
+Replace the single shared "crz_diam" parameter in `_diameter_crz` with two alternating parameters (`crz_diam_even` for pairs [0,4] and [2,6], `crz_diam_odd` for pairs [1,5] and [3,7]). This mirrors the alternating-strength motif already used successfully in the ring entanglement layer (Gen35/Gen38 lineage), giving the global antipodal connections slightly more expressive freedom (2 params instead of 1) while still keeping parameter count low and preserving the shared-parameter regularization benefit. This should improve mixing/expressivity for global correlations without meaningfully increasing parameter count or depth.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _diameter_crz(n, param="crz_diam"):
+    """Antipodal (distance n/2) entanglement with a single shared parameter.
+    Collapsing the previous two-parameter alternating scheme into one
+    shared knob reduces training-time variance while still giving global
+    connectivity at minimal parameter cost."""
+    half = n // 2
+    return [{"gate": "CRZ", "wires": [i, i + half], "param": param} for i in range(half)]
+=======
+def _diameter_crz(n, even_param="crz_diam_even", odd_param="crz_diam_odd"):
+    """Antipodal (distance n/2) entanglement with alternating shared
+    parameters. Splitting the single shared diameter knob into an
+    even/odd pair (mirroring the ring entanglement's alternating-strength
+    motif) gives the global antipodal connections a bit more expressive
+    freedom while still costing only two parameters total."""
+    half = n // 2
+    gates = []
+    for i in range(half):
+        param = even_param if i % 2 == 0 else odd_param
+        gates.append({"gate": "CRZ", "wires": [i, i + half], "param": param})
+    return gates
+>>>>>>> REPLACE
+</DIFF>

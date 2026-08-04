@@ -1,0 +1,109 @@
+<NAME>
+dual_stacked_theta_block_with_skip2
+</NAME>
+
+<DESCRIPTION>
+Building on the observation that adding the skip-2 CZ sub-ring (step 2b in the earlier 30-step-convergence seed) dramatically cut convergence steps (30 vs. 120) without changing accuracy or parameter count, and following the recommendation to stack a second copy of the compact entangling block while reusing the SAME single shared parameter "theta", this edit: (1) restores the lightweight skip-2 CZ ring (0-2,2-4,4-6,6-0) that was dropped in the current candidate, and (2) duplicates the entire RX→RY→(XX/CZ ring)→skip-2 CZ→antipodal CZ→RZ block back-to-back within the same repetition, still reusing "theta" everywhere. This keeps the trainable-parameter count identical (n_params stays at 8, one per outer repetition) while roughly doubling circuit depth/expressivity, which prior experiments show speeds up convergence substantially at essentially no parameter cost — directly targeting the "converge in fewer steps" criterion of the combined score.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 0. Pre-entanglement rotation layer, axis RX: ALL 8 qubits share the SAME
+#    single trainable parameter "theta". Combined with the RY layer below
+#    (different, non-commuting axis, no entangler in between) this gives a
+#    richer per-qubit rotation while keeping only ONE trainable parameter
+#    for the entire block.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+
+# 1. Pre-entanglement rotation layer, axis RY, reusing the SAME "theta".
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 2. Nearest-neighbor ring, alternating between a parametrized XX
+#    interaction (reusing the SAME shared "theta" parameter, no new
+#    trainable name introduced) and a fixed, zero-parameter CZ gate. This
+#    non-commuting tunable interaction directly inside the entangling
+#    ring is the key ingredient behind the fastest observed convergence
+#    (30 steps) among prior single-parameter, perfect-accuracy designs.
+for i in range(N_QUBITS):
+    a, b = i, (i + 1) % N_QUBITS
+    if i % 2 == 0:
+        ANSATZ_SPEC.append({"gate": "XX", "wires": [a, b], "param": "theta"})
+    else:
+        ANSATZ_SPEC.append({"gate": "CZ", "wires": [a, b]})
+
+# 3. Fixed, zero-parameter antipodal shortcuts (distance-4 on the
+#    8-cycle) for long-range connectivity. Kept lightweight (only 4
+#    gates, no extra skip-2 sub-ring) to minimize depth/gate-count while
+#    preserving global connectivity across the register.
+for i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + N_QUBITS // 2]})
+
+# 4. Post-entanglement rotation layer, axis RZ, reusing the SAME "theta"
+#    parameter, keeping the total unique parameter count per block at
+#    exactly 1.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+
+def _add_theta_block(spec):
+    """One compact, single-parameter (theta) rotation+entangling block.
+
+    Reuses the SAME shared parameter name "theta" for every rotation and
+    every parametrized entangler, so calling this twice back-to-back adds
+    depth/expressivity without adding any new trainable parameters.
+    """
+    # Pre-entanglement rotation layer, axis RX, single shared "theta".
+    for wire in range(N_QUBITS):
+        spec.append({"gate": "RX", "wire": wire, "param": "theta"})
+
+    # Pre-entanglement rotation layer, axis RY, reusing the SAME "theta".
+    for wire in range(N_QUBITS):
+        spec.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+    # Nearest-neighbor ring, alternating a parametrized XX interaction
+    # (reusing "theta") with a fixed, zero-parameter CZ gate.
+    for i in range(N_QUBITS):
+        a, b = i, (i + 1) % N_QUBITS
+        if i % 2 == 0:
+            spec.append({"gate": "XX", "wires": [a, b], "param": "theta"})
+        else:
+            spec.append({"gate": "CZ", "wires": [a, b]})
+
+    # Lightweight, zero-parameter skip-2 sub-ring (0-2, 2-4, 4-6, 6-0).
+    # Restoring this cut convergence steps from 120 down to 30 in prior
+    # experiments, at zero extra parameter cost.
+    for i in range(0, N_QUBITS, 2):
+        spec.append({"gate": "CZ", "wires": [i, (i + 2) % N_QUBITS]})
+
+    # Fixed, zero-parameter antipodal shortcuts (distance-4 on the
+    # 8-cycle) for long-range connectivity.
+    for i in range(N_QUBITS // 2):
+        spec.append({"gate": "CZ", "wires": [i, i + N_QUBITS // 2]})
+
+    # Post-entanglement rotation layer, axis RZ, reusing the SAME "theta"
+    # parameter, keeping the total unique parameter count per block at 1.
+    for wire in range(N_QUBITS):
+        spec.append({"gate": "RZ", "wire": wire, "param": "theta"})
+
+
+# Stack the block twice back-to-back, reusing the SAME single "theta"
+# parameter both times. This doubles depth/expressivity (RX->RY->ring->
+# skip-2->antipodal->RZ, repeated) while keeping the trainable-parameter
+# count identical, which prior experiments show speeds up convergence
+# substantially at no parameter cost.
+_add_theta_block(ANSATZ_SPEC)
+_add_theta_block(ANSATZ_SPEC)
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+>>>>>>> REPLACE
+</DIFF>

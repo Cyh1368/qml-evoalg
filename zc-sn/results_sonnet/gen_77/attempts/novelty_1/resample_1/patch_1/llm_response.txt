@@ -1,0 +1,123 @@
+<NAME>
+three_block_shared_depth_modular_ansatz
+</NAME>
+
+<DESCRIPTION>
+Replace the current flat 176-param ansatz (score 0.86) with the higher-performing modular block design (score 0.89) that uses per-qubit RY, ring CRZ, per-qubit RX, skip-2, skip-3, and diameter CRZ entanglement layers, but extend it to three repeated blocks (all sharing the same 128 parameters) instead of two. This increases circuit depth/expressivity further while holding parameter count fixed at 128, testing whether additional shared-depth repetition pushes validation/test accuracy and combined score above the previous 0.89 plateau, following the given recommendation.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring_even"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_diam_even"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_diam_even"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_diam_odd"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_diam_odd"},
+]
+=======
+def _ry_layer(qubits, prefix="ry"):
+    """Per-qubit RY rotations, one trainable parameter each."""
+    return [{"gate": "RY", "wire": q, "param": f"{prefix}_{q}"} for q in qubits]
+
+
+def _rx_layer(qubits, prefix="rx"):
+    """Per-qubit RX rotations, one trainable parameter each."""
+    return [{"gate": "RX", "wire": q, "param": f"{prefix}_{q}"} for q in qubits]
+
+
+def _ring_crz(n, even_param="crz_ring_even", odd_param="crz_ring_odd"):
+    """Nearest-neighbor ring entanglement with alternating shared strength."""
+    gates = []
+    for i in range(n):
+        j = (i + 1) % n
+        param = even_param if i % 2 == 0 else odd_param
+        gates.append({"gate": "CRZ", "wires": [i, j], "param": param})
+    return gates
+
+
+def _skip_crz(n, step=2, param="crz_skip"):
+    """Sparse skip-`step` entanglement with a single shared parameter,
+    acting as an implicit regularizer while still providing longer-range
+    mixing than the nearest-neighbor ring."""
+    return [{"gate": "CRZ", "wires": [i, (i + step) % n], "param": param} for i in range(n)]
+
+
+def _diameter_crz(n, param="crz_diam"):
+    """Antipodal (distance n/2) entanglement with a single shared parameter.
+    Collapsing the previous two-parameter alternating scheme into one
+    shared knob reduces training-time variance while still giving global
+    connectivity at minimal parameter cost."""
+    half = n // 2
+    return [{"gate": "CRZ", "wires": [i, i + half], "param": param} for i in range(half)]
+
+
+def _build_block(n=N_QUBITS):
+    """Compose one full ansatz block from modular layers:
+      1. Per-qubit RY rotations (expressivity).
+      2. Ring CRZ entanglement, alternating shared strength (local mixing).
+      3. Per-qubit RX rotations (second rotation axis, more expressivity).
+      4. Skip-2 CRZ entanglement, single shared parameter (mid-range mixing).
+      5. Skip-3 CRZ entanglement, single shared parameter (fills the
+         previously-missing distance-3 connectivity gap).
+      6. Diameter CRZ entanglement, single shared parameter (global mixing,
+         simplified from the two-parameter alternating scheme to reduce
+         convergence time while retaining global reach).
+    """
+    block = []
+    block += _ry_layer(range(n))
+    block += _ring_crz(n)
+    block += _rx_layer(range(n))
+    block += _skip_crz(n, step=2, param="crz_skip2")
+    block += _skip_crz(n, step=3, param="crz_skip3")
+    block += _diameter_crz(n)
+    return block
+
+
+_BLOCK = _build_block(N_QUBITS)
+
+# Apply the block three times, reusing identical parameter names across all
+# three copies. This further deepens the circuit (more expressive power,
+# more entangling layers) while keeping the parameter count unchanged
+# compared to two copies -- testing whether additional shared-depth
+# repetition can push accuracy beyond the previous plateau without
+# increasing the parameter budget.
+ANSATZ_SPEC = _BLOCK + _BLOCK + _BLOCK
+>>>>>>> REPLACE
+</DIFF>

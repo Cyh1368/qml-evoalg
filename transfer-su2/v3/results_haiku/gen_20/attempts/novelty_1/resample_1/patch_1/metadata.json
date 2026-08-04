@@ -1,0 +1,14 @@
+{
+  "generation": 20,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "quartet_parity_ansatz_v2",
+  "patch_description": "The current program (score 0.36) suffers from severe underfitting: only 75% train accuracy and 52% test accuracy with just 5 distinct parameters. The prior best program (score 0.54) achieved 90% test accuracy with 12 distinct parameters through deliberate parameter differentiation in RY and RZ layers, combined with targeted entanglement gates.\n\nThe key insight from comparing the three programs:\n- **Seed (score 0.51)**: 7 distinct params, 85% test accuracy \u2014 heavy sharing in RY/RZ (2 params each) but rich entanglement (4 two-qubit gates).\n- **Gen9 (score 0.54)**: 12 distinct params, 90% test accuracy \u2014 per-pair RY/RZ sharing (4+4 params) with structured entanglement.\n- **Current (score 0.36)**: 5 distinct params, 52% test accuracy \u2014 oversimplified with global sharing (`ry_shared`, `rz_shared`) loses expressivity.\n\nThe current program fails because it collapses all RY rotations to one parameter and all RZ rotations to one parameter, destroying the qubit-specific learning capacity needed for fine-grained state discrimination.\n\nI propose **quartet_parity_ansatz_v2**: refine the parity-sharing strategy from Gen9 into a balanced quartet structure:\n- **RY layer**: 4 distinct parameters (`ry_01`, `ry_23`, `ry_45`, `ry_67`), each shared within adjacent pairs.\n- **RZ layer**: 4 distinct parameters (`rz_01`, `rz_23`, `rz_45`, `rz_67`), mirroring RY.\n- **Entanglement**: Reduce from Gen9's 4 two-qubit gate types (XX, YY, ZZ chains) to a focused 3-gate core:\n  - XX gates on nearest-neighbor pairs (4 pairs, 1 shared param): dense local coupling.\n  - YY gates on staggered pairs (3 pairs, 1 shared param): moderate-range correlation.\n  - ZZ gates on alternating distance-2 pairs (4 pairs, 1 shared param): long-range binding.\n\nTotal: **4 + 4 + 1 + 1 + 1 + 2 (readout) = 13 distinct parameters** \u2014 one fewer than Gen9 but with better expressivity through balanced quartet sharing. This avoids the underfitting collapse of the current design while maintaining parameter economy.\n\nThe quartet structure preserves qubit locality (adjacent pairs share parameters) without global sharing, enabling the circuit to learn different rotations for different qubit pairs while still achieving significant parameter reduction compared to per-qubit freedom.",
+  "error_msg": null,
+  "timestamp": "2026-08-03T06:49:28.526118",
+  "llm_cost": 0.058202000000000004,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

@@ -1,0 +1,53 @@
+Looking at the performance trajectory and the recommendation, I can see that:
+
+1. The current program has **6 distinct parameters** and scores **0.68**
+2. The previous iteration had **7 distinct parameters** and scored **0.67**
+3. The first version had **8 distinct parameters** and scored **0.65**
+
+The recommendation suggests merging `ent_off` (YY gates on offset pairs) into `ent_nn` to drop to **6 parameters**, but I notice the current program already achieved this merge! The YY gates at [1,2], [3,4], [5,6] are now using `"param": "ent_nn"` instead of `"param": "ent_off"`.
+
+However, examining the current design more carefully, I see an opportunity:
+
+**Key observation**: The current best performer (score 0.68) has converged faster (30 steps), better parameter efficiency (0.12), and maintained strong margins. The structure is already quite optimized with 6 distinct parameters. 
+
+**New opportunity**: Looking at the offset YY block - it currently uses the same `ent_nn` parameter as the nearest-neighbor XX block. While this achieves parameter efficiency, these are fundamentally different gate types (XX vs YY) acting on different qubit pairs. Re-introducing a dedicated `ent_off` parameter for the offset block could allow the optimizer to differentiate their roles better, potentially improving the worst-group margin (currently 0.36).
+
+However, a more promising direction based on expert knowledge: **reduce the final rotation layer redundancy** while maintaining expressivity. The current design applies RZ to all 8 qubits identically. We could reduce this to only apply on even qubits (where we have more control flow), allowing the odd qubits' final rotations to be determined by the preceding layers, thus saving 4 parameters while maintaining expressivity.
+
+Let me propose this change:
+
+<NAME>
+reduce_final_rz_to_even_qubits
+</NAME>
+
+<DESCRIPTION>
+The current design applies RZ to all 8 qubits in the final layer with full parameter sharing (all use "rz_final"). This is parameter-efficient but creates over-parameterization on odd qubits which already receive rich rotations (RY in initial layer + RY in intermediate + bracketing). 
+
+By reducing the final RZ layer to only even-indexed qubits (0, 2, 4, 6), we:
+1. Drop from 6 to 5 distinct parameters, improving parameter efficiency further
+2. Maintain expressivity since odd qubits still have sufficient rotation degrees of freedom earlier in the circuit
+3. Reduce circuit depth and gate count, improving computational efficiency
+4. Force the optimizer to rely more on earlier entangling blocks to discriminate samples, potentially improving worst-group margin through better distributed feature learning
+
+This aligns with the principle that fewer, well-placed parameters with stronger individual impact generalize better than many redundant ones.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Final rotation layer with shared parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+=======
+    # Final rotation layer on even qubits only
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+>>>>>>> REPLACE
+</DIFF>

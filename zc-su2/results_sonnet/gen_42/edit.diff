@@ -1,0 +1,94 @@
+--- a/original.py
++++ b/original.py
+@@ -1,57 +1,59 @@
+ """Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+ 
+ Everything else about the task, that is how inputs are encoded, how the circuit
+ is measured, how training works and how metrics are computed, is fixed and lives
+ in a module that is not reproduced here. No information about the data is
+ available in this file.
+ """
+ 
+ from _backend import run_experiment as _run
+ 
+ N_QUBITS = 8
+ ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+ 
+ 
+ # EVOLVE-BLOCK-START
+-ANSATZ_SPEC = [
+-    # Pre-entanglement rotations: 4 groups of 2 qubits, each group driven by
+-    # a single shared parameter (RY on both wires of the group).
+-    {"gate": "RY", "wire": 0, "param": "p_g0"},
+-    {"gate": "RY", "wire": 1, "param": "p_g0"},
+-    {"gate": "RY", "wire": 2, "param": "p_g1"},
+-    {"gate": "RY", "wire": 3, "param": "p_g1"},
+-    {"gate": "RY", "wire": 4, "param": "p_g2"},
+-    {"gate": "RY", "wire": 5, "param": "p_g2"},
+-    {"gate": "RY", "wire": 6, "param": "p_g3"},
+-    {"gate": "RY", "wire": 7, "param": "p_g3"},
++ANSATZ_SPEC = []
+ 
+-    # Nearest-neighbor entangling chain (fixed, no parameters).
+-    {"gate": "CZ", "wires": [0, 1]},
+-    {"gate": "CZ", "wires": [1, 2]},
+-    {"gate": "CZ", "wires": [2, 3]},
+-    {"gate": "CZ", "wires": [3, 4]},
+-    {"gate": "CZ", "wires": [4, 5]},
+-    {"gate": "CZ", "wires": [5, 6]},
+-    {"gate": "CZ", "wires": [6, 7]},
+-    {"gate": "CZ", "wires": [7, 0]},
+ 
+-    # Post-entanglement rotations: reuse the SAME parameters as the
+-    # corresponding pre-entanglement RY gates, but on a different axis (RZ),
+-    # halving the parameter count relative to using distinct post params.
+-    {"gate": "RZ", "wire": 0, "param": "p_g0"},
+-    {"gate": "RZ", "wire": 1, "param": "p_g0"},
+-    {"gate": "RZ", "wire": 2, "param": "p_g1"},
+-    {"gate": "RZ", "wire": 3, "param": "p_g1"},
+-    {"gate": "RZ", "wire": 4, "param": "p_g2"},
+-    {"gate": "RZ", "wire": 5, "param": "p_g2"},
+-    {"gate": "RZ", "wire": 6, "param": "p_g3"},
+-    {"gate": "RZ", "wire": 7, "param": "p_g3"},
+-]
++def _add_tri_axis_dense_block(spec):
++    # Pre-entanglement rotation layer: ALL 8 qubits share the SAME single
++    # trainable parameter "theta" on the RX axis.
++    for wire in range(N_QUBITS):
++        spec.append({"gate": "RX", "wire": wire, "param": "theta"})
++
++    # Pre-entanglement rotation layer: ALL 8 qubits share the SAME single
++    # trainable parameter "theta" on the RY axis.
++    for wire in range(N_QUBITS):
++        spec.append({"gate": "RY", "wire": wire, "param": "theta"})
++
++    # Dense, fixed (parameter-free) entangling layer combining a closed
++    # nearest-neighbor CZ ring plus antipodal CZ edges, giving every qubit
++    # degree 3 in the entangling graph with zero extra trainable
++    # parameters.
++    for i in range(N_QUBITS):
++        spec.append({"gate": "CZ", "wires": [i, (i + 1) % N_QUBITS]})
++    for i in range(N_QUBITS // 2):
++        spec.append({"gate": "CZ", "wires": [i, i + N_QUBITS // 2]})
++
++    # Post-entanglement rotation layer: reuse the SAME "theta" parameter on
++    # the RZ axis, keeping the unique parameter count at exactly 1 for the
++    # whole block.
++    for wire in range(N_QUBITS):
++        spec.append({"gate": "RZ", "wire": wire, "param": "theta"})
++
++
++# Stack two copies of the tri-axis + dense-CZ block, both reusing the SAME
++# single shared parameter "theta". Duplicating the block increases circuit
++# expressivity/depth without adding any new trainable parameters, which is
++# expected to speed up convergence while preserving parameter economy.
++_add_tri_axis_dense_block(ANSATZ_SPEC)
++_add_tri_axis_dense_block(ANSATZ_SPEC)
+ # EVOLVE-BLOCK-END
+ 
+ 
+ def run_experiment(**kwargs):
+     return _run(ANSATZ_SPEC, **kwargs)

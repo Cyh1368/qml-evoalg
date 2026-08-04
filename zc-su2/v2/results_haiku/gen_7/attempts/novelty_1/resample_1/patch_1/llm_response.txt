@@ -1,0 +1,64 @@
+Looking at the performance metrics, I need to analyze what's working and what can be improved:
+
+**Current Performance Analysis:**
+- Combined score: 0.64 (good, up from 0.60)
+- Worst group margin: 0.34 (this is the bottleneck - it's the dominant score term)
+- Parameter efficiency: 0.09 (excellent - only 9 distinct params)
+- Generalization gap: 0.01 (very good)
+- Validation margin: 0.71 (decent)
+- Convergence: 60 steps (reasonable)
+
+**Key Observation:**
+The worst_group_margin_mean of 0.34 is the limiting factor. This represents the margin on the hardest samples. To improve this, I need to enhance the circuit's expressiveness for separating difficult cases while maintaining parameter efficiency.
+
+**Strategy:**
+1. The current circuit has good parameter sharing but may lack sufficient expressiveness for hard samples
+2. Adding parametrized two-qubit gates (like XX, YY, or ZZ) can create entanglement patterns that capture non-linear decision boundaries better than just fixed CZ gates
+3. Keep parameter count low by using shared parameters across similar gates
+4. Add XX or YY Ising gates on carefully chosen pairs to create richer interactions without exploding parameter count
+
+**Proposed Change:**
+Replace some fixed CZ gates with parametrized XX/YY gates. These gates can be more expressive for capturing complex correlations. Use shared parameters to keep the count low. I'll replace the longer-distance CZ gates (0-2, 1-3, 3-5, 4-6, 5-7) with parametrized XX gates using only 1-2 shared parameters.
+
+<NAME>
+add_parametrized_entangling_gates
+</NAME>
+
+<DESCRIPTION>
+The worst_group_margin is the bottleneck (0.34), indicating the circuit struggles with hard samples. Current approach uses only fixed CZ gates for entanglement.
+
+Proposal: Replace some of the longer-distance CZ gates with parametrized XX gates to increase expressiveness for complex separations. Use aggressive parameter sharing (1-2 new params for all these gates) to maintain efficiency.
+
+This trades a small increase in parameter count (9→11 distinct params) for significantly better worst-case margin on difficult samples. The XX Ising gates can capture non-linear patterns that pure RZ rotations and fixed CZ interactions cannot.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+=======
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "XX", "wires": [0, 2], "param": "xx_long"},
+    {"gate": "XX", "wires": [1, 3], "param": "xx_long"},
+    {"gate": "XX", "wires": [3, 5], "param": "xx_long"},
+    {"gate": "XX", "wires": [4, 6], "param": "xx_long"},
+    {"gate": "YY", "wires": [5, 7], "param": "yy_long"},
+>>>>>>> REPLACE
+
+</DIFF>

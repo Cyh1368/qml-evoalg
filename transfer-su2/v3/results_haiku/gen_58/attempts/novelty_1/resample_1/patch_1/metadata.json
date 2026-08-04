@@ -1,0 +1,14 @@
+{
+  "generation": 58,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": false,
+  "num_applied": 0,
+  "patch_name": "parity_split_readout_calibration",
+  "patch_description": "The current program has a validation worst_group_margin_mean of 0.32, which is notably lower than the overall validation_margin_mean of 0.64. This indicates that the hardest-to-classify samples (grouped by hidden difficulty) have much worse margins than average, causing the combined score to be dominated by the worst-group margin metric.\n\nThe recommendation proposes splitting readout calibration by parity: use separate gain/bias parameters for correlators measured on even-index vs. odd-index qubit pairs. This decouples sublattice biases and allows the readout layer to adapt independently to different symmetry classes in the data, improving the worst-group margin without harming average performance.\n\nThe implementation:\n1. Increases N_READOUT_PARAMS from 2 to 4 (\"gain_even\", \"bias_even\", \"gain_odd\", \"bias_odd\")\n2. Updates predict_batch to classify pairs as even (both wires have same parity) or odd (different parity), compute raw_even and raw_odd separately, and return their weighted sum\n3. Adjusts initialization to set all gains to 1.0 and all biases to 0.0\n\nThis +2-parameter change is minimal (total goes from 9 to 11 params) but targets the specific weakness: improving hardest-sample separation through finer-grained output calibration, which should increase worst_group_margin_mean and thus the combined score.",
+  "error_msg": "Attempted to edit outside EVOLVE-BLOCK regions\n\nFound text: 'SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)'\nAt position: 7626\n\nContext around found text:\n     Line 174:     return errors, ordered_unique_keys\n     Line 175: \n     Line 176: \n >>> Line 177: SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)\n     Line 178: N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)\n     Line 179: N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK\n     Line 180: N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias\n\nThis text was found in an immutable (non-editable) region.\n\nAvailable editable regions (EVOLVE-BLOCK content):\n  Region 1 (chars 1907-4322):\n    def _build_rotation_layer() -> list[dict]:\n        \"\"\"Build initial RY layer with even/odd parameter sharing for parameter economy.\"\"\"\n        return [\n    ... (53 more lines)\n\nSuggestions:\n1. Move your edit to within an EVOLVE-BLOCK region\n2. Check if similar code exists in the editable regions above\n3. Ensure your search text targets code within # EVOLVE-BLOCK-START/END markers",
+  "timestamp": "2026-08-03T07:31:31.565464",
+  "llm_cost": 0.030182999999999998,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

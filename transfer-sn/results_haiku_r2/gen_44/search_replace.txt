@@ -1,0 +1,50 @@
+<NAME>
+add_nearest_neighbor_cry_entanglement
+</NAME>
+
+<DESCRIPTION>
+The current program has 38 parameters and achieves a combined score of 0.90, while the seed program with 26 parameters achieves 0.91. The current design uses many fixed CZ gates but only 4 parametrized CRY gates on long-range connections (0-4, 1-5, 2-6, 3-7).
+
+The recommendation suggests extending the shared CRY entangler to nearest-neighbor pairs at zero parameter cost. This means reusing the same parameter key across additional nearest-neighbor wire pairs, which would:
+
+1. **Increase expressivity without adding parameters**: By applying CRY(cry_a) on nearest-neighbor pairs (0,1), (1,2), (2,3), (3,4), (4,5), (5,6), (6,7), (7,0), we reuse the existing cry_a parameter, keeping N_PARAMS_PER_BLOCK constant.
+
+2. **Improve connectivity**: The current circuit has many fixed CZ gates but limited parametrized entanglement. Adding parametrized nearest-neighbor CRY gates creates richer, learnable entanglement patterns.
+
+3. **Better parameter efficiency**: Since we're not adding parameters, we should improve parameter_efficiency (currently 0.02) while maintaining or improving accuracy.
+
+4. **Simplify the circuit**: We can remove some of the fixed CZ gates that are now redundant with the parametrized CRY gates, reducing gate count and depth.
+
+The key insight is that the seed program achieved better accuracy (0.93 test) with fewer parameters (26) by using a simpler, more focused design. This edit brings the current program closer to that philosophy by adding learnable entanglement without parameter bloat.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 8: Parametrized controlled rotations (reduced from 12 to 8)
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_a"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cry_a"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry_a"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cry_a"},
+
+    # Layer 9: Final RZ layer
+=======
+    # Layer 8: Parametrized controlled rotations on long-range connections
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_a"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cry_a"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry_a"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cry_a"},
+
+    # Layer 8b: Nearest-neighbor CRY entanglement (reusing cry_a for zero parameter cost)
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_a"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_a"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_a"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_a"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_a"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_a"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_a"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_a"},
+
+    # Layer 9: Final RZ layer
+>>>>>>> REPLACE
+
+</DIFF>

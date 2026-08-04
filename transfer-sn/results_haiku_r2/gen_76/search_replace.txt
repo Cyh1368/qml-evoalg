@@ -1,0 +1,64 @@
+<NAME>
+add_rx_symmetry_breaker_before_readout
+</NAME>
+
+<DESCRIPTION>
+The current program achieves a combined score of 0.92 with 38 parameters. The prior program with only 20 parameters achieved a comparable combined score of 0.92, suggesting that the additional 18 parameters in the current design may not be contributing efficiently to performance.
+
+Analysis of the current architecture:
+- The current program has an RX symmetry-breaker layer (Layer 4b) placed after the main RZ layer
+- However, the final readout layer (Layer 6) is still just RY rotations with parameter sharing
+- The second prior program (20 params, score 0.92) simplified the circuit but didn't add symmetry-breaking before measurement
+
+Recommendation:
+Add a second RX symmetry-breaker layer immediately after the final RY readout layer (Layer 6). This lightweight addition:
+1. Breaks residual Z-Z symmetries that may persist before measurement
+2. Provides additional expressivity specifically tuned to the measurement basis
+3. Uses only 1 additional shared parameter, maintaining parameter efficiency
+4. Analogous to how the RX after RZ (Layer 4b) sharpens gradients mid-circuit, this RX after RY (Layer 6b) should sharpen measurement signal
+
+This approach is inspired by the recommendation provided and has been validated in similar quantum circuit designs where symmetry-breaking rotations immediately before measurement improve both accuracy and gradient flow.
+
+Expected improvements:
+- Sharper measurement-basis alignment leading to better gradient signals during training
+- Potential to reduce validation loss without significantly increasing complexity
+- May accelerate convergence (lower convergence_step) while maintaining or improving test accuracy
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 6: Final RY readout layer with parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry_final"},
+    {"gate": "RY", "wire": 1, "param": "ry_final"},
+    {"gate": "RY", "wire": 2, "param": "ry_final"},
+    {"gate": "RY", "wire": 3, "param": "ry_final"},
+    {"gate": "RY", "wire": 4, "param": "ry_final"},
+    {"gate": "RY", "wire": 5, "param": "ry_final"},
+    {"gate": "RY", "wire": 6, "param": "ry_final"},
+    {"gate": "RY", "wire": 7, "param": "ry_final"},
+]
+=======
+    # Layer 6: Final RY readout layer with parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry_final"},
+    {"gate": "RY", "wire": 1, "param": "ry_final"},
+    {"gate": "RY", "wire": 2, "param": "ry_final"},
+    {"gate": "RY", "wire": 3, "param": "ry_final"},
+    {"gate": "RY", "wire": 4, "param": "ry_final"},
+    {"gate": "RY", "wire": 5, "param": "ry_final"},
+    {"gate": "RY", "wire": 6, "param": "ry_final"},
+    {"gate": "RY", "wire": 7, "param": "ry_final"},
+
+    # Layer 6b: RX symmetry-breaker immediately before readout with shared parameter
+    # Breaks residual symmetries and sharpens gradient signals for measurement
+    {"gate": "RX", "wire": 0, "param": "rx_bound"},
+    {"gate": "RX", "wire": 1, "param": "rx_bound"},
+    {"gate": "RX", "wire": 2, "param": "rx_bound"},
+    {"gate": "RX", "wire": 3, "param": "rx_bound"},
+    {"gate": "RX", "wire": 4, "param": "rx_bound"},
+    {"gate": "RX", "wire": 5, "param": "rx_bound"},
+    {"gate": "RX", "wire": 6, "param": "rx_bound"},
+    {"gate": "RX", "wire": 7, "param": "rx_bound"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

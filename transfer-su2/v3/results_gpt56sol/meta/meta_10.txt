@@ -1,0 +1,134 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit RY-CZ Ansatz Classifier**  
+- **Implementation**: Prepares external 8-qubit states, applies a 3-repeat ansatz block of single-qubit RY/RZ rotations and a linear CZ entanglement chain (with shared parameters), then measures dataset-provided two-qubit Hermitian correlators and applies a trainable gain/bias calibration; trained via Adam with early stopping on L₂ loss.  
+- **Performance**: Combined score 0.29, with train/validation/test accuracies of 0.88/0.63/0.56, depth 20, 93 gates, 26 parameters, and parameter efficiency 0.02.  
+- **Feedback**: The circuit achieves high training accuracy but suffers a large generalization gap (0.31) and low margins (≈0.03), indicating overfitting and limited expressivity; low parameter efficiency suggests exploring richer entanglement patterns or regularization.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: 8-Qubit Global-Tied CZ Classifier**  
+- **Implementation**: Utilizes three globally tied single-qubit rotations (RY, RZ, RX) on all eight qubits, repeated three times with a periodic CZ entangling ring; reads out fixed two-qubit correlators averaged into a scalar with a trainable gain and bias, trained via few-shot balanced sampling and Adam optimization with early stopping.  
+- **Performance**: Combined score 0.39; train/validation/test accuracies ≈ 0.69/0.57/0.51, generalization gap 0.18, with only 5 total parameters.  
+- **Feedback**: Strong parameter tying yielded robust regularization but limited expressivity and low margins; expanding localized parameterization or deeper/more varied entangling layers may boost generalization.
+**Program Identifier:** Generation 1 - Patch Name symmetry_tied_floquet - Correct Program: True
+
+**Program Name: Shared-Param Rotation Ansatz Classifier**  
+- **Implementation**: Defines an 8-qubit ansatz with only four distinct rotation parameters (collective RY_pre, RZ_pre, RZ_post, RY_post) applied uniformly across all qubits and repeated three times, interleaved with fixed CZ entanglers; outputs are averaged two-qubit correlators calibrated by a trainable gain and bias, trained via Pennylane’s backpropagated Adam optimizer with wide uniform initialization and early stopping.  
+- **Performance**: Achieved a combined score of 0.37 with train/validation/test accuracies of 0.69/0.56/0.51, a generalization gap of 0.18, and parameter efficiency of 0.08.  
+- **Feedback**: Extreme parameter tying yielded high parameter efficiency but limited expressivity, resulting in near-chance margins and modest test accuracy; expanding distinct parameters or varying entangling patterns may improve generalization.
+**Program Identifier:** Generation 2 - Patch Name cyclic_shared_basis - Correct Program: True
+
+**Program Name: Shared-Parameter Repeated Ring ZZ Ansatz Classifier**  
+- **Implementation**: Uses an 8-qubit ansatz comprising global RY rotations, a shared-parameter ring of IsingZZ entanglers, and global RX rotations (three distinct circuit parameters) repeated three times; fixed two-qubit Hermitian correlator readouts are averaged and passed through a trainable gain-and-bias calibration.  
+- **Performance**: Achieved mean train accuracy 0.81, validation 0.54, test 0.50 with a combined score of 0.35; circuit depth 30, 72 gates, and parameter efficiency 0.10.  
+- **Feedback**: Excessive parameter sharing yields strong training fit but a large generalization gap (0.31) and mediocre test performance; introducing more unique parameters or richer entangling patterns may enhance expressivity and generalization.
+**Program Identifier:** Generation 4 - Patch Name shared_floquet_ising - Correct Program: True
+
+**Program Name: Tied-Parameter Collective Ansatz Classifier**  
+- **Implementation**: The model applies an 8-qubit ansatz of three collective layers (RZ→RY→RZ) with parameters tied across all repeats, then measures fixed dataset-defined two-qubit correlators averaged into a scalar and calibrated by trainable gain and bias. It uses balanced few-shot sampling, wide uniform initialization, Adam optimization, and validation-loss early stopping.  
+- **Performance**: Achieves a combined score of 0.41 with mean validation accuracy 0.55, test accuracy 0.50, generalization gap 0.06, using only 5 parameters.  
+- **Feedback**: The minimal parameter count yields high parameter efficiency (0.10) but limited expressiveness results in high loss (~1.0) and near-zero margins, indicating underfitting; uneven group margins suggest sensitivity to dataset subgroups.
+**Program Identifier:** Generation 5 - Patch Name collective_basis_ansatz - Correct Program: True
+
+**Program Name: 8-Qubit Repeated RY/XX Ansatz Classifier**  
+- **Implementation**: Defines an 8-qubit variational classifier that prepares input states with StatePrep, applies a block of global RY rotations, shared-parameter XX entanglers (ring and cross links), and global RZ rotations, repeated three times with tied circuit parameters, then measures dataset-specific two-qubit observables and applies a trainable gain/bias calibration. Training uses Pennylane’s backprop-based QNode, Adam optimizer on L2 loss with balanced few-shot subsampling, early stopping, and restore-best-weights.  
+- **Performance**: Achieved a combined score of 0.51 with mean accuracies of 0.75 (train), 0.72 (validation), 0.69 (test), a generalization gap of 0.06, and parameter efficiency of 0.14 using just 5 parameters.  
+- **Feedback**: The global and shared-parameter design yields a compact, efficient circuit but limits expressivity, resulting in moderate accuracy that plateaus; early stopping and output calibration help prevent overfitting, suggesting that increasing parameter diversity or richer entanglement could boost performance.
+**Program Identifier:** Generation 3 - Patch Name symmetry_tied_multiscale_mixer - Correct Program: True
+
+**Program Name: Shared Mixer and Periodic ZZ Ansatz Classifier**  
+- **Implementation**: The ansatz applies shared RY rotations on each qubit and shared ZZ interactions on nearest-neighbor pairs across three repeats with tied parameters, prepares inputs via StatePrep, and measures fixed two-qubit observables averaged into a scalar calibrated by a trainable gain and bias.  
+- **Performance**: Combined score 0.40 with train/validation/test accuracies of 0.62/0.51/0.51, a 0.11 generalization gap, 0.13 parameter efficiency, using 4 parameters, depth 27, and 48 gates.  
+- **Feedback**: Parameter tying and minimal parameter count deliver strong regularization and efficiency but limited expressivity, yielding near-chance validation/test accuracy and clipped margins around zero, suggesting the circuit struggles to distinguish state properties.
+**Program Identifier:** Generation 6 - Patch Name collective_ising_qaoa - Correct Program: True
+
+**Program Name: Single-Param Kicked-Ising Ansatz Classifier**  
+- **Implementation**: Applies translation-symmetric nearest-neighbour IsingZZ interactions and a collective RX mixer sharing a single angle parameter, repeated three times on pre-prepared 8-qubit states, then measures dataset-defined two-qubit correlators and applies trainable gain/bias calibration.  
+- **Performance**: Achieved a combined score of 0.45 with train/validation/test accuracies of ~0.56/0.55/0.53 using only 3 parameters (1 circuit, gain, bias), depth 9 and 48 gates.  
+- **Feedback**: Strong parameter tying regularizes training and yields a small generalization gap (~0.03) but limits expressivity, resulting in modest accuracy and low margins despite correct implementation.
+**Program Identifier:** Generation 7 - Patch Name tied_kicked_ising - Correct Program: True
+
+**Program Name: Shared-Parameter Floquet Ansatz Classifier**  
+- **Implementation**: Implements an 8-qubit state classifier using a Floquet-style ansatz with two shared parameters (collective transverse RY/RX and collective phase RZ) repeated three times around a fixed CZ ring, and applies a trainable gain/bias calibration on averaged two-qubit correlator measurements. Training uses PennyLane’s autograd backprop with an Adam optimizer, deterministic few-shot balanced subsampling, and early stopping.  
+- **Performance**: Combined score 0.39 with train/validation/test accuracies of 0.75/0.57/0.51, a 0.24 generalization gap over 4 total parameters, depth 33 and 96 gates.  
+- **Feedback**: The extreme parameter sharing enforces strong regularization but underfits the data, yielding modest test accuracy and high gap; expanding parameter diversity or increasing expressivity could improve generalization.
+**Program Identifier:** Generation 8 - Patch Name tied_floquet_ring - Correct Program: True
+
+**Program Name: Global-Rotation Möbius-Ladder Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with two tied global rotation parameters (“global_y” and “global_z”) applied via RY/RZ on all qubits, interleaved with a parameter-free Möbius-ladder CZ entangler repeated three times, and measures fixed two-qubit correlators calibrated by a trainable gain and bias.  
+- **Performance**: Achieved a combined score of 0.51 with train/validation/test accuracies of 0.88/0.77/0.74, a generalization gap of 0.14, parameter efficiency of 0.18, depth 33, and 84 gates.  
+- **Feedback**: The extremely low circuit parameter count (2) yields strong regularization and stable few-shot learning but limits expressivity, as evidenced by low worst-group margins (0.19); early stopping and wide initialization helped avoid optimizer dead zones.
+**Program Identifier:** Generation 10 - Patch Name fixed_cz_mobius_mixer - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Extreme parameter tying of collective rotations plus a fixed, richly connected entangler.  
+  • Global-Rotation Möbius-Ladder (Gen 10) uses only two distinct angles (“global_y”, “global_z”) and a parameter-free Möbius CZ network repeated three times. It achieves the top test accuracy (0.74), combined score 0.51, generalization gap 0.14, and highest parameter efficiency 0.18.  
+- Low parameter count with nontrivial entanglement preserves expressivity.  
+  • The 8-Qubit Repeated RY/XX ansatz (Gen 3) with five parameters and shared XX gates also reached combined 0.51, but plateaued at test 0.69. In contrast, Gen 10’s richer long-range CZ links push test accuracy higher despite fewer parameters.  
+- Consistent use of trainable gain/bias calibration on averaged two-qubit correlators.  
+  • All top performers (Gen 1–5, Gen 10) reuse the same `predict_batch` gain/bias pattern, stabilizing margins and avoiding trivial zero-gain solutions.  
+- Full-period random initialization to escape dead zones.  
+  • Möbius-Ladder and earlier models initialize angles in [−π, π], preventing early optimizer stagnation and contributing to stable convergence across seeds.  
+
+## Ineffective Approaches  
+- Over-tying with weak entanglers underfits the data.  
+  • Shared-Parameter Floquet (Gen 8) ties two angles around a simple CZ ring, yielding high gap (0.24) and test 0.51—no better than random.  
+  • Single-Param Kicked-Ising (Gen 7) with one circuit angle reaches only test 0.53 (combined 0.45).  
+- Deep circuits without parameter diversity still plateau at chance.  
+  • Shared Mixer + Periodic ZZ (Gen 6) uses four parameters in a 27-depth circuit but test remains 0.51 (combined 0.40), indicating depth alone can’t substitute for diverse rotations.  
+- Untied local rotations over-parameterize and overfit.  
+  • The initial all-untied RY/RZ ansatz (Gen 0) with 26 parameters and depth 20 overfits severely (train 0.88 → test 0.56; gap 0.31), achieving combined 0.29.  
+
+## Implementation Insights  
+- Centralized parameter‐key lookup for tied parameters.  
+  • All successful ansätze build a `{param_name: index}` map once, then loop over `ANSATZ_SPEC`, avoiding per-repeat key overhead and ensuring correct tieing.  
+- Explicit ansatz validation decouples spec errors from training.  
+  • The `validate_ansatz_spec` function flags unsupported gates or malformed wires before QNode creation, preventing silent runtime failures.  
+- Rich entanglement via non-local CZ links coded directly in the spec.  
+  • Gen 10’s Möbius-ladder adds cross chords (0–4, 1–5, 2–6, 3–7) in addition to the ring, dramatically boosting expressivity without extra parameters.  
+- Metadata extraction to balance depth vs. gate count.  
+  • Using `qml.queuing.AnnotatedQueue` and `tape.graph.get_depth()` ensures the circuit remains within target depth (33) and gate-count (84), informing efficient entangler designs.  
+
+## Performance Analysis  
+- Test accuracy tracks entanglement richness more than depth or parameter count.  
+  • Gen 5 (3 parameters, depth 9) reached only test 0.56, while Gen 10 (2 parameters, depth 33) hits test 0.74, showing that a well-connected fixed entangler can outweigh circuit shallowness.  
+- Extreme regularization via minimal parameters reduces gap but may cap accuracy.  
+  • Gen 3’s tight parameter tying achieved a low gap (0.06) but test 0.69; Gen 10 accepts a slightly larger gap (0.14) for substantially higher test accuracy.  
+- Parameter efficiency (test accuracy / n_params) improves with expressivity:  
+  • Gen 10 leads at 0.18, Gen 3 at 0.14, Gen 5 at 0.10, illustrating that richer entanglement boosts efficiency when paired with minimal parameters.  
+- Combined score correlates with test accuracy rather than train performance.  
+  • Although several tied-parameter models have similar low gaps, only those with non-local entanglement (Gen 10, Gen 3) break past test 0.69 to maximize the combined metric (0.51).
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Add a shared ZZ entangler on nearest neighbors at the end of each block  
+   Extend ANSATZ_SPEC so that, after the Möbius-ladder CZs and before the RZs, you append  
+     for i in range(N_QUBITS):  
+       {"gate": "ZZ", "wires": [i, (i+1) % N_QUBITS], "param": "zz_nn"}  
+   This injects one trainable two-qubit parameter across all nearest neighbors, leveraging the success of Gen 3’s shared XX entanglement to boost expressivity with minimal extra cost.  
+
+2. Parameterize the Möbius-ladder cross chords with one shared angle  
+   In ANSATZ_SPEC, replace the four fixed cross-ring CZ gates on wires [0,4],[1,5],[2,6],[3,7] with  
+     {"gate": "ZZ", "wires": [...], "param": "cross_ent"}  
+   This turns long-range entanglement itself into a tunable knob (one extra parameter) and builds directly on Gen 10’s rich connectivity to raise test accuracy without increasing gap.  
+
+3. Semi-collective local rotations by even/odd grouping  
+   Instead of two “global_y” and “global_z” keys, define “global_y_even”, “global_y_odd”, “global_z_even”, “global_z_odd” in PARAMETER_KEYS, and in ANSATZ_SPEC apply RY/RZ on even-indexed qubits with the “_even” keys and on odd-indexed qubits with the “_odd” keys.  
+   This moves from 2 to 4 rotation parameters, doubling expressivity in a structured way that preserves extreme tying within each subgroup.  
+
+4. Sweep the block repetition count around 3 to find the optimal depth  
+   Refactor the definition of N_REPEATS into a mutable hyperparameter and generate variants with N_REPEATS={2,3,4} (depth≈22,33,44) while keeping the Möbius-ladder + rotation spec fixed.  
+   Global insights show that depth alone doesn’t substitute for connectivity but there may be a sweet spot between under- and over-repetition that further boosts test accuracy.  
+
+5. Inject a shared CRZ layer on the readout pairs before measurement  
+   After all ansatz repeats, append into the qnode loop:  
+     for (a,b) in READOUT_PAIRS: qml.CRZ(params[key_to_position["readout_crz"]], wires=[a,b])  
+   This adds one controllable phase entangler directly on the correlator pairs, focusing expressivity where the fixed Hermitian measurements occur, an approach that improved margins in earlier prototypes.

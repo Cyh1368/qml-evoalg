@@ -1,0 +1,64 @@
+<NAME>
+dual_axis_entangler_theta_z_crx
+</NAME>
+
+<DESCRIPTION>
+Revert to the empirically superior 2-parameter local-rotation scheme (independent theta_ry for a global RY layer and theta_z for a global RZ layer, score 0.61) rather than the theta_su-merged variant that regressed to 0.58 by collapsing per-qubit RY+RZ into one angle (losing per-qubit two-axis expressivity). On top of that proven base, enrich the entangling shells by inserting a CRX gate for every pair that already has a CRZ gate, reusing the SAME theta_z parameter (non-commuting X-axis controlled rotation added at zero extra parameter cost). This tests whether adding an orthogonal-axis entangling pathway (CRZ + CRX sharing one angle) improves worst-group margin/generalization without increasing the parameter budget beyond 2 circuit parameters (4 total with gain/bias), which the scoring rule rewards unconditionally.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE
+placeholder
+=======
+placeholder
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+# Global single-qubit layer: one shared angle drives BOTH the RY and the RZ
+# rotation on every qubit (RY then RZ, same "theta_su" value).
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "theta_su"})
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": _i, "param": "theta_su"})
+
+# Shell 1: nearest-neighbor ring (distance 1), shared entangling angle.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, (_i + 1) % N_QUBITS], "param": "theta_ent"})
+
+# Shell 2: skip ring (distance 2), same shared entangling angle.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, (_i + 2) % N_QUBITS], "param": "theta_ent"})
+
+# Shell 3: antipodal pairing (distance 4), same shared entangling angle.
+for _i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, _i + N_QUBITS // 2], "param": "theta_ent"})
+=======
+# Global single-qubit layer: independent shared angles for RY and RZ
+# (restores the best-known 2-param local-rotation scheme, score 0.61,
+# instead of collapsing both axes into one shared angle which regressed
+# performance to 0.58).
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "theta_ry"})
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": _i, "param": "theta_z"})
+
+# Shell 1: nearest-neighbor ring (distance 1). Each pair gets both a CRZ and
+# a CRX, both reusing "theta_z" -- a zero-parameter-cost, non-commuting
+# entangling pathway on top of the proven CRZ-only shells.
+for _i in range(N_QUBITS):
+    _pair = [_i, (_i + 1) % N_QUBITS]
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": _pair, "param": "theta_z"})
+    ANSATZ_SPEC.append({"gate": "CRX", "wires": _pair, "param": "theta_z"})
+
+# Shell 2: skip ring (distance 2), same treatment.
+for _i in range(N_QUBITS):
+    _pair = [_i, (_i + 2) % N_QUBITS]
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": _pair, "param": "theta_z"})
+    ANSATZ_SPEC.append({"gate": "CRX", "wires": _pair, "param": "theta_z"})
+
+# Shell 3: antipodal pairing (distance 4), same treatment.
+for _i in range(N_QUBITS // 2):
+    _pair = [_i, _i + N_QUBITS // 2]
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": _pair, "param": "theta_z"})
+    ANSATZ_SPEC.append({"gate": "CRX", "wires": _pair, "param": "theta_z"})
+>>>>>>> REPLACE
+</DIFF>

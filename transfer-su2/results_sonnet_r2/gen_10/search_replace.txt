@@ -1,0 +1,67 @@
+Looking at the prior programs, the best-scoring one (score 1.00) used shared RY parameters plus separate pre/post RZ layers with a shared ZZ ring, achieving very low params relative to expressivity. The current program uses fully independent RY per qubit (8 params) which is expensive. Let me merge the best ideas: use shared RY (parity-split for asymmetry), shared ZZ ring split into even/odd for richer entanglement, and a parity-split RZ layer — this keeps params low while retaining good expressivity.
+
+<NAME>
+shared_ry_split_zz_entangler
+</NAME>
+
+<DESCRIPTION>
+Replace the 8 independent RY parameters with a parity-shared pair (ry_even, ry_odd), reducing per-block single-qubit params from 8 to 2. Split the previously fully-shared ZZ ring into alternating "zz_even" (0-1,2-3,4-5,6-7) and "zz_odd" (1-2,3-4,5-6,7-0) parameters to enrich entanglement expressivity at minimal parameter cost (+1 param). Keep the shared RZ phase layer. This mirrors the highest-scoring prior design's parameter-sharing philosophy (shared RY + shared entangler + shared RZ) while adding the even/odd ZZ split recommendation, aiming to cut N_PARAMS substantially (from 62 to ~26) while preserving or improving accuracy and convergence speed, directly targeting the parameter-economy reward.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_odd"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE
+</DIFF>

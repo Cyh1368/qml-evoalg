@@ -1,0 +1,32 @@
+<NAME>
+mixed_axis_ring_entangler
+
+<DESCRIPTION>
+Following the recommendation, I add axis diversity to the ring entangler by switching odd-edge interactions from CRZ to CRY while keeping even edges as CRZ. Mixed rotation axes in the local ring links increase expressivity per gate (since CRZ and CRY generate rotations about different axes of the Bloch sphere for the target qubit conditioned on the control), without adding any extra gates or parameters. This complements the existing RY→ring→RX sequence, where the RX layer after the ring benefits from having already picked up Y-axis-conditioned rotations (CRY) as well as Z-axis ones (CRZ) from the ring, giving richer state preparation before the skip/diameter mixing stages. Since prior generations (Gen25/Gen38 mentioned in the seed history) showed this mixed-axis trick improves generalization without cost increase, this is a low-risk, well-motivated architectural tweak.
+
+<DIFF>
+<<<<<<< REPLACE_BLOCK -->
+<<<<<<< SEARCH
+def _ring_crz(n, even_param="crz_ring_even", odd_param="crz_ring_odd"):
+    """Nearest-neighbor ring entanglement with alternating shared strength."""
+    gates = []
+    for i in range(n):
+        j = (i + 1) % n
+        param = even_param if i % 2 == 0 else odd_param
+        gates.append({"gate": "CRZ", "wires": [i, j], "param": param})
+    return gates
+=======
+def _ring_crz(n, even_param="crz_ring_even", odd_param="cry_ring_odd"):
+    """Nearest-neighbor ring entanglement with alternating shared strength
+    and mixed interaction axes: even edges use CRZ, odd edges use CRY.
+    Mixing axes on local links increases expressivity without adding
+    extra gates or parameters, complementing the RY->ring->RX sequence."""
+    gates = []
+    for i in range(n):
+        j = (i + 1) % n
+        if i % 2 == 0:
+            gates.append({"gate": "CRZ", "wires": [i, j], "param": even_param})
+        else:
+            gates.append({"gate": "CRY", "wires": [i, j], "param": odd_param})
+    return gates
+>>>>>>> REPLACE

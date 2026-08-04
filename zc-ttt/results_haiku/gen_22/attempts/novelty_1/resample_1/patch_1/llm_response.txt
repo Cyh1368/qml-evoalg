@@ -1,0 +1,178 @@
+Looking at the performance metrics:
+
+1. **Prior program 1** (score 0.56): 126 params, balanced architecture with split RZ (rz_pre_a/b) and mix of CRZ + CZ gates
+2. **Prior program 2** (score 0.57): 162 params, more CRZ gates + CCRZ interactions, achieved best score but with higher gap
+3. **Current program** (score 0.54): 72 params, aggressive parameter sharing, but validation/test performance dropped significantly
+
+The current program sacrificed too much expressivity through extreme parameter sharing. However, prior program 1 showed that strategic parameter sharing (rz_pre_a/b split) worked well.
+
+**Key insight from the recommendation**: Share parameters between symmetrically placed gates to free capacity, then add static entanglement (CZ gates) on underutilized qubit pairs.
+
+**My strategy**:
+1. Restore the beneficial split RZ pattern from prior program 1 (rz_pre_a for qubits 0-4, rz_pre_b for 5-8)
+2. Replace the aggressive RY/RZ sharing that hurt performance with individual parameters for key positions
+3. Add parametrized CRZ gates on strategic pairs to boost expressivity
+4. Keep overall parameter count reasonable (~100-110 params) to maintain efficiency
+5. Add a CZ on [2,5] as suggested to improve connectivity
+
+The goal is to find the sweet spot: better than current (72 params, score 0.54) but more parameter-efficient than prior program 2 (162 params, score 0.57).
+
+<NAME>
+restore_expressive_entanglement
+</NAME>
+
+<DESCRIPTION>
+The current program uses extreme parameter sharing that reduces expressivity. Prior program 1 (score 0.56) showed that strategic sharing with CRZ gates performs better. We restore a balanced approach:
+
+1. Use split RZ parameters (rz_pre_a/b) like prior program 1, which gave 0.56 score
+2. Restore individual RY parameters for better expressivity
+3. Add parametrized CRZ gates on allowed pairs to increase model capacity
+4. Add static CZ gates including [2,5] to improve connectivity without adding parameters
+5. Target ~110 params (between current 72 and prior1 126) for better efficiency
+
+This balances parameter efficiency with expressivity, addressing why current program's aggressive sharing hurt test accuracy (0.48 vs 0.56-0.57).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Layer 1: Initial RY rotations with shared parameters
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RY", "wire": 8, "param": "ry_a"},
+    
+    # Layer 1: RZ rotations with shared parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+    {"gate": "RZ", "wire": 8, "param": "rz_a"},
+    
+    # Layer 1: Sparse entanglement - hub-and-spoke pattern
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 7]},
+    
+    # Layer 2: RY rotations with different shared parameters
+    {"gate": "RY", "wire": 0, "param": "ry_c"},
+    {"gate": "RY", "wire": 1, "param": "ry_d"},
+    {"gate": "RY", "wire": 2, "param": "ry_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_d"},
+    {"gate": "RY", "wire": 4, "param": "ry_c"},
+    {"gate": "RY", "wire": 5, "param": "ry_d"},
+    {"gate": "RY", "wire": 6, "param": "ry_c"},
+    {"gate": "RY", "wire": 7, "param": "ry_d"},
+    {"gate": "RY", "wire": 8, "param": "ry_c"},
+    
+    # Layer 2: RZ rotations with different shared parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_c"},
+    {"gate": "RZ", "wire": 1, "param": "rz_d"},
+    {"gate": "RZ", "wire": 2, "param": "rz_c"},
+    {"gate": "RZ", "wire": 3, "param": "rz_d"},
+    {"gate": "RZ", "wire": 4, "param": "rz_c"},
+    {"gate": "RZ", "wire": 5, "param": "rz_d"},
+    {"gate": "RZ", "wire": 6, "param": "rz_c"},
+    {"gate": "RZ", "wire": 7, "param": "rz_d"},
+    {"gate": "RZ", "wire": 8, "param": "rz_c"},
+    
+    # Layer 2: Complementary entanglement pattern
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [0, 8]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [4, 8]},
+    
+    # Layer 3: Final RY rotations
+    {"gate": "RY", "wire": 0, "param": "ry_e"},
+    {"gate": "RY", "wire": 1, "param": "ry_f"},
+    {"gate": "RY", "wire": 2, "param": "ry_e"},
+    {"gate": "RY", "wire": 3, "param": "ry_f"},
+    {"gate": "RY", "wire": 4, "param": "ry_e"},
+    {"gate": "RY", "wire": 5, "param": "ry_f"},
+    {"gate": "RY", "wire": 6, "param": "ry_e"},
+    {"gate": "RY", "wire": 7, "param": "ry_f"},
+    {"gate": "RY", "wire": 8, "param": "ry_e"},
+    
+    # Layer 3: Final RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_e"},
+    {"gate": "RZ", "wire": 1, "param": "rz_f"},
+    {"gate": "RZ", "wire": 2, "param": "rz_e"},
+    {"gate": "RZ", "wire": 3, "param": "rz_f"},
+    {"gate": "RZ", "wire": 4, "param": "rz_e"},
+    {"gate": "RZ", "wire": 5, "param": "rz_f"},
+    {"gate": "RZ", "wire": 6, "param": "rz_e"},
+    {"gate": "RZ", "wire": 7, "param": "rz_f"},
+    {"gate": "RZ", "wire": 8, "param": "rz_e"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: Initial RY rotations (individual parameters)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+    
+    # Layer 1: Split RZ rotations - lower qubits (0-4) with rz_pre_a
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    # Layer 1: Split RZ rotations - upper qubits (5-8) with rz_pre_b
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre_b"},
+    
+    # Layer 1: Parametrized entanglement on allowed pairs
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_2"},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_3"},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_4"},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [4, 8]},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_0"},
+    {"gate": "CZ", "wires": [6, 7]},
+    
+    # Layer 2: Three-qubit interactions
+    {"gate": "ZZZ", "wires": [0, 4, 8], "param": "zzz_0"},
+    {"gate": "ZZZ", "wires": [1, 5, 6], "param": "zzz_1"},
+    
+    # Layer 3: Final RZ rotations with shared parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

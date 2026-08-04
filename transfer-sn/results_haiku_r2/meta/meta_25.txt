@@ -1,0 +1,244 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit Evolved Ansatz Binary Classifier**  
+- **Implementation**: Encodes 28 binary features via three fixed IsingZZ feature‐map uploads interleaved with two repeats of a custom ansatz block—each block applies single-qubit RY rotations, pre- and post- RZ rotations on all qubits and a linear chain of CZ entangling gates—yielding 146 trainable parameters (including gain and bias) optimized with Adam and L2 loss plus early stopping.  
+- **Performance**: Achieves mean train/validation/test accuracies of 0.94/0.89/0.87, generalization gap 0.07, depth 99, gate count 270, and parameter efficiency 0.01 (combined score 0.85).  
+- **Feedback**: The dense rotation-and-entanglement scheme delivers high accuracy and stable convergence (≈750 steps) but at the cost of low parameter efficiency, suggesting room for ansatz simplification without sacrificing performance.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: IsingZZ-Phase 8-Qubit Binary Classifier**  
+- **Implementation**: Inputs are encoded via a three-upload IsingZZ feature map across 28 binary features on 8 qubits, followed by six repeats of an ansatz block composed of RY rotations on all qubits, RX rotations on even qubits, a chain of CRZ entangling gates, and final RZ rotations, yielding 164 trainable parameters plus readout calibration. Training uses an Adam optimizer on an L2 loss with mini-batches, early stopping, and gain/bias calibration for scalar prediction.  
+- **Performance**: Achieved a combined score of 0.84 with train/validation/test accuracies of 0.95/0.89/0.85, a generalization gap of 0.10, circuit depth 99, gate count 246, and parameter efficiency 0.01.  
+- **Feedback**: The layered CRZ entanglement and fixed feature map deliver strong training accuracy, but the moderate generalization gap and low parameter efficiency suggest the circuit may be over-parameterized; reducing depth or pruning parameters could improve efficiency without compromising accuracy.
+**Program Identifier:** Generation 1 - Patch Name parametrized_entanglement_crz - Correct Program: True
+
+**Program Name: 8-Qubit CZ-CRY Ansatz Binary Classifier**  
+- **Implementation**: Uses an 8-qubit IsingZZ feature map with 3 re-upload layers and 2 repeats of an ansatz block defined by per-qubit RY rotations, CZ entanglers, CRY parametrized couplings in linear and shifted patterns, and final RZ rotations, plus trainable gain/bias readout, optimized via Pennylane’s Adam with early stopping.  
+- **Performance**: Achieved 0.96 train accuracy, 0.88 validation accuracy, and 0.86 test accuracy (generalization gap 0.10) with 116 parameters, depth 87, and 240 gates (combined score 0.80).  
+- **Feedback**: The rich CZ/CRY entanglement yielded high expressivity but led to overfitting and low parameter efficiency (0.01), suggesting a need to reduce circuit complexity or include regularization to improve generalization.
+**Program Identifier:** Generation 3 - Patch Name enhanced_entanglement_with_sharing - Correct Program: True
+
+**Program Name: Parity-Shared Layered Entangling Ansatz**  
+- **Implementation**: Encodes 28 binary features on 8 qubits via repeated IsingZZ feature maps (3 uploads, 2 repeats), then applies a 6-layer ansatz combining parity-shared RX/RZ rotations, site-specific RY rotations, nearest-neighbor and next-nearest CZ entanglement, plus long-range CRY couplings, followed by trainable gain and bias calibration. Training uses an Adam optimizer on L2 loss with mini-batch updates, early stopping on validation loss, and weight restoration.  
+- **Performance**: Achieved a combined score of 0.85 with mean test accuracy 0.87, validation accuracy 0.86, test loss 0.45, a 0.07 generalization gap, converging in ~540 steps using 110 parameters, depth 105, and 300 gates.  
+- **Feedback**: Parity-based parameter sharing halved the rotation parameter count without sacrificing accuracy, structured entangling layers captured both local and global correlations for stable convergence, and early stopping effectively prevented overfitting despite modest parameter efficiency.
+**Program Identifier:** Generation 4 - Patch Name hierarchical_entanglement_classifier - Correct Program: True
+
+**Program Name: 8-Qubit Reuploading Ansatz with Parametric Entanglement**  
+- **Implementation**: Uses a fixed IsingZZ feature map across 28 binary features interleaved with three uploads of an 8-qubit ansatz block—each block consisting of local RY rotations, parametrized CRY entanglement on even pairs, CRZ on odd pairs, and final RZ phases—repeated twice per upload. Training employs backpropagation via a Pennylane Adam optimizer on L₂ loss with learnable gain and bias calibration.  
+- **Performance**: Achieved train/validation/test accuracies of 0.95/0.85/0.88, a generalization gap of 0.07, parameter efficiency 0.01, 140 total parameters, depth 81, gate count 222, and a combined score of 0.78.  
+- **Feedback**: The structured entangling layers and multiple data reuploads yield strong training performance with zero variability, though high circuit depth and parameter count limit efficiency; validation-loss early stopping preserved generalization while moderate gap suggests scope for ansatz simplification.
+**Program Identifier:** Generation 5 - Patch Name hierarchical_ansatz_with_adaptive_entanglement - Correct Program: True
+
+**Program Name: Layered 8-Qubit Reuploading Ansatz**  
+- **Implementation**: Uses a fixed IsingZZ feature map on 28 qubit pairs with three re-upload cycles and two ansatz repeats per upload, applying RY and RZ rotations, chained CZ entanglers, and cross-block CRY gates plus trainable gain and bias. Trained via Adam with mini-batch L2 loss, early stopping, and best-validation weight restore.  
+- **Performance**: Achieves mean test accuracy 0.85 (validation 0.87, training 0.90), generalization gap 0.05, parameter count 68, depth 126, and gate count 330, reaching convergence around 720 steps.  
+- **Feedback**: Stable performance with zero std deviation indicates reproducible training, but low parameter efficiency (0.01) suggests potential for reducing ansatz complexity or optimizing entanglement patterns to improve resource usage.
+**Program Identifier:** Generation 2 - Patch Name enhanced_entanglement_with_sharing - Correct Program: True
+
+**Program Name: 8-Qubit Reuploading Ansatz with Shared Entanglement**  
+- **Implementation**: The ansatz alternates three IsingZZ feature-map layers with two repeats of a block comprising local RY/RZ rotations and shared-parameter CRY on even pairs and CRZ on odd pairs, finishing with per-qubit RZ adjustments and a trainable gain-bias readout. Training uses autograd-backprop Adam optimization with mini-batch updates, validation-loss early stopping, and best-weight restoration.  
+- **Performance**: Achieved a combined score of 0.84 with mean train/validation/test accuracies of 0.95/0.87/0.87, a generalization gap of 0.08, 158 parameters, circuit depth 87, and gate count 270.  
+- **Feedback**: The shared-parameter entangling design stabilized performance but resulted in low parameter efficiency (0.01), while the calibration layer and early stopping ensured rapid convergence (~330 steps) and mitigated overfitting. Enhancing expressivity or adjusting reupload frequency may improve efficiency without sacrificing stability.
+**Program Identifier:** Generation 6 - Patch Name adaptive_entanglement_with_parameter_sharing - Correct Program: True
+
+**Program Name: 8-Qubit Layered Ansatz with Shared CRZ**  
+- **Implementation**: Implements a binary classifier on 8 qubits using a fixed two-qubit IsingZZ feature map over 28 feature pairs, followed by three upload blocks each repeated twice, where each block applies RY rotations, a linear CZ entangling chain, mid-layer RY rotations, shared-parameter CRZ gates, reverse CZ entanglement, and final RZ rotations. Training uses an Adam optimizer on an L2 loss with per-circuit gain/bias calibration and early stopping on validation loss.  
+- **Performance**: Achieves mean train/validation/test accuracies of 0.92/0.83/0.86 (combined score 0.77), with a generalization gap of 0.06, 152 parameters, depth 114, and gate count 318.  
+- **Feedback**: Shared CRZ parameters provided regularization and consistent entanglement patterns improved information flow, yielding robust test accuracy, though the relatively high parameter count led to low parameter efficiency (0.01). Early stopping restored best weights but convergence did not occur before the maximum epochs.
+**Program Identifier:** Generation 7 - Patch Name enhanced_entanglement_with_parameter_sharing - Correct Program: True
+
+**Program Name: 8-Qubit Reuploading Ansatz Classifier**
+- **Implementation**: Constructs an ansatz of six layered blocks per upload—single-qubit RX/RY/RZ rotations, nearest-neighbor CZ entanglement, alternating CRZ controlled rotations, and long-range CRY couplings—repeated over three feature-map uploads and two repeats for a total of 194 trainable parameters. Inputs are encoded via fixed IsingZZ phase couplings, and the model is trained with Adam on an L2 loss augmented by learnable gain/bias calibration and early-stopping.
+- **Performance**: Achieves mean train accuracy 0.97, validation/test accuracy 0.87 (generalization gap 0.10), depth 126, 318 gates, and combined score 0.78.
+- **Feedback**: The rich entangling structure yields near-perfect training performance but shows moderate overfitting, and the high parameter count leads to low parameter efficiency despite strong expressiveness.
+**Program Identifier:** Generation 8 - Patch Name enhance_entanglement_with_controlled_rotations - Correct Program: True
+
+**Program Name: Re-uploading 8-qubit Quantum Classifier**  
+- **Implementation**: Encodes 28 binary features via fixed two-qubit IsingZZ phase couplings across predetermined qubit pairs, followed by three re-upload cycles of a custom ansatz block—per-qubit RY and RX rotations, CZ entanglers, and RZ rotations—implemented in PennyLane with Adam optimization and early stopping on mean-square loss.  
+- **Performance**: Achieved 94% train, 89% validation, and 87% test accuracy (generalization gap 0.07) using 146 parameters, depth 87, gate count 270, for a combined score of 0.85.  
+- **Feedback**: The layered rotation–entanglement structure yields high accuracy but low parameter efficiency (0.01), and early stopping effectively curbs overfitting; reducing parameter count or pruning gates may further improve generalization.
+**Program Identifier:** Generation 12 - Patch Name alternating_cz_chains_entanglement - Correct Program: True
+
+**Program Name: 8-Qubit Re-uploading Ansatz Classifier**  
+- **Implementation**: Feature vectors are encoded via three IsingZZ re-uploadings of 28 binary features, followed by an ansatz block with shared RY pre-rotations on even/odd wires, RZ layers before/after a nearest-neighbor CZ chain repeated twice per upload; parameters are optimized using Pennylane’s backprop with Adam and a trainable gain/bias output calibration.  
+- **Performance**: Achieved a combined score of 0.88, with mean accuracies of 0.92 (train), 0.90 (validation), and 0.87 (test), converging in ~540 steps over a depth-99, 270-gate circuit.  
+- **Feedback**: Symmetric parameter sharing and structured entanglement yielded stable high accuracy and a small generalization gap (~0.04), and early-stopping with restored best weights ensured robust convergence; however, the low parameter efficiency (~0.01) suggests the ansatz may be over-parameterized.
+**Program Identifier:** Generation 9 - Patch Name hybrid_prepost_rz_shared_params - Correct Program: True
+
+**Program Name:** Recycled Single-Parameter Ansatz Classifier  
+- **Implementation:** Defines an 8-qubit binary classifier using a fixed 28-dimensional IsingZZ feature map with three re-uploads and two repeats, interleaving CZ entangling layers and fully shared RY rotations to enforce a single trainable angle per block (8 circuit parameters) plus a gain and bias for readout calibration.  
+- **Performance:** Achieved a combined score of 0.89 with train/validation accuracies of 0.90, test accuracy of 0.89, a minimal generalization gap of 0.01, parameter efficiency of 0.11, circuit depth of 99, and 210 gates, converging in 120 steps.  
+- **Feedback:** The extreme parameter-sharing design delivers high efficiency, stable convergence, and negligible overfitting, though its expressivity may be constrained by the single-parameter-per-block scheme.
+**Program Identifier:** Generation 10 - Patch Name full_block_recycling_via_ansatz - Correct Program: True
+
+**Program Name: 8-Qubit Re-uploading CZ-Rich Ansatz**  
+- **Implementation**: Constructs a 3-upload, 2-repeat QML circuit on 8 qubits using a fixed IsingZZ feature map and a custom ansatz block with tied RY/RZ rotations, dense CZ couplings, and parametrized CRY/CRZ/CRX gates. Training uses Pennylane’s autograd backend with Adam, L₂ loss, trainable output gain/bias, early stopping, and best-weight restoration.  
+- **Performance**: Achieves a combined score of 0.90 (train/validation accuracy 0.92, test accuracy 0.90; generalization gap 0.02) using 44 parameters, circuit depth 144, and 402 gates.  
+- **Feedback**: Parameter tying and feature re-uploads yield strong expressive power with low overfitting, converging in ≈180 steps; the dense CZ layout balances depth and generalization effectively.
+**Program Identifier:** Generation 11 - Patch Name depth_boost_enhanced_entanglement - Correct Program: True
+
+**Program Name: Symmetric-Shared 8-Qubit Quantum Classifier**  
+- **Implementation**: Encodes 28 binary features via repeated IsingZZ phase maps over 3 uploads, interleaved with ansatz blocks of shared even/odd RX, RY, RZ rotations and CRY entangling gates (nearest-neighbor and long-range) plus fixed CZ couplings; training uses Pennylane’s autograd backprop with an Adam optimizer, L2 loss, early stopping, and gain/bias calibration on averaged Z measurements.  
+- **Performance**: Achieved a combined score of 0.89 with train/validation/test accuracies ~0.91/0.91/0.90, a generalization gap of 0.01, depth 105, 300 gates, 50 parameters, and convergence in ~120 steps.  
+- **Feedback**: Symmetric parameter sharing enabled high accuracy and minimal overfitting with only 50 parameters; the moderate circuit depth provided sufficient expressivity, though the parameter efficiency (0.02) indicates potential for further ansatz compression.
+**Program Identifier:** Generation 13 - Patch Name full_block_recycling_via_ansatz_spec - Correct Program: True
+
+**Program Name: 8-Qubit Re-uploading Quantum Classifier**  
+- **Implementation**: The circuit uses a fixed IsingZZ feature map encoding 28 binary features over 3 data re-upload layers. Each upload applies 2 repeats of a 7-stage parametric ansatz block—including local RX/RY/RZ rotations, shared-parameter CRY/CRZ entanglers on adjacent qubit pairs, and long-range CZ couplings—optimized with Pennylane’s Adam optimizer, early stopping, and trainable output gain/bias calibration.  
+- **Performance**: Combined score 0.84 with train/validation/test accuracies of 0.96/0.88/0.88 and a generalization gap of 0.07.  
+- **Feedback**: Shared entangling parameters yielded strong expressivity and stable convergence (~510 steps), but the circuit’s depth (105) and 206 parameters led to low parameter efficiency and a moderate overfitting risk due to high resource demands.
+**Program Identifier:** Generation 15 - Patch Name enhanced_entanglement_with_diagonal_cz - Correct Program: True
+
+**Program Name: 8-Qubit Shared-Rotation CZ Ansatz Classifier**  
+- **Implementation**: A Pennylane-based binary classifier encodes 28 binary features via three repeated IsingZZ feature‐map uploads and applies six ansatz blocks with shared RY and RZ rotations surrounding alternating nearest‐neighbor and cross‐chain CZ entangling layers, using 18 circuit parameters plus trainable gain and bias. Training uses an Adam optimizer on mean-squared error loss with mini-batch updates and validation-based early stopping.  
+- **Performance**: Achieved a combined score of 0.87 with 90% train accuracy, 88% validation/test accuracy, a 2% generalization gap, and parameter efficiency of 0.04 over 20 parameters.  
+- **Feedback**: The shared-parameter rotations and alternating entanglement patterns produce a shallow (depth 96, 288 gates) yet expressive circuit that generalizes well, and validation-driven early stopping effectively prevents overfitting.
+**Program Identifier:** Generation 16 - Patch Name alternating_cz_connectivity - Correct Program: True
+
+**Program Name: Shared-Parameter CZ-Connected Ansatz Classifier**  
+- **Implementation**: Encodes 28-bit binary features via an IsingZZ feature map over 3 reuploads and applies an 8-layer ansatz on 8 qubits—first two layers of fully shared RY/RZ rotations, three successive CZ connectivity patterns, mid-layer shared RY and CRY gates—repeated twice per upload for a total of 32 trainable parameters.  
+- **Performance**: Combined score 0.89 with mean train/validation/test accuracies of 0.90/0.90/0.88 and a 0.02 generalization gap.  
+- **Feedback**: Extensive CZ entangling and parameter sharing deliver stable high accuracy and low overfitting, but the resulting circuit depth (136) and gate count (366) yield low parameter efficiency (0.03), indicating potential to simplify the ansatz while preserving performance.
+**Program Identifier:** Generation 17 - Patch Name alternating_cz_connectivity - Correct Program: True
+
+**Program Name: Parity-Sharing 8-Qubit Ansatz Classifier**  
+- **Implementation**: Utilizes parity-based parameter sharing for RY/RZ rotations, fixed nearest- and next-nearest-neighbor CZ entanglement, and long-range CRY/CRZ/CRX couplings repeated over three feature uploads and two repeats, with a trainable gain/bias readout and Adam optimization on L2 loss.  
+- **Performance**: Combined score 0.88 with train/validation/test accuracies of 0.94/0.89/0.90, a 0.04 generalization gap, 44 parameters, circuit depth 132, and 330 gates.  
+- **Feedback**: Parity-based sharing and strategic long-range entanglement delivered high accuracy and parameter efficiency, though the resulting circuit depth and gate count may challenge near-term hardware.
+**Program Identifier:** Generation 19 - Patch Name parity_ry_sharing_with_crz_entanglement - Correct Program: True
+
+**Program Name: 8-Qubit Binary Classifier with Feature Reuploading**  
+- **Implementation**: Uses a three-layer feature reuploading scheme where each 28-bit record is encoded via fixed IsingZZ couplings, followed by repeated ansatz blocks of per-qubit RY/RZ rotations, CZ entangling chains, CRY cross-layer couplings, and two readout calibration parameters, all trained with Adam on an L2 loss.  
+- **Performance**: Combined score 0.85 with 0.90 train, 0.86 validation, and 0.84 test accuracy over an 80-parameter, depth-138, 426-gate circuit.  
+- **Feedback**: The structured entanglement and reuploading yield high accuracy and a small 0.06 generalization gap, but the relatively large depth and parameter count lead to low parameter efficiency (~0.01), indicating room to simplify the ansatz.
+**Program Identifier:** Generation 20 - Patch Name variational_readout_layer - Correct Program: True
+
+**Program Name: 8-Qubit Symmetric Layered Ansatz with CRY and CZ**  
+- **Implementation**: The circuit alternates three fixed IsingZZ feature-map uploads with two repeated ansatz layers featuring shared RX/RY/RZ rotations on even/odd qubits, CRY nearest-neighbor, CZ next-nearest, and CRZ cross-block entanglement across 8 qubits, totaling 50 trainable parameters. Training uses an Adam optimizer on L2 loss with early stopping and gain/bias readout calibration in Pennylane.  
+- **Performance**: Achieved a combined score of 0.87 (train/validation/test accuracies 0.92/0.87/0.88) with a circuit depth of 105 and 300 gates.  
+- **Feedback**: Shared parameters effectively reduce model size and sustain accuracy with a small generalization gap (~0.04), but the low parameter efficiency (0.02) and fixed entanglement pattern suggest room for further circuit compression.
+**Program Identifier:** Generation 21 - Patch Name hierarchical_two_qubit_rotation_tying - Correct Program: True
+
+**Program Name: 8-Qubit Evolve Ansatz Classifier**  
+- **Implementation**: Encodes 28 binary features via two-qubit IsingZZ gates, then applies an ansatz block of shared RX/RY/RZ rotations, CZ ladder and skip-connection entanglement plus selective CRY couplings over 3 data reuploads and 2 repeats, optimizing 26 circuit parameters and a gain/bias term with PennyLane’s Adam optimizer.  
+- **Performance**: Combined score 0.89; achieves 0.88 mean accuracy on train/validation/test with zero generalization gap, MSE ~0.38, depth 100 and 294 gates converging in ~120 steps.  
+- **Feedback**: The sparse shared-parameter design delivers stable convergence and minimal overfitting, but its low parameter efficiency (0.03) suggests that adding per-qubit parameters or richer entanglement could enhance expressivity and performance.
+**Program Identifier:** Generation 14 - Patch Name multi_basis_entangling_ladder - Correct Program: True
+
+**Program Name: Layered Parity-Shared 8-Qubit Ansatz Classifier**  
+- **Implementation**: The circuit performs three feature-map uploads interleaved with ansatz blocks featuring parity-shared RY/RZ rotations, fixed nearest- and next-nearest-neighbor CZ entanglements, and shared long-range CRY couplings. Trainable gain and bias readout are optimized via Adam on L2 loss with early stopping.  
+- **Performance**: Achieved combined score 0.89 with 0.91 train/validation accuracy, 0.90 test accuracy, 0.02 generalization gap, 38 parameters, depth 126, and gate count 294.  
+- **Feedback**: Parity-based parameter sharing and shared long-range entanglers yield a compact circuit that maintains high accuracy and low overfitting, though parameter efficiency remains modest.
+**Program Identifier:** Generation 18 - Patch Name parity_tiered_ansatz - Correct Program: True
+
+**Program Name: 8-Qubit Shared-Parameter Ansatz Classifier**  
+- **Implementation**: This classifier encodes 28 binary features via fixed IsingZZ couplings on predefined qubit pairs, then alternates three feature‐map uploads with two repeats of a six‐layer ansatz block—comprising shared RY/RZ rotations, nearest‐neighbor and cross-ring CZ entanglers, and a shared CRY layer—followed by trainable gain/bias readout. Training uses Pennylane’s autograd backend with an Adam optimizer, L2 loss, mini-batch updates, and early stopping with best-weight restoration.  
+- **Performance**: Combined score 0.91 with mean test accuracy 0.93, validation accuracy 0.92, generalization gap 0.01, using 26 parameters, circuit depth 150, and 348 gates.  
+- **Feedback**: The aggressive parameter-sharing scheme and inclusion of both local and long-range entanglement yielded high accuracy and strong generalization, although the gate count remains large relative to the parameter budget, indicating potential for circuit compression.
+**Program Identifier:** Generation 22 - Patch Name enhanced_connectivity_with_balanced_params - Correct Program: True
+
+**Program Name: Minimal Shared-Parameter 8-Qubit Classifier**  
+- **Implementation**: An 8-qubit ansatz applies a single shared RY parameter “theta” across all qubits, fixed nearest- and next-nearest-neighbor CZ entanglement layers, and two shared readout rotation parameters (RY and RZ) before measurement, repeated over three feature reuploads and two ansatz blocks. Training uses L2 loss with an Adam optimizer, early stopping on validation loss, and a linear gain-bias calibration on the averaged Z-expectations.  
+- **Performance**: Achieved 0.88 train/validation accuracy and 0.89 test accuracy with 20 parameters, depth 111, gate count 306, and parameter efficiency 0.04.  
+- **Feedback**: The highly parameter-efficient, shared-parameter design delivered stable accuracy with zero generalization gap and benefited from minimal readout corrections, though its low parameter efficiency suggests limited expressiveness for more complex tasks.
+**Program Identifier:** Generation 24 - Patch Name variational_readout_in_ansatz - Correct Program: True
+
+**Program Name: 8-qubit symmetric layered quantum classifier**  
+- **Implementation**: An 8-qubit binary classifier using a fixed IsingZZ feature map with three data re-uploadings and two ansatz repeats; each block comprises six layers of parameter-shared RX/RY/RZ rotations on symmetric qubit pairs, CRY nearest-neighbor and long-range entanglement, and alternating CZ-chain connectivity, trained via Adam with a linear gain-bias readout.  
+- **Performance**: Combined score 0.89 with mean train/validation/test accuracies of 0.91/0.90/0.88, a small generalization gap of 0.03, circuit depth 132, gate count 342, and 50 total parameters.  
+- **Feedback**: Parameter sharing and repeated entanglement layers delivered strong generalization and accuracy with low parameter count, though the deep, densely entangled circuit may affect scalability and yields modest parameter efficiency (0.02).
+**Program Identifier:** Generation 25 - Patch Name alternating_cz_chain_rewiring - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+- **Lean shared‐parameter blocks drive top scores**  
+  – Generation 22 (“8-Qubit Shared-Parameter Ansatz Classifier”) uses only four shared keys per block (ry_init, rz_main, cry_nnn, ry_final), for a total of 26 variational parameters, yet achieves the best combined score (0.91) with train/val/test accuracies of 0.94/0.92/0.93 and a generalization gap of 0.01.  
+  – This contrasts with higher-param designs (e.g., Gen 18’s 38 params, Gen 25’s 50 params) that plateau at a 0.89 combined score.
+
+- **Dense CZ plus targeted CRY entanglement**  
+  – Gen 22 interleaves a nearest-neighbor CZ ring and cross-ring CZ layer with a single shared CRY on next-nearest neighbors, striking a balance between connectivity and parameter count.  
+  – Circuits lacking either the cross-ring CZ (Gen 14: ladder only, 0.89) or mid-block CRY (e.g., symmetric Gen 25 missing CRY/CRZ/CRX parameters) never exceed 0.89 combined.
+
+- **Three feature reuploads × two ansatz repeats**  
+  – All top performers (Gen 14, Gen 18, Gen 22) adhere to N_UPLOADS=3 and N_REPEATS=2, confirming that the “3 uploads + 2 repeats” pattern consistently underlies stable convergence (Gen 22 converges in ~270 steps to ≥0.90 accuracy).
+
+- **Selective two-qubit parametrization suffices**  
+  – Limiting trainable two-qubit rotations to a single shared CRY key, instead of multiple CRX/CRZ layers, still outperforms more elaborate multi-gate schemes—highlighting that judicious placement of one mid-block entangler can maximize expressivity per parameter.
+
+## Ineffective Approaches
+
+- **Over-compression below ~24 params**  
+  – Generation 24 (“Minimal Shared-Parameter”) uses 20 params with depth 111 and reaches only a 0.88 combined score (0.89 test accuracy), showing that excessive parameter tying reduces circuit expressivity.
+
+- **Parity-tiered sharing without uniform coverage**  
+  – Gen 18’s parity-shared RY/RZ (38 params) and long-range CRY achieve 0.89 combined, but still underperform the uniformly shared layout of Gen 22, suggesting that tying parameters identically across all qubits is more effective than parity subsets.
+
+- **Shallower circuits (<132 depth)**  
+  – Gen 14 (depth 100) and Gen 24 (depth 111) cap out at 0.89 and 0.88 combined, respectively, reinforcing that depth around 140–150 is required to reach ≥0.90.
+
+- **Missing mid-block parametrized entanglers**  
+  – Designs that rely only on CZ chains and readout rotations (e.g., symmetric Gen 25 with shared RX/RY/RZ but no CRY/CRZ/CRX) stall at 0.89, indicating that mid-block two-qubit gates are essential for >0.89.
+
+## Implementation Insights
+
+- **Robust ansatz‐spec validation**  
+  – All top programs (including Gen 22) report empty SPEC_ERRORS, and their accuracy std is 0.00, showing that early validation via `validate_ansatz_spec` is critical to avoid silent misconfigurations.
+
+- **Offset‐plus‐key mapping for parameter slicing**  
+  – Using `PARAMETER_KEYS_PER_BLOCK` plus a `key_to_position` dict to compute `offset = block_index * N_PARAMS_PER_BLOCK` simplifies `apply_ansatz_block`, ensuring each shared parameter is applied consistently across the six blocks.
+
+- **Decoupled feature_map vs. variational layers**  
+  – Separating `feature_map` (fixed IsingZZ encodings) from `apply_ansatz_block` (rotations and entanglers) accelerates experimentation: Gen 22 swapped in cross-ring CZ and CRY without touching data-upload logic.
+
+- **Minimal, descriptive param naming**  
+  – Labels like “ry_init”, “rz_main”, “cry_nnn”, “ry_final” keep the spec concise (4 keys) while capturing functional roles, reducing cognitive load and controlling N_PARAMS_PER_BLOCK.
+
+## Performance Analysis
+
+- **Best score at mid-20s parameter count**  
+  – Gen 22’s 26 params yield the highest combined score (0.91). Circuits with ∼20 params hit 0.88, those with 38–50 params reach 0.89, and richer schemes (>60 params) show no further gains.
+
+- **Depth ~150 correlates with top accuracy**  
+  – The current best (depth 150) outperforms shallower variants (depth 100–132), confirming that depth in the 140–150 range is a sweet spot for this task.
+
+- **Gate count ~348 balances expressivity and trainability**  
+  – Gen 22’s 348 gates produce a generalization gap of only 0.01, whereas sparser circuits (≈300 gates) see gaps of 0.02–0.03.
+
+- **Convergence vs. depth trade-off**  
+  – Although Gen 22 requires ~270 steps to cross 0.90 accuracy—more than Gen 14’s ~120 steps—it ultimately achieves a higher asymptotic accuracy (0.93 test vs. 0.89 test), underscoring that depth and richer connectivity pay off with more training.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Introduce coarse‐grained entanglement parameter tying  
+   – Add a second shared two‐qubit rotation key “cry_nn” for nearest‐neighbor edges alongside the existing “cry_nnn” for next‐nearest neighbors.  
+   – In your ANSATZ_SPEC’s Layer 5, apply CRY(cry_nn) to wires [(0,1),(1,2),…,(7,0)] and retain CRY(cry_nnn) on [(0,2),(2,4),…].  
+   – This adds just one extra parameter per block (N_PARAMS_PER_BLOCK→5) and tests whether distinguishing local vs. non‐local entanglers boosts expressivity per parameter, building on the success of selective two‐qubit parametrization.  
+
+2. Enrich mid‐block nonlinearity with a shared IsingZZ layer  
+   – Insert immediately after the cross‐ring CZ layer (Layer 3) a layer of qml.IsingZZ gates on each FEATURE_PAIRS[k], all sharing a new key “zz_mid.”  
+   – Update feature_map or ANSATZ_SPEC to include these fixed wires with a trainable “zz_mid” rotation.  
+   – This leverages the stable gradient flow of IsingZZ (as used in the feature map) to increase nonlinearity without significant depth or parameter‐count overhead.  
+
+3. Alternate CZ‐ring connectivity across blocks  
+   – In apply_ansatz_block, branch on block_index parity: for even blocks use the standard nearest‐neighbor CZ ring, for odd blocks shift every CZ by +1 mod N (i.e. apply CZ(i+1,i+2) mod 8).  
+   – Keep the same total of eight CZ gates per block so gate_count and depth remain constant.  
+   – This “dynamic rewiring” injects broader connectivity over repeats without extra gates, inspired by the rapid‐convergence of dense‐CZ designs.  
+
+4. Add compact per‐wire variational readout rotations  
+   – After all ansatz blocks and before measurement in circuit_z_expectations, apply qml.RY(params[…],wires=i) and qml.RZ(params[…],wires=i) on each qubit using two new shared keys “ry_read” and “rz_read.”  
+   – These two keys supplement the gain/bias calibration and capture residual phase offsets per wire with negligible depth overhead.  
+   – Similar readout corrections have lifted test accuracy in tight‐parameter regimes.  
+
+5. Mix two‐qubit rotation axes across uploads  
+   – Modify Layer 5 so that, based on upload_index = block_index // N_REPEATS, you use CRY(cry_nnn) in odd uploads and CRZ(cry_nnn) in even uploads on the same next‐nearest pairs.  
+   – This alternation keeps N_PARAMS_PER_BLOCK fixed while testing whether combining multiple rotation axes per entanglement scale enhances expressivity.  
+   – It builds on the efficacy of single‐gate mid‐block entanglers by exploring cross‐axis richness without parameter explosion.

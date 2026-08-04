@@ -1,0 +1,29 @@
+Looking at the performance metrics and the recommendation provided, I can see that:
+
+1. The current program scores 0.57, while the second prior program (which used CRX and CRY instead of some Ising gates) scored 0.59
+2. The recommendation suggests replacing the ZZ gate at [4,5] with CRZ to potentially improve expressivity
+3. The worst_group_margin is the bottleneck (0.27 in current, 0.31 in the better prior), indicating the model struggles with hard samples
+4. The second prior program achieved better separation by using controlled parametrized gates (CRX, CRY) instead of Ising gates, while reducing parameters
+
+The key insight is that controlled gates provide more expressive power for the same parameter count, and the [4,5] link appears to be a critical bottleneck. Replacing the ZZ gate there with CRZ should:
+- Maintain parameter efficiency (1 parameter vs 1 parameter)
+- Provide better expressivity through controlled-phase rotation
+- Improve worst_group_margin by better separating hard samples
+
+Additionally, I notice the current program has regressed from the second prior by reverting to simpler Ising gates. I should apply the CRZ replacement as recommended, which aligns with what made the second prior successful.
+
+<NAME>
+replace_zz_with_crz_at_bottleneck
+</NAME>
+
+<DESCRIPTION>
+Replace the ZZ gate at wires [4,5] with a CRZ gate to improve expressivity at this critical entangling link. The second prior program demonstrated that controlled parametrized gates (CRX, CRY) outperform simple Ising gates while maintaining parameter efficiency. This change applies the same principle to the [4,5] bottleneck which connects the two halves of the circuit. CRZ provides controlled-phase rotation which should better separate difficult samples (improving worst_group_margin from 0.27 to potentially 0.31+) without increasing parameter count.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+=======
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_45"},
+>>>>>>> REPLACE
+</DIFF>

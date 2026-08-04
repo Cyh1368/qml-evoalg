@@ -1,0 +1,89 @@
+<NAME>
+hierarchical_tri_correlation_ansatz
+
+<DESCRIPTION>
+This design keeps the proven-good hub-centric CRZ entangling structure from the best-performing seed (score 0.63) intact — since experiments showed that replacing shared CRZ gates with fixed CZ gates hurt performance (0.59) — but extends it with genuinely new structure rather than just tweaking two-qubit gates. Specifically:
+
+1. Retains the original 9 RY encoding rotations and the 9-unique-parameter hub/secondary/final CRZ entangling cascade that gave the best score, since two-qubit *parametrized* rotations clearly outperform fixed CZ gates for this task.
+2. Inserts a single lightweight mid-circuit RX "refresh" gate on the hub qubit (wire 0) right after the CRZ entangling cascade. This re-injects amplitude mixing at the most highly-connected node with only +1 parameter, potentially improving gradient flow through the deepest entangling point without adding much depth.
+3. Adds a small set of genuine three-qubit interaction gates (ZZZ and CCRZ) spanning previously unconnected qubit triples (0,4,8), (2,3,7), (1,5,6). Unlike the purely pairwise CRZ cascade, these operators can capture genuine tripartite correlations among distant qubits that no combination of two-qubit gates (restricted to the given connectivity graph) can produce directly. This should help model higher-order feature interactions the previous two-qubit-only circuits could not represent, while only adding 3 extra parameters.
+4. Keeps the final per-qubit RZ post-rotation layer for readout-side flexibility.
+
+Net parameter increase per block is modest (+4 unique parameters: 1 RX-refresh + 3 three-body terms), so total parameter count stays close to the well-performing 162-parameter regime rather than exploding, while adding qualitatively new expressive power (tripartite correlations + a targeted mid-circuit refresh) that the pure pairwise-CRZ design structurally lacks.
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 9
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_THREE_QUBIT_GATES = {"ZZZ", "CCRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # --- Feature encoding rotations ---
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+
+    # --- Hub-qubit-0 entanglers (parametrized) ---
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_2"},
+
+    # --- Secondary locality clusters, symmetric sharing to limit params ---
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [4, 8], "param": "crz_9"},
+
+    # --- Final pairwise cluster ---
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_10"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+
+    # --- Mid-circuit amplitude refresh on the entanglement hub ---
+    {"gate": "RX", "wire": 0, "param": "rx_mid_0"},
+
+    # --- Genuine tripartite correlation terms (new expressive power) ---
+    {"gate": "ZZZ", "wires": [0, 4, 8], "param": "zzz_0"},
+    {"gate": "CCRZ", "wires": [2, 3, 7], "param": "ccrz_0"},
+    {"gate": "ZZZ", "wires": [1, 5, 6], "param": "zzz_1"},
+
+    # --- Post-entangling local phases (readout-side flexibility) ---
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_8"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

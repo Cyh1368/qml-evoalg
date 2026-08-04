@@ -1,0 +1,58 @@
+"""Compact shared-parameter butterfly ansatz."""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # A single tied angle regularizes the model. Alternating noncommuting axes
+    # allow even and odd encoded channels to respond differently.
+    {"gate": "RY", "wire": 0, "param": "shared_mix"},
+    {"gate": "RX", "wire": 1, "param": "shared_mix"},
+    {"gate": "RY", "wire": 2, "param": "shared_mix"},
+    {"gate": "RX", "wire": 3, "param": "shared_mix"},
+    {"gate": "RY", "wire": 4, "param": "shared_mix"},
+    {"gate": "RX", "wire": 5, "param": "shared_mix"},
+    {"gate": "RY", "wire": 6, "param": "shared_mix"},
+    {"gate": "RX", "wire": 7, "param": "shared_mix"},
+
+    # Log-depth butterfly mixing: each stage doubles the distance over which
+    # encoded information can influence the circuit state.
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+
+    {"gate": "CNOT", "wires": [1, 3]},
+    {"gate": "CNOT", "wires": [0, 2]},
+    {"gate": "CNOT", "wires": [5, 7]},
+    {"gate": "CNOT", "wires": [4, 6]},
+
+    {"gate": "CNOT", "wires": [3, 7]},
+    {"gate": "CNOT", "wires": [2, 6]},
+    {"gate": "CNOT", "wires": [1, 5]},
+    {"gate": "CNOT", "wires": [0, 4]},
+
+    # The same parameter is reused after aggregation. Swapping the parity-axis
+    # assignment creates a nontrivial tied transformation without extra
+    # trainable degrees of freedom.
+    {"gate": "RX", "wire": 0, "param": "shared_mix"},
+    {"gate": "RY", "wire": 1, "param": "shared_mix"},
+    {"gate": "RX", "wire": 2, "param": "shared_mix"},
+    {"gate": "RY", "wire": 3, "param": "shared_mix"},
+    {"gate": "RX", "wire": 4, "param": "shared_mix"},
+    {"gate": "RY", "wire": 5, "param": "shared_mix"},
+    {"gate": "RX", "wire": 6, "param": "shared_mix"},
+    {"gate": "RY", "wire": 7, "param": "shared_mix"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

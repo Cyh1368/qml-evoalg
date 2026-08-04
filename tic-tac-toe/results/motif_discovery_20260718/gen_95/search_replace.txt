@@ -1,0 +1,150 @@
+<NAME>
+restore_line_aligned_zzz_and_rotations
+</NAME>
+
+<DESCRIPTION>
+Restore a motif-aligned ansatz that previously yielded stronger performance:
+- Reintroduce distinct ZZZ parameters grouped by geometric role (rows, cols, diags)
+  instead of a single shared "zzz_line" to let the circuit learn line-specific
+  three-body correlations.
+- Restore compact symmetry-grouped initial RY rotations and two shared CRZ
+  coupling parameters (ring vs center) as in the better-performing seed.
+- Add compressed CCRZ groupings (center vs diag) for high-order correlations.
+- Replace the single post-RZs with compact RZ+RX tied parameters per symmetry
+  region ("rot_*") to increase expressivity while keeping parameter-efficiency.
+This increases N_PARAMS_PER_BLOCK from 11 -> 13 (N_PARAMS 66 -> 78), matching
+the earlier stronger seed and restoring the ordering of motifs that empirically
+gave better validation/test accuracy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Layer 1: Symmetry-grouped RY rotations (efficient local rotations)
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Layer 2: CCRZ doubly-controlled interactions on winning line motifs
+    # Condition on edges to rotate the center/corners
+    {"gate": "CCRZ", "wires": [0, 2, 1], "param": "ccrz_line"},
+    {"gate": "CCRZ", "wires": [2, 4, 3], "param": "ccrz_line"},
+    {"gate": "CCRZ", "wires": [4, 6, 5], "param": "ccrz_line"},
+    {"gate": "CCRZ", "wires": [6, 0, 7], "param": "ccrz_line"},
+    {"gate": "CCRZ", "wires": [1, 5, 8], "param": "ccrz_center"},
+    {"gate": "CCRZ", "wires": [3, 7, 8], "param": "ccrz_center"},
+    {"gate": "CCRZ", "wires": [0, 4, 8], "param": "ccrz_center"},
+    {"gate": "CCRZ", "wires": [2, 6, 8], "param": "ccrz_center"},
+
+    # Layer 3: Parametrized grid-based entanglement with shared parameters
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_grid"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_grid"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_grid"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_grid"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_grid"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_grid"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_grid"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_grid"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_to_center"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_to_center"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_to_center"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_to_center"},
+
+    # Layer 4: ZZZ on all 8 winning lines with shared parameter for efficiency
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_line"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_line"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_line"},
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_line"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_line"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_line"},
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_line"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_line"},
+
+    # Layer 5: Symmetry-grouped post-phase RZ rotations for regularization
+    {"gate": "RZ", "wire": 0, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_center"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: Compact local rotations (shared by symmetry)
+    {"gate": "RY", "wire": 0, "param": "ry_corners"},
+    {"gate": "RY", "wire": 2, "param": "ry_corners"},
+    {"gate": "RY", "wire": 4, "param": "ry_corners"},
+    {"gate": "RY", "wire": 6, "param": "ry_corners"},
+    {"gate": "RY", "wire": 1, "param": "ry_edges"},
+    {"gate": "RY", "wire": 3, "param": "ry_edges"},
+    {"gate": "RY", "wire": 5, "param": "ry_edges"},
+    {"gate": "RY", "wire": 7, "param": "ry_edges"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Layer 2: Outer-ring entangling (shared) and radial center couplings (shared)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+    # All center-edge CRZs share a single center coupling parameter
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_center"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_center"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_center"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_center"},
+
+    # Layer 3: ZZZ motifs aligned with winning lines (kept distinct by geometry)
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_diags"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_diags"},
+
+    # Layer 4: CCRZ high-order correlations -- compressed symmetry groups
+    # edge-edge-center interactions share "ccrz_center"
+    {"gate": "CCRZ", "wires": [1, 5, 8], "param": "ccrz_center"},
+    {"gate": "CCRZ", "wires": [3, 7, 8], "param": "ccrz_center"},
+    # corner-corner-center interactions share "ccrz_diag"
+    {"gate": "CCRZ", "wires": [0, 4, 8], "param": "ccrz_diag"},
+    {"gate": "CCRZ", "wires": [2, 6, 8], "param": "ccrz_diag"},
+
+    # Layer 5: Compact final rotations: tie RZ+RX into a single 'rot_*' parameter per symmetry zone
+    # corners
+    {"gate": "RZ", "wire": 0, "param": "rot_corners"},
+    {"gate": "RX", "wire": 0, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 2, "param": "rot_corners"},
+    {"gate": "RX", "wire": 2, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 4, "param": "rot_corners"},
+    {"gate": "RX", "wire": 4, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 6, "param": "rot_corners"},
+    {"gate": "RX", "wire": 6, "param": "rot_corners"},
+    # edges
+    {"gate": "RZ", "wire": 1, "param": "rot_edges"},
+    {"gate": "RX", "wire": 1, "param": "rot_edges"},
+    {"gate": "RZ", "wire": 3, "param": "rot_edges"},
+    {"gate": "RX", "wire": 3, "param": "rot_edges"},
+    {"gate": "RZ", "wire": 5, "param": "rot_edges"},
+    {"gate": "RX", "wire": 5, "param": "rot_edges"},
+    {"gate": "RZ", "wire": 7, "param": "rot_edges"},
+    {"gate": "RX", "wire": 7, "param": "rot_edges"},
+    # center
+    {"gate": "RZ", "wire": 8, "param": "rot_center"},
+    {"gate": "RX", "wire": 8, "param": "rot_center"},
+]
+>>>>>>> REPLACE
+</DIFF>

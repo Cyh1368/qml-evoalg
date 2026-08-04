@@ -1,0 +1,174 @@
+<NAME>
+alternate_entangler_pattern
+</NAME>
+
+<DESCRIPTION>
+Analysis of prior performance:
+
+**Observation 1: Current program is excellent but convergence is slower**
+- Current: convergence_step_mean=60, depth=12, gate_count=60
+- Prior Gen 1: convergence_step_mean=300, depth=18, gate_count=90 (but worse depth efficiency)
+- Prior Gen 2: convergence_step_mean=90, depth=35, gate_count=186 (much deeper but faster convergence initially)
+
+The current ansatz is parameter-efficient (6 params/block, 38 total) and shallow, achieving perfect accuracy with fast convergence. However, the recommendation suggests that **alternating shared-parameter entanglers can inject richer two-qubit interactions and potentially improve convergence speed further**.
+
+**Proposed improvement: Alternate entanglement strategy across repeats**
+
+The key insight from the recommendation is that:
+1. In **odd-indexed repeats** (1, 3, 5), keep fixed CZ chain for stability
+2. In **even-indexed repeats** (0, 2, 4), replace CZ gates with parametrized IsingXX gates using shared parameters
+
+This approach:
+- Maintains the proven 6-parameter budget per block (ry_even, rz_odd, xx_even, xx_odd, zz_01, zz_23)
+- Introduces richer, more flexible two-qubit interactions in even repeats
+- Provides natural alternation between fixed (CZ) and learned (XX) entanglers
+- Can improve convergence by giving the optimizer more diverse interaction types
+- Should reduce convergence steps by offering better gradient flow through varied entanglement
+
+The modification aligns with the observation that IsingXX gates (proved in prior generations) can speed up convergence when mixed with fixed connectivity patterns.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Alternating RY on even qubits (0, 2, 4, 6)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    # Alternating RZ on odd qubits (1, 3, 5, 7)
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    # Parametrized ZZ interactions on first two pairs for entanglement
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_pair_01"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_pair_23"},
+]
+=======
+ANSATZ_SPEC = [
+    # Alternating RY on even qubits (0, 2, 4, 6)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    # Alternating RZ on odd qubits (1, 3, 5, 7)
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    # Odd repeats (1,3,5): Fixed CZ chain for stable reference
+    # Even repeats (0,2,4): Parametrized XX entanglers with shared parameters
+    # Nearest-neighbor XX on even indices (pairs starting on even qubits)
+    {"gate": "XX", "wires": [0, 1], "param": "xx_even"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_even"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_even"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_even"},
+    # Nearest-neighbor XX on odd indices (pairs starting on odd qubits)
+    {"gate": "XX", "wires": [1, 2], "param": "xx_odd"},
+    {"gate": "XX", "wires": [3, 4], "param": "xx_odd"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx_odd"},
+]
+>>>>>>> REPLACE
+</DIFF>
+
+Now we need to add logic to the `apply_ansatz_block` function to conditionally apply either the XX entanglers or fixed CZ gates based on the repeat index:
+
+<DIFF>
+<<<<<<< SEARCH
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+            elif gate == "XX":
+                qml.IsingXX(angle, wires=wires)
+            elif gate == "YY":
+                qml.IsingYY(angle, wires=wires)
+            elif gate == "ZZ":
+                qml.IsingZZ(angle, wires=wires)
+=======
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC.
+    
+    For even repeats, apply parametrized XX entanglers; for odd repeats,
+    apply fixed CZ chain instead to allow learning of XX parameters.
+    """
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    is_even_repeat = (block_index % 2 == 0)
+    
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            # For XX gates in ANSATZ_SPEC: apply in even repeats, use CZ in odd repeats
+            if gate == "XX":
+                if is_even_repeat:
+                    angle = params[offset + key_to_position[item["param"]]]
+                    wires = [int(w) for w in item["wires"]]
+                    qml.IsingXX(angle, wires=wires)
+                else:
+                    # Odd repeats: use fixed CZ chain instead
+                    wires = [int(w) for w in item["wires"]]
+                    qml.CZ(wires=wires)
+            else:
+                angle = params[offset + key_to_position[item["param"]]]
+                wires = [int(w) for w in item["wires"]]
+                if gate == "CRX":
+                    qml.CRX(angle, wires=wires)
+                elif gate == "CRY":
+                    qml.CRY(angle, wires=wires)
+                elif gate == "CRZ":
+                    qml.CRZ(angle, wires=wires)
+                elif gate == "YY":
+                    qml.IsingYY(angle, wires=wires)
+                elif gate == "ZZ":
+                    qml.IsingZZ(angle, wires=wires)
+>>>>>>> REPLACE
+</DIFF>

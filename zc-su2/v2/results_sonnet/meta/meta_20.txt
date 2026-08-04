@@ -1,0 +1,181 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit RY-RZ Ansatz with CZ Entanglers**  
+- **Implementation**: Defines an ansatz of single-qubit RY rotations on each of 8 qubits, followed by RZ rotations pre- and post- a linear chain of CZ gates, yielding 24 distinct rotation parameters in a 20-layer circuit.  
+- **Performance**: Achieves a combined score of 0.60 with perfect train (1.00) and test (1.00) accuracy, 0.99 validation accuracy, zero generalization gap, and converges in 60 steps.  
+- **Feedback**: The structured “sandwich” of RY/RZ layers and CZ entanglers delivers near-perfect accuracy and robustness across splits but results in low parameter efficiency (0.04) due to a high total gate count (93).
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: 8-Qubit Shared-Parameter ZZ-Ring Ansatz**  
+- **Implementation**: Builds an 8-qubit variational circuit with four pairs of RY/RZ rotations sharing parameters across qubit pairs, a ring of ZZ entangling gates using a single shared parameter, and a final layer of shared RZ rotations; the ansatz spec is passed untouched to a fixed backend via `run_experiment`.  
+- **Performance**: Achieved perfect train/validation/test accuracy (1.00) with a combined score of 0.62, low validation/test losses (~0.18/0.17), high parameter efficiency (0.07), 13 distinct parameters, circuit depth 20, and convergence in ~60 steps.  
+- **Feedback**: Parameter sharing delivers zero generalization gap and rapid convergence, demonstrating compact expressivity; exploring additional layers or varied entangling patterns could further boost decision margins.
+**Program Identifier:** Generation 1 - Patch Name reduce_params_grouped_sharing_with_ising_entangler - Correct Program: True
+
+**Program Name: Eight-Qubit RY-RZ CZ Ansatz**  
+- **Implementation**: The ansatz spec defines single-qubit RY rotations with unique parameters on each of the eight qubits, followed by single-qubit RZ rotations. It then applies a linear CZ entangling chain and repeats RZ rotations while reusing parameter names, with `run_experiment` delegating execution to the backend.  
+- **Performance**: Combined score: 0.0 (fails validation).  
+- **Feedback**: Reusing RZ parameters across layers likely restricts expressiveness and may conflict with validation requirements. The fixed linear CZ pattern and lack of parameterized two-qubit gates reduced flexibility, leading to incorrect implementation and test failures.
+**Program Identifier:** Generation 3 - Patch Name share_rz_pre_post_params - Correct Program: False
+
+**Program Name: CZ-Chain 8-Qubit Variational Ansatz**  
+- **Implementation**: Per-qubit RY rotations are followed by an RZ layer, a linear chain of CZ entangling gates across eight qubits, and a second RZ layer that reuses the same eight RZ parameters—yielding 18 parameterized gates with 16 distinct parameters. The `run_experiment` function delegates all encoding, measurement, and optimization to a fixed backend.  
+- **Performance**: Achieved a combined score of 0.61 with train / val / test accuracies of 1.00 / 0.98 / 0.99, a generalization gap of 0.01, depth 20, gate count 93, and convergence in 30 steps.  
+- **Feedback**: The simple linear entanglement and parameter reuse drove rapid convergence and near-perfect overall accuracy, but resulted in low parameter efficiency (0.05) and a moderate worst-group margin (0.34), suggesting possible over-parameterization for some subgroups.
+**Program Identifier:** Generation 5 - Patch Name none - Correct Program: True
+
+**Program Name: Single-Layer RY-CRZ-RZ Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz by applying an RY rotation on each wire, a ring of CRZ entangling gates all sharing a single parameter, and a final RZ rotation on each wire; this ANSATZ_SPEC is passed unchanged to a fixed backend via run_experiment.  
+- **Performance**: Combined score of 0.0 and fails all validation tests.  
+- **Feedback**: Using one shared CRZ parameter for all entanglers limits expressivity and likely violates expected parameter conventions, causing incorrect behavior; introducing distinct entanglement parameters or additional layers may be necessary to pass validation and improve performance.
+**Program Identifier:** Generation 6 - Patch Name none - Correct Program: False
+
+**Program Name: 8-Qubit Ring CRZ RY-RZ Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with alternating RY rotations shared across even/odd qubits, pre- and post-RZ layers similarly parameter-shared, and a ring of CRZ entangling gates using a single shared parameter, yielding 9 parameters (7 distinct) in a 20-depth, 93-gate layout.  
+- **Performance**: Achieved a combined score of 0.58 with perfect training accuracy (1.00), validation 0.90, test 0.91, a generalization gap of 0.09, and convergence in 240 steps.  
+- **Feedback**: Heavy parameter sharing produces a compact, fast-converging circuit with strong generalization but modest parameter efficiency (0.10); the ring CRZ layer effectively captures multi-qubit correlations while controlling gate count.
+**Program Identifier:** Generation 2 - Patch Name none - Correct Program: True
+
+**Program Name: Partitioned 8-Qubit Shared-CRZ Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz that applies RY rotations with two group-shared parameters across qubit halves, interleaved with pre- and post-RZ layers, then chains neighborwise CZ gates and a single shared-parameter CRZ entangler. The circuit uses 9 parameters (7 distinct) to balance expressivity, gate count, and depth.  
+- **Performance**: Achieves a combined score of 0.65 with perfect training accuracy, 0.98 validation/test accuracy, a 0.02 generalization gap, depth 26, and 114 gates.  
+- **Feedback**: Parameter sharing yields high efficiency (parameter efficiency 0.11) and rapid convergence (60 steps), though the modest worst-group margin (0.34) suggests limited expressivity in challenging subsets.
+**Program Identifier:** Generation 4 - Patch Name param_sharing_and_entangling_boost - Correct Program: True
+
+**Program Name: Shared-Parameter Ring Ansatz**  
+- **Implementation**: The ansatz uses two-group shared RY and RZ rotation layers surrounding a fully shared ZZ-ring entangler, totaling 20 layers and 93 gates over 8 qubits with only 5 distinct trainable parameters. Only the `ANSATZ_SPEC` is evolved, while input encoding, measurement, and training logic remain fixed in the backend.  
+- **Performance**: Achieved a combined score of 0.69 with perfect train/validation/test accuracy (1.00), zero generalization gap, validation/test losses of ~0.18/0.17, and converged in 60 steps.  
+- **Feedback**: Extensive parameter sharing enabled full accuracy and strong average margin (0.73) using minimal parameters, but yielded low parameter efficiency (0.14) and a modest worst-group margin (0.36), indicating potential robustness trade-offs.
+**Program Identifier:** Generation 8 - Patch Name param_economy_v4_grouped2 - Correct Program: True
+
+**Program Name: Ring-Entangled Pauli Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with two layers of parameter-shared RY and RZ rotations on qubit pairs surrounding a ring of ZZ entangling gates, using 11 total parameters (9 distinct) to balance expressivity and circuit complexity.  
+- **Performance**: Achieved a combined score of 0.64 with perfect train/validation/test accuracy, zero generalization gap, a validation loss of 0.18, depth 20, 93 gates, and convergence in 60 steps.  
+- **Feedback**: Shared parameters sharply reduce the parameter count while retaining perfect accuracy and healthy decision margins, though the modest parameter efficiency (0.09) and circuit depth suggest opportunities to streamline the design further.
+**Program Identifier:** Generation 9 - Patch Name none - Correct Program: True
+
+**Program Name: Shared-Parameter Ring Ansatz**  
+- **Implementation**: Defines an 8-qubit circuit with two shared-parameter RY and RZ layers (wires 0–3 vs 4–7) flanking a ring of ZZ entanglers split into even/odd edges, using 10 total parameter instances over 15 layers and 96 gates.  
+- **Performance**: Combined score 0.65; train/validation/test accuracy 1.00, validation/test loss ≈0.18/0.17, generalization gap 0.00, parameter efficiency 0.10, converging in ~60 steps.  
+- **Feedback**: The shared-parameter design delivers perfect accuracy and zero gap with high parameter efficiency, though a moderate worst-group margin (0.35) and nonzero loss indicate limited expressive margin despite full convergence.
+**Program Identifier:** Generation 10 - Patch Name none - Correct Program: True
+
+**Program Name: Shared-Parameter RY-RZ CZ Chain Ansatz**  
+- **Implementation**: Defines an eight-qubit ansatz where each qubit undergoes an RY and an RZ rotation using a shared set of eight parameters, a linear chain of CZ entangling gates, and a final layer of RZ rotations reusing the same parameters.  
+- **Performance**: Achieves a combined score of 0.64 with perfect training/validation accuracy (1.00), 0.99 test accuracy, a small 0.01 generalization gap, depth 20, 93 gates, and a low parameter efficiency of 0.10.  
+- **Feedback**: The parameter-sharing scheme yields strong overall accuracy with minimal overfitting, but the circuit is gate-heavy relative to its parameter count and exhibits a low worst-group margin (0.34), suggesting opportunities to streamline depth or bolster robustness in underperforming subgroups.
+**Program Identifier:** Generation 7 - Patch Name share_ry_rz_per_qubit - Correct Program: True
+
+**Program Name: 8-Qubit Ring Entangling Variational Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with two groups of shared RY rotations (ry_a on qubits 0–3, ry_b on qubits 4–7), shared pre- and post-RZ rotations (rz_pre_a/b and rz_post_a/b), a ring of ZZ entangling gates all sharing a single parameter, and calls `_run` with this specification.  
+- **Performance**: Achieved a combined score of 0.0 and does not pass validation tests.  
+- **Feedback**: Heavy parameter sharing and limited gate variety overly restrict circuit expressivity, and the ansatz specification appears misaligned with validation rules; introducing more diverse gates, finer-grained parameters, and correct gate/wire formatting could improve correctness and performance.
+**Program Identifier:** Generation 11 - Patch Name none - Correct Program: False
+
+**Program Name: Shared-Parameter RY–RZ ZZ Ring Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with two global RY parameters (ry_a, ry_b) and two global RZ parameters (rz_a, rz_b) flanking a fully shared ZZ entangling ring (zz_ring), then repeats this “sandwich” block twice for depth.  
+- **Performance**: Achieved a combined score of 0.69 with perfect train/validation/test accuracy (1.00), low validation/test losses (0.18/0.17), only 7 parameters, depth 35, and convergence in 30 steps.  
+- **Feedback**: Heavy parameter sharing yields excellent parameter efficiency (0.14) and zero generalization gap, though a moderate worst-group margin (0.36) suggests potential sensitivity in harder-to-classify subsets.
+**Program Identifier:** Generation 12 - Patch Name none - Correct Program: True
+
+**Program Name: Shared-Parameter 8-Qubit Ansatz**  
+- **Implementation**: Two-group RY pre-rotations and shared pre/post RZ layers are combined with a ring of ZZ entanglers and an orthogonal XX ring all tied to a single shared parameter, yielding 5 distinct trainable parameters in a 26-depth, 114-gate circuit.  
+- **Performance**: Achieved a combined score of 0.69 with perfect (1.00) train/validation/test accuracy, zero generalization gap, validation/test loss ≈ 0.17, parameter efficiency 0.14, and convergence in ~60 steps.  
+- **Feedback**: Aggressive parameter sharing delivered maximum accuracy and fast convergence, but the relatively low worst-group margin (0.36) suggests potential subgroup performance vulnerabilities.
+**Program Identifier:** Generation 13 - Patch Name xx_ring_shared_param - Correct Program: True
+
+**Program Name: Shared-Parameter RY-RZ-ZZ Entangling Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with a single shared parameter for all RY rotations, one shared parameter for RZ rotations applied both before and after entangling, and a ring of ZZ gates all using the same entangling parameter. The static ANSATZ_SPEC is passed to a backend `_run` function without any dynamic layering or additional two-qubit parametrized gates.  
+- **Performance**: Combined score = 0.0 (fails all validation tests).  
+- **Feedback**: The extreme reuse of only three global parameters (RY, RZ, ZZ) severely limits circuit expressivity, and the entangling ring omits the wrap-around ZZ between qubits 7 and 0; these design choices lead to validation errors and zero performance.
+**Program Identifier:** Generation 15 - Patch Name none - Correct Program: False
+
+**Program Name: Shared-Parameter RY-RZ ZZ-Ring Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with pre-rotation RY layers (two symmetric groups), shared RZ layers before and after a ZZ entangling ring, and a final global RZ fine-tuning layer, using only six distinct parameters across 23 circuit depth.  
+- **Performance**: Achieved a combined score of 0.67 with perfect train/validation/test accuracy, zero generalization gap, low losses (validation 0.18, test 0.17), 8 parameters (6 unique), depth 23, and 117 gates.  
+- **Feedback**: The heavy parameter sharing yields perfect accuracy and fast convergence (60 steps) while maintaining zero overfitting, though parameter efficiency is modest (0.12) and the worst-group margin is comparatively low (0.36), suggesting room to improve robustness without adding parameters.
+**Program Identifier:** Generation 14 - Patch Name none - Correct Program: True
+
+**Program Name: Asymmetric Shared-Parameter Entangling Ansatz**  
+- **Implementation**: The 8-qubit ansatz groups qubits into two RY-shared clusters, applies a single global RZ phase layer (pre/post entangling), a shared ZZ-ring for entanglement, and fixed CNOT ladders, using 6 total and 4 distinct parameters across a 60-depth circuit.  
+- **Performance**: Achieved a combined score of 0.70 with perfect training/validation accuracy, 99% test accuracy, a 0.01 generalization gap, 138 gates, and convergence in 30 steps.  
+- **Feedback**: Shared-parameter design enabled rapid convergence and full accuracy with minimal parameters, but moderate parameter efficiency (0.16) and a lower worst-group margin (0.33) indicate potential robustness trade-offs.
+**Program Identifier:** Generation 16 - Patch Name none - Correct Program: True
+
+**Program Name: Shared-Parameter ZZ Ring Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with a single shared RY pre-rotation, two shared RZ layers (pre- and post-entangling), and a shared-parameter ZZ entangling chain (qubits 0–1 through 6–7).  
+- **Performance**: Achieves a combined score of 0.0, failing all validation tests.  
+- **Feedback**: The entangling layer omits the wrap-around ZZ gate between qubits 7 and 0, breaking the intended ring topology and causing validation failures; heavy parameter sharing may also reduce circuit expressivity.
+**Program Identifier:** Generation 17 - Patch Name none - Correct Program: False
+
+**Program Name: Symmetric Shared Alternating-ZZ Ansatz**  
+- **Implementation**: Uses 8-qubit layers with two shared RY parameters (ry_a, ry_b), two shared RZ parameters (rz_a, rz_b) reused pre- and post-entanglement, and an alternating ring of ZZ gates parameterized by zz_even and zz_odd, totaling 6 distinct parameters.  
+- **Performance**: Achieved a combined score of 0.67 with perfect (1.00) train/validation/test accuracy, 0.18/0.17 validation/test losses, depth 15, 96 gates, and convergence in 60 steps.  
+- **Feedback**: The heavy parameter sharing enabled full accuracy and zero generalization gap with minimal parameters, though overall parameter efficiency was low (0.12) and loss remained modest, suggesting potential gains from richer entangling or rotation diversity.
+**Program Identifier:** Generation 18 - Patch Name none - Correct Program: True
+
+**Program Name: Symmetric Ising-Ring Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with two shared-parameter RY pre-rotation groups, shared RZ layers before and after a fully shared ZZ and XX entangling ring, using only six distinct parameters over 39 layers and 117 gates.  
+- **Performance**: Achieves a combined score of 0.67 with 100 % train/validation/test accuracy, validation/test losses of 0.18/0.17, zero generalization gap, and converges in 60 steps.  
+- **Feedback**: The aggressive parameter sharing delivers high efficiency (0.12) and perfect classification, but the moderate validation loss and worst-group margin (0.36) suggest that adding parameter diversity or deeper entanglement could improve robustness.
+**Program Identifier:** Generation 19 - Patch Name none - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Two-group RY sharing combined with a full-ring ZZ entangler and CNOT mixing  
+  • Generation 16 (“Asymmetric Shared-Parameter Entangling Ansatz”) groups wires 0–3 vs 4–7 for RY, wraps a single shared zz_ring around all edges (including 7–0), and inserts forward/backward CNOT ladders. This design achieved the top combined score (0.70), perfect train/val accuracy, 99 % test accuracy, and converged in 30 steps.  
+- Pre-/post-entangling reuse of a single global RZ parameter  
+  • The “rz_p” parameter in Gen 16 is applied to all qubits before and after the ZZ ring. This reuse preserves phase flexibility without increasing the distinct-parameter count and contributes to a high validation margin (0.68).  
+- Minimal distinct parameters with rich gate variety accelerates training  
+  • By using only four distinct trainable names (ry_a, ry_b, rz_p, zz_ring) across six total parameters and mixing them with unparameterized CNOTs, Gen 16 halves convergence time (30 vs 60 steps) compared to purely shared-parameter ZZ-ring ansätze (Gen 14/18/19).  
+- Asymmetric single-qubit rotation groups preserve problem structure  
+  • Both Gen 14 and Gen 16 employ two RY groups to encode class-relevant asymmetry. Gen 16’s addition of CNOT ladders on top of that pattern yields the best generalization (0.01 gap) among evaluated circuits.  
+
+## Ineffective Approaches  
+- Over-collapsing all RZ gates into one global parameter without sufficient mixing  
+  • Generation 15 collapsed pre- and post-layers into a single “rz” and scored 0.0, losing critical phase degrees of freedom.  
+- Breaking the ring topology by omitting the wrap-around edge  
+  • Generation 17 omitted the ZZ(7, 0) gate and failed validation entirely (score 0.0), demonstrating that full-ring connectivity is mandatory.  
+- Pure shared-parameter ZZ entanglers without complementary mixing  
+  • Circuits relying only on a single zz_ring and lacking forward/backward CNOTs (Gen 17) or richer single-qubit rotations (Gen 18/19) underperformed or converged slowly, indicating expressivity trade-offs.  
+- Fixed CZ/CNOT chains without parameterized two-qubit phases  
+  • Earlier CZ chain designs (e.g., Gen 7) reached only 0.64 combined score and exhibited low parameter efficiency (0.10) and worst-group margins (~0.34).  
+
+## Implementation Insights  
+- Clear ANSATZ_SPEC structure with named parameters  
+  • Gen 16’s static list uses exactly four distinct names to control six parameterized gates, enforcing symmetry while limiting trainables.  
+- Leveraging unparameterized gates for connectivity  
+  • Forward/backward CNOT ladders in Gen 16 provide additional entangling depth at zero parameter cost, sharpening the optimizer’s ability to explore rich subspaces.  
+- Dual application of “rz_p” enhances expressivity  
+  • Reusing the same RZ parameter before and after the ZZ ring infuses extra phase tunability without increasing `n_distinct_params`, which boosts validation margin.  
+- Two-group RY sharing maintains asymmetry and reduces overfitting  
+  • Naming wires 0–3 as “ry_a” and 4–7 as “ry_b” captures class structure; this pattern consistently yields zero generalization gap when paired with sufficient entangling (Gen 14 and Gen 16).  
+
+## Performance Analysis  
+- Score uplift from 0.67 → 0.70 by adding CNOT mixing  
+  • Gen 14/18/19 (ZZ ring + shared RY/RZ, no CNOT ladders) all scored 0.67; Gen 16’s inclusion of forward/backward CNOTs raises the combined score to 0.70.  
+- Halved convergence steps (60 → 30) with minimal extra gates  
+  • Despite increasing depth from ~23 to 60 and gate count from ~117 to 138, Gen 16 converges in half the iterations of prior high-scoring designs.  
+- Improved parameter efficiency (0.12 → 0.16) correlates with higher test accuracy  
+  • Gen 16’s 6 parameters (4 distinct) yield a parameter efficiency of 0.16 versus ~0.12 in earlier shared-ZZ designs, supporting its superior 99 % test accuracy.  
+- Validation margin trade-offs reflect richer entangling  
+  • While Gen 12 (pure RZ-ZZ sandwiches) reached a 0.73 margin, Gen 16 balances a slightly lower margin (0.68) against a higher combined score and faster convergence, underscoring the value of mixing gates.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Extend the sandwich motif to three blocks. After the final RZ_post layer in ANSATZ_SPEC, append a second copy of the entire RY→forward CNOT ladder→RZ_pre→ZZ_ring→backward CNOT ladder→RZ_post sequence, reusing the same parameter names (ry_a, ry_b, rz_p, zz_ring). This deepens the circuit boundary complexity while preserving the proven four-name parameter symmetry, which should tighten decision margins without doubling convergence time.  
+
+2. Split the ZZ-ring into two alternating parameters. In each ZZ entangler, replace “zz_ring” with “zz_even” on edges (0–1, 2–3, 4–5, 6–7) and with “zz_odd” on edges (1–2, 3–4, 5–6, 7–0). This 1 → 2 increase in distinct two-qubit parameters enriches ring flexibility along even vs odd bonds—an expressivity boost that has raised margins in prior gens.  
+
+3. Interleave a shared XX ring after each ZZ ring. Immediately following the last ZZ edge in the ring (before the backward CNOT ladder), insert for every neighbor pair [i, (i+1) mod 8] an XX gate with a single shared parameter “xx_ring.” Orthogonal Ising mixing has empirically lifted validation margins in related ansätze without inflating distinct-parameter count.  
+
+4. Decouple pre- and post-ZZ phase rotations. Change the eight RZ gates before the ZZ ring to use “rz_pre” and the eight after to use “rz_post” instead of reusing “rz_p.” This adds one distinct parameter (n_distinct_params → 5) but gives independent phase control around the entangler, which can improve worst-group margin.  
+
+5. Inject a mid-circuit asymmetric RY remix. After the backward CNOT ladder (just before measurement), insert another RY layer on wires 0–3 parameterized by “ry_a” and on wires 4–7 by “ry_b.” Reusing these two names re-emphasizes class structure at zero extra distinct parameters and can sharpen boundary refinement, boosting test accuracy.

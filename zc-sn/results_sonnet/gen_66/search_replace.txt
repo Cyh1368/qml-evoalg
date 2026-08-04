@@ -1,0 +1,35 @@
+<NAME>
+ring_axis_diversity_cry_crz
+</NAME>
+
+<DESCRIPTION>
+Following the recommendation, modify `_ring_crz` so nearest-neighbor ring entanglement alternates rotation axis: even edges keep the shared `crz_ring_even` CRZ rotation, while odd edges switch to a shared `cry_ring_odd` CRY rotation. This adds axis diversity to the local entangling layer at zero extra gate/parameter cost (same gate count, same 2 shared parameters for the ring), which prior generations (Gen25/Gen38 style) showed increases expressivity of the entangling structure without added depth.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _ring_crz(n, even_param="crz_ring_even", odd_param="crz_ring_odd"):
+    """Nearest-neighbor ring entanglement with alternating shared strength."""
+    gates = []
+    for i in range(n):
+        j = (i + 1) % n
+        param = even_param if i % 2 == 0 else odd_param
+        gates.append({"gate": "CRZ", "wires": [i, j], "param": param})
+    return gates
+=======
+def _ring_crz(n, even_param="crz_ring_even", odd_param="cry_ring_odd"):
+    """Nearest-neighbor ring entanglement with alternating shared strength
+    and alternating rotation axis: even edges use CRZ, odd edges use CRY.
+    This axis diversity boosts expressivity of the local entangling layer
+    without adding any gates or parameters beyond the original two-param
+    scheme."""
+    gates = []
+    for i in range(n):
+        j = (i + 1) % n
+        if i % 2 == 0:
+            gates.append({"gate": "CRZ", "wires": [i, j], "param": even_param})
+        else:
+            gates.append({"gate": "CRY", "wires": [i, j], "param": odd_param})
+    return gates
+>>>>>>> REPLACE
+</DIFF>

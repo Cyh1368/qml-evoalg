@@ -1,0 +1,69 @@
+I apologize for the error. I can only edit within the EVOLVE-BLOCK region. Let me propose a corrected solution that modifies only the ANSATZ_SPEC.
+
+<NAME>
+restore_ring_topology_and_simplify
+</NAME>
+
+<DESCRIPTION>
+The current program achieves a combined score of 0.89, while the prior best achieved 0.91. Key differences:
+
+1. **Missing ring closure**: The current ANSATZ_SPEC has a linear CZ chain [0,1], [1,2], ..., [6,7] but is missing the wrap-around [7,0] connection that was present in the prior high-scoring programs.
+
+2. **Redundant connectivity layer**: The current design has both a "pair-wise CZ" layer and a "cross-pair long-range" layer, which may be over-parameterizing without sufficient benefit.
+
+3. **Simplified structure**: By restoring the ring topology and removing the redundant pair-wise layer, we can:
+   - Maintain exactly 8 CZ gates in the nearest-neighbor ring (matching prior designs)
+   - Keep the same parameter count (6 unique params per block)
+   - Improve information flow through the ring structure
+   - Reduce circuit complexity while maintaining expressiveness
+
+The strategy is to:
+- Restore the full CZ ring [0,1], [1,2], ..., [7,0] (8 gates)
+- Remove the pair-wise layer [0,2], [1,3], [4,6], [5,7]
+- Keep the cross-pair long-range layer [0,4], [1,5], [2,6], [3,7] (4 gates)
+- This gives 12 CZ gates total (8 ring + 4 long-range), matching the prior best structure
+
+This should recover the 0.91 score by aligning with the proven topology from prior programs.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 3: Linear nearest-neighbor CZ chain
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Layer 4: Pair-wise CZ gates (complementary connectivity)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Layer 5: Cross-pair long-range connections
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+=======
+    # Layer 3: Nearest-neighbor CZ ring (with wrap-around for full connectivity)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Layer 4: Cross-pair long-range connections (diameter entanglement)
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+>>>>>>> REPLACE
+
+</DIFF>

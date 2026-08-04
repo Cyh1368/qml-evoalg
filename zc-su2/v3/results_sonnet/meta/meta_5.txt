@@ -1,0 +1,104 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Eight-Qubit Linear RY-RZ-CZ Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with a layer of per-qubit RY rotations, pre- and post-RZ rotations, and a linear chain of CZ entangling gates, using 26 parameters, 20 layers deep, and 93 total gates. The `run_experiment` function passes this static ansatz spec to a fixed backend for training and evaluation.  
+- **Performance**: Combined score = 0.29; train/validation/test accuracies = 0.88/0.63/0.56; generalization gap = 0.31; parameter efficiency = 0.02.  
+- **Feedback**: The ansatz fits training data well but exhibits pronounced overfitting and low margin on validation/test sets. Its linear entangling topology and modest parameter count appear insufficient for robust generalization.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Shared-Parameter Nearest-Neighbor Quantum Ansatz**  
+- **Implementation**: Constructs an 8-qubit circuit with four distinct trainable parameters by applying shared RY and RZ rotations across all qubits, a fixed nearest-neighbor CNOT backbone, a shared-parameter CRZ entangling layer, and a final shared RY mixing layer.  
+- **Performance**: Achieved a combined score of 0.39 with validation accuracy 0.49, test accuracy 0.42, depth 26, gate count 114, and a negligible generalization gap of 0.01.  
+- **Feedback**: Heavy parameter sharing yields a compact, parameter-efficient ansatz but appears to underfit, as evidenced by low accuracy and high loss (~1.01), while the minimal generalization gap indicates adequate regularization.
+**Program Identifier:** Generation 1 - Patch Name none - Correct Program: True
+
+**Program Name: Even-Odd RY-RZ CZ Chain Ansatz**  
+- **Implementation**: Defines an 8-qubit circuit with alternating RY rotations using separate even/odd parameters, flanked by pre- and post- RZ layers, and coupled by a nearest-neighbor CZ entanglement chain.  
+- **Performance**: Achieved a combined score of 0.35 with train/validation/test accuracies of 0.75/0.56/0.54, a generalization gap of 0.21, depth 20, gate count 93, 8 parameters (6 distinct), and parameter efficiency 0.07.  
+- **Feedback**: The sparse even/odd parameter scheme delivers moderate training accuracy but struggles to generalize, reflected in a high gap and low margin; the linear CZ layout yields a deep, gate-heavy circuit that may limit expressivity and group robustness.
+**Program Identifier:** Generation 2 - Patch Name none - Correct Program: True
+
+**Program Name:** Shared-rotation entangling-ring ansatz
+
+- **Implementation:** Defines an 8-qubit circuit with global shared RX(a), RY(b), RZ(c) and RY(e) rotations on every qubit, two fixed CNOT rings (one full ring, one offset) and a layer of shared CRZ(d) gates on disjoint pairs, yielding a depth-42, 144-gate ansatz with 7 trainable parameters (5 distinct).
+
+- **Performance:** Achieved a combined score of 0.41 with train/validation/test accuracies of 0.50/0.58/0.47, a small generalization gap (0.03) but low parameter efficiency (0.07).
+
+- **Feedback:** Extensive parameter sharing and fixed entanglers limit expressivity, resulting in modest accuracy; increasing the number of distinct parameters or reducing circuit depth and gate count could improve performance.
+**Program Identifier:** Generation 3 - Patch Name none - Correct Program: True
+
+**Program Name: Layered RY-RZ-CRZ Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with per-qubit RY rotations, a pre-RZ block, a linear chain of CRZ entangling gates, and a post-RZ block, using 11 distinct parameters (13 total); the ansatz is passed to a fixed `_run` experiment driver.  
+- **Performance**: Achieved a combined score of 0.37 with train/validation/test accuracies of 0.94/0.72/0.70 and a generalization gap of 0.24.  
+- **Feedback**: The single-layer, linear entanglement pattern yields strong training performance but moderate overfitting and low parameter efficiency (0.05); deeper or more complex entanglement may improve generalization.
+**Program Identifier:** Generation 5 - Patch Name none - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+- Global parameter sharing combined with rich entangling topology  
+  • The current best “Shared-rotation entangling-ring ansatz” (score 0.41) uses five distinct, globally shared rotation parameters (RX(a), RY(b), RZ(c), CRZ(d), RY(e)) across all 8 qubits. This retains regularization benefits of parameter sharing while avoiding severe underfitting (Gen 1’s score 0.39 with 4 parameters).  
+- Dual-ring CNOT connectivity with offset layers  
+  • Employing two full-ring CNOT layers—one standard ring and one offset ring—enhances qubit mixing. The best program’s combination of CNOT rings (16 gates) plus disjoint CRZ entanglers yielded higher validation accuracy (0.58) and a minimal generalization gap (0.03).  
+- Insertion of cheap parametrized two-qubit gates  
+  • Integrating a shared CRZ(d) layer on disjoint qubit pairs adds non-Clifford entanglement at low gate overhead. This technique improved expressivity over purely fixed entanglers (compare Gen 3 vs. Gen 1).  
+- Increased circuit depth to boost expressivity under parameter constraints  
+  • The best ansatz doubles the depth (42 vs. 20–26) without proportionally increasing parameters (7 distinct). This depth expansion was key to raising combined score from ~0.37 (Gen 5) to 0.41.
+
+## Ineffective Approaches
+
+- Linear nearest-neighbor CZ/CNOT chains alone  
+  • Gen 0 (linear CZ, 26 parameters, score 0.29) and Gen 2/5 (linear CZ/CRZ chains, scores 0.35/0.37) suffered from overfitting (gaps 0.21–0.31) or low validation margins, indicating limited mixing.  
+- Excessive parameter sharing with shallow connectivity  
+  • Gen 1’s four-parameter NN-CNOT backbone (score 0.39) underfit the data (val 0.49/test 0.42) despite a negligible gap (0.01). Too few trainable degrees of freedom restricted accuracy.  
+- Sparse even/odd parameter schemes  
+  • The Even-Odd ansatz (Gen 2) used only six distinct angles alternating by parity, yet achieved only moderate train accuracy (0.75) and poor generalization (gap 0.21), highlighting that sparsity alone fails without enhanced connectivity.
+
+## Implementation Insights
+
+- Manual replication of shared rotations is straightforward but verbose  
+  • In the best program, each global rotation (e.g., RY(b)) is specified per wire in the ANSATZ_SPEC. While repetitive, it ensures the correct application of shared parameters across all qubits.  
+- Offsetting entangler layers improves state delocalization  
+  • Staggering the second CNOT ring (wires [1,2], [3,4], [5,6], [7,0]) spreads entanglement further than a single ring, as evidenced by improved validation accuracy over single-ring designs (Gen 1).  
+- Cheap multi-qubit gates balance overhead and expressivity  
+  • Deploying CRZ gates on disjoint pairs (covering all qubits with only four gates) injects parameterized two-qubit interactions without a large gate-count increase, contributing to the high parameter efficiency (0.07).  
+- Depth-first approach leverages fixed driver code  
+  • Since the experiment driver and encoding are fixed, expanding depth via repeated application of the reversible shared-rotation + entangler blocks effectively increases expressivity within the existing framework.
+
+## Performance Analysis
+
+- Stepwise score improvement aligned with richer entanglement patterns  
+  • From Gen 0 (0.29) → Gen 1 (0.39) by adding NN-CNOT + heavy sharing → Gen 3 (0.41) by adopting dual rings + shared CRZ.  
+- Generalization gap shrank with added parameter sharing and entangler diversity  
+  • Gen 0/2/5 gaps of 0.21–0.31 dropped to 0.03 in the best program, demonstrating that mixing fixed and shared parameterized entanglers enhances robustness.  
+- Trade-off between depth/gate-count and parameter economy observed  
+  • The top performer balances depth (42) and gate count (144) against only 7 parameters, outperforming shallower but higher-parameter circuits (e.g., Gen 5’s 13 parameters, score 0.37).  
+- Validation accuracy trend reflects entanglement strategy effectiveness  
+  • Validation accuracy rose from 0.49 (Gen 1) to 0.58 (Gen 3) as circuit connectivity evolved from a simple NN backbone to dual rings plus CRZ, correlating with combined score gains.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Duplicate the entire shared‐rotation + entangler block to double circuit depth without adding parameters. Concretely, append a second instance of  
+   – RX(a)→RY(b)→CNOT-ring→RZ(c)→CRZ(d)→offset-CNOT-ring→RY(e)  
+   using exactly the same symbols {a,b,c,d,e}. Evidence: the best program leveraged depth (42 layers) under tight parameter budgets to boost expressivity.  
+
+2. Introduce a second cheap parametrized two‐qubit layer using CRX on disjoint pairs after the existing offset ring. For example, add  
+   – {"gate": "CRX", "wires":[1,2],"param":"f"}, {"gate":"CRX","wires":[3,4],"param":"f"}, …  
+   across [1,2],[3,4],[5,6],[7,0] with a new shared “f” parameter. Rationale: CRX entanglement along a different axis can complement CRZ’s phase entanglement, increasing expressivity at minimal gate‐count cost.  
+
+3. Test global Ising entanglers via a shared ZZ layer on opposite qubit pairs before the first RX(a) block. E.g.:  
+   – {"gate":"ZZ","wires":[0,4],"param":"g"}, {"gate":"ZZ","wires":[1,5],"param":"g"}, …  
+   covering [2,6], [3,7] with a single “g” parameter. This adds long‐range correlations cheaply—following the insight that disjoint, parameterized two‐qubit gates reduce generalization gap.  
+
+4. Refine the CRZ entangler granularity by splitting “d” into two shared parameters d1 and d2. Use CRZ(d1) on [0,1] and [4,5], and CRZ(d2) on [2,3] and [6,7]. This brings n_distinct_params to 6, allowing more nuanced phase entanglement while still keeping parameter count low, testing if slightly finer sharing boosts validation accuracy.  
+
+5. Replace the second fixed CNOT offset ring with a “skip-2” ring:  
+   – CNOTs on [0→2],[2→4],[4→6],[6→0] and [1→3],[3→5],[5→7],[7→1].  
+   This non‐nearest‐neighbor pattern heightens qubit mixing across longer hops, building on evidence that richer entangling topologies (dual and offset rings) drove past score improvements.

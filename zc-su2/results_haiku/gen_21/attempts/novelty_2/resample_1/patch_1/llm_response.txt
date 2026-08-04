@@ -1,0 +1,100 @@
+Looking at the prior programs and their performance:
+
+1. **First program** (seed): RY + RZ_pre + CZ + RZ_post = **score 0.68**, 20 params
+2. **Second program**: RY + RZ (shared) + CZ + RZ (same shared) = **score 0.72**, 14 params
+3. **Current program**: RY + RZ_pre + CRZ (parametrized entangling) + RZ_post = **score 0.66**, 26 params
+
+**Key observations:**
+- The best performer (0.72) uses minimal parameters (14) with a unified RZ layer approach
+- The current program's score decreased despite having more params (26), suggesting over-parameterization and slower convergence
+- The recommendation hints at trying RX instead of RY, which may improve expressivity
+- All programs achieve perfect accuracy, so the score is dominated by parameter efficiency and convergence speed
+
+**Analysis:**
+The second program succeeded by consolidating the pre/post RZ layers into a single shared RZ parameter. The current program added CRZ (7 additional parameters) but actually *hurt* performance. This suggests:
+1. Parametrized two-qubit gates may be overly expressive for this problem
+2. Fixed entangling (CZ) with simpler single-qubit rotations is more parameter-efficient
+3. The RX/RY/RZ choice matters for this specific encoding
+
+**Proposed change:**
+Apply the recommendation to swap RY for RX in the best-performing structure. This tests whether RX provides better expressivity for the input encoding while maintaining the lean 2-parameter structure that achieved 0.72:
+
+<NAME>
+swap_ry_to_rx_in_best_structure
+</NAME>
+
+<DESCRIPTION>
+The second program achieved the best score (0.72) with only 14 parameters using a unified shared RZ layer and RY rotations with CZ entanglement. The current program regressed to 0.66 despite more parameters by replacing CZ with CRZ. This change reverts to the winning structure but substitutes RX for RY on all qubits, following the recommendation to "isolate the impact of rotation axis choice on expressivity." RX may better couple with the fixed input encoding than RY, potentially improving the parameter efficiency score further while maintaining convergence speed. This keeps n_params at 2 (rx_shared and rz_shared).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_shared"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_ent"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RX", "wire": 0, "param": "rx_shared"},
+    {"gate": "RX", "wire": 1, "param": "rx_shared"},
+    {"gate": "RX", "wire": 2, "param": "rx_shared"},
+    {"gate": "RX", "wire": 3, "param": "rx_shared"},
+    {"gate": "RX", "wire": 4, "param": "rx_shared"},
+    {"gate": "RX", "wire": 5, "param": "rx_shared"},
+    {"gate": "RX", "wire": 6, "param": "rx_shared"},
+    {"gate": "RX", "wire": 7, "param": "rx_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE
+</DIFF>

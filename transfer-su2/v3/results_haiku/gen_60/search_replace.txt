@@ -1,0 +1,93 @@
+<NAME>
+reduce_mid_circuit_overhead
+</NAME>
+
+<DESCRIPTION>
+Analysis of the current program vs. the prior high-performing baseline:
+
+**Current state (score 0.52):**
+- n_params: 13, n_distinct_params: 11
+- validation_accuracy: 0.87, test_accuracy: 0.86
+- worst_group_margin: 0.28
+- Large generalization gap (0.14)
+- Convergence is fast (150 steps) but accuracy is poor
+
+**Prior baseline (score 0.60):**
+- n_params: 9, n_distinct_params: 7
+- validation_accuracy: 0.97, test_accuracy: 0.96
+- worst_group_margin: 0.32
+- Better generalization (gap 0.04)
+- Slower convergence (780 steps) but much higher accuracy
+
+The problem with the current program is **parameter bloat**: the mid-circuit layer adds 4 new distinct parameters (ry_mid_even, ry_mid_odd, rz_mid_even, rz_mid_odd) while the scoring system heavily penalizes extra parameters with no diminishing returns. The recommendation to add a mid-circuit layer was intended to boost expressivity, but it's backfiring because:
+
+1. **The overhead is too large**: 4 additional distinct parameters increase the total count from 7 to 11, a 57% increase
+2. **Poor generalization**: The extra parameters lead to worse margins on hard samples (0.28 vs 0.32)
+3. **The implementation is inefficient**: Using separate parameters for RY and RZ in the mid-layer is wasteful
+
+**Solution**: Replace the mid-circuit layer with a more parameter-efficient version that uses **single shared parameters per parity group** instead of separate RY and RZ parameters. This reduces the mid-layer overhead from 4 parameters to just 2 (one shared for all even qubits, one for all odd qubits), using a unified rotation strategy:
+- Use CRY (controlled rotations) or simply apply both RY and RZ with the SAME parameter, allowing the optimizer to weight their contributions implicitly
+
+A simpler, more parameter-efficient approach: use just **RY gates with shared parity parameters** in the mid-circuit layer, eliminating the redundant RZ layer. This cuts the overhead from 4 to 2 parameters and maintains expressivity through the parity-sharing structure already proven in the baseline.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_mid_circuit_layer() -> list[dict]:
+    """Build mid-circuit parity-shared rotation layer to refine features after entanglement.
+
+    Uses parity-based sharing (even/odd qubits) to maximize expressivity per parameter
+    while maintaining parameter economy. Helps improve margin separation on hard samples.
+    """
+    return [
+        # Mid-circuit RY layer with parity sharing
+        {"gate": "RY", "wire": 0, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 1, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 2, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 3, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 4, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 5, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 6, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 7, "param": "ry_mid_odd"},
+        # Mid-circuit RZ layer with parity sharing
+        {"gate": "RZ", "wire": 0, "param": "rz_mid_even"},
+        {"gate": "RZ", "wire": 1, "param": "rz_mid_odd"},
+        {"gate": "RZ", "wire": 2, "param": "rz_mid_even"},
+        {"gate": "RZ", "wire": 3, "param": "rz_mid_odd"},
+        {"gate": "RZ", "wire": 4, "param": "rz_mid_even"},
+        {"gate": "RZ", "wire": 5, "param": "rz_mid_odd"},
+        {"gate": "RZ", "wire": 6, "param": "rz_mid_even"},
+        {"gate": "RZ", "wire": 7, "param": "rz_mid_odd"},
+    ]
+=======
+def _build_mid_circuit_layer() -> list[dict]:
+    """Build minimal mid-circuit refinement layer with maximum parameter economy.
+
+    Uses only RY with strict even/odd parity sharing (2 parameters total).
+    This provides controlled expressivity boost after entanglement without
+    the parameter bloat of dual RY+RZ layers.
+    """
+    return [
+        # Mid-circuit RY layer with parity sharing only
+        {"gate": "RY", "wire": 0, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 1, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 2, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 3, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 4, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 5, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 6, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 7, "param": "ry_mid_odd"},
+    ]
+>>>>>>> REPLACE
+
+</DIFF>
+
+**Rationale:**
+
+This change reduces the mid-circuit layer from 16 gates (8 RY + 8 RZ with 4 distinct parameters) to 8 gates (only RY with 2 distinct parameters). This brings the total distinct parameters from 11 down to **9**, matching the baseline's parameter economy while retaining the expressivity benefit of the mid-circuit refinement.
+
+Expected improvements:
+1. **Parameter efficiency restored**: 9 distinct parameters vs. 11, moving back toward the high-scoring baseline structure
+2. **Reduced overfitting risk**: Fewer free parameters on a small training set = better generalization and margin separation
+3. **Faster convergence**: Simpler optimization landscape with fewer degrees of freedom
+4. **Maintains architectural benefit**: The mid-circuit layer still acts as a feature refiner after entanglement, just more efficiently

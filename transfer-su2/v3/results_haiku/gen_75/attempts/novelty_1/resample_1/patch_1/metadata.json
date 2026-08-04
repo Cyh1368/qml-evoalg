@@ -1,0 +1,14 @@
+{
+  "generation": 75,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "reduce_midblock_to_ry_only",
+  "patch_description": "The current program has 13 parameters (11 distinct) and achieves a score of 0.54, down from the seed's 0.60 with 9 parameters (7 distinct). The main issue is that the mid-circuit rotation block adds 8 RY + 8 RZ gates (16 gates, 4 new parameter keys), which increased complexity without proportional benefit.\n\nThe prior programs that scored 0.60 used only 7 distinct parameters with a simple rotation-entanglement-phase structure. Analysis shows:\n\n1. **Parameter bloat**: 11 distinct parameters vs 7 in the seed \u2192 worse parameter efficiency (0.07 vs 0.11)\n2. **Validation accuracy dropped**: 0.97 \u2192 0.91 (6% loss)\n3. **Worst-group margin**: 0.30 \u2192 0.32 (actually improved slightly, but offset by other metrics)\n4. **Generalization gap increased**: 0.04 \u2192 0.14 (overfitting risk)\n5. **Depth and gate count doubled**: 15 \u2192 21 depth, 72 \u2192 120 gates\n\nThe recommendation to add a mid-block parity rotation was sound in principle, but the full RY+RZ implementation is excessive. Instead, I propose:\n\n**Replace the 16-gate mid-block (8 RY + 8 RZ) with a lightweight 8-gate RY-only mid-block**, using the same even/odd parameter sharing as the initial and final layers. This:\n- Reduces to 9 distinct parameters (4 RY params + 2 YY/ZZ params + 2 readout + 1 XX param = still need to recount)\n- Maintains mid-depth symmetry breaking for hard samples\n- Restores parameter economy and generalization\n- Keeps the validation-group separation benefit while reducing overfitting\n\nRecounting the distinct parameters after this change:\n- ry_init_even, ry_init_odd (from initial)\n- ry_mid_even, ry_mid_odd (from mid-block, RY only)\n- xx_near (nearest-neighbor XX)\n- yy_cross (cross YY)\n- zz_long (long-range ZZ)\n- rz_final_even, rz_final_odd (from final)\nTotal: 9 distinct parameters\n\nThis is 2 more than the seed's 7, but the mid-block RY should help separate hard validation groups. The trade-off is cleaner: +2 parameters for targeted mid-depth expressivity, much lighter than the current +4.",
+  "error_msg": null,
+  "timestamp": "2026-08-03T07:48:18.318414",
+  "llm_cost": 0.029338,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

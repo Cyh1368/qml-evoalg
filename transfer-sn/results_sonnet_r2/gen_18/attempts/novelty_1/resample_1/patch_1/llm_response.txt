@@ -1,0 +1,50 @@
+<NAME>
+per_qubit_readout_calibration
+
+<DESCRIPTION>
+Extending the readout calibration from a single scalar gain/bias to per-qubit gains and biases gives the model more flexibility to weight each qubit's contribution individually before averaging, which can improve accuracy and reduce the train/validation/test gap. This requires: (1) increasing N_READOUT_PARAMS from 2 to 16 (8 gains + 8 biases), (2) updating predict_batch to slice out the per-qubit gain/bias vectors and apply them elementwise to the per-qubit Z expectations before averaging, and (3) updating the parameter initialization in run_experiment so gains start at 1 and biases start at 0 for all 8 qubits. This directly implements the recommended per-qubit calibration approach, keeping circuit structure unchanged so the extra capacity is purely in the classical readout, which is cheap and differentiable.
+
+<DIFF>
+<<<<<<< SEARCH
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+=======
+N_READOUT_PARAMS = 2 * N_QUBITS  # trainable per-qubit output calibration: gains, biases
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: calibrated mean of qubit Z expectations."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+    z = pnp.stack(circuit_z_expectations(records, circuit_params))  # (N_QUBITS, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+=======
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: calibrated mean of per-qubit Z expectations."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gains = params[N_CIRCUIT_PARAMS : N_CIRCUIT_PARAMS + N_QUBITS]
+    biases = params[N_CIRCUIT_PARAMS + N_QUBITS : N_CIRCUIT_PARAMS + 2 * N_QUBITS]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+    z = pnp.stack(circuit_z_expectations(records, circuit_params))  # (N_QUBITS, B)
+    calibrated = gains[:, pnp.newaxis] * (z - biases[:, pnp.newaxis])  # (N_QUBITS, B)
+    return pnp.mean(calibrated, axis=0)
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+=======
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS : N_CIRCUIT_PARAMS + N_QUBITS] = 1.0       # gains start at 1
+    init[N_CIRCUIT_PARAMS + N_QUBITS : N_CIRCUIT_PARAMS + 2 * N_QUBITS] = 0.0  # biases start at 0
+    params = pnp.array(init, requires_grad=True)
+>>>>>>> REPLACE

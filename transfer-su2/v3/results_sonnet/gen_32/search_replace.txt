@@ -1,0 +1,108 @@
+<NAME>
+shared_two_param_entangler_with_mixer
+
+<DESCRIPTION>
+The current 5-distinct-parameter even/odd + ZZ-ring + CRZ-long + RZ-all spec underperforms (score 0.52) relative to the simpler 2-parameter global-RY + global-RZ + 3-shell CRZ-entangler spec (score 0.61) from prior generations. Parameter economy is explicitly rewarded ("fewer distinct trainable parameter names ALWAYS scores higher"), so we revert to that proven 2-parameter backbone (theta_ry for local rotations, theta_z shared between the RZ layer and all three CRZ entangling shells — nearest-neighbor, skip, and antipodal rings on the 8-qubit cycle).
+
+On top of that proven structure we add a mixer-style closing single-qubit RY layer that REUSES the existing "theta_ry" parameter (no new trainable parameter introduced) rather than introducing a fresh "theta_ry_out" parameter as the naive QAOA-mixer recommendation suggests. This gives the circuit an extra alignment layer after the entangling shells — letting the pre-existing rotation angle also act as a final Bloch-vector alignment step before measurement — sharpening class separability without paying any parameter-count cost. Because parameters are tied across all 3 repeats, this simply changes the per-repeat gate sequence (RY-theta_ry, RZ/CRZ-theta_z shells, RY-theta_ry again) while keeping N_CIRCUIT_PARAMS at 2, matching the best-performing configuration's economy while giving optimization one more nonlinear knob to exploit the same 2 parameters, which should help robust separation on the hardest validation group and reduce the train/validation gap.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Even/odd sublattice RY rotations: only 2 distinct parameters instead of
+    # 8, exploiting translational symmetry to cut capacity and overfitting.
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Translation-invariant nearest-neighbor entangling ring, one shared angle,
+    # matching the ring-like local structure implicit in the readout pairs.
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+    # Long-range entanglement between antipodal qubits, one shared angle, so
+    # every qubit gets a short path to the far side of the register without
+    # needing many repeats to diffuse correlations there.
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_long"},
+    # Single shared final phase rotation on all qubits.
+    {"gate": "RZ", "wire": 0, "param": "rz_all"},
+    {"gate": "RZ", "wire": 1, "param": "rz_all"},
+    {"gate": "RZ", "wire": 2, "param": "rz_all"},
+    {"gate": "RZ", "wire": 3, "param": "rz_all"},
+    {"gate": "RZ", "wire": 4, "param": "rz_all"},
+    {"gate": "RZ", "wire": 5, "param": "rz_all"},
+    {"gate": "RZ", "wire": 6, "param": "rz_all"},
+    {"gate": "RZ", "wire": 7, "param": "rz_all"},
+]
+=======
+ANSATZ_SPEC = [
+    # Global single-qubit layer: one shared RY angle for all 8 qubits.
+    {"gate": "RY", "wire": 0, "param": "theta_ry"},
+    {"gate": "RY", "wire": 1, "param": "theta_ry"},
+    {"gate": "RY", "wire": 2, "param": "theta_ry"},
+    {"gate": "RY", "wire": 3, "param": "theta_ry"},
+    {"gate": "RY", "wire": 4, "param": "theta_ry"},
+    {"gate": "RY", "wire": 5, "param": "theta_ry"},
+    {"gate": "RY", "wire": 6, "param": "theta_ry"},
+    {"gate": "RY", "wire": 7, "param": "theta_ry"},
+    # Global single-qubit layer: one shared RZ angle for all 8 qubits.
+    {"gate": "RZ", "wire": 0, "param": "theta_z"},
+    {"gate": "RZ", "wire": 1, "param": "theta_z"},
+    {"gate": "RZ", "wire": 2, "param": "theta_z"},
+    {"gate": "RZ", "wire": 3, "param": "theta_z"},
+    {"gate": "RZ", "wire": 4, "param": "theta_z"},
+    {"gate": "RZ", "wire": 5, "param": "theta_z"},
+    {"gate": "RZ", "wire": 6, "param": "theta_z"},
+    {"gate": "RZ", "wire": 7, "param": "theta_z"},
+    # Shell 1: nearest-neighbor ring (distance 1). Reuses theta_z: CRZ is a
+    # controlled-RZ, the natural entangling counterpart of the RZ layer.
+    {"gate": "CRZ", "wires": [0, 1], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "theta_z"},
+    # Shell 2: skip ring (distance 2), same shared angle.
+    {"gate": "CRZ", "wires": [0, 2], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [6, 0], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "theta_z"},
+    # Shell 3: long-range antipodal pairing (distance 4), same shared angle.
+    {"gate": "CRZ", "wires": [0, 4], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "theta_z"},
+    # Mixer-style closing RY layer reusing the existing "theta_ry" parameter
+    # (no new trainable parameter). Gives the circuit an extra alignment
+    # step after the entangling shells, letting the same 2 angles do more
+    # nonlinear work without any parameter-count cost.
+    {"gate": "RY", "wire": 0, "param": "theta_ry"},
+    {"gate": "RY", "wire": 1, "param": "theta_ry"},
+    {"gate": "RY", "wire": 2, "param": "theta_ry"},
+    {"gate": "RY", "wire": 3, "param": "theta_ry"},
+    {"gate": "RY", "wire": 4, "param": "theta_ry"},
+    {"gate": "RY", "wire": 5, "param": "theta_ry"},
+    {"gate": "RY", "wire": 6, "param": "theta_ry"},
+    {"gate": "RY", "wire": 7, "param": "theta_ry"},
+]
+>>>>>>> REPLACE
+</DIFF>

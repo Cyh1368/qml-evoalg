@@ -1,0 +1,14 @@
+{
+  "generation": 20,
+  "novelty_attempt": 2,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "swap_ry_to_rx_shared_layer",
+  "patch_description": "The recommendation suggests swapping the shared RY layer for RX to test if a different rotation axis yields better expressivity or parameter efficiency.\n\n**Analysis of prior results:**\n- Program 1 (20 params, score 0.68): RY + RZ_pre + CZ + RZ_post\n- Program 2 (14 params, score 0.72): RY + RZ + CZ + RZ (unified RZ layer)\n- Current (26 params, score 0.66): RY + RZ_pre + XX chain + RZ_post\n\nThe current program has regressed (score 0.66) despite perfect accuracy across train/val/test. The issue is likely **parameter bloat** (26 params vs 14 in best) and the XX Ising gates adding overhead without sufficient benefit. Convergence is faster (30 steps) but parameter efficiency (0.04) is worse than Program 2 (0.07).\n\n**Proposed fix:**\nReplace RY with RX in the first layer, keeping the RZ sandwich and CZ chain structure from Program 1 (which scored 0.68). This:\n1. Tests if RX provides better expressivity for this problem\n2. Returns to a proven 3-parameter structure (rx_shared, rz_pre_shared, rz_post_shared)\n3. Reduces parameters from 26 to 3, dramatically improving parameter efficiency\n4. Maintains the CZ entanglement which was effective in prior programs\n\nThe RX/RZ combination may offer orthogonal expressivity compared to RY/RZ, potentially improving generalization while maintaining high accuracy with far fewer parameters.",
+  "error_msg": null,
+  "timestamp": "2026-07-25T11:22:18.938028",
+  "llm_cost": 0.010553,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

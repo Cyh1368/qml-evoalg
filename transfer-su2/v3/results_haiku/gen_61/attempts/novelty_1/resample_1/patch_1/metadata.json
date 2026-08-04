@@ -1,0 +1,14 @@
+{
+  "generation": 61,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "mid_circuit_parity_rotations",
+  "patch_description": "## Analysis of Current Performance\n\nThe current program scores **0.55** with:\n- **worst_group_margin_mean: 0.31** (critical weakness)\n- **test_accuracy: 0.89** (degraded from prior 0.96)\n- **generalization_gap: 0.11** (increased from prior 0.04)\n- **n_params: 10, n_distinct_params: 8** (parameter bloat from the ring-loop YY gates)\n\nThe ring-loop YY layer (4 additional gate applications sharing only 1 parameter) introduced too much circuit depth (24 vs 15) without improving worst-group separation.\n\n## Proposed Solution\n\nFollowing the recommendation and prior Gen 46/52 success patterns, insert **parity-shared mid-circuit rotations** between the entanglement and phase layers. This approach:\n\n1. **Boosts expressivity per parameter**: Injects 4 new tied parameters (ry_mid_even, ry_mid_odd, rz_mid_even, rz_mid_odd) with high sharing\u2014each parameter appears exactly 4 times\n2. **Improves worst-group separation**: Mid-circuit rotations break symmetry at the heart of the ansatz, helping distinguish hard samples\n3. **Maintains parameter economy**: The 4 new distinct parameters are highly shared\n4. **Reduces depth impact**: A single RY+RZ layer is cheaper than 4 redundant YY gates\n5. **Addresses generalization**: Tight parameter sharing historically improves held-out behavior\n\n## Implementation\n\n1. Remove the problematic ring-loop YY gates (which have high gate count with insufficient expressivity gain)\n2. Add a mid-circuit parity rotation layer after entanglement, before the final RZ phase layer\n3. Keep the baseline rotation, nearest-neighbor XX, diagonal YY, and long-range ZZ\u2014all proven working structures\n\nThis restores the circuit to lean parameter efficiency while injecting strategic expressivity exactly where prior high-performing circuits succeeded.",
+  "error_msg": null,
+  "timestamp": "2026-08-03T07:34:28.425719",
+  "llm_cost": 0.031404,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

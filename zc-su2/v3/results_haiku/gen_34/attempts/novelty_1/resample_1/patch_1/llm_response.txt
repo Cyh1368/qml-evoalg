@@ -1,0 +1,120 @@
+Looking at the performance metrics, I need to analyze what's working and what's not:
+
+**Current program analysis:**
+- Combined score: 0.44 (poor)
+- worst_group_margin_mean: 0.18 (very poor - this is the most critical metric)
+- validation_margin_mean: 0.44 (low)
+- n_distinct_params: 12 (too high - parameter efficiency is critical)
+- generalization_gap_mean: 0.13 (moderate)
+
+**Best prior program (score 0.58):**
+- worst_group_margin_mean: 0.35 (better robust separation)
+- validation_margin_mean: 0.60 (better)
+- n_distinct_params: 10 (better parameter efficiency)
+- Uses parity-based RY sharing (ry_0 for even, ry_1 for odd)
+- Has structured entanglement pattern with diverse gate types (XX, YY, ZZ)
+
+**Key insights:**
+1. The current program has 12 distinct parameters but poor performance - it's trying to be too flexible without the right structure
+2. The best program achieves better margins with only 10 distinct parameters by using smart parameter sharing
+3. The current program uses only XX gates for entanglement, missing the diversity of YY and ZZ
+4. The recommendation suggests splitting the post-RZ into parity-based parameters (rz_post_even, rz_post_odd) rather than a single shared parameter
+
+**Proposed strategy:**
+The best program had a winning formula: parity-based RY sharing (2 params) + diverse Ising gates + structured entanglement. I should:
+1. Restore the parity-based RY pattern (ry_0, ry_1) instead of 8 separate parameters
+2. Implement the parity-based post-RZ as recommended (rz_post_even, rz_post_odd)
+3. Add back the diversity of YY and ZZ gates alongside XX
+4. Keep the overall structure simpler but more effective
+
+<NAME>
+parity_rz_diversify_entanglement
+</NAME>
+
+<DESCRIPTION>
+This edit combines several proven techniques:
+
+1. **Restore parity-based RY sharing**: Use only 2 RY parameters (ry_0 for even qubits, ry_1 for odd) instead of 8 individual parameters. This reduces parameter count and enforces useful structure.
+
+2. **Implement parity-based post-RZ** (as recommended): Split the final RZ into rz_post_even (for qubits 0,2,4,6) and rz_post_odd (for qubits 1,3,5,7). This adds only 1 parameter but provides finer-grained post-entanglement phase control, improving generalization on hard samples.
+
+3. **Restore gate-type diversity**: Mix XX, YY, and ZZ gates in entanglement layers instead of only XX. The best program achieved better worst_group_margin by using diverse interaction types, which likely captures different aspects of the problem structure.
+
+4. **Simplify overall structure**: Remove the middle RZ layer (rz_0) to reduce parameters and depth while maintaining expressive power through the pre-RZ (rz_pre) and parity-split post-RZ.
+
+This approach reduces distinct parameters from 12 to 9 (ry_0, ry_1, xx_even, xx_odd, yy, zz, rz_pre, rz_post_even, rz_post_odd), improves robustness to hard samples through parameter sharing and gate diversity, and should recover the 0.58+ score achieved by the best prior program.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_even"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_even"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_even"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_even"},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_0"},
+    {"gate": "RZ", "wire": 4, "param": "rz_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_0"},
+    {"gate": "RZ", "wire": 6, "param": "rz_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_0"},
+    {"gate": "XX", "wires": [1, 2], "param": "xx_odd"},
+    {"gate": "XX", "wires": [3, 4], "param": "xx_odd"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx_odd"},
+    {"gate": "RZ", "wire": 0, "param": "rz_1"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_1"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_even"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_even"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz"},
+    {"gate": "XX", "wires": [1, 2], "param": "xx_odd"},
+    {"gate": "XX", "wires": [3, 4], "param": "xx_odd"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx_odd"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_odd"},
+]
+>>>>>>> REPLACE
+</DIFF>

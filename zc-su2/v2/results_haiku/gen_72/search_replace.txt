@@ -1,0 +1,57 @@
+Looking at the performance metrics across the three programs:
+
+1. **Seed (Gen 0)**: score 0.68, worst_group_margin 0.36, n_distinct_params 6
+2. **Gen 1**: score 0.69, worst_group_margin 0.34, n_distinct_params 5 (better overall score, fewer params, but slightly worse margin)
+3. **Current (Gen 2)**: score 0.68, worst_group_margin 0.35, n_distinct_params 6
+
+The key insight from the recommendation and prior results:
+- **Gen 1** achieved the best combined score (0.69) by unifying all initial RY gates to a single `ry` parameter, reducing distinct parameters from 6 to 5
+- The current program reverted to separate `ry_even`/`ry_odd` parameters, losing that efficiency gain
+- The recommendation suggests adding a cyclic CRX closure (7→0) to improve worst-group margins at zero parameter cost
+
+**Strategy**:
+1. Restore the parameter efficiency win from Gen 1 by unifying initial RY gates to a single `ry` parameter
+2. This reduces distinct params from 6 to 5, improving parameter_efficiency_mean
+3. Keeps the strong entanglement structure with cyclic CRX closure already in place
+4. Should improve combined score back toward 0.69+ while maintaining robust separation
+
+<NAME>
+unified_ry_param_efficiency
+</NAME>
+
+<DESCRIPTION>
+Restore the parameter efficiency improvement from Gen 1 by unifying all initial RY gates
+to use a single shared parameter "ry" instead of alternating "ry_even" and "ry_odd".
+
+Rationale:
+- Gen 1 achieved score 0.69 with n_distinct_params=5 by using unified RY
+- Current program uses n_distinct_params=6 with split RY parameters, scoring 0.68
+- The scoring heavily penalizes parameter count with no diminishing returns
+- Unified RY still allows full expressivity while improving parameter economy
+- The cyclic CRX closure (7→0) structure from current program is already strong
+- This change addresses the primary scoring gap between Gen 1 and current program
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Initial rotation layer with parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+=======
+    # Initial rotation layer with parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry"},
+    {"gate": "RY", "wire": 1, "param": "ry"},
+    {"gate": "RY", "wire": 2, "param": "ry"},
+    {"gate": "RY", "wire": 3, "param": "ry"},
+    {"gate": "RY", "wire": 4, "param": "ry"},
+    {"gate": "RY", "wire": 5, "param": "ry"},
+    {"gate": "RY", "wire": 6, "param": "ry"},
+    {"gate": "RY", "wire": 7, "param": "ry"},
+>>>>>>> REPLACE
+</DIFF>

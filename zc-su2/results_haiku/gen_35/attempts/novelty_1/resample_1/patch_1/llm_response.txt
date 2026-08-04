@@ -1,0 +1,113 @@
+# Analysis
+
+Looking at the performance metrics:
+
+**Prior programs (both scoring 0.72):**
+- First: 2 blocks with 14 parameters, depth 65, perfect accuracy
+- Second: 1 block with 14 parameters, depth 35, perfect accuracy
+
+**Current program (scoring 0.68):**
+- 1 block with 20 parameters, depth 35, perfect accuracy
+- Worse parameter efficiency (0.05 vs 0.07) and lower combined score
+
+**Key observations:**
+1. The prior programs achieved perfect accuracy with only 14 parameters by using **two identical blocks** with **shared parameters across blocks**
+2. The current program replaced CZ gates with XX gates, increasing parameters from 14 to 20 without improving accuracy
+3. The second prior program shows that 1 block with 14 parameters suffices for perfect accuracy
+4. The constraint is parameter economy - we need to achieve the same accuracy with fewer parameters
+
+**Root cause of current underperformance:**
+- XX gates introduce 7 additional parameters (one per XX gate) when compared to CZ (which had 0 parameters)
+- This increases n_params from 14 to 20, reducing parameter_efficiency
+
+**Recommendation:**
+Return to the successful architecture of the second prior program (1 block, 14 parameters) but optimize the entangling layer. Replace the fixed CZ gates with parametrized CRZ gates using a single shared parameter. This:
+1. Maintains low parameter count (14-15 params)
+2. Gives the optimizer direct control over entangling angles
+3. Leverages CRZ's empirical faster convergence compared to fixed CZ
+4. Preserves the linear entangling ladder that clearly works well
+
+<NAME>
+crz_shared_entangling
+</NAME>
+
+<DESCRIPTION>
+Replace all CZ gates in the entangling ladder with shared-parameter CRZ gates. The CZ gate is a special case of CRZ(π), but by making it parametrized with a shared parameter across all positions, the optimizer gains direct control over the entangling angle. This approach:
+
+1. Maintains parameter economy: adds only 1 parameter (shared across 7 CRZ gates) instead of 7 independent XX parameters
+2. Keeps total parameters at ~15 (vs 20 in current, matching prior successful models)
+3. Improves optimizer flexibility: CRZ gates can be learned to arbitrary angles, potentially converging faster than fixed CZ
+4. Preserves the proven linear entangling topology that achieved perfect accuracy in prior programs
+5. Allows the optimizer to discover optimal entangling strength during training
+
+This is more parameter-efficient than the current XX approach while maintaining the architectural properties that led to high performance.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_shared"},
+    {"gate": "XX", "wires": [1, 2], "param": "xx_shared"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_shared"},
+    {"gate": "XX", "wires": [3, 4], "param": "xx_shared"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_shared"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx_shared"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+=======
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+>>>>>>> REPLACE
+
+</DIFF>

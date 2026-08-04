@@ -1,0 +1,168 @@
+Looking at the current program and prior results, I can see several issues:
+
+1. **Current (0.87 score)**: 86 parameters, poor generalization gap (0.06), slow convergence (540 steps), high test loss (0.43)
+2. **Prior best (0.91 score)**: 44 parameters, excellent generalization gap (0.01), faster convergence (180 steps), lower test loss (0.37)
+
+The current design has overfit to training data (94% train vs 88% test) and used too many parameters (86 vs 44). The mid-circuit RZ layer and extra CRY layers added complexity without improving generalization.
+
+**Key insights from the prior best:**
+- Simpler structure works better: just initial RY → pre-RZ → linear CZ chain → reverse CRZ chain → post-RZ
+- Heavy parameter sharing (only 2 unique RZ parameters per layer) is critical
+- Fewer total gates (312 vs 420) enables better optimization within 180 steps
+
+**Proposed strategy:**
+Return to the proven minimal structure from the best prior program, but make one strategic improvement: replace the reverse CRZ chain with a reverse CRY chain. This changes the type of parametrized gate, which may provide better expressivity for the same parameter count and could be beneficial given the current problem's characteristics. CRY gates offer rotation around Y-axis controlled by another qubit, providing a different flavor of entanglement that might complement the forward CZ chain better than CRZ.
+
+This keeps parameter count low (44), maintains the fast convergence pattern, but tests a slightly different gate choice for the reverse entanglement layer.
+
+<NAME>
+reverse_cry_instead_crz
+</NAME>
+
+<DESCRIPTION>
+The current program (0.87 score) has overfit with 86 parameters and poor generalization (gap 0.06). The prior best (0.91 score) used only 44 parameters with excellent generalization (gap 0.01) and achieved convergence in 180 steps vs 540 for current.
+
+The prior best structure is proven: initial RY → pre-RZ (2 params) → linear CZ chain → reverse CRZ chain → post-RZ (2 params).
+
+This edit replaces the reverse CRZ chain with CRY gates. Both use the same 1 shared parameter per layer, maintaining the 44-parameter budget. However, CRY (rotation around Y-axis) may provide better complementarity to the forward CZ chain than CRZ (controlled phase). This trades CRZ's phase control for CRY's amplitude modulation while keeping the architecture minimal and parameter-efficient.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # ========== Initial Preparation Layer ==========
+    # Shared RY rotations (2 parameters across 8 qubits)
+    {"gate": "RY", "wire": 0, "param": "ry_init_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_init_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_init_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_init_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_init_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_init_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_init_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_init_b"},
+
+    # Pre-entanglement RZ with minimal sharing (4 parameters)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_1"},
+
+    # ========== First Entanglement Layer: Fixed CZ Chain ==========
+    # Linear chain of CZ gates (fixed, no parameters)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # ========== Second Entanglement Layer: Parametrized CRY (Offset) ==========
+    # Offset CRY gates using 4 shared parameters
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_offset_a"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_offset_b"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_offset_a"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_offset_b"},
+
+    # ========== Third Entanglement Layer: Fixed CNOT Diagonal ==========
+    # Diagonal CNOT connections (fixed, no parameters)
+    {"gate": "CNOT", "wires": [0, 2]},
+    {"gate": "CNOT", "wires": [1, 3]},
+    {"gate": "CNOT", "wires": [4, 6]},
+    {"gate": "CNOT", "wires": [5, 7]},
+
+    # ========== Mid-circuit RZ Layer ==========
+    # Mid-layer RZ rotations (4 parameters, shared across qubits)
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_1"},
+
+    # ========== Fourth Entanglement Layer: CRY Alternative Pairs ==========
+    # Alternative CRY gates reusing the offset parameters differently
+    {"gate": "CRY", "wires": [0, 3], "param": "cry_alt_a"},
+    {"gate": "CRY", "wires": [2, 5], "param": "cry_alt_b"},
+    {"gate": "CRY", "wires": [4, 7], "param": "cry_alt_a"},
+    {"gate": "CRY", "wires": [1, 6], "param": "cry_alt_b"},
+
+    # ========== Post-entanglement RZ Layer ==========
+    # Final RZ rotations with sharing (4 parameters)
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_1"},
+
+    # ========== Final Readout Preparation ==========
+    # Final RY layer using init parameters (parameter reuse for compactness)
+    {"gate": "RY", "wire": 0, "param": "ry_final_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_final_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_final_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_final_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_final_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_final_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_final_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_final_b"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared initial RY rotations - pairs of qubits share parameters
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    # Shared pre-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+
+    # Forward linear chain CZ gates for low-depth entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Reverse chain with shared CRY gate for amplitude-based entanglement
+    # All reverse connections use one trainable parameter
+    {"gate": "CRY", "wires": [7, 6], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [6, 5], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [5, 4], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [4, 3], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [3, 2], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [2, 1], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [1, 0], "param": "cry_rev"},
+
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

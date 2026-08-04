@@ -1,0 +1,117 @@
+<NAME>
+spectral_rotation_weaving
+</NAME>
+
+<DESCRIPTION>
+I analyzed the performance trends across the three programs:
+
+1. **Prior Program 1** (62 params, score 0.91): Uses 2-cycle alternating parameters in both mid-circuit RZ rotations and reverse CRZ gates, achieving excellent validation accuracy (0.93) but with higher parameter count and depth.
+
+2. **Prior Program 2** (50 params, score 0.91): Removes mid-circuit RZ rotations entirely, maintaining the 2-cycle reverse CRZ pattern, reaching optimal balance with 50 params but slower convergence (330 steps).
+
+3. **Current Program** (56 params, score 0.89): Introduces a 3-cycle in reverse CRZ (a, b, c pattern) but **lacks mid-circuit RZ rotations**, causing validation accuracy to drop to 0.89 and test accuracy to fall to 0.88.
+
+**Key insight**: The mid-circuit RZ rotations were critical for expressivity. The current program's performance regression suggests that adding a third parameter to the reverse layer cannot compensate for their removal.
+
+**Novel approach**: Instead of cycling through three discrete parameters in the reverse layer, I'm implementing a **spectral rotation weaving** strategy that:
+- Reintroduces strategic mid-circuit RZ rotations but with **shared parameters across symmetry groups** (not per-qubit pairs as in Program 1)
+- Uses a **selective reverse CRZ pattern** that concentrates parametrization where most entanglement benefit occurs (endpoints of the chain)
+- Implements **alternating gate types** (CRZ and CRX) in the reverse chain to increase expressivity diversity without linear parameter growth
+- Maintains ~50-52 parameters while recovering the expressivity lost in the current program
+
+This combines the validation strength of Program 1 with the parameter efficiency of Program 2, while adding novel oscillatory structure via gate-type alternation.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Shared initial RY rotations - pairs of qubits share parameters
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    # Shared pre-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+
+    # Forward linear chain CZ gates for low-depth entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Mid-circuit selective RZ rotations on even/odd qubits
+    # Shared across all even qubits and all odd qubits respectively
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_even"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_even"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_even"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_odd"},
+
+    # Reverse chain with alternating CRZ and CRX gates for spectral diversity
+    # Pattern cycles between two parameter sets with gate-type variation
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRX", "wires": [6, 5], "param": "crx_rev_b"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRX", "wires": [4, 3], "param": "crx_rev_b"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRX", "wires": [2, 1], "param": "crx_rev_b"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>
+
+**Rationale:**
+- **Parameter count**: 52 parameters (ry_a, ry_b, rz_pre_a, rz_pre_b, rz_mid_even, rz_mid_odd, crz_rev_a, crx_rev_b, rz_post_a, rz_post_b) — efficient like Program 2 while recovering expressivity.
+- **Mid-circuit restoration**: Reintroduces phase-space flexibility that was critical in Program 1, but with only 2 shared parameters instead of 4.
+- **Gate-type oscillation**: Alternating CRZ/CRX in the reverse layer adds functional diversity without parameter proliferation.
+- **Expected gains**: Higher validation accuracy (closer to 0.93 from Program 1), reduced generalization gap, and faster convergence than current program.

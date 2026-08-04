@@ -1,0 +1,127 @@
+<NAME>
+two_shared_thetas_rotation_entangler_split
+</NAME>
+
+<DESCRIPTION>
+Reduce the ansatz to exactly two shared trainable parameters: "theta1" drives every single-qubit rotation (RX, RY, RZ layers), and "theta2" drives a parametrized entangling layer (CRZ) that is interleaved with a fixed CZ ring. This is a compromise between the 1-parameter seed (score 0.80, but potentially under-expressive) and the 26-parameter current version (score 0.66, over-parametrized). Giving the entangler its own free angle, separate from the single-qubit rotation angle, lets the circuit learn distinct rotation vs. entanglement strengths while keeping parameter count minimal (n_params=2), which should improve parameter_efficiency and maintain high accuracy/generalization, boosting the combined score.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+ANSATZ_SPEC = [
+    # Global RX pre-rotation: single shared parameter across all 8 qubits.
+    # Combined with the RY layer below (different axis, no entangling gate
+    # in between), this realizes a 2-parameter single-qubit rotation per
+    # qubit while still using only one extra trainable parameter overall.
+    {"gate": "RX", "wire": 0, "param": "rx_global"},
+    {"gate": "RX", "wire": 1, "param": "rx_global"},
+    {"gate": "RX", "wire": 2, "param": "rx_global"},
+    {"gate": "RX", "wire": 3, "param": "rx_global"},
+    {"gate": "RX", "wire": 4, "param": "rx_global"},
+    {"gate": "RX", "wire": 5, "param": "rx_global"},
+    {"gate": "RX", "wire": 6, "param": "rx_global"},
+    {"gate": "RX", "wire": 7, "param": "rx_global"},
+
+    # Global RY rotation.
+    {"gate": "RY", "wire": 0, "param": "ry_global"},
+    {"gate": "RY", "wire": 1, "param": "ry_global"},
+    {"gate": "RY", "wire": 2, "param": "ry_global"},
+    {"gate": "RY", "wire": 3, "param": "ry_global"},
+    {"gate": "RY", "wire": 4, "param": "ry_global"},
+    {"gate": "RY", "wire": 5, "param": "ry_global"},
+    {"gate": "RY", "wire": 6, "param": "ry_global"},
+    {"gate": "RY", "wire": 7, "param": "ry_global"},
+
+    # Entangling ring (fixed, no parameters).
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Global RZ rotation.
+    {"gate": "RZ", "wire": 0, "param": "rz_global"},
+    {"gate": "RZ", "wire": 1, "param": "rz_global"},
+    {"gate": "RZ", "wire": 2, "param": "rz_global"},
+    {"gate": "RZ", "wire": 3, "param": "rz_global"},
+    {"gate": "RZ", "wire": 4, "param": "rz_global"},
+    {"gate": "RZ", "wire": 5, "param": "rz_global"},
+    {"gate": "RZ", "wire": 6, "param": "rz_global"},
+    {"gate": "RZ", "wire": 7, "param": "rz_global"},
+
+    # Extra global RZ bias layer after the main RZ layer, capturing any
+    # residual global-phase pattern relevant to the fixed readout stage.
+    {"gate": "RZ", "wire": 0, "param": "rz_global2"},
+    {"gate": "RZ", "wire": 1, "param": "rz_global2"},
+    {"gate": "RZ", "wire": 2, "param": "rz_global2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_global2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_global2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_global2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_global2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_global2"},
+]
+
+=======
+
+ANSATZ_SPEC = [
+    # Global RX pre-rotation: single shared parameter "theta1" across all
+    # 8 qubits.
+    {"gate": "RX", "wire": 0, "param": "theta1"},
+    {"gate": "RX", "wire": 1, "param": "theta1"},
+    {"gate": "RX", "wire": 2, "param": "theta1"},
+    {"gate": "RX", "wire": 3, "param": "theta1"},
+    {"gate": "RX", "wire": 4, "param": "theta1"},
+    {"gate": "RX", "wire": 5, "param": "theta1"},
+    {"gate": "RX", "wire": 6, "param": "theta1"},
+    {"gate": "RX", "wire": 7, "param": "theta1"},
+
+    # Global RY rotation, reusing "theta1" (non-commuting axis chain).
+    {"gate": "RY", "wire": 0, "param": "theta1"},
+    {"gate": "RY", "wire": 1, "param": "theta1"},
+    {"gate": "RY", "wire": 2, "param": "theta1"},
+    {"gate": "RY", "wire": 3, "param": "theta1"},
+    {"gate": "RY", "wire": 4, "param": "theta1"},
+    {"gate": "RY", "wire": 5, "param": "theta1"},
+    {"gate": "RY", "wire": 6, "param": "theta1"},
+    {"gate": "RY", "wire": 7, "param": "theta1"},
+
+    # Fixed nearest-neighbor CZ ring (zero trainable parameters).
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Parametrized long-range entangling layer: single shared parameter
+    # "theta2", distinct from the rotation angle "theta1", giving the
+    # circuit an independent entanglement-strength degree of freedom.
+    {"gate": "CRZ", "wires": [0, 2], "param": "theta2"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "theta2"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "theta2"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "theta2"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "theta2"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "theta2"},
+    {"gate": "CRZ", "wires": [6, 0], "param": "theta2"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "theta2"},
+
+    # Final global RZ rotation reusing "theta1" to complete the
+    # single-qubit rotation basis.
+    {"gate": "RZ", "wire": 0, "param": "theta1"},
+    {"gate": "RZ", "wire": 1, "param": "theta1"},
+    {"gate": "RZ", "wire": 2, "param": "theta1"},
+    {"gate": "RZ", "wire": 3, "param": "theta1"},
+    {"gate": "RZ", "wire": 4, "param": "theta1"},
+    {"gate": "RZ", "wire": 5, "param": "theta1"},
+    {"gate": "RZ", "wire": 6, "param": "theta1"},
+    {"gate": "RZ", "wire": 7, "param": "theta1"},
+]
+
+>>>>>>> REPLACE
+</DIFF>

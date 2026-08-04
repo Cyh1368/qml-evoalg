@@ -1,0 +1,102 @@
+<NAME>
+brickwall_phase_sandwich
+</NAME>
+
+<DESCRIPTION>
+Remove the shared CRY initializer because it reduced validation accuracy, increased loss, and substantially slowed convergence relative to the simpler baseline. Replace the serial open-chain entangler with two parallel brick-wall CZ sublayers, including the complementary 7–0 bond for uniform connectivity. Each sublayer receives distinct parity-shared pre/post RZ phases, preserving parameter efficiency while regularizing phase transformations and increasing interaction-pattern diversity.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Lightweight trainable pairwise correlation layer. Parameter sharing
+    # limits the increase in model capacity to one angle per repeated block.
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_init"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_init"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_init"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_init"},
+
+=======
+>>>>>>> REPLACE
+
+<DIFF>
+<<<<<<< SEARCH
+    # Parity-shared phase layer for parameter-efficient regularization.
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_odd"},
+
+    # Open-chain propagation avoids the extra depth and reduced accuracy
+    # observed with the ring-closing interaction.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Independent output phases retain readout flexibility.
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+=======
+    # First parity-shared phase sandwich around disjoint even bonds.
+    {"gate": "RZ", "wire": 0, "param": "rz_even_pre_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_even_pre_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even_pre_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_even_pre_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even_pre_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_even_pre_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even_pre_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_even_pre_odd"},
+
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_even_post_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_even_post_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even_post_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_even_post_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even_post_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_even_post_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even_post_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_even_post_odd"},
+
+    # Complementary sandwich shifts the bonds and closes the interaction ring.
+    {"gate": "RZ", "wire": 0, "param": "rz_odd_pre_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd_pre_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_odd_pre_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd_pre_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_odd_pre_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd_pre_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_odd_pre_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd_pre_odd"},
+
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_odd_post_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd_post_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_odd_post_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd_post_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_odd_post_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd_post_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_odd_post_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd_post_odd"},
+>>>>>>> REPLACE
+
+</DIFF>

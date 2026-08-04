@@ -1,0 +1,47 @@
+<NAME>
+tied_collective_crz_matching
+</NAME>
+
+<DESCRIPTION>
+Uses one globally shared parameter for both collective RY rotations and a parallel CRZ matching. This preserves the minimum observed trainable-parameter count while replacing fixed entanglement with adaptive entanglement. The disjoint matching reduces depth and gate count relative to the full ladder, while aggressive sharing regularizes the circuit and supports fast convergence from limited training data.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Parametrically economical eight-qubit ansatz."""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # A single collective mode rotates the entire register.
+    {"gate": "RY", "wire": 0, "param": "collective_mode"},
+    {"gate": "RY", "wire": 1, "param": "collective_mode"},
+    {"gate": "RY", "wire": 2, "param": "collective_mode"},
+    {"gate": "RY", "wire": 3, "param": "collective_mode"},
+    {"gate": "RY", "wire": 4, "param": "collective_mode"},
+    {"gate": "RY", "wire": 5, "param": "collective_mode"},
+    {"gate": "RY", "wire": 6, "param": "collective_mode"},
+    {"gate": "RY", "wire": 7, "param": "collective_mode"},
+
+    # Parallel adaptive entanglement tied to the same parameter, avoiding
+    # any increase in the number of independently trainable parameters.
+    {"gate": "CRZ", "wires": [0, 1], "param": "collective_mode"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "collective_mode"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "collective_mode"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "collective_mode"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

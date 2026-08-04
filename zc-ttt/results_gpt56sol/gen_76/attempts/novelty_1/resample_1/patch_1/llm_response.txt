@@ -1,0 +1,123 @@
+<NAME>
+tied_midpoint_reupload
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses 30 independent parameters per repeated block: six shared input RY parameters, nine input RZ parameters, six shared output RY parameters, and nine output RZ parameters. Its strong validation accuracy and small generalization gap indicate that the graph-matched CZ backbone and existing parameter sharing are effective, but all local basis changes occur only before or after entanglement.
+
+The new configuration inserts an RY–RZ basis-remixing layer after the second CZ matching. This allows the final interaction layers to act on newly learned local bases rather than merely extending a commuting CZ sequence. To control parameter growth and preserve generalization, midpoint rotations share parameters across the same graph-related qubit groups used by the existing RY layers. Training settings such as learning rate and iteration count are fixed externally, so the principal optimization choices available here are gate placement, parameter sharing, depth, and entanglement structure.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 9
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_THREE_QUBIT_GATES = {"ZZZ", "CCRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Shared amplitude preparation limits capacity while retaining local roles.
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_14"},
+    {"gate": "RY", "wire": 2, "param": "ry_23"},
+    {"gate": "RY", "wire": 3, "param": "ry_23"},
+    {"gate": "RY", "wire": 4, "param": "ry_14"},
+    {"gate": "RY", "wire": 5, "param": "ry_56"},
+    {"gate": "RY", "wire": 6, "param": "ry_56"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+
+    # Qubit-specific input phases preserve local discrimination.
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre_8"},
+
+    # First disjoint interaction matching.
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 8]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Second disjoint interaction matching.
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Mid-circuit amplitude remixing. Parameters are tied over graph-related
+    # vertices to add nonlinear depth without fully independent local capacity.
+    {"gate": "RY", "wire": 0, "param": "ry_mid_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_mid_14"},
+    {"gate": "RY", "wire": 2, "param": "ry_mid_23"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid_23"},
+    {"gate": "RY", "wire": 4, "param": "ry_mid_14"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid_56"},
+    {"gate": "RY", "wire": 6, "param": "ry_mid_56"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_mid_8"},
+
+    # Tied midpoint phases rotate the axes seen by later CZ interactions.
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_14"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_23"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_23"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_14"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_56"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_56"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_mid_8"},
+
+    # Remaining complementary interactions now operate in the remixed basis.
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [0, 8]},
+
+    # Shared output amplitude rotations.
+    {"gate": "RY", "wire": 0, "param": "ry2_0"},
+    {"gate": "RY", "wire": 1, "param": "ry2_14"},
+    {"gate": "RY", "wire": 2, "param": "ry2_23"},
+    {"gate": "RY", "wire": 3, "param": "ry2_23"},
+    {"gate": "RY", "wire": 4, "param": "ry2_14"},
+    {"gate": "RY", "wire": 5, "param": "ry2_56"},
+    {"gate": "RY", "wire": 6, "param": "ry2_56"},
+    {"gate": "RY", "wire": 7, "param": "ry2_7"},
+    {"gate": "RY", "wire": 8, "param": "ry2_8"},
+
+    # Independent readout-basis phases.
+    {"gate": "RZ", "wire": 0, "param": "rz2_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz2_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz2_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz2_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz2_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz2_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz2_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz2_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz2_8"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

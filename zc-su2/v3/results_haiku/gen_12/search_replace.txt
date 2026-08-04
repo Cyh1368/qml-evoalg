@@ -1,0 +1,131 @@
+Looking at the performance metrics, I need to analyze what's working and what isn't:
+
+**Current program analysis (score 0.43):**
+- Very low training accuracy (0.69) and validation accuracy (0.64) - the model is underfitting
+- Poor validation margin (0.09) and worst group margin (0.05) - terrible separation
+- Only 5 distinct parameters - over-constrained
+- The circuit has high connectivity but lacks proper expressivity
+
+**Best prior program (score 0.58):**
+- Perfect training accuracy (1.00), high validation (0.97)
+- Good validation margin (0.57) and worst group margin (0.28)
+- 10 distinct parameters - better expressivity with controlled growth
+- Uses a mix of XX, YY, ZZ gates with separate pre/post RZ layers
+- Alternating RY parameters (ry_0, ry_1) on even/odd qubits
+
+**Key insights:**
+1. The current program's extreme parameter sharing (only 5 distinct params) severely limits expressivity
+2. The fixed CZ gates don't contribute learnable capacity
+3. We need more diverse Ising interactions (XX, YY, ZZ mix)
+4. The best program uses 10 distinct parameters - we should aim for similar expressivity
+5. Alternating parameter patterns work well for qubit symmetry
+
+**Proposed strategy:**
+- Restore more individual RY parameters to increase expressivity
+- Replace fixed CZ gates with parametrized Ising interactions (XX, YY, ZZ)
+- Add long-range ZZ couplings (as suggested in recommendations) for better connectivity
+- Keep pre/post RZ layers but add more distinct parameters for better learning
+- Aim for 10-12 distinct parameters (proven to work well)
+
+<NAME>
+restore_expressivity_ising_mix
+</NAME>
+
+<DESCRIPTION>
+The current program is severely underfitting due to extreme parameter sharing (only 5 distinct params). The best prior had 10 distinct params and achieved 0.58 score with proper expressivity.
+
+Changes:
+1. Replace the over-constrained RY layer (only ry_a, ry_b) with more diverse parameters (ry_a through ry_d) to capture individual qubit rotations better
+2. Replace fixed CZ gates with parametrized XX gates to add learnable entanglement
+3. Add more diverse Ising interactions (mix of XX, YY, ZZ) with better qubit pair coverage
+4. Add long-range diagonal couplings (ZZ on [0,4] and [2,6]) to improve connectivity between distant qubits
+5. Reduce overall gate count while increasing parameter distinctness for better generalization
+
+Target: ~11 distinct parameters, maintaining or reducing gate count while improving expressivity.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "XX", "wires": [0, 3], "param": "xx_a"},
+    {"gate": "XX", "wires": [1, 4], "param": "xx_a"},
+    {"gate": "XX", "wires": [2, 5], "param": "xx_a"},
+    {"gate": "XX", "wires": [3, 6], "param": "xx_a"},
+    {"gate": "XX", "wires": [4, 7], "param": "xx_a"},
+    {"gate": "YY", "wires": [0, 5], "param": "yy_a"},
+    {"gate": "YY", "wires": [1, 6], "param": "yy_a"},
+    {"gate": "YY", "wires": [2, 7], "param": "yy_a"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_d"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_c"},
+    {"gate": "RY", "wire": 7, "param": "ry_d"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "ZZ", "wires": [0, 4], "param": "zz_04"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "zz_26"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+
+</DIFF>
+
+**Rationale for this change:**
+
+1. **Increased RY expressivity**: Changed from (ry_a, ry_b) pattern to (ry_a, ry_b, ry_c, ry_d) that still respects symmetry but allows more nuanced per-qubit rotation learning.
+
+2. **Replaced fixed CZ with parametrized Ising**: The CZ gates added no learnable capacity. Replacing with XX, YY, ZZ parametrized gates (matching the best prior's successful strategy) provides:
+   - Learnable entanglement
+   - Diverse interaction types capture different aspects of correlations
+   - Maintains nearest-neighbor connectivity
+
+3. **Added long-range ZZ couplings**: The new ZZ gates on [0,4] and [2,6] create diagonal connections that improve information flow across the 8-qubit register without excessive gate overhead.
+
+4. **Total distinct parameters**: Now 11 (ry_a, ry_b, ry_c, ry_d, rz_pre, rz_post, xx_01, yy_23, zz_45, xx_67, yy_14, zz_36, zz_04, zz_26) - matching the proven sweet spot of the best prior.
+
+5. **Improved structure**: This mirrors the successful second program's strategy (which scored 0.58) but with added expressivity in the RY layer and extra long-range couplings for better worst-case separation.

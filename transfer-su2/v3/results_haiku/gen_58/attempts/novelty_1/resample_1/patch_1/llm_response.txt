@@ -1,0 +1,109 @@
+<NAME>
+parity_split_readout_calibration
+</NAME>
+
+<DESCRIPTION>
+The current program has a validation worst_group_margin_mean of 0.32, which is notably lower than the overall validation_margin_mean of 0.64. This indicates that the hardest-to-classify samples (grouped by hidden difficulty) have much worse margins than average, causing the combined score to be dominated by the worst-group margin metric.
+
+The recommendation proposes splitting readout calibration by parity: use separate gain/bias parameters for correlators measured on even-index vs. odd-index qubit pairs. This decouples sublattice biases and allows the readout layer to adapt independently to different symmetry classes in the data, improving the worst-group margin without harming average performance.
+
+The implementation:
+1. Increases N_READOUT_PARAMS from 2 to 4 ("gain_even", "bias_even", "gain_odd", "bias_odd")
+2. Updates predict_batch to classify pairs as even (both wires have same parity) or odd (different parity), compute raw_even and raw_odd separately, and return their weighted sum
+3. Adjusts initialization to set all gains to 1.0 and all biases to 0.0
+
+This +2-parameter change is minimal (total goes from 9 to 11 params) but targets the specific weakness: improving hardest-sample separation through finer-grained output calibration, which should increase worst_group_margin_mean and thus the combined score.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+=======
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK
+N_READOUT_PARAMS = 4  # trainable output calibration: gain_even, bias_even, gain_odd, bias_odd
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per state: calibrated mean of the fixed correlators."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    states = pnp.array(np.asarray(x_batch, dtype=complex), requires_grad=False)
+    z = pnp.stack(circuit_pair_expectations(states, circuit_params))  # (n_pairs, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+=======
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per state: calibrated mean of the fixed correlators.
+    
+    Split readout by parity: separate gain/bias for even-index and odd-index pairs
+    to decouple sublattice biases and improve worst-group margins.
+    """
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain_even = params[N_CIRCUIT_PARAMS]
+    bias_even = params[N_CIRCUIT_PARAMS + 1]
+    gain_odd = params[N_CIRCUIT_PARAMS + 2]
+    bias_odd = params[N_CIRCUIT_PARAMS + 3]
+    
+    states = pnp.array(np.asarray(x_batch, dtype=complex), requires_grad=False)
+    z = pnp.stack(circuit_pair_expectations(states, circuit_params))  # (n_pairs, B)
+    
+    # Classify pairs as even (both wires same parity) or odd (different parity)
+    even_mask = np.array([
+        (wires[0] % 2) == (wires[1] % 2) for wires in READOUT_PAIRS
+    ])
+    
+    # Compute separate means for even and odd parity pairs
+    if np.any(even_mask):
+        raw_even = pnp.mean(z[even_mask], axis=0)
+    else:
+        raw_even = 0.0
+    
+    if np.any(~even_mask):
+        raw_odd = pnp.mean(z[~even_mask], axis=0)
+    else:
+        raw_odd = 0.0
+    
+    # Return weighted sum of calibrated even and odd components
+    return gain_even * (raw_even - bias_even) + gain_odd * (raw_odd - bias_odd)
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    # Angles are initialised across the full period rather than near zero. A
+    # near-identity start is a dead zone for some candidate structures, and the
+    # ranking noise that produces is an optimiser artifact rather than a
+    # property of the circuit. The wide init applies to every candidate alike.
+    init_scale = float(os.environ.get("INIT_SCALE", str(np.pi)))
+    init = rng.uniform(-init_scale, init_scale, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+=======
+    rng = np.random.default_rng(seed)
+    # Angles are initialised across the full period rather than near zero. A
+    # near-identity start is a dead zone for some candidate structures, and the
+    # ranking noise that produces is an optimiser artifact rather than a
+    # property of the circuit. The wide init applies to every candidate alike.
+    init_scale = float(os.environ.get("INIT_SCALE", str(np.pi)))
+    init = rng.uniform(-init_scale, init_scale, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain_even starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias_even starts at 0
+    init[N_CIRCUIT_PARAMS + 2] = 1.0   # gain_odd starts at 1
+    init[N_CIRCUIT_PARAMS + 3] = 0.0   # bias_odd starts at 0
+>>>>>>> REPLACE
+
+</DIFF>

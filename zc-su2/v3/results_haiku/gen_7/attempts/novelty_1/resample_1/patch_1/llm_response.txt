@@ -1,0 +1,82 @@
+<NAME>
+enhanced_margin_ansatz
+</NAME>
+
+<DESCRIPTION>
+The current program has excellent parameter efficiency (3 distinct params) and low depth (12), but critically fails on the worst_group_margin_mean (0.00), which directly limits the combined score despite good generalization gap (0.07). The goal is to improve robust separation on hard samples without sacrificing parameter efficiency.
+
+Analysis of prior programs:
+1. First program (score 0.29): 24 distinct params, high overfitting (gap 0.31), but worst_group_margin 0.03
+2. Second program (score 0.40): 3 distinct params, lower gap (0.16), worst_group_margin 0.02
+3. Current (score 0.42): 3 distinct params, minimal gap (0.07), but worst_group_margin dropped to 0.00
+
+The worst_group_margin collapse suggests the current architecture cannot separate the hardest samples at all. The solution is to add structured non-uniformity while preserving parameter sharing:
+
+Strategy:
+- Keep the aggressive parameter sharing (3 params) for efficiency
+- Add alternating two-qubit interactions with different parameter layers to increase expressiveness
+- Introduce YY and ZZ gates alongside XX to create richer entanglement patterns
+- Implement a multi-layer structure with varied gate combinations to capture complex decision boundaries
+- Use separate rotation parameters for different stages to allow the optimizer flexibility for hard samples
+
+This balances:
+- Parameter economy (still 3-4 distinct params)
+- Expressiveness (varied gate types and patterns)
+- Generalization (simple shared structure)
+- Hard sample separation (layered interactions with multiple rotation angles)
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry"},
+    {"gate": "RY", "wire": 1, "param": "ry"},
+    {"gate": "RY", "wire": 2, "param": "ry"},
+    {"gate": "RY", "wire": 3, "param": "ry"},
+    {"gate": "RY", "wire": 4, "param": "ry"},
+    {"gate": "RY", "wire": 5, "param": "ry"},
+    {"gate": "RY", "wire": 6, "param": "ry"},
+    {"gate": "RY", "wire": 7, "param": "ry"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx"},
+    {"gate": "YY", "wires": [6, 7], "param": "yy"},
+    {"gate": "RZ", "wire": 0, "param": "rz"},
+    {"gate": "RZ", "wire": 1, "param": "rz"},
+    {"gate": "RZ", "wire": 2, "param": "rz"},
+    {"gate": "RZ", "wire": 3, "param": "rz"},
+    {"gate": "RZ", "wire": 4, "param": "rz"},
+    {"gate": "RZ", "wire": 5, "param": "rz"},
+    {"gate": "RZ", "wire": 6, "param": "rz"},
+    {"gate": "RZ", "wire": 7, "param": "rz"},
+    {"gate": "XX", "wires": [1, 2], "param": "xx"},
+    {"gate": "YY", "wires": [3, 4], "param": "yy"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx"},
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "zz"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

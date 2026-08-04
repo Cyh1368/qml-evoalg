@@ -1,0 +1,143 @@
+# Analysis
+
+Looking at the prior programs, I observe:
+1. **Program 1** (seed): 1 block, 14 params, score 0.72, depth 35, convergence 90
+2. **Program 2**: 3 blocks with shared params, 14 params, score 0.72, depth 95, convergence 30
+3. **Current**: 2 blocks with shared params, 14 params, score 0.72, depth 65, convergence 90
+
+All achieve perfect accuracy but with identical combined scores (0.72). The key insight from the recommendation is to enable **per-block rotation specialization**: give each block its own RY/RZ pair while keeping CZ chains shared and fixed. This maintains the gate-to-parameter ratio (~70) while allowing each layer to learn distinct rotation landscapes.
+
+**Benefits:**
+- Same total parameter count (8 params) with per-block specialization: 2 blocks × (1 ry + 1 rz) = 4 params total
+- Better expressiveness: each block learns independently
+- High gate efficiency preserved
+- Potential for faster convergence and better generalization
+
+**Implementation:**
+Rename RY and RZ parameters in each block:
+- Block 1: "ry_1", "rz_1"
+- Block 2: "ry_2", "rz_2"
+- Keep CZ chains identical across blocks
+
+<NAME>
+per_block_rotation_specialization
+</NAME>
+
+<DESCRIPTION>
+Enable per-block rotation specialization by giving each block its own shared RY/RZ pair ("ry_1"/"rz_1" for block 1, "ry_2"/"rz_2" for block 2). This maintains parameter economy (4 total params, one per gate type per block) while allowing each layer to learn distinct rotation landscapes independently. The high gate-to-parameter ratio (~93 gates per param) is preserved, and per-block specialization should improve expressiveness and potentially accelerate convergence by allowing each layer to adapt to different feature spaces. The fixed CZ chain structure maintains connectivity while parameter specialization enables richer feature learning.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # First block
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+=======
+    # First block
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "RZ", "wire": 0, "param": "rz_1"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_1"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # Second block (identical, with shared parameters)
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+=======
+    {"gate": "RZ", "wire": 0, "param": "rz_1"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_1"},
+    # Second block (with block-specific parameters)
+    {"gate": "RY", "wire": 0, "param": "ry_2"},
+    {"gate": "RY", "wire": 1, "param": "ry_2"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_2"},
+    {"gate": "RY", "wire": 4, "param": "ry_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_2"},
+    {"gate": "RY", "wire": 7, "param": "ry_2"},
+    {"gate": "RZ", "wire": 0, "param": "rz_2"},
+    {"gate": "RZ", "wire": 1, "param": "rz_2"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_2"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+=======
+    {"gate": "RZ", "wire": 0, "param": "rz_2"},
+    {"gate": "RZ", "wire": 1, "param": "rz_2"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_2"},
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,24 @@
+<NAME>
+remove_midlayer_add_shared_crx
+
+<DESCRIPTION>
+The experiment history shows that adding a 4-gate RY "mid-layer" (ry_mid_0..3) between the CRZ entangling block and the final RZ readout layer increased parameter count (162→186) and depth (41→44) but *decreased* combined score (0.63→0.62) and widened the generalization gap (0.09→0.10). This confirms the mid-layer refresh idea does not pay off here — it adds expressivity that the optimizer cannot use efficiently, likely overfitting.
+
+This edit removes the RY mid-layer entirely, reverting to the leaner 162-parameter backbone that empirically generalizes better. To still get some benefit from an extra "refresh" without ballooning parameter count, it reintroduces a very light entangling touch using heavy parameter-sharing: a single shared-parameter CRY on two previously-unused-for-CRY pairs (4,8) and (5,7) reusing already-touched qubits, added right after the existing CRZ block but before the final RZ layer, using only one extra parameter (crz_share). This nudges correlations between the two mid/late clusters at negligible parameter cost (1 param vs 4), preserving efficiency while giving a small expressivity boost.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+    {"gate": "RY", "wire": 1, "param": "ry_mid_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid_2"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid_3"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+=======
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+    {"gate": "CRY", "wires": [4, 8], "param": "cry_share"},
+    {"gate": "CRY", "wires": [5, 7], "param": "cry_share"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+>>>>>>> REPLACE
+</DIFF>

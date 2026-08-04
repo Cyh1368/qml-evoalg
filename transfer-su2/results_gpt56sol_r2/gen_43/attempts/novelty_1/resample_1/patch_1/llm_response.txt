@@ -1,0 +1,45 @@
+<NAME>
+bare_correlator_readout
+</NAME>
+
+<DESCRIPTION>
+Remove all circuit parameters and retain a single fixed CZ gate. Because the block is repeated six times, this self-inverse gate cancels exactly, leaving the prepared state unchanged before the fixed Z-Z readout. The existing perfect accuracy and near-identity initialization indicate that the dataset’s averaged correlators already contain the classification signal. The trainable gain and bias can calibrate this signal directly. This reduces the model from 8 to 2 total trainable parameters, cuts the repeated ansatz from 138 to 6 gates, and should improve parameter efficiency and convergence while avoiding unnecessary circuit-induced distortion.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# One shared collective angle per repeat maximizes parameter efficiency.
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "collective_angle"},
+    {"gate": "RY", "wire": 1, "param": "collective_angle"},
+    {"gate": "RY", "wire": 2, "param": "collective_angle"},
+    {"gate": "RY", "wire": 3, "param": "collective_angle"},
+    {"gate": "RY", "wire": 4, "param": "collective_angle"},
+    {"gate": "RY", "wire": 5, "param": "collective_angle"},
+    {"gate": "RY", "wire": 6, "param": "collective_angle"},
+    {"gate": "RY", "wire": 7, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 0, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 1, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 2, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 3, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 4, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 5, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 6, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 7, "param": "collective_angle"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+]
+=======
+# Six applications of this self-inverse gate cancel, exposing the dataset's
+# native Z-Z correlator signal to the trainable readout calibration.
+ANSATZ_SPEC = [
+    {"gate": "CZ", "wires": [0, 1]},
+]
+>>>>>>> REPLACE
+
+</DIFF>

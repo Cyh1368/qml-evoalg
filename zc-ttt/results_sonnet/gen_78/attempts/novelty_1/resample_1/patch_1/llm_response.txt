@@ -1,0 +1,53 @@
+<NAME>
+seed_plus_zzz_cross_cluster
+</NAME>
+
+<DESCRIPTION>
+The prior sublayer-based CRZ regrouping (current file, score 0.62) underperformed the original seed ordering (score 0.63) despite using the same total gate set — evidence that gate *ordering* and clustering (not just connectivity) matters here, likely due to how partial cancellations/interference build up along the circuit. This edit reverts the entangling block to the seed's proven ordering (hub-qubit-0 first, then 1-3-5/2-4-8 chains, then 5-7/6-7 closing gates) and additionally injects a single three-qubit ZZZ interaction across three previously only pairwise-connected clusters (qubits 0, 4, 7 — each a hub/bridge qubit in the existing topology). Three-qubit gates are unrestricted in wire choice, so this creates a genuinely new higher-order correlation that pairwise CRZ chains cannot capture, at the cost of just one extra parameter and one extra gate. This should help capture interactions between the hub cluster (0), the 2-4-8 chain, and the 5-7/6-7 closing cluster without expanding two-qubit connectivity or param count significantly, targeting improved validation accuracy while keeping the train-test gap and parameter budget in check.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # --- Entangling layer: CRZ gates grouped into 4 parallel sublayers ---
+    # (matching decomposition of the allowed connectivity graph; gates within
+    # a sublayer act on disjoint wires and can be scheduled concurrently)
+    # Sublayer 1
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [4, 8], "param": "crz_d"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_e"},
+    # Sublayer 2
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_f"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_c"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_g"},
+    # Sublayer 3
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_c"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_h"},
+    # Sublayer 4
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_a"},
+
+    # --- Mid-circuit refresh on hub qubit 0 ---
+    {"gate": "RX", "wire": 0, "param": "rx_mid_0"},
+=======
+    # --- Entangling layer: hub-and-spoke ordering (proven baseline) ---
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_2"},
+
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [4, 8], "param": "crz_9"},
+
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_10"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+
+    # --- Cross-cluster higher-order correlation (new) ---
+    {"gate": "ZZZ", "wires": [0, 4, 7], "param": "zzz_0"},
+>>>>>>> REPLACE
+</DIFF>

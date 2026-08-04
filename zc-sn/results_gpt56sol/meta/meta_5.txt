@@ -1,0 +1,101 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Layered RY-RZ with Chain CZ Entanglement**  
+- **Implementation**: Defined an ansatz over 8 qubits with per-qubit RY rotations, pre- and post-RZ phase shifts, and a linear chain of CZ entangling gates, yielding 146 tunable parameters and a circuit depth of 99.  
+- **Performance**: Achieved a combined score of 0.85 with train/validation/test accuracies of 0.94/0.89/0.87 and a generalization gap of 0.07.  
+- **Feedback**: The layered structure delivers strong accuracy and stable convergence (~750 steps) but results in high depth and low parameter efficiency (0.01); pruning redundant rotations or entanglers could streamline the circuit without sacrificing performance.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: 8-Qubit Ring CZ Ansatz with Parity RZ Layers**  
+- **Implementation**: The circuit applies individual RY rotations on each qubit followed by shared pre- and post-entanglement RZ rotations alternating by parity, interleaved with a ring of CZ gates across all 8 qubits, yielding 74 parameters at depth ~120; `run_experiment` simply delegates this fixed ansatz to the backend.  
+- **Performance**: Achieved a combined score of 0.86 with test accuracy 0.86, a small generalization gap of 0.04, converging in ~270 steps with a gate count of 276.  
+- **Feedback**: Parity-based RZ sharing kept parameter count low but led to high depth and gate overhead, highlighting a trade-off between expressivity and efficiency. Convergence was robust, though parameter efficiency is minimal, suggesting potential gains from circuit compression or gate reduction.
+**Program Identifier:** Generation 1 - Patch Name parity_shared_ring - Correct Program: True
+
+**Program Name: Linear CZ RY–RZ Ansatz**  
+- **Implementation**: This 8-qubit variational circuit applies an initial layer of single-qubit RY rotations, a linear chain of CZ entangling gates, and a final layer of RZ rotations, totaling 98 trainable parameters in a depth-93, 222-gate layout.  
+- **Performance**: Achieved a combined score of 0.81 with mean train/validation/test accuracies of 0.87/0.87/0.85 and a generalization gap of 0.01.  
+- **Feedback**: The simple linear entanglement structure delivers stable accuracy with minimal overfitting, but the relatively high depth and low parameter efficiency suggest opportunities for circuit pruning or parameter reduction.
+**Program Identifier:** Generation 2 - Patch Name remove_redundant_rz - Correct Program: True
+
+**Program Name: Eight-Qubit RY-CNOT Variational Ansatz**  
+- **Implementation**: The ansatz applies single-qubit RY rotations on all 8 qubits followed by a fixed CNOT ladder entangling nearest neighbors in a ring topology; no parametrized two-qubit gates are used.  
+- **Performance**: Achieves a combined score of 0.70 with mean test accuracy 0.75, a small generalization gap (0.09), depth 75, gate count 180, and 50 parameters (parameter efficiency 0.01).  
+- **Feedback**: Training converges stably (zero accuracy std) and yields moderate accuracy, but the high circuit depth and gate count relative to parameter count indicate potential overparameterization and low resource efficiency.
+**Program Identifier:** Generation 4 - Patch Name real_amplitude_ring - Correct Program: True
+
+**Program Name: Ring-Entangled Rotation Ansatz**  
+- **Implementation**: An 8-qubit variational circuit applies single-qubit RY and RZ rotations (each with its own parameter) on every wire, followed by a cyclic CZ entanglement pattern; training and evaluation use a fixed backend.  
+- **Performance**: Achieves a combined score of 0.78 with mean train/test accuracies of 0.92/0.86, validation accuracy 0.82, a 0.06 generalization gap, 98 parameters, depth 114, and 228 gates.  
+- **Feedback**: The straightforward rotation-plus-ring structure delivers robust accuracy and generalization but has low parameter efficiency and high gate count, indicating that reducing circuit depth or introducing parameterized two-qubit gates could enhance resource utilization.
+**Program Identifier:** Generation 5 - Patch Name collapse_redundant_rz_ring - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+- Parity-based parameter sharing on single-qubit Z rotations (8→2 parameters per layer)  
+  – Seen in the current best program (“8-Qubit Ring CZ Ansatz with Parity RZ Layers”, score 0.86)  
+  – Maintains high expressivity while cutting parameter count by ~50% versus unshared RZ layers (e.g., Generation 5, score 0.78)
+- Two-layer structure of pre- and post-entanglement RZ phases  
+  – Present in Generation 1 (score 0.86) and in the higher-depth Generation 0 (score 0.85)  
+  – Supports richer entanglement-phase interplay, driving robust convergence in ~270–750 steps
+- Ring-topology CZ entanglement  
+  – Used in Generation 1 (score 0.86) and Generation 5 (score 0.78)  
+  – Outperforms linear chains (Generation 2: score 0.81) by providing fuller connectivity with minimal extra depth
+- Dedicated per-qubit RY initialization layer  
+  – Consistently present across top performers (Gen 0, Gen 1, Gen 2)  
+  – Ensures a flexible starting state, correlating with higher train/test accuracies (≥0.90/0.86)
+
+## Ineffective Approaches
+- Fully individual RZ parametrization without sharing  
+  – Generation 5 used 8 distinct RZs per layer, achieved only 0.78 combined score and low parameter efficiency  
+  – Redundant rotations inflated depth (114) and gates (228) without commensurate accuracy gains
+- Absence of parametrized two-qubit gates (pure CNOT ladder)  
+  – “Eight-Qubit RY-CNOT Variational Ansatz” (Generation 4) stalled at 0.70 combined score, despite low depth (75)  
+  – Lacked adjustable entanglement phases, limiting expressive power for classification tasks
+- Simple linear CZ chains without phase layering  
+  – Generation 2 reached only 0.81 combined score, even with 98 parameters  
+  – Showed minimal overfitting but underperformed ring entanglement in both accuracy and convergence speed
+
+## Implementation Insights
+- Leverage small dictionaries in ANSATZ_SPEC for clear parameter sharing  
+  – Current best maps even/odd wires to shared `"rz_pre_even"/"rz_pre_odd"` and `"rz_post_even"/"rz_post_odd"` keys  
+  – Enables backend to recognize identical parameters across multiple gates, reducing optimizer overhead
+- Maintain symmetrical pre- and post-entanglement rotation blocks  
+  – Coding pattern: list all pre-RZ gates, then entanglers, then post-RZ gates in one contiguous `ANSATZ_SPEC`  
+  – Simplifies layer insertion/removal when pruning or extending the circuit
+- Consistent use of only allowed gates in a fixed ordering  
+  – Single-qubit (RY→RZ) → entanglement (CZ ring) → single-qubit (RZ)  
+  – This structure yielded stable zero‐std training accuracies and small generalization gaps (0.04 mean)
+- Delegation of execution logic to the backend (`run_experiment(ANSATZ_SPEC, ...)`)  
+  – Keeps ansatz code focused solely on circuit design, facilitating rapid iteration on gate layouts
+
+## Performance Analysis
+- Highest combined score (0.86) achieved by balancing parameter count (74) and gate depth (120)  
+  – Improves on Generation 0’s 0.85 (146 params, depth 99) by halving parameters while only modestly increasing depth
+- Smallest generalization gap among high-scoring circuits  
+  – Gen 1 gap 0.04 vs. Gen 0 gap 0.07 and Gen 5 gap 0.06, indicating superior regularization from parameter sharing
+- Convergence efficiency correlates with structured layering  
+  – Gen 1 converged in ~270 steps, faster than the uncompressed Gen 0 (~750 steps) and comparable to Gen 2 (~?)  
+  – Suggests that expressive yet parameter-lean designs yield both speed and accuracy benefits
+- Trade-offs between depth and expressivity  
+  – Circuits with too few parameters (Gen 4) or too many redundant ones (Gen 5) lagged behind  
+  – Optimal zone observed at ~70–100 parameters combined with 100–120 depth for this 8-qubit classification task
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Duplicate the pre-/post-entanglement RZ–CZ block to form two sequential “phase–entangle–phase” layers, each with its own parity-shared parameters (e.g. “rz2_pre_even”/“odd”, “rz2_post_even”/“odd”). This preserves the winner’s two-layer structure driving rich phase–entanglement interplay while only adding four new parameters and a modest depth increase.  
+
+2. Replace each static CZ + post-RZ pair with a single parity-shared controlled-RZ (CRZ) gate on the same ring edges, using two shared parameters (“crz_even” for edges (0,1),(2,3)… and “crz_odd” for (1,2),(3,4)…). This fuses entanglement and phase rotations into one gate, cutting overall depth by ~25% and leveraging parameter sharing to maintain expressivity.  
+
+3. Augment the ring topology with “chord” CZs between qubits two apart (e.g. CZ on [0,2], [1,3], … [6,0]) inserted just before the post-RZ layer. These extra static entanglers enrich connectivity beyond the simple ring at minimal depth cost (eight additional CZs) and can tighten multi-qubit correlations without increasing parameter count.  
+
+4. Refine RZ parameter sharing from 2 to 4 groups by assigning wires mod 4 to four distinct shared keys (“rz_pre_mod4_0”–“_3” and “rz_post_mod4_0”–“_3”). This raises the per-layer parameter count from 2 to 4, enabling more nuanced local phase adjustments while still halving parameters versus a fully individual scheme.  
+
+5. Introduce a light, shared-parameter CRY entangling layer before the existing RY initializations: apply CRY gates on pairs (0,1), (2,3), (4,5), (6,7) all using one common “cry_init” parameter. This injects a minimal amount of entanglement into the input state—leveraging the success of two-qubit parameterized gates—while adding just a single new trainable angle.

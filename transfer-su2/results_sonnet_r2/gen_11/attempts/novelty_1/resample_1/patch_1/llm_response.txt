@@ -1,0 +1,67 @@
+Looking at the current program with 26 params (10 per block × 6 - wait, let's check: 8 RY (2 shared: ry_even, ry_odd) + 1 zz_shared + 1 rz_shared = 4 unique params per block × 6 blocks = 24 + 2 readout = 26). The previous best (20 params) had fully shared RY, RZ_pre, single ZZ, and alternating RZ_post achieving perfect scores with lower convergence_step (60 vs 420). Let me improve by reducing params further while keeping expressivity, using the alternating ZZ idea to speed convergence without adding much overhead, and merging redundant RZ.
+
+<NAME>
+alternating_zz_shared_ry_rz
+</NAME>
+
+<DESCRIPTION>
+The current candidate uses ry_even/ry_odd (2 params) plus a single zz_shared and single rz_shared per block (4 unique params/block, 26 total), but converges slowly (420 steps) despite perfect accuracy. The earlier 20-param seed (fully shared RY, shared RZ pre-entangler, single ZZ, alternating RZ post) converged much faster (60 steps) with even lower loss. I combine the best of both: fully shared RY (1 param) for maximal parameter economy, split the entangling ZZ ring into two alternating parameters (zz_even/zz_odd) to enrich entanglement expressivity per the recommendation, and use a single shared final RZ. This gives 1 (RY) + 2 (ZZ alternating) + 1 (RZ) = 4 unique params per block × 6 = 24 + 2 readout = 26 total params (same param count as current), but the richer/alternating ZZ entangling pattern combined with fully-shared RY should improve convergence speed and lower validation/test loss, mirroring the fast-converging seed's structure while adding slightly more entangling expressivity.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_odd"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE
+</DIFF>

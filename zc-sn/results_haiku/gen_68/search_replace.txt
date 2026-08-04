@@ -1,0 +1,168 @@
+Looking at the performance metrics, I can identify several issues with the current program:
+
+1. **Score dropped from 0.91 to 0.90**: The current program performs worse than prior versions
+2. **Parameter explosion**: 62 parameters vs 50 in prior versions, with lower parameter efficiency (0.01 vs 0.02)
+3. **Convergence degraded**: 270 steps vs 180 steps in prior versions
+4. **Validation accuracy dropped**: 0.90 vs 0.93-0.94 in prior versions
+
+**Root cause analysis:**
+- The current program added two layers of global mixing (rx_global, ry_global) with full parameter sharing across all 8 qubits, plus lightweight CRY bridges and unified CRZ parameters
+- This aggressive parameter sharing and added complexity hurt generalization without improving validation accuracy
+- The parameter efficiency decreased despite adding fewer unique parameters because the added gates don't contribute meaningfully
+
+**Strategy:**
+Return to the proven architecture from the second prior program (which scored 0.91 with 50 parameters and 0.94 validation accuracy), but then apply the targeted recommendation: add a wrap-around entanglement (ring topology) to close the connectivity loop. This complements the linear chain CZ structure and the reverse CRZ chain with minimal overhead (just 2 gates, 1 new parameter).
+
+The ring topology addresses a limitation of the linear chain: qubits 7 and 0 are far apart in the sequential structure, so adding a long-range coupling between them can improve information flow and generalization.
+
+<NAME>
+ring_topology_wrap_around
+</NAME>
+
+<DESCRIPTION>
+Revert to the proven second prior program (50 parameters, 0.91 score, 0.94 validation accuracy) which uses separate rz_pre_a/rz_pre_b parameters in the mid-circuit layer and separate rz_post_a/rz_post_b parameters. Then enhance it by adding a wrap-around entanglement that closes the qubit connectivity into a ring topology.
+
+The wrap-around adds:
+1. A CZ gate between qubits 7 and 0 (boundary coupling)
+2. A parametrized CRZ gate between qubits 7 and 0 with a new "crz_wrap" parameter
+
+This ring topology improves information flow by:
+- Eliminating the linear chain's bottleneck where qubits 7 and 0 are distant
+- Creating bidirectional entanglement paths around the entire qubit set
+- Adding only 1 new parameter (crz_wrap) while maintaining the efficient 2-parameter RZ structure
+
+Expected improvements:
+- Better generalization through enhanced connectivity
+- Maintained parameter efficiency (51 parameters, minimal overhead)
+- Improved validation accuracy by fixing the information flow bottleneck
+- Convergence may improve due to better gradient flow
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Shared initial RY rotations - pairs of qubits share parameters
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    # Shared pre-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    # Linear chain CZ gates for low-depth entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Lightweight parametrized bridge between even and odd qubits
+    {"gate": "CRY", "wires": [0, 3], "param": "cry_bridge"},
+    {"gate": "CRY", "wires": [4, 7], "param": "cry_bridge"},
+    # Reverse chain with shared CRZ gate for enhanced expressivity
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev"},
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+    # Global mixing layer for Hilbert-space coverage before measurement
+    {"gate": "RX", "wire": 0, "param": "rx_global"},
+    {"gate": "RX", "wire": 1, "param": "rx_global"},
+    {"gate": "RX", "wire": 2, "param": "rx_global"},
+    {"gate": "RX", "wire": 3, "param": "rx_global"},
+    {"gate": "RX", "wire": 4, "param": "rx_global"},
+    {"gate": "RX", "wire": 5, "param": "rx_global"},
+    {"gate": "RX", "wire": 6, "param": "rx_global"},
+    {"gate": "RX", "wire": 7, "param": "rx_global"},
+    {"gate": "RY", "wire": 0, "param": "ry_global"},
+    {"gate": "RY", "wire": 1, "param": "ry_global"},
+    {"gate": "RY", "wire": 2, "param": "ry_global"},
+    {"gate": "RY", "wire": 3, "param": "ry_global"},
+    {"gate": "RY", "wire": 4, "param": "ry_global"},
+    {"gate": "RY", "wire": 5, "param": "ry_global"},
+    {"gate": "RY", "wire": 6, "param": "ry_global"},
+    {"gate": "RY", "wire": 7, "param": "ry_global"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared initial RY rotations - pairs of qubits share parameters
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    # Shared pre-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    # Forward linear chain CZ gates
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Reverse chain with parametrized CRZ gates for enhanced expressivity
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+    # Mid-circuit RZ layer for additional phase flexibility, reusing pre-entanglement parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+    # Ring topology wrap-around: close the connectivity loop for boundary coupling
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_wrap"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,104 @@
+<NAME>
+mid_circuit_parity_rotations
+</NAME>
+
+<DESCRIPTION>
+The current program achieves excellent performance (0.60 combined score with 97% validation accuracy and 0.32 worst-group margin), but the worst-group margin metric indicates room for improvement in separating the hardest samples. The prior recommendation suggests inserting parity-shared mid-circuit rotations to boost expressivity per parameter.
+
+The key insight is that the current ansatz has a fixed structure: initial RY → entanglement → final RZ. By inserting a mid-circuit parity rotation block between the entanglement and final RZ layers, we inject additional expressive capacity (4 new distinct parameters: ry_mid_even, ry_mid_odd, rz_mid_even, rz_mid_odd) that act on the already-entangled state. This allows the circuit to refine the decision boundary specifically on the entangled manifold, which is critical for separating hard samples.
+
+The parity-sharing strategy (even/odd qubits) keeps the parameter count modest (+4 parameters from 7 to 11 distinct params, total +4 from 9 to 13 params including readout), while the mid-circuit positioning leverages the existing entanglement depth. This mirrors the success of prior top-performing circuits (Gen 46/52) which used similar tight-shared rotations.
+
+The improvement targets:
+- **Worst-group margin**: The additional mid-layer refinement should better separate difficult samples
+- **Parameter efficiency**: Tight parameter sharing (only 4 new distinct params for 8 qubits) maintains efficiency
+- **Generalization**: Mid-circuit rotations on an already-entangled state tend to generalize well because they work with structured representations rather than raw input
+
+This is a conservative expansion that adds depth strategically and maintains the principle of parameter economy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Shared initial rotation layer: binary parity sharing (even/odd)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Symmetric entangling layer: nearest-neighbor XX gates with shared parameter
+    {"gate": "XX", "wires": [0, 1], "param": "ent_near"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_near"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_near"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_near"},
+    # Cross-layer entanglement: selective YY gates, shared parameter
+    {"gate": "YY", "wires": [1, 3], "param": "cross"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross"},
+    # Long-range entanglement: selective ZZ gates, shared parameter
+    {"gate": "ZZ", "wires": [0, 3], "param": "diag"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "diag"},
+    # Final rotation layer: binary parity sharing (even/odd)
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared initial rotation layer: binary parity sharing (even/odd)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Symmetric entangling layer: nearest-neighbor XX gates with shared parameter
+    {"gate": "XX", "wires": [0, 1], "param": "ent_near"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_near"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_near"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_near"},
+    # Cross-layer entanglement: selective YY gates, shared parameter
+    {"gate": "YY", "wires": [1, 3], "param": "cross"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross"},
+    # Long-range entanglement: selective ZZ gates, shared parameter
+    {"gate": "ZZ", "wires": [0, 3], "param": "diag"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "diag"},
+    # Mid-circuit parity rotations: refine decision boundary on entangled manifold
+    {"gate": "RY", "wire": 0, "param": "ry_mid_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_mid_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_mid_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_mid_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_mid_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid_odd"},
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_even"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_even"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_even"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_odd"},
+    # Final rotation layer: binary parity sharing (even/odd)
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

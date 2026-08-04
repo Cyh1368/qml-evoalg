@@ -1,0 +1,105 @@
+<NAME>
+crz_ring_closure_with_margin_boost
+</NAME>
+
+<DESCRIPTION>
+The current program achieves a strong combined score of 0.69 with excellent accuracy (1.00 across all sets) and good parameter efficiency (5 distinct parameters, 7 total). However, there are two key weaknesses:
+
+1. **Worst-group margin is only 0.34** - This is the critical bottleneck. The recommendation explicitly suggests closing the long-range CRZ loop to improve robustness on hard samples.
+
+2. **Validation margin is 0.71** - While good, there's room to improve separation quality.
+
+The prior Gen 46/59 pattern showed that cyclic closures of nonlocal entanglers consistently reduce validation loss and improve global connectivity without adding new parameters. The current CRZ layer has 4 gates:
+- [0,3], [1,4], [2,5], [4,7]
+
+This leaves a gap: qubit pairs 5→0 and 6→1 would complete the ring and enable full circulant connectivity. Adding these two gates with the shared `ent_lr` parameter:
+- [5,0] and [6,1]
+
+This closes the CRZ loop while maintaining parameter efficiency (still 5 distinct params) and provides enhanced global entanglement structure that should improve worst-group margin without hurting convergence.
+
+The strategy:
+- Keep the highly efficient 5-parameter structure (ry, ent_nn, ry_mid, ent_lr, rz_final)
+- Add two closing CRZ gates to complete the circulant pattern
+- Expect: improved worst_group_margin, potentially better validation_loss, minimal depth increase
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial rotation layer with parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry"},
+    {"gate": "RY", "wire": 1, "param": "ry"},
+    {"gate": "RY", "wire": 2, "param": "ry"},
+    {"gate": "RY", "wire": 3, "param": "ry"},
+    {"gate": "RY", "wire": 4, "param": "ry"},
+    {"gate": "RY", "wire": 5, "param": "ry"},
+    {"gate": "RY", "wire": 6, "param": "ry"},
+    {"gate": "RY", "wire": 7, "param": "ry"},
+
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # Narrow CRX layer to enrich entanglement variety
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_nn"},
+
+    # Intermediate rotations
+    {"gate": "RY", "wire": 1, "param": "ry_mid"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid"},
+
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Close the CRZ ring for enhanced global connectivity and margin robustness
+    {"gate": "CRZ", "wires": [5, 0], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [6, 1], "param": "ent_lr"},
+
+    # Final rotation layer with shared parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

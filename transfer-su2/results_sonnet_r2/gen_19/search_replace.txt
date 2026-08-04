@@ -1,0 +1,35 @@
+Looking at the prior results, the simplest baseline (RY/RZ + CZ ring + single shared ZZ, 20 params) achieved perfect scores with the best parameter efficiency (0.05) and fastest convergence (90 steps... wait, actually current program has fewer steps). Let me focus on reducing parameters further while maintaining perfect accuracy, since that's the strongly rewarded metric.
+
+The current program uses 26 params (8 RY_shared + zz_even + zz_odd + rz_shared = 10 per block × 6 = 60... wait let me recompute: 1(ry_shared)+1(zz_even)+1(zz_odd)+1(rz_shared)=4 unique params per block × 6 = 24 + 2 readout = 26).
+
+The first seed program achieved the same perfect score with only 20 params (3 unique per block: ry_shared, zz_shared, rz_shared). I'll merge zz_even/zz_odd into a single shared ZZ parameter to reduce param count while keeping the ring entanglement structure, moving toward the more parameter-efficient design.
+
+<NAME>
+merge_zz_shared_ring
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses two separate ZZ parameters (zz_even, zz_odd) for the two halves of the entangling ring, giving 4 unique parameters per block (24 total circuit params). The first seed variant, which used a single shared ZZ parameter for the full ring (all edges sharing one angle) plus CZ fixed couplers, achieved the same perfect accuracy with substantially fewer parameters (20 total) and better parameter efficiency (0.05 vs 0.04) and faster convergence. This suggests the extra zz_even/zz_odd split does not add useful expressivity for this task. I merge zz_even and zz_odd into a single shared "zz_ring" parameter, cutting circuit parameters per block from 4 to 3 (18 total, plus 2 readout = 20), which should improve parameter economy and convergence speed while preserving the ring connectivity and full entangling power (since the two-qubit gate itself still varies angle per training step, just tied together).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_odd"},
+=======
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+>>>>>>> REPLACE
+</DIFF>

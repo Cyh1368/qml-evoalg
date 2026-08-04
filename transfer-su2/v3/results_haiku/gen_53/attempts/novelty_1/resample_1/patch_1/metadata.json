@@ -1,0 +1,14 @@
+{
+  "generation": 53,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "add_mid_rotation_parity_layer",
+  "patch_description": "The current program has degraded from the seed baseline (0.60 \u2192 0.46 score) due to parameter bloat and overfitting on training data (train=1.00, validation=0.86, generalization gap=0.15). The worst_group_margin dropped from 0.32 to 0.26, indicating poor separation on hard samples.\n\nThe recommendation to insert a mid-circuit parity-shared rotation layer is well-motivated:\n1. **Parameter Economy**: Using only 2 distinct RY and 2 distinct RZ parameters for 8 qubits (instead of individual per-qubit) reduces the parameter count, which is a dominant scoring factor.\n2. **Expressivity-per-parameter**: Placing this between entanglers and phase layers breaks the circuit into tightly-coupled blocks, improving expressivity without blowing up parameter count.\n3. **Generalization**: Fewer parameters and tighter structure reduce train-test gap and overfitting.\n4. **Hard Sample Separation**: The mid-layer can focus mid-computation on class-relevant correlations, improving worst-group margin.\n\nI will:\n- Replace the overly complex current ansatz with a simpler structure: rotation \u2192 NN entanglement \u2192 mid parity rotation \u2192 phase \u2192 cross coupling.\n- Insert the mid parity layer with 2 parameters (ry_mid_even/odd, rz_mid_even/odd becomes 4 total, but shared).\n- Actually simplify to just 2 distinct mid parameters by using even/odd parity.\n- Remove the redundant CRZ cross layer and mid-range entanglement that inflated param count without benefit.\n- Keep only the most effective layers: NN XX, YY cross, ZZ diagonal, and the new mid-rotation.\n\nThis should reduce N_PARAMS from 11 to ~8-9 while improving generalization and worst-group margin.",
+  "error_msg": null,
+  "timestamp": "2026-08-03T07:25:07.600286",
+  "llm_cost": 0.037018,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

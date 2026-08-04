@@ -1,0 +1,80 @@
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # --- Layer 1: individual local rotations (expressivity) ---
+    {"gate": "RY", "wire": 0, "param": "ry1_0"},
+    {"gate": "RY", "wire": 1, "param": "ry1_1"},
+    {"gate": "RY", "wire": 2, "param": "ry1_2"},
+    {"gate": "RY", "wire": 3, "param": "ry1_3"},
+    {"gate": "RY", "wire": 4, "param": "ry1_4"},
+    {"gate": "RY", "wire": 5, "param": "ry1_5"},
+    {"gate": "RY", "wire": 6, "param": "ry1_6"},
+    {"gate": "RY", "wire": 7, "param": "ry1_7"},
+
+    # --- Layer 2: ring of CRZ gates with a single shared angle ---
+    # gives a tunable, uniform nearest-neighbor entangling strength
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+
+    # --- Layer 3: individual RZ rotations (phase expressivity) ---
+    {"gate": "RZ", "wire": 0, "param": "rz1_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz1_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz1_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz1_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz1_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz1_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz1_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz1_7"},
+
+    # --- Layer 4: fixed CNOT ring for full mixing, no extra parameters ---
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    {"gate": "CNOT", "wires": [7, 0]},
+
+    # --- Layer 5: long-range CRX entanglers (opposite qubits), shared angle ---
+    {"gate": "CRX", "wires": [0, 4], "param": "crx_far"},
+    {"gate": "CRX", "wires": [1, 5], "param": "crx_far"},
+    {"gate": "CRX", "wires": [2, 6], "param": "crx_far"},
+    {"gate": "CRX", "wires": [3, 7], "param": "crx_far"},
+
+    # --- Layer 6: final individual rotations to read out local features ---
+    {"gate": "RY", "wire": 0, "param": "ry2_0"},
+    {"gate": "RY", "wire": 1, "param": "ry2_1"},
+    {"gate": "RY", "wire": 2, "param": "ry2_2"},
+    {"gate": "RY", "wire": 3, "param": "ry2_3"},
+    {"gate": "RY", "wire": 4, "param": "ry2_4"},
+    {"gate": "RY", "wire": 5, "param": "ry2_5"},
+    {"gate": "RY", "wire": 6, "param": "ry2_6"},
+    {"gate": "RY", "wire": 7, "param": "ry2_7"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

@@ -1,0 +1,91 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit RY-RZ Ansatz with CZ Chain**  
+- **Implementation**: Defines an 8-qubit variational circuit with per-qubit RY rotations, pre- and post-RZ rotations, and a linear chain of CZ entangling gates; total depth ~20, 93 gates, 24 independent parameters.  
+- **Performance**: Achieves a combined score of 0.60 with train/test accuracy at or near 100%, validation accuracy 99%, zero generalization gap, and convergence in ~60 steps.  
+- **Feedback**: The layered RY–RZ structure with CZ entanglement delivers excellent accuracy and stability, though parameter efficiency is low (0.04) and the worst-group margin (0.35) indicates some robustness limitations.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Even-Odd RY-RZ CZ Ring Quantum Ansatz**  
+- **Implementation**: Defines ANSATZ_SPEC as alternating RY rotations on even/odd qubits, pre- and post-layer RZ rotations, and CZ entangling gates in a ring topology; run_experiment simply passes this fixed spec to a backend.  
+- **Performance**: Achieved a combined score of 0.0 and did not pass validation tests.  
+- **Feedback**: The ansatz omits parameterized two-qubit gates and may suffer from inconsistent parameter naming, causing validation failures. Its simplistic, uniform layering also limits expressiveness.
+**Program Identifier:** Generation 2 - Patch Name parity_shared_ring - Correct Program: False
+
+**Program Name: Ring-Antipodal ZZ Variational Circuit**  
+- **Implementation**: The ANSATZ_SPEC enumerates RZ(field) rotations on all 8 qubits, ZZ(local_corr) interactions on nearest-neighbor pairs and ZZ(global_corr) on antipodal links, followed by RY(mixer) gates on each qubit. It passes this static gate-and-parameter list to a fixed backend via run_experiment.  
+- **Performance**: Achieved a combined score of 0.0 and failed to pass validation tests.  
+- **Feedback**: Relying on only four shared parameters (field, local_corr, global_corr, mixer) severely limits circuit expressivity and likely prevents effective training. The static ansatz definition may also conflict with expected gate or parameter constraints, leading to incorrect execution.
+**Program Identifier:** Generation 4 - Patch Name shared_mobius_ising - Correct Program: False
+
+**Program Name: Even-Odd RY-RZ CZ Ring Ansatz**  
+- **Implementation**: Single-layer 8-qubit ansatz applying alternating RY rotations (ry_even/ry_odd) and pre/post RZ phase shifts, with CZ entangling gates arranged in a ring topology; parameters are shared by even/odd qubit indices and passed intact to the backend.  
+- **Performance**: Combined score to maximize: 0.0, does not pass validation tests.  
+- **Feedback**: The shallow circuit depth and absence of parameterized two-qubit rotations limit expressivity, leading to validation failures; adding deeper layers or incorporating parametric entangling gates could improve performance.
+**Program Identifier:** Generation 5 - Patch Name parity_shared_ring - Correct Program: False
+
+**Program Name: Even-Odd RY–RZ CZ Chain Ansatz**  
+- **Implementation**: Defines an 8-qubit circuit where RY rotations are tied by even/odd qubit index, followed by pre- and post-entanglement RZ rotations, with entanglement implemented as a linear chain of CZ gates; invokes a fixed backend via `run_experiment(ANSATZ_SPEC,…)`.  
+- **Performance**: Combined score of 0.0 and fails all validation tests.  
+- **Feedback**: Reusing only two parameter sets and mixing `"wire"`/`"wires"` keys breaks the expected ansatz specification, preventing execution; using consistent field names and distinct parameters per qubit layer would improve correctness and expressivity.
+**Program Identifier:** Generation 6 - Patch Name bipartite_parameter_sharing - Correct Program: False
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+- Layered single-qubit rotations before and after entanglement (RY → RZ_pre → CZ chain → RZ_post)  
+  • Seen in the 8-Qubit RY-RZ Ansatz with CZ Chain (Generation 0, score 0.60), yielding 100% train/test accuracy and 99% validation accuracy.  
+- Fully parameterized per-qubit RY and RZ gates  
+  • Using distinct parameters ry_0…ry_7 and rz_pre_0…rz_pre_7/rz_post_0…rz_post_7 maximized expressivity, driving rapid convergence (≈60 steps).  
+- Linear (“chain”) CZ entangling topology  
+  • A single nearest-neighbor CZ chain sufficed for full model capacity—depth 20, 93 gates—while avoiding over-complexity.  
+- Strict adherence to allowed gate sets and spec conventions  
+  • Consistent use of `"wire"` for single-qubit and `"wires"` for two-qubit gates prevented validation errors seen in other patches.
+
+## Ineffective Approaches
+- Even-odd parameter sharing (Generation 2, 5, 6 “parity_shared_ring” and “bipartite_parameter_sharing”)  
+  • Drastically reduced parameter count to 2–4 shared values, scored 0.0, and failed validation due to insufficient expressivity and naming conflicts (`"wire"` vs `"wires"`).  
+- Overly static, low-parameter ansatz (Generation 4 “shared_mobius_ising”)  
+  • Only four parameters (field, local_corr, global_corr, mixer) led to no training signal and 0.0 score.  
+- Shallow single-layer designs without parameterized two-qubit gates  
+  • Uniform layering (one RY/RZ layer + fixed CZ ring) lacked depth; achieved 0.0 and did not converge.  
+- Inconsistent spec keys and missing param-two-qubit gates  
+  • Mixing `"wire"`/`"wires"` and omitting CRX/CRY/CRZ prevented correct parsing or execution.
+
+## Implementation Insights
+- Unique per-qubit parameters boost expressivity at the cost of efficiency  
+  • The best ansatz uses 24 distinct parameters (n_params = 26), achieving top accuracy despite a low parameter-efficiency of 0.04.  
+- Two-stage single-qubit rotation framing around entanglement  
+  • RZ_pre and RZ_post phases allow local phase adjustments that improve optimization landscapes, as evidenced by rapid convergence (~60 steps).  
+- Minimal, structured entanglement suffices  
+  • A linear CZ chain captures essential correlations without extra gates, balancing depth (20) and gate count (93).  
+- Meticulous spec formatting  
+  • Conformance to the backend’s gate naming and JSON schema (e.g., `"wire"` vs `"wires"`) is critical to pass validation.
+
+## Performance Analysis
+- Only the fully parameterized RY–RZ with CZ chain achieved nonzero performance  
+  • Generation 0 attained combined score 0.60; all other variants (Generations 2–6) scored 0.0.  
+- Parameter sharing and static ansätze uniformly failed  
+  • Despite reducing parameter count (down to 2–4), these approaches lost trainability entirely.  
+- Depth and gate count correlate with expressivity  
+  • The successful depth 20/93-gate design outperformed all shallower (<10-gate/layer) attempts.  
+- Zero generalization gap and high margins  
+  • Generation 0’s worst-group margin (0.35) and validation margin (0.73) indicate robustness benefits from per-qubit parameterization and two-stage rotations.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Replicate the full RY–RZ_pre–CZ_chain–RZ_post block in multiple layers. For example, stack two or three identical blocks back-to-back to increase circuit depth (e.g. depth 40–60) while preserving per-qubit parameterization. The extra layers build on the proven two-stage rotation framing and minimal linear entanglement to further boost expressivity without introducing ad hoc gates.
+
+2. Introduce parameterized two-qubit rotations by replacing every other CZ in the chain with a CRZ or CRY gate. Retain the linear nearest-neighbor topology but swap, say, CZ(1,2) and CZ(4,5) for CRZ(1,2,param) and CRY(4,5,param), giving two new entanglement parameters. This leverages the allowed ALLOWED_PARAM_TWO_QUBIT_GATES set to enrich the entangling landscape while conforming to spec.
+
+3. Augment the linear CZ chain with a small number of long-range links to capture non-local correlations. After the nearest-neighbor CZs, add one or two extra CZ gates connecting qubit pairs like (0,7) or (2,5). Empirical patterns show that minimal, structured entanglement suffices—so a couple of extra CZs can increase capacity without exploding gate count.
+
+4. Add an interleaved RX rotation layer before the existing RZ_pre stage. Prepend each RY_i with an RX_i rotation (new parameters rx_0…rx_7) to form an RX–RY–RZ_pre sequence per qubit. Mixing two orthogonal rotation axes has been shown in other variational contexts to improve trainability and landscape conditioning, and it remains within the allowed single-qubit gate set.
+
+5. Implement symmetric parameter sharing for the RZ layers while keeping distinct RY parameters. Group qubits in mirror pairs—(0,7),(1,6),(2,5),(3,4)—and share their rz_pre and rz_post parameters, reducing those from 16 to 8 unique values. This partial sharing tests a middle ground between full per-qubit expressivity and parameter efficiency, grounded in the observation that too aggressive sharing destroyed performance but some structured reduction may preserve accuracy.

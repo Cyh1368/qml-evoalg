@@ -1,0 +1,55 @@
+Looking at the current program and the performance metrics, I can see that the current architecture achieves a strong combined score of 0.58, with excellent accuracy but room for improvement in worst_group_margin_mean (0.28) and parameter efficiency (0.08).
+
+The recommendation to add a shared mid-block RZ rotation is promising because:
+
+1. **Robust Separation**: The worst_group_margin_mean (0.28) is significantly lower than validation_margin_mean (0.57), indicating the model struggles with hard samples. An intermediate global phase control layer can help stabilize decision boundaries for these difficult cases.
+
+2. **Phase Control Tightening**: Between the first Ising sub-block (XX, YY, ZZ gates) and the final readout layer, inserting a synchronized RZ rotation on all qubits provides an additional degree of freedom to adjust relative phases—this is particularly valuable for quantum classifiers where phase coherence matters.
+
+3. **Parameter Economy**: Using a single shared parameter `rz_mid` for all 8 qubits adds minimal overhead (1 parameter) while maintaining the ability to fine-tune post-entanglement phase adjustments.
+
+4. **Empirical Pattern**: The current circuit has strong training accuracy (1.00) and good validation accuracy (0.97), suggesting the model can fit well. Adding mid-circuit phase control helps prevent overfitting to easy samples while improving margins on hard samples.
+
+The mid-block RZ should be inserted after the Ising interactions and before the final post-readout RZ layer, allowing the optimizer to use it as a stabilizing layer for the entangled state.
+
+<NAME>
+add_mid_block_rz
+</NAME>
+
+<DESCRIPTION>
+Insert a shared global RZ rotation layer between the Ising interaction blocks and the final RZ readout layer. This intermediate phase control helps stabilize decision boundaries for hard samples and improves worst-group margin separation, which is critical for the scoring metric. The shared parameter reduces overhead to just one additional distinct parameter while providing the optimizer more flexibility to fine-tune post-entanglement phases. This is motivated by the observation that worst_group_margin_mean (0.28) lags behind validation_margin_mean (0.57), indicating difficulty with hard samples that can be mitigated by better phase control.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+=======
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+>>>>>>> REPLACE
+</DIFF>

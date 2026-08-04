@@ -1,0 +1,62 @@
+<NAME>
+reduce_params_shared_ry_single_entangler_param
+
+<DESCRIPTION>
+Further reduce parameter count while retaining full expressivity/entanglement structure. Currently each block has 8 independent RY + 1 shared ZZ + 1 shared RZ = 10 params/block (60 total + 2 readout = 62). We can cut this further by sharing the RY rotation across qubits using a parity pattern (2 distinct RY angles instead of 8), since the ring ZZ+shared RZ already provides permutation-covering entanglement, and per-qubit individuality is largely recovered through repeated blocks (6 reps) acting on different state amplitudes via the ring shifts. This drops per-block params from 10 to 4 (2 RY parity + 1 ZZ + 1 RZ), giving 4*6+2=26 total trainable parameters — a large reduction — while keeping equivalent connectivity (ring CZ-like entangler via ZZ) and enough angle diversity (odd/even) to break symmetry. This should significantly boost parameter_efficiency while the strong entangling ring plus 6 repetitions should preserve the ability to reach high accuracy, as verified empirically by seed prior scores where shared params ansätze already reached full accuracy at 62 params; here we push further towards fewer parameters as the scoring rewards economy strongly.
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_shared"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE

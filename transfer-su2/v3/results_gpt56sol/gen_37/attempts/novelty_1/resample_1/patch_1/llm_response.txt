@@ -1,0 +1,97 @@
+<NAME>
+shared_correlation_readout
+</NAME>
+
+<DESCRIPTION>
+Replace the weaker collective RZ trajectory with the previously stronger shared ZZ ring, while retaining the readout-aligned CRZ layer. Crucially, the CRZ gates now reuse the same collective parameter instead of introducing a second circuit parameter. This combines correlation-sensitive processing with readout-pair adaptation while reducing the model from two distinct circuit parameters to one, improving few-shot regularization and parameter efficiency. The terminal CRZ placement also makes it the closest schema-compatible approximation to a shared readout-phase layer without modifying the fixed circuit or measurement code.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # A single collective basis-change angle provides strong few-shot
+    # regularization and was more effective than the deeper hypercube mixer.
+    *[
+        {"gate": "RY", "wire": wire, "param": "collective_angle"}
+        for wire in range(N_QUBITS)
+    ],
+
+    # The parameter-free Möbius ladder treats every wire equivalently while
+    # combining local ring edges with long-range diametric connections.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Reusing the collective angle gives a noncommuting second axis without
+    # increasing the dimension of the global basis-change trajectory.
+    *[
+        {"gate": "RZ", "wire": wire, "param": "collective_angle"}
+        for wire in range(N_QUBITS)
+    ],
+
+    # Concentrate one shared entangling degree of freedom on exactly the pairs
+    # used by the fixed correlator readout. The same angle is shared over all
+    # pairs and repetitions to retain parameter economy.
+    *[
+        {"gate": "CRZ", "wires": [a, b], "param": "readout_crz"}
+        for a, b in READOUT_PAIRS
+    ],
+]
+=======
+ANSATZ_SPEC = [
+    # A single global angle regularizes the complete circuit while providing a
+    # symmetry-respecting basis change on every qubit.
+    *[
+        {"gate": "RY", "wire": wire, "param": "collective_correlation"}
+        for wire in range(N_QUBITS)
+    ],
+
+    # Parameter-free Möbius connectivity propagates both local and long-range
+    # state information without increasing the trainable model dimension.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # The shared ZZ ring directly processes pair correlations, matching the
+    # strongest prior one-parameter structure.
+    *[
+        {
+            "gate": "ZZ",
+            "wires": [wire, (wire + 1) % N_QUBITS],
+            "param": "collective_correlation",
+        }
+        for wire in range(N_QUBITS)
+    ],
+
+    # End each repeated block with readout-aligned controlled phases. Tying
+    # these gates to the same angle preserves a single circuit parameter.
+    *[
+        {
+            "gate": "CRZ",
+            "wires": [a, b],
+            "param": "collective_correlation",
+        }
+        for a, b in READOUT_PAIRS
+    ],
+]
+>>>>>>> REPLACE
+
+</DIFF>

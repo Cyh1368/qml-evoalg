@@ -1,0 +1,90 @@
+<NAME>
+reduce_redundant_rotation_params
+
+<DESCRIPTION>
+Since only the ANSATZ_SPEC content within the EVOLVE-BLOCK can be modified, I cannot change the offset computation in the fixed training loop. Instead, I achieve a similar parameter-reduction/regularization effect purely within ANSATZ_SPEC by increasing parameter sharing: reuse the same RY parameter for symmetric qubit pairs (mirroring across the ring) and reduce the number of distinct CRZ angles, while keeping the entangling ring topology and the two RZ layers (pre/post, already shared via "rz_pre_i"). This cuts N_PARAMS_PER_BLOCK from 19 down to 12, reducing total circuit parameters from 114 to 72 (plus 2 readout = 74 total), which should shrink the generalization gap seen in the current candidate (train 0.97 vs test 0.90) while retaining full connectivity and comparable circuit depth.
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CRZ", "wires": [0, 4], "param": "long_crz"},
+]
+=======
+ANSATZ_SPEC = [
+    # RY pre-rotation, shared across mirrored qubit pairs (0<->4, 1<->5,
+    # 2<->6, 3<->7) to cut redundant single-qubit expressivity.
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_2"},
+    {"gate": "RY", "wire": 7, "param": "ry_3"},
+
+    # Shared pre-rotation RZ per adjacent pair.
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_3"},
+
+    # Entangling ring with only two distinct CRZ angles, alternating.
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_b"},
+
+    # Shared post-rotation RZ (reuse pre-rotation keys for compression).
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_3"},
+
+    # Single long-range coupling to keep non-ring connectivity.
+    {"gate": "CRZ", "wires": [0, 4], "param": "long_crz"},
+]
+>>>>>>> REPLACE

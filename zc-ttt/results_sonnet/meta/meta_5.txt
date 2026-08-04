@@ -1,0 +1,97 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: CZ-Entangled 9-Qubit Variational Ansatz**  
+- **Implementation**: Defines a 9-qubit variational circuit with single-qubit RY rotations on each wire, an initial RZ layer, a fixed CZ entangling layer over 12 specified qubit pairs, and a final RZ layer, totaling 162 trainable parameters.  
+- **Performance**: Achieved a combined score of 0.52 with mean validation accuracy 0.55, test accuracy 0.49, a generalization gap of 0.07, depth 47, and gate count 261.  
+- **Feedback**: The high depth and parameter count yielded only modest accuracy and zero parameter efficiency, with no clear convergence within the allotted steps, suggesting the fixed entanglement pattern may be suboptimal for improving performance.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: 9-Qubit RY-RZ-ZZZ Entangling Ansatz**  
+- **Implementation**: Defines a 9-qubit variational circuit with single-qubit RY rotations, pre- and post-layer RZ rotations, a fixed CZ entanglement graph, and three parametrized ZZZ three-qubit gates, yielding 180 trainable parameters and a circuit depth of 64.  
+- **Performance**: Achieved a combined score of 0.55 with train/validation accuracy of 0.59, test accuracy of 0.54, and a generalization gap of 0.05.  
+- **Feedback**: The large parameter count (180) and high gate count (279) produced only moderate accuracy and zero parameter efficiency, indicating over-parameterization; the small generalization gap suggests limited overfitting but also constrained expressivity, so reducing parameters or adding targeted entangling layers could boost performance.
+**Program Identifier:** Generation 3 - Patch Name add_three_qubit_correlation_gates - Correct Program: True
+
+**Program Name: 9-Qubit Layered Rotation Ansatz**  
+- **Implementation**: Defines ANSATZ_SPEC with per-qubit RY rotations, pre- and post-RZ rotations, and CRZ entangling gates on fixed qubit pairs—reusing RZ parameters—and delegates execution to a backend via run_experiment.  
+- **Performance**: Achieved a combined score of 0.0 and failed all validation tests.  
+- **Feedback**: Heavy parameter reuse across multiple CRZ gates and a narrow entanglement pattern limited circuit expressivity and likely caused validation errors; using distinct parameters per gate and incorporating a broader set of two-qubit gates could improve correctness and performance.
+**Program Identifier:** Generation 4 - Patch Name none - Correct Program: False
+
+**Program Name: Three-layer rotation ansatz with CZ entanglers**  
+- **Implementation**: A 9-qubit circuit applies RX and RY rotations on each qubit, sandwiched by pre- and post-RZ layers, with static CZ gates on 12 selected wire pairs to entangle. This design yields 216 unique rotation parameters, a circuit depth of 53, and 315 total gates.  
+- **Performance**: Achieved a combined score of 0.54 with 62% train accuracy, 59% validation accuracy, 54% test accuracy, and a 0.08 generalization gap.  
+- **Feedback**: The large parameter count and circuit depth produced moderate accuracy but zero parameter efficiency, indicating potential overparameterization; introducing parameterized two-qubit gates or pruning the gate set may boost performance.
+**Program Identifier:** Generation 5 - Patch Name none - Correct Program: True
+
+**Program Name: 9-Qubit RY-CRZ-RZ Ansatz**  
+- **Implementation**: Defines a 9-qubit variational circuit with an initial layer of single-qubit RY rotations, a middle entangling block of six parameterized CRZ and six CZ gates, and a final layer of single-qubit RZ rotations, resulting in 41 layers and 207 total gates.  
+- **Performance**: Achieved a combined score of 0.59 with train/validation/test accuracies of 0.70/0.66/0.61 and a generalization gap of 0.09.  
+- **Feedback**: Training is stable (zero std) but the large parameter count (144) and zero parameter efficiency indicate overparameterization; reducing depth or refining the entangling pattern may improve generalization.
+**Program Identifier:** Generation 6 - Patch Name add_trainable_entanglement_reduce_redundancy - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+- Integration of parameterized two-qubit gates (CRZ) alongside static entanglers boosted expressivity  
+  • “9-Qubit RY-CRZ-RZ Ansatz” (Gen 6) scored 0.59 with six CRZ+ six CZ gates (207 gates, depth 41) vs. 0.55 for “9-Qubit RY-RZ-ZZZ Entangling Ansatz” (Gen 3) with only fixed CZ and three ZZZ (279 gates, depth 64).  
+- Reduced circuit depth and parameter count while preserving entanglement connectivity improved overall accuracy  
+  • Gen 6 uses 144 parameters/depth 41 → 0.61 test accuracy; Gen 3 used 180 parameters/depth 64 → 0.54 test accuracy.  
+- Evenly distributed single-qubit rotations flanking the entangling block stabilized training  
+  • The champion places one RY per qubit then entanglers then one RZ per qubit, yielding zero training/std variation and smooth convergence.  
+- Selective use of static CZ for sparsely connected pairs complemented by trainable CRZ on critical links  
+  • Focusing CRZ on high-impact edges (e.g. wires [0,2], [0,3], [1,3], [2,4], [3,5], [0,7]) preserved expressivity without over-parameterization.  
+
+## Ineffective Approaches
+- Over-parameterization with large rotation layers and deep circuits gave diminishing returns  
+  • “Three-layer rotation ansatz with CZ entanglers” (Gen 5): 216 parameters/depth 53 → combined score 0.54, zero parameter efficiency.  
+  • “9-Qubit RY-RZ-ZZZ Entangling Ansatz” (Gen 3): 180 parameters/depth 64 → combined score 0.55.  
+- Heavy reliance on fixed entanglement graphs limited adaptability  
+  • “CZ-Entangled 9-Qubit Variational Ansatz” (Gen 0): depth 47/static CZ only → combined score 0.52, no convergence trend.  
+- Parameter reuse across multiple two-qubit gates collapsed expressivity and caused failures  
+  • “9-Qubit Layered Rotation Ansatz” (Gen 4) reused RZ params on CRZ gates → validation tests failed (score 0.0).  
+- Inserting three-qubit ZZZ/CCRZ gates without streamlined connectivity added depth but yielded only marginal gains  
+  • Gen 3 added three ZZZ gates (total 279 gates) yet only improved combined score from 0.52 to 0.55.  
+
+## Implementation Insights
+- Explicit per-gate parameter naming prevents unintended sharing and enables independent optimization  
+  • In the Gen 6 spec each CRZ has its own “crz_i” param vs. Gen 4’s reused “rz” parameters, leading to failed validation.  
+- Sandwiching entangling blocks between distinct single-qubit rotation layers enhances expressivity per parameter  
+  • The RY→CRZ/CZ→RZ pattern in the current best program yields stable training (train std 0.00) and higher test accuracy.  
+- Prioritizing parameterized two-qubit gates on high-centrality qubit pairs improves performance more than adding multi-qubit gates  
+  • Champion uses CRZ on six strategically chosen pairs rather than broad three-qubit ZZZ coverage.  
+- Balanced mix of static and trainable gates can achieve lower depth while maintaining connectivity  
+  • Static CZ on less critical edges (e.g. [0,8], [1,8], [2,6], [4,8], [5,7], [6,7]) complements CRZ without inflating parameter count.  
+
+## Performance Analysis
+- Peak combined score correlates with mid-range parameter counts (≈144) and moderate depth (≈40–45)  
+  • Best (Gen 6): 0.59 at 144 params/depth 41; contrast Gen 5: 0.54 at 216 params/depth 53, Gen 3: 0.55 at 180 params/depth 64.  
+- Generalization gap widens slightly with added trainable entanglement but remains acceptable  
+  • Gen 6 gap 0.09 vs. Gen 3 gap 0.05; higher expressivity traded for a small increase in overfitting.  
+- Zero parameter efficiency across all evaluated ansätze highlights consistent over-parameterization  
+  • Despite varying n_params (144–216), no program achieved nonzero parameter efficiency, indicating pervasive redundancy.  
+- Static-only entanglement patterns yield lower test accuracies (<0.50) compared to hybrid CRZ/CZ designs (>0.60)  
+  • “CZ-Entangled” (Gen 0) test accuracy 0.49 vs. Gen 6 test accuracy 0.61.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Replace the static CZ on the peripheral edge [5,7] with a trainable CRZ gate “crz_6”.  
+   Evidence shows that parameterizing two-qubit gates on even low-impact links can boost expressivity without ballooning depth. By swapping CZ→CRZ here (keeping depth at 41), you can test if a modest increase in trainable entanglement on that pair raises the combined score.
+
+2. Insert a mini “mid-block” rotation layer after the existing entanglers: apply RY gates on qubits [0,2,4,6] with unique params “ry_mid_0…ry_mid_3” (4 new parameters, +1 depth).  
+   The sandwich pattern (single-qubit→entangler→single-qubit) stabilized training in Gen 6; adding a lightweight RY sub-layer leverages this without a major depth hit and focuses extra expressivity on alternate qubits.
+
+3. Diversify your two-qubit gates by replacing the CRZ on [0,3] with a CRY gate “cry_1”.  
+   Global insights highlight the benefit of axis diversity in entanglement; swapping CRZ→CRY on this high-centrality link tests whether cross-axis control rotations further improve convergence and test accuracy.
+
+4. Parallelize disjoint entanglers to shave off depth: regroup CZs on [0,8], [1,8], and [2,6] into a single layer (they act on distinct qubits).  
+   By reordering the EVOLVE-BLOCK so these gates execute simultaneously, you maintain the same gate count but reduce circuit depth by ~3 layers, which prior experiments link to higher accuracy and stability.
+
+5. Shift one static CZ to a new high-centrality CRZ: remove CZ([6,7]) and introduce CRZ([1,5]) with param “crz_7”.  
+   Champion architectures focus CRZ on central links; this mutation reallocates entangling parameters toward qubits with higher betweenness while keeping total gates constant, potentially boosting expressivity where it matters most.

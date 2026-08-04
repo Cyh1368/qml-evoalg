@@ -1,0 +1,94 @@
+I understand. The constraint is that only code between `EVOLVE-BLOCK-START` and `EVOLVE-BLOCK-END` markers can be edited. The readout calibration parameters and predict_batch function are outside those markers, so I cannot modify them.
+
+However, I can still improve the ansatz within the EVOLVE-BLOCK to better separate hard samples. Let me propose a different strategy: enhance the entanglement structure to create more distinctive feature patterns that improve worst-group margin.
+
+<NAME>
+enhanced_entanglement_structure
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses 7 distinct parameters with symmetric entanglement (nearest-neighbor XX, selective YY and ZZ on diagonals). To improve worst-group margin (the dominant scoring term), I will enhance the entanglement layer with:
+
+1. Additional long-range XX gates connecting qubit pairs that were previously unentangled (e.g., [1,5], [2,6], [3,7])
+2. More diverse entanglement by adding complementary pairs with YY and ZZ
+3. Strategic parameter reuse to keep parameter economy tight while dramatically expanding the entanglement graph
+
+This creates richer feature space from the measurements without increasing parameter count significantly, which should help the classifier separate hard samples better. The key insight: more diverse entanglement paths = more expressive correlator patterns = better worst-case margin.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Shared initial rotation layer: binary parity sharing (even/odd)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Symmetric entangling layer: nearest-neighbor XX gates with shared parameter
+    {"gate": "XX", "wires": [0, 1], "param": "ent_near"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_near"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_near"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_near"},
+    # Cross-layer entanglement: selective YY gates, shared parameter
+    {"gate": "YY", "wires": [1, 3], "param": "cross"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross"},
+    # Long-range entanglement: selective ZZ gates, shared parameter
+    {"gate": "ZZ", "wires": [0, 3], "param": "diag"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "diag"},
+    # Final rotation layer: binary parity sharing (even/odd)
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared initial rotation layer: binary parity sharing (even/odd)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Nearest-neighbor XX gates with shared parameter
+    {"gate": "XX", "wires": [0, 1], "param": "ent_near"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_near"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_near"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_near"},
+    # Additional long-range XX to expand entanglement graph
+    {"gate": "XX", "wires": [1, 5], "param": "ent_long"},
+    {"gate": "XX", "wires": [2, 6], "param": "ent_long"},
+    {"gate": "XX", "wires": [3, 7], "param": "ent_long"},
+    # Cross-layer YY gates with shared parameter
+    {"gate": "YY", "wires": [1, 3], "param": "cross"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross"},
+    {"gate": "YY", "wires": [0, 4], "param": "cross"},
+    {"gate": "YY", "wires": [2, 7], "param": "cross"},
+    # Long-range ZZ coupling with shared parameter
+    {"gate": "ZZ", "wires": [0, 3], "param": "diag"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "diag"},
+    {"gate": "ZZ", "wires": [1, 6], "param": "diag"},
+    {"gate": "ZZ", "wires": [2, 5], "param": "diag"},
+    # Final rotation layer: binary parity sharing (even/odd)
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

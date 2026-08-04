@@ -1,0 +1,44 @@
+<NAME>
+insert_ry_layer_between_skip2_and_antipodal
+
+<DESCRIPTION>
+Add an intra-block RY(theta) rotation layer between the skip-2 CZ sub-ring (2b) and the antipodal CZ shortcuts (2c), reusing the shared "theta" parameter (no new trainable parameter introduced). This interleaves an additional non-commuting rotation axis directly amid the entangling gates, which previous experiments suggest increases circuit expressivity and can improve convergence speed while keeping parameter count fixed at 8 (1 unique parameter x 8 uses per layer... actually shared single "theta" so n_params stays same). This should help reduce convergence steps back toward 30 while maintaining perfect train/val/test accuracy.
+
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE not needed placeholder
+=======
+placeholder
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+# 2b. Lightweight, zero-parameter skip-2 sub-ring linking every other
+#     qubit (0-2, 2-4, 4-6, 6-0).
+for i in range(0, N_QUBITS, 2):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 2) % N_QUBITS]})
+
+# 2c. Fixed, zero-parameter antipodal shortcuts (distance-4 on the
+#     8-cycle) for long-range connectivity.
+for i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + N_QUBITS // 2]})
+=======
+# 2b. Lightweight, zero-parameter skip-2 sub-ring linking every other
+#     qubit (0-2, 2-4, 4-6, 6-0).
+for i in range(0, N_QUBITS, 2):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 2) % N_QUBITS]})
+
+# 2b-2. Intra-block RY rotation layer, reusing the SAME shared "theta"
+#       parameter, inserted between the skip-2 sub-ring and the
+#       antipodal shortcuts. Interleaving this extra non-commuting
+#       rotation axis mid-entanglement heightens expressivity and has
+#       been observed to improve convergence speed, all while keeping
+#       the parameter count fixed (still a single shared "theta").
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 2c. Fixed, zero-parameter antipodal shortcuts (distance-4 on the
+#     8-cycle) for long-range connectivity.
+for i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + N_QUBITS // 2]})
+>>>>>>> REPLACE

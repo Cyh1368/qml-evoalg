@@ -1,0 +1,73 @@
+<NAME>
+add_yz_layer_ansatz
+</NAME>
+
+<DESCRIPTION>
+The current ANSATZ_SPEC achieves excellent accuracy (100%) with only 50 parameters, but we can further optimize it by:
+
+1. **Reducing parameter sharing bottleneck**: The current design uses only 8 unique parameters across 8 qubits (ry_a, ry_b, rz_a, rz_b, xx_0-3). While this is parameter-efficient, the XX gates on even-odd pairs may miss important correlations between all-to-all qubit interactions.
+
+2. **Adding complementary entanglement**: Instead of XX-only entanglement, we can add a YY layer to the even-odd pairs. This provides:
+   - Richer entanglement structure without significant parameter overhead
+   - YY gates target different Pauli correlations than XX gates
+   - Better expressiveness for the Z-Z readout correlators (since YY and ZZ operations have complementary effects)
+
+3. **Maintaining parameter efficiency**: By using only 4 new shared parameters (yy_0, yy_1, yy_2, yy_3) for the YY layer on the same pair structure, we add only 4*6 = 24 parameters total (24 circuit params + 2 readout = 76 total), a modest 52% increase from 50, but likely to maintain or improve the excellent accuracy while potentially reducing overfitting and improving generalization.
+
+The intuition is that the readout measures Z-Z correlators, and having both XX (which rotates in the XY plane) and YY (which rotates in the YZ plane) entanglement allows the circuit to create more diverse quantum states that may reveal the underlying structure better.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_0"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_1"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_2"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_3"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_0"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_1"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_2"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_3"},
+    {"gate": "YY", "wires": [0, 1], "param": "yy_0"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_1"},
+    {"gate": "YY", "wires": [4, 5], "param": "yy_2"},
+    {"gate": "YY", "wires": [6, 7], "param": "yy_3"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

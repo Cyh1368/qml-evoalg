@@ -1,0 +1,102 @@
+<NAME>
+adaptive_entanglement_rotation
+</NAME>
+
+<DESCRIPTION>
+The current approach uses a fixed linear chain of CZ entanglers with uniform RY-RZ rotations, resulting in high parameter count (146) and depth (99). 
+
+Key insights from analyzing the current program:
+1. The sequential RY-RZ-entangle-RZ pattern is redundant (RZ gates before and after CZ can be merged)
+2. Linear chain connectivity doesn't leverage all qubit pair interactions
+3. Parameter sharing is underutilized - many gates use unique parameters
+4. The 8-qubit system could benefit from more efficient non-linear entanglement patterns
+
+Novel approach - "Adaptive Entanglement Rotation":
+1. **Reduced parameter set with strategic sharing**: Use parameter sharing within the single-qubit rotation layer to cut parameters from 16→8 for initial RY gates
+2. **Star topology entanglement**: Replace linear CZ chain with a hub-spoke pattern using qubits 0 and 7 as entanglement hubs, reducing entangling gate pairs
+3. **Consolidated rotation layers**: Merge pre- and post-entanglement RZ gates using parameter sharing, effectively halving redundant rotations
+4. **Parametrized controlled rotations**: Replace some fixed CZ gates with parametrized CRX/CRY gates on critical paths for better expressivity with controlled overhead
+5. **Non-uniform depth**: Create varied entanglement patterns that break symmetry and potentially find better solutions faster
+
+This reduces parameters from 146 to ~90, lowers circuit depth, and maintains expressivity through strategic use of controlled parametrized gates and topology redesign.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Novel ansatz with adaptive entanglement and parameter sharing.
+
+Combines star-topology entanglement, parametrized controlled rotations,
+and strategic parameter sharing to reduce complexity while maintaining expressivity.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial rotation layer with parameter sharing (8 params instead of 16)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    
+    # Pre-entanglement RZ layer with sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_1"},
+    
+    # Star topology entanglement: hub-spoke pattern
+    # Hub 1: qubit 0 connects to neighbors
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_hub0_1"},
+    {"gate": "CRY", "wires": [0, 2], "param": "cry_hub0_2"},
+    
+    # Hub 2: qubit 7 connects to neighbors
+    {"gate": "CRY", "wires": [7, 6], "param": "cry_hub7_6"},
+    {"gate": "CRY", "wires": [7, 5], "param": "cry_hub7_5"},
+    
+    # Middle diagonal connections for better connectivity
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [1, 6]},
+    
+    # Post-entanglement RZ layer with sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_1"},
+    
+    # Final rotation layer for output
+    {"gate": "RX", "wire": 0, "param": "rx_final_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_final_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_final_0"},
+    {"gate": "RX", "wire": 3, "param": "rx_final_1"},
+    {"gate": "RX", "wire": 4, "param": "rx_final_0"},
+    {"gate": "RX", "wire": 5, "param": "rx_final_1"},
+    {"gate": "RX", "wire": 6, "param": "rx_final_0"},
+    {"gate": "RX", "wire": 7, "param": "rx_final_1"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

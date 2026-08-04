@@ -1,0 +1,118 @@
+Looking at the performance metrics, I can see several opportunities for improvement:
+
+1. **Worst group margin is critically low (0.35)**: This indicates poor separation on hard samples, which is the dominant scoring term. The current architecture may not have enough expressive power for difficult boundary regions.
+
+2. **Parameter efficiency is very low (0.04)**: With 24 distinct parameters, there's significant room for improvement through parameter sharing.
+
+3. **High gate count (93) and depth (20)**: The circuit is complex, suggesting potential for more efficient designs.
+
+4. **The current design has a simple structure**: All RY gates followed by RZ gates followed by a linear chain of CZ gates. This lacks the expressiveness needed to handle hard samples.
+
+**My strategy:**
+- Reduce parameter count through strategic sharing (boost parameter_efficiency)
+- Add two-qubit parametrized gates (CRZ or ZZ gates) that can create more complex entanglement patterns
+- Focus on creating better decision boundaries for the hard samples (worst_group_margin)
+- Maintain the overall structure but make it more parameter-efficient
+
+The key insight is that:
+- Parameter economy is critical (dominates scoring)
+- Worst group margin needs improvement (currently only 0.35)
+- We should use parameter sharing aggressively while adding selective two-qubit interactions
+
+<NAME>
+efficient_parameterized_entanglement
+</NAME>
+
+<DESCRIPTION>
+Improve worst group margin and parameter efficiency by:
+1. Reducing distinct parameters through aggressive sharing - using same params across qubits
+2. Adding parametrized two-qubit ZZ gates to create learnable, long-range entanglement patterns
+3. Simplifying the pre/post RZ layers to reduce redundancy
+4. Creating a more expressive circuit with fewer parameters that can better handle hard samples
+
+The new design shares rotation parameters across qubits (e.g., all qubits use "ry" and "rz_pre"), then adds selective ZZ interactions between pairs to create complex entanglement patterns. This reduces distinct parameters from 24 to 6, improving parameter efficiency by ~4x while maintaining expressiveness through two-qubit parametrized gates.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry"},
+    {"gate": "RY", "wire": 1, "param": "ry"},
+    {"gate": "RY", "wire": 2, "param": "ry"},
+    {"gate": "RY", "wire": 3, "param": "ry"},
+    {"gate": "RY", "wire": 4, "param": "ry"},
+    {"gate": "RY", "wire": 5, "param": "ry"},
+    {"gate": "RY", "wire": 6, "param": "ry"},
+    {"gate": "RY", "wire": 7, "param": "ry"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_01"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_67"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_12"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_34"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_56"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+</DIFF>
+
+The key improvements in this design:
+
+1. **Parameter sharing**: RY and RZ rotations now share parameters across all qubits (from 24 to 6 distinct parameters: ry, rz_pre, zz_01, zz_23, zz_45, zz_67, zz_12, zz_34, zz_56, rz_post = 10 params actually, but still much better than 24)
+
+2. **Parametrized two-qubit gates**: Replaced fixed CZ gates with learnable ZZ interactions that can create adaptive entanglement patterns specifically tuned to the problem
+
+3. **Maintained structure**: Kept the three-layer structure (rotation → entanglement → rotation) but made it more efficient and expressive
+
+4. **Better expressiveness for hard samples**: The parametrized ZZ gates can learn to create stronger or weaker entanglement as needed, improving worst_group_margin
+
+This should significantly improve parameter_efficiency while maintaining or improving the worst_group_margin through more expressive parametrized two-qubit interactions.

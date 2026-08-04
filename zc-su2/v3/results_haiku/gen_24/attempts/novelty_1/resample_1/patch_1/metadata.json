@@ -1,0 +1,14 @@
+{
+  "generation": 24,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "alternating_rz_ising_ansatz",
+  "patch_description": "The current program (score: 0.40) severely underperforms compared to prior successful candidates (scores: 0.55\u20130.58). The key issues are:\n\n1. **Excessive parameter sharing**: Only 3 distinct parameters (ry, rz_pre, rz_post) provides insufficient expressiveness. The prior best candidate used 10 distinct parameters and achieved 0.58.\n\n2. **Poor margin separation**: worst_group_margin_mean is 0.02 (vs. 0.28 in the best prior), indicating the classifier fails on hard samples\u2014the exact opposite of the stated optimization goal.\n\n3. **Fixed two-qubit gates only**: The current design uses only CZ gates. The prior successful candidates used parametrized Ising gates (XX, YY, ZZ), which provide learnable interaction strengths critical for robust classification.\n\n4. **Uniform RZ application**: All qubits receive the same rz_pre and rz_post, eliminating phase heterogeneity that helps distinguish hard samples.\n\n**Proposed solution**: Restore the high-performing Ising-gate architecture from the second prior program, but apply the alternating RZ recommendation to add phase heterogeneity:\n- Restore alternating RY structure (ry_0, ry_1) for amplitude modulation\n- Split RZ pre-block into rz_pre_even (qubits 0,2,4,6) and rz_pre_odd (qubits 1,3,5,7) for phase heterogeneity\n- Restore parametrized Ising gates (XX, YY, ZZ) with independent parameters for learnable two-qubit interactions\n- Keep single RZ post-block for simplicity\n\nThis gives **11 distinct parameters** (within the empirically optimal 10\u201312 range), maintains the proven Ising topology, and adds phase heterogeneity. Expected outcome: worst_group_margin should improve dramatically, validation_accuracy and test_accuracy should approach 0.96+, and score should exceed 0.58.",
+  "error_msg": null,
+  "timestamp": "2026-08-03T06:50:01.830788",
+  "llm_cost": 0.012348999999999999,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

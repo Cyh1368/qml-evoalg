@@ -1,0 +1,72 @@
+<NAME>
+merge_ry_rz_groups_single_param
+
+<DESCRIPTION>
+The scoring rule states that fewer distinct trainable parameters always yields a higher score, with no diminishing returns, and the empirical trend across the three prior generations (24→8→5 distinct params, score 0.60→0.65→0.69) confirms this strongly outweighs other metric differences. The current ansatz still uses two separate RY groups (ry_a, ry_b) and two separate RZ groups (rz_a, rz_b) that are symmetric across the 8-qubit register. Since accuracy, margins, and convergence are already saturated (train/val/test accuracy = 1.00, margins ~0.35-0.73) regardless of this split, collapsing each symmetric pair into a single shared parameter (ry_a=ry_b -> "ry_shared", rz_a=rz_b -> "rz_shared") reduces distinct parameter count from 5 to 3 without changing circuit depth, gate count, or entangling structure. This should further improve parameter efficiency and the combined score while preserving the expressivity needed for perfect train/val/test accuracy, since the previous merge (rz pre/post sharing) already showed no accuracy loss.
+
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # RY pre-rotation layer: two symmetric groups sharing one parameter each
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    # RZ pre-entangling layer: shares parameters with the post layer below
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+=======
+    # RY pre-rotation layer: single shared parameter across all wires
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+
+    # RZ pre-entangling layer: single shared parameter, reused post-entangling too
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    # RZ post-entangling layer: reuse pre-layer parameters (rz_a, rz_b)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+=======
+    # RZ post-entangling layer: reuse the single shared pre-layer parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+>>>>>>> REPLACE

@@ -1,0 +1,89 @@
+<NAME>
+cz_xx_hybrid_crossover
+</NAME>
+
+<DESCRIPTION>
+Analysis of the three programs:
+
+1. **Seed (score 0.72)**: Uses CZ gates with 2 parameters (ry_shared, rz_shared), achieving perfect accuracy with minimal parameters (14) and moderate depth (35).
+
+2. **Crossover inspiration (score 0.72)**: Replicates the seed structure 3 times while reusing the same parameters, achieving perfect accuracy but with much higher depth (95) and gate count (558), though faster convergence (30 steps).
+
+3. **Current program (score 0.68)**: Replaces CZ with XX gates and adds a third parameter (xx_shared), resulting in 20 parameters. This increases parameter count without improving accuracy, reducing efficiency.
+
+**Key observations**:
+- Both high-scoring programs (0.72) use CZ gates exclusively
+- The seed achieves the best parameter efficiency (0.07) with just 14 parameters
+- XX gates introduce unnecessary parameters without accuracy gains
+- The seed's single-block structure is more parameter-efficient than the 3-block structure
+
+**Crossover strategy**:
+Revert to the seed's proven CZ-based architecture (which scored 0.72) as it provides:
+1. Minimal parameter count (14 parameters vs 20)
+2. Superior parameter efficiency (0.07 vs 0.05)
+3. Faster convergence (60 steps vs the current approach)
+4. Perfect accuracy with optimal economy
+
+This crossover essentially selects the superior genetic material (CZ gates + 2 shared parameters) from the high-scoring seed program over the less efficient XX-gate variant.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

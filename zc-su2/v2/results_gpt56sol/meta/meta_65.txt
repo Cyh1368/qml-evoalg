@@ -1,0 +1,465 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit RY-RZ Ansatz with CZ Chain**  
+- **Implementation**: Defines an 8-qubit variational circuit with per-qubit RY rotations, pre- and post-RZ rotations, and a linear chain of CZ entangling gates; total depth ~20, 93 gates, 24 independent parameters.  
+- **Performance**: Achieves a combined score of 0.60 with train/test accuracy at or near 100%, validation accuracy 99%, zero generalization gap, and convergence in ~60 steps.  
+- **Feedback**: The layered RY–RZ structure with CZ entanglement delivers excellent accuracy and stability, though parameter efficiency is low (0.04) and the worst-group margin (0.35) indicates some robustness limitations.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Even-Odd RY-RZ CZ Ring Quantum Ansatz**  
+- **Implementation**: Defines ANSATZ_SPEC as alternating RY rotations on even/odd qubits, pre- and post-layer RZ rotations, and CZ entangling gates in a ring topology; run_experiment simply passes this fixed spec to a backend.  
+- **Performance**: Achieved a combined score of 0.0 and did not pass validation tests.  
+- **Feedback**: The ansatz omits parameterized two-qubit gates and may suffer from inconsistent parameter naming, causing validation failures. Its simplistic, uniform layering also limits expressiveness.
+**Program Identifier:** Generation 2 - Patch Name parity_shared_ring - Correct Program: False
+
+**Program Name: Ring-Antipodal ZZ Variational Circuit**  
+- **Implementation**: The ANSATZ_SPEC enumerates RZ(field) rotations on all 8 qubits, ZZ(local_corr) interactions on nearest-neighbor pairs and ZZ(global_corr) on antipodal links, followed by RY(mixer) gates on each qubit. It passes this static gate-and-parameter list to a fixed backend via run_experiment.  
+- **Performance**: Achieved a combined score of 0.0 and failed to pass validation tests.  
+- **Feedback**: Relying on only four shared parameters (field, local_corr, global_corr, mixer) severely limits circuit expressivity and likely prevents effective training. The static ansatz definition may also conflict with expected gate or parameter constraints, leading to incorrect execution.
+**Program Identifier:** Generation 4 - Patch Name shared_mobius_ising - Correct Program: False
+
+**Program Name: Even-Odd RY-RZ CZ Ring Ansatz**  
+- **Implementation**: Single-layer 8-qubit ansatz applying alternating RY rotations (ry_even/ry_odd) and pre/post RZ phase shifts, with CZ entangling gates arranged in a ring topology; parameters are shared by even/odd qubit indices and passed intact to the backend.  
+- **Performance**: Combined score to maximize: 0.0, does not pass validation tests.  
+- **Feedback**: The shallow circuit depth and absence of parameterized two-qubit rotations limit expressivity, leading to validation failures; adding deeper layers or incorporating parametric entangling gates could improve performance.
+**Program Identifier:** Generation 5 - Patch Name parity_shared_ring - Correct Program: False
+
+**Program Name: Even-Odd RY–RZ CZ Chain Ansatz**  
+- **Implementation**: Defines an 8-qubit circuit where RY rotations are tied by even/odd qubit index, followed by pre- and post-entanglement RZ rotations, with entanglement implemented as a linear chain of CZ gates; invokes a fixed backend via `run_experiment(ANSATZ_SPEC,…)`.  
+- **Performance**: Combined score of 0.0 and fails all validation tests.  
+- **Feedback**: Reusing only two parameter sets and mixing `"wire"`/`"wires"` keys breaks the expected ansatz specification, preventing execution; using consistent field names and distinct parameters per qubit layer would improve correctness and expressivity.
+**Program Identifier:** Generation 6 - Patch Name bipartite_parameter_sharing - Correct Program: False
+
+**Program Name: Parity Rotation CZ Ring Mixer**  
+- **Implementation**: Defines an 8-qubit ansatz with two shared RY parameters alternating on even/odd wires, a closed CZ nearest-neighbor entangling ring, and a global RX mixer using one shared parameter; `run_experiment` simply passes this spec to a fixed backend.  
+- **Performance**: Combined score of 0.0 and fails all validation tests.  
+- **Feedback**: The heavy parameter sharing reduces the number of trainable angles at the cost of expressivity, and the ansatz specification appears to violate expected schema rules (e.g., gating or wiring format), leading to validation errors.
+**Program Identifier:** Generation 1 - Patch Name shared_ring_ansatz - Correct Program: False
+
+**Program Name: 8-Qubit Layered CZ Ansatz**  
+- **Implementation**: Constructs an 8-qubit variational circuit with a single layer of per-qubit RY rotations, pre-entangling RZ rotations, and a linear chain of CZ gates; the commuting post-CZ RZ layer is intentionally omitted.  
+- **Performance**: Combined score: 0.0 (fails all validation tests).  
+- **Feedback**: The lack of a post-CZ RZ layer and absence of parameterized two-qubit rotations severely limits circuit expressivity, leading to zero optimization progress and validation failures.
+**Program Identifier:** Generation 7 - Patch Name prune_redundant_post_z - Correct Program: False
+
+**Program Name: Tied-Mixer CZ Butterfly Ansatz**  
+- **Implementation**: An 8-qubit circuit with alternating even/odd RY mixers sharing two parameters, three CZ “butterfly” layers at distances 1, 2, and 4, and a global RX tilt; total depth 15, 84 gates, 5 parameters (3 distinct).  
+- **Performance**: Achieved combined score 0.70 with train accuracy 1.00, validation/test accuracy 0.98 (generalization gap 0.02), converging in 60 steps.  
+- **Feedback**: Parameter tying yields strong regularization and high efficiency (0.20), producing low overfitting, though the worst-group margin of 0.35 indicates some robustness limits.
+**Program Identifier:** Generation 8 - Patch Name shared_butterfly_mixer - Correct Program: True
+
+**Program Name: 8-Qubit Layered RY-CZ-RX Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with alternating RY rotations using shared “ry_even”/“ry_odd” parameters, a ring of CZ entangling gates, and a uniform RX mixing layer parameterized by “rx_mix,” then delegates execution to a backend `_run` function.  
+- **Performance**: Combined score remains 0.0 and the program fails validation.  
+- **Feedback**: The heavy parameter sharing may under-express the target circuit and inconsistent use of “wire” vs. “wires” fields in the spec likely causes validation failures; correcting field names and introducing more diverse parameters could improve correctness and performance.
+**Program Identifier:** Generation 9 - Patch Name parity_ring_mixer - Correct Program: False
+
+**Program Name: Parity-Tied 8-Qubit Ansatz**  
+- **Implementation**: Uses parity-shared RY rotations (two shared parameters for even/odd qubits), a fixed CZ chain interspersed with two trainable CRZ/CRY entanglers, parameter-free long-range CZ matchings, and a shared RX readout rotation—resulting in a 28-depth circuit with 7 total (5 distinct) parameters and 81 gates.  
+- **Performance**: Combined score 0.66 with 100% training accuracy, ≈98% validation/test accuracy, a 0.01 generalization gap, and convergence in ~120 steps.  
+- **Feedback**: Parity-based parameter sharing and multiscale entanglement achieve high accuracy and strong generalization with minimal parameters; however, the modest worst-group margin (0.34) and low parameter efficiency (0.14) suggest potential for improved robustness or further parameter reduction.
+**Program Identifier:** Generation 10 - Patch Name multiscale_shared_cr - Correct Program: True
+
+**Program Name: Double-layered RY-RZ-CZ Quantum Circuit**  
+- **Implementation**: Defines an 8-qubit ansatz with per-wire RY rotations, pre- and post-layer RZ rotations, and a linear chain of CZ entanglers, then repeats this block twice, totaling 24 distinct parameters over 186 gates and depth 35.  
+- **Performance**: Combined score 0.60, with train/validation/test accuracies ≈0.99, generalization gap 0.01, but low parameter efficiency (0.04) and convergence in ~30 steps.  
+- **Feedback**: The double-layer structure delivers near-perfect accuracy and minimal overfitting, though at the cost of increased circuit depth and gate count; the relatively low worst-group margin (0.33) indicates potential robustness issues across subgroups.
+**Program Identifier:** Generation 11 - Patch Name shared_two_layer_stack - Correct Program: True
+
+**Program Name: 8-Qubit Layered RY-RZ-CZ Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with per-qubit RY rotations, pre- and post-RZ rotations, and a linear chain of CZ gates interspersed with two parameterized gates (CRZ between qubits 1–2 and CRY between 4–5), totaling 28 parameters, depth 20 and 93 gates.  
+- **Performance**: Achieved a combined score of 0.61 with perfect train/validation/test accuracy (1.00), zero generalization gap, validation/test loss of 0.18, convergence in 30 steps, and parameter efficiency of 0.04.  
+- **Feedback**: The balanced mix of single- and two-qubit operations ensures flawless generalization and convergence but yields moderate classification margins (validation 0.72, worst-group 0.35) and low parameter efficiency, indicating potential overparameterization.
+**Program Identifier:** Generation 12 - Patch Name adaptive_chain_entanglers - Correct Program: True
+
+**Program Name: 8-qubit CZ chain with shared RX**  
+- **Implementation**: An 8‐qubit ansatz applies a single shared RX parameter across all qubits, individual RY rotations, per‐qubit pre‐ and post‐RZ layers, and a linear chain of CZ entanglers; the circuit comprises 27 gates, 25 distinct parameters, depth 23.  
+- **Performance**: Combined score 0.60 with perfect train/test accuracy (1.00), near‐perfect validation accuracy (0.99), zero generalization gap, convergence in 60 steps, and parameter efficiency 0.04.  
+- **Feedback**: The shared-RX plus CZ‐chain structure delivers excellent accuracy and rapid convergence with minimal parameters, though a worst‐group margin of 0.33 indicates potential robustness issues in certain subgroups.
+**Program Identifier:** Generation 13 - Patch Name shared_rx_mixing - Correct Program: True
+
+**Program Name: Symmetric CZ Backbone Quantum Ansatz**
+- **Implementation**: Defines an 8-qubit ansatz with independent RY rotations, reflection-symmetric RZ pre- and post-phases, and a parameter-free CZ entangling chain, delegating execution to a fixed backend.  
+- **Performance**: Achieved a combined score of 0.0 and failed validation tests.  
+- **Feedback**: The strict symmetry and absence of parameterized two-qubit gates limited circuit expressivity and halted optimization; missing encoding/measurement steps also caused validation failures.
+**Program Identifier:** Generation 15 - Patch Name mirror_tied_phase_chain - Correct Program: False
+
+**Program Name: Parity-Tied Mixer with Butterfly Entangler**  
+- **Implementation**: Defines an 8-qubit variational ansatz using parity-tied RY mixers (shared `mix_even`/`mix_odd`), a multi-scale butterfly entangler with CZ links at distances 1, 2, and 4 plus parameterized CRZ/CRY gates, and a global RX “tilt” mixer; the code contains unresolved merge-conflict markers and mixes “wire”/“wires” keys, breaking the expected gate schema.  
+- **Performance**: Combined score to maximize is 0.0 and the program fails all validation tests.  
+- **Feedback**: Evaluation flagged syntax errors from leftover conflict markers and inconsistent gate specifications that prevented ansatz parsing; the overly dense, highly connected circuit also showed no gains under the fixed backend, suggesting misalignment with validation requirements.
+**Program Identifier:** Generation 17 - Patch Name regularized_butterfly_global_links - Correct Program: False
+
+**Program Name: 8-Qubit Shared-Parameter Butterfly Ansatz**
+- **Implementation**: Defines an 8-qubit circuit with parity-tied RY rotations (shared “even” and “odd” parameters), balanced CZ butterfly layers at distances 1 and 4, trainable CRZ/CRY gates for distance-2 entanglement, and a shared RX readout layer, totaling 7 parameters (5 distinct) across 15 layers and 84 gates.
+- **Performance**: Achieves a combined score of 0.68 with 100% train/validation accuracy, 99% test accuracy, low losses (validation 0.19, test 0.18), a 0.01 generalization gap, and converges in ~90 steps.
+- **Feedback**: Parameter sharing yields near-perfect accuracy and stable convergence despite low parameter efficiency (0.14); the moderate depth and gate count balance expressivity and trainability, though further pruning could improve efficiency.
+**Program Identifier:** Generation 16 - Patch Name butterfly_trainable_midlinks - Correct Program: True
+
+**Program Name: Parity-Butterfly Quantum Ansatz**  
+- **Implementation**: Constructs an 8-qubit ansatz with parity-tied RY rotations on even/odd wires, fixed multiscale CZ “butterfly” entanglement, shared RX readout rotations, and repeats the entire block to enhance expressivity while tying parameters—resulting in 5 total parameters (3 distinct).  
+- **Performance**: Achieved a combined score of 0.71 with train/validation/test accuracies of 1.00/0.99/0.98, a small generalization gap of 0.02, parameter efficiency of 0.20, depth 30, and 168 gates.  
+- **Feedback**: The multiscale entanglement and parameter tying provided strong regularization and high accuracy with minimal free parameters; however, the moderate circuit depth and worst-group margin (0.36) suggest opportunities to improve robustness and reduce complexity.
+**Program Identifier:** Generation 18 - Patch Name tied_double_butterfly - Correct Program: True
+
+**Program Name: 8-Qubit Butterfly CZ Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with alternating RY mixers using two shared parameters (“mix_even”/“mix_odd”), a multi-scale CZ entanglement pattern (distance-1, -2, -4 butterfly plus sparse global bridges), and a final shared RX “global_tilt” layer.  
+- **Performance**: Combined score 0.0; does not pass validation tests.  
+- **Feedback**: The rigid CZ-only entanglement and heavily shared parameters limit expressivity and conflict with expected parameter conventions, causing validation failures and poor performance; increasing parameter diversity and aligning naming with the backend spec may improve results.
+**Program Identifier:** Generation 19 - Patch Name regularized_butterfly_bridge - Correct Program: False
+
+**Program Name: Global-Mix 8-Qubit CZ-RY Ansatz**  
+- **Implementation**: The ansatz uses a single global RY mixing parameter on all 8 qubits, inserts CZ entangling gates at distances 1, 2, and 4, then applies a shared global RX tilt mixer. This yields a depth-15, 84-gate circuit with two distinct parameters.  
+- **Performance**: Achieves a combined score of 0.73 with 100% train accuracy, 98% validation/test accuracy, a 0.02 generalization gap, 0.25 parameter efficiency, and converges in ~60 steps.  
+- **Feedback**: Global parameter tying strongly regularizes the model and enables high generalization with minimal parameters, but a worst-group margin of 0.35 suggests room to improve robustness on underperforming subgroups.
+**Program Identifier:** Generation 20 - Patch Name globally_tied_butterfly - Correct Program: True
+
+**Program Name: 8-Qubit Butterfly Ansatz with Shared Mixers**  
+- **Implementation**: Defines an 8-qubit circuit with parity-tied RY mixers, three CZ “butterfly” entangling layers at distances 1, 2, and 4 plus two extra static links, and a shared RX “global tilt” mixer; uses 5 total parameters (3 distinct) over depth 18 with 90 gates.  
+- **Performance**: Achieved a combined score of 0.72 with perfect train/validation/test accuracy (1.00), zero generalization gap, low loss (≈0.17), parameter efficiency 0.20, validation margin 0.73, worst-group margin 0.38, and convergence in 90 steps.  
+- **Feedback**: Parity-tied and shared parameters strongly regularize the model, enabling perfect generalization with minimal parameters; however, the lower worst-group margin suggests uneven robustness that could be improved with targeted entanglement adjustments.
+**Program Identifier:** Generation 21 - Patch Name add_cross_boundary_cz - Correct Program: True
+
+**Program Name: Parity-Tied Shared-Parameter Quantum Ansatz**  
+- **Implementation**: The ansatz applies parity-tied RY rotations across eight qubits, two shared CRY entangling links interspersed in a fixed CZ chain, parameter-free long-range CZ matchings for multiscale propagation, and shared RX readout rotations, resulting in 6 trainable parameters (4 distinct). The design leverages parameter sharing to maximize expressivity and efficiency while maintaining moderate circuit depth (28) and gate count (81).  
+- **Performance**: Combined score of 0.68 with 100% training, 96% validation, 98% test accuracy, 0.02 generalization gap, achieved in ~60 steps with high parameter efficiency (0.16).  
+- **Feedback**: Parameter sharing yielded strong performance with minimal parameters, though the relatively low worst-group margin (0.35) indicates room to bolster robustness in less confident subgroups.
+**Program Identifier:** Generation 14 - Patch Name tie_amplitude_entanglers - Correct Program: True
+
+**Program Name: Multiscale Parity-sensitive Ansatz with Parameter Tying**  
+- **Implementation**: Defines an 8-qubit circuit with two recurrent RY mixer layers (tied into “mix_even” and “mix_odd”), interleaved with CZ entanglers at distances 1, 2, and 4, plus a global RX mixer (“global_tilt”), for a total depth of 30 and 168 gates but only 3 distinct parameters (5 tied instances).  
+- **Performance**: Achieved a combined score of 0.71 with near-perfect accuracies (train 1.00, val 0.99, test 0.98), a small generalization gap (0.02), convergence in 60 steps, and parameter efficiency of 0.20.  
+- **Feedback**: Parameter tying and multiscale entanglement produce high expressivity and efficient training, yet the moderate worst-group margin (0.36) indicates potential robustness issues for certain data subsets.
+**Program Identifier:** Generation 22 - Patch Name tied_butterfly_recurrence - Correct Program: True
+
+**Program Name: Globally-Tied Mixer with Butterfly CZ Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz using two shared parameters for simultaneous per-qubit RY and RX mixers, interleaved with three distance-1,2,4 “butterfly” CZ entangling layers to enforce global symmetry and minimize parameter count.  
+- **Performance**: Achieved a combined score of 0.73 with perfect train accuracy (1.00), validation/test accuracy of 0.98, a 0.02 generalization gap, 4 total parameters (2 distinct), depth 15, and gate count 84.  
+- **Feedback**: Global parameter sharing imposed a useful symmetry prior that regularized learning on small data and yielded convergence by step 60, though a worst-group margin of 0.35 indicates potential robustness imbalances across subgroups.
+**Program Identifier:** Generation 23 - Patch Name global_local_mixer - Correct Program: True
+
+**Program Name: Mirror-Tied RY-CZ Quantum Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with reflection-symmetric RY rotations (mix_0_7…mix_3_4) on mirrored wires, layered CZ entanglers at distances 1, 2, and 4, and a shared RX “global_tilt” mixer.  
+- **Performance**: Combined score 0.0; fails all validation tests.  
+- **Feedback**: The strict mirror-pair parameter tying and use of only CZ entanglers produce a highly regular but under-expressive ansatz, and the specification likely violates expected gate formatting or required parameterized two-qubit rotations, leading to validation errors.
+**Program Identifier:** Generation 24 - Patch Name mirror_pair_mixers - Correct Program: False
+
+**Program Name: Global Mixer Butterfly Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with two globally shared parameters (“global_mix” for RY layers, “global_tilt” for RX layers) interleaved with CZ butterfly connectivity at distances 1, 2, and 4 plus two extra CZ links.  
+- **Performance**: Combined score of 0.0, failing all validation tests.  
+- **Feedback**: While the globally tied mixer reduces parameter count and enforces symmetry, it appears to underfit the task or misalign with expected gate specifications, leading to incorrect behavior and validation failures.
+**Program Identifier:** Generation 25 - Patch Name global_mixer_tying - Correct Program: False
+
+**Program Name: Symmetric 8-Qubit Butterfly Ansatz**
+- **Implementation**: Uses globally tied RY rotations for mixing and RZ rotations for phase alignment on all 8 qubits, three CZ butterfly entanglement layers at distances 1, 2, and 4, and a shared RX readout layer, yielding 5 total parameters with only 3 distinct shared values.  
+- **Performance**: Achieved a combined score of 0.71 with perfect train accuracy (1.00), 0.98 validation/test accuracy, a 0.02 generalization gap, and convergence in 60 steps on an 18-depth, 108-gate circuit.  
+- **Feedback**: The strong symmetry and parameter-sharing prior delivered high accuracy and rapid convergence with minimal parameters, though a worst-group margin of 0.35 indicates some subgroup vulnerability, and the 18-layer, 108-gate depth may require hardware optimization.
+**Program Identifier:** Generation 26 - Patch Name global_phase_economical_butterfly - Correct Program: True
+
+**Program Name: Shared Mixer Butterfly Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with a globally shared RY mixer, fixed CZ butterfly correlations at short and medium ranges, shared XX links for long-range entanglement, and a global RX output tilt, using three distinct trainable parameters.  
+- **Performance**: Achieved a combined score of 0.70 with train/validation/test accuracies of 1.00/0.99/0.99, a 0.01 generalization gap, 84 gates, 15-layer depth, and convergence in ~120 steps.  
+- **Feedback**: Parameter sharing provided strong regularization and rapid convergence but resulted in a modest worst-group margin (0.32), indicating potential subgroup sensitivity despite high overall accuracy; the low parameter count (5) yielded high parameter efficiency (0.20).
+**Program Identifier:** Generation 27 - Patch Name shared_long_range_xx - Correct Program: True
+
+**Program Name: Global Mixer CZ Butterfly Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz using two shared parameters—“global_mix” for RY layers and “global_tilt” for RX layers—interleaved with CZ gates connecting qubits at distances 1, 2, and 4 in a butterfly pattern, repeated twice to double depth without adding parameters (depth=30, 168 gates, 4 total parameters, 2 distinct).  
+- **Performance**: Achieved a combined score of 0.73 with 1.00 train accuracy, 0.98 validation/test accuracy, a 0.02 generalization gap, 0.24 parameter efficiency, and convergence in ~60 steps.  
+- **Feedback**: Global parameter tying provides strong regularization and high overall accuracy with minimal parameters, but the worst-group margin (0.35) indicates potential expressivity limits; depth augmentation via layer repetition boosts complexity without inflating parameter count.
+**Program Identifier:** Generation 28 - Patch Name tied_double_butterfly - Correct Program: True
+
+**Program Name: Symmetric Butterfly Ansatz Classifier**  
+- **Implementation**: Builds an 8-qubit variational circuit with globally tied RY mixing, balanced CZ “butterfly” layers at distances 1 and 4, symmetric shared CRZ phase gates, and a final shared RX readout rotation, using 5 parameters (3 distinct) over 15 layers and 84 gates.  
+- **Performance**: Achieved 100% train accuracy, 82% validation accuracy and 84% test accuracy (combined score 0.50) with a generalization gap of 0.16 and parameter efficiency of 0.17.  
+- **Feedback**: Shared parameters impart a strong symmetry prior and regularize the model for small data, but limited parameter diversity may constrain expressivity, resulting in a moderate generalization gap despite perfect training performance.
+**Program Identifier:** Generation 29 - Patch Name shared_midrange_regularizer - Correct Program: True
+
+**Program Name: Global-Mixer Butterfly Ansatz**
+
+- **Implementation**: Defines an 8-qubit ansatz with two globally shared single-qubit rotations (“global_mix” via RY and “global_tilt” via RX) on every qubit, interleaved with CZ gates in a distance-1,2,4 butterfly pattern, resulting in 84 gates over depth 15 but only 2 distinct parameters.  
+- **Performance**: Achieved a combined score of 0.73 with perfect training accuracy (1.00), 0.98 validation/test accuracy, and a 0.02 generalization gap.  
+- **Feedback**: The global mixers deliver strong small-data regularization and high parameter efficiency without sacrificing qubit coverage, while the hierarchical CZ connectivity captures multi-scale correlations; however, a worst-group margin of 0.35 suggests potential robustness gaps across subgroups.
+**Program Identifier:** Generation 30 - Patch Name global_butterfly_mixer - Correct Program: True
+
+**Program Name: Shared-Parameter Butterfly Quantum Circuit**  
+- **Implementation**: Defines an 8-qubit ansatz with a single globally tied RY mixer, fixed CZ “butterfly” entanglers at short and intermediate ranges, shared XX gates for cross-half correlations, and a global RX output mixer, using only five parameters (three distinct).  
+- **Performance**: Achieved a combined score of 0.70 with perfect training accuracy (1.00), 0.99 validation/test accuracy, a 0.01 generalization gap, 84 gates over depth 15, and convergence in 120 steps.  
+- **Feedback**: The heavy use of shared parameters provided strong regularization and fast convergence with very high accuracy, though moderate parameter efficiency (0.20) and a worst-group margin of 0.32 suggest limited expressivity in edge cases.
+**Program Identifier:** Generation 31 - Patch Name shared_long_range_xx - Correct Program: True
+
+**Program Name: Globally-Tied Mixer Ansatz**  
+- **Implementation**: Constructs an 8-qubit circuit with globally shared RY mixers and RX tilts, interleaved with CZ/CRZ entanglers at distances 1, 2, and 4, then repeats the butterfly pattern. The design uses only three distinct trainable parameters (global_mix, mid_crz, global_tilt) across 168 gates and depth 30.  
+- **Performance**: Combined score 0.50 with 100% train accuracy, 82% validation accuracy, and 84% test accuracy using just 5 total parameters.  
+- **Feedback**: Strong symmetry priors and parameter sharing deliver high parameter efficiency (0.17) and robust validation performance, but the 0.16 generalization gap and deep circuit suggest slight overfitting and significant resource overhead.
+**Program Identifier:** Generation 32 - Patch Name shared_mid_crz - Correct Program: True
+
+**Program Name: Symmetric Butterfly Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with globally tied RY mixers, distance-1 and distance-4 CZ butterfly layers, and shared-parameter CRZ phases, using only three distinct trainable parameters.  
+- **Performance**: Achieved perfect train accuracy (1.00), validation 0.82, test 0.84, combined score 0.50, with depth 15, 84 gates, 5 total parameters and a parameter efficiency of 0.17.  
+- **Feedback**: Global parameter tying imposed a strong symmetry prior that regularized learning on a small dataset but contributed to a 0.16 generalization gap. Introducing medium-range shared CRZ phases improved class separation without inflating the parameter count.
+**Program Identifier:** Generation 34 - Patch Name shared_mid_crz - Correct Program: True
+
+**Program Name: Symmetric Shared-Parameter Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with globally shared RX (“global_tilt”) and RY (“global_mix”) rotations, fixed short- and long-range CZ entanglers, and shared trainable XX couplings, then applies a final RX layer using the same “global_tilt.”  
+- **Performance**: Combined score: 0.0; does not pass validation tests.  
+- **Feedback**: While aggressive parameter sharing enforces symmetry and regularizes training, it severely limits expressivity, and inconsistent use of “wire” vs. “wires” keys in the ANSATZ_SPEC likely caused schema validation failures.
+**Program Identifier:** Generation 35 - Patch Name prepend_global_rx_seed - Correct Program: False
+
+**Program Name: Layered CZ-RY Global Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with a shared RY “global_mix” layer on all qubits, three tiers of CZ entangling gates at distances 4, 2, and 1, and a final shared RX “global_tilt” mixer, passing this ANSATZ_SPEC to a fixed backend runner.  
+- **Performance**: Achieved a combined score of 0.0 and did not pass validation tests.  
+- **Feedback**: Heavy global parameter tying and absence of parameterized two-qubit gates likely underfit the target task, and the ansatz’s disconnect from the data-encoding/training pipeline led to execution failures.
+**Program Identifier:** Generation 36 - Patch Name reverse_butterfly_order - Correct Program: False
+
+**Program Name: Global-Tied Multiscale Quantum Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with globally tied RY mixing, multiscale butterfly CZ entanglement, shared XX links, RX readout rotations, and a repeated block with parameter tying to limit trainable degrees of freedom.  
+- **Performance**: Achieved a combined score of 0.69 with perfect train/validation/test accuracy, zero generalization gap, validation/test loss of 0.18, using 6 parameters (4 distinct), depth 30, and 168 gates.  
+- **Feedback**: Strong regularization via global parameter tying and structured entanglement delivers perfect generalization, but the low parameter efficiency (0.17) and modest worst-group margin (0.35) suggest room for richer parameterization to improve robustness.
+**Program Identifier:** Generation 33 - Patch Name compact_shared_xx - Correct Program: True
+
+**Program Name: Global-Mix Butterfly Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with a single shared “global_mix” parameter applied to all RY and RX mixer gates, interleaved with three layers of hierarchical CZ entangling operations (“butterfly” connectivity).  
+- **Performance**: Combined score to maximize: 0.0 (does not pass validation tests).  
+- **Feedback**: Tying all mixer rotations to one parameter overly constrains the circuit’s expressivity and likely causes validation failures; ansatz specification may also misalign with expected input format, leading to incorrect execution.
+**Program Identifier:** Generation 38 - Patch Name tied_butterfly_mixer - Correct Program: False
+
+**Program Name: Globally-Tied Symmetric 8-Qubit Ansatz**  
+- **Implementation**: Ansatz uses a globally shared RY mixer on all eight qubits to impose a symmetry prior, followed by distance-1 and distance-2 CZ butterfly layers, shared trainable XX gates on two long-range links with fixed CZ on the remaining pairs, and a final global RX mixer; the circuit spans depth 15 with 84 gates and only three distinct parameters controlling five tunable gates.  
+- **Performance**: Achieved a combined score of 0.70 with perfect training accuracy (1.00), near-perfect validation/test accuracy (≈0.99), a small generalization gap (0.01), convergence in ~120 steps, and parameter efficiency of 0.20.  
+- **Feedback**: Global parameter tying provided strong regularization and high generalization on a small dataset, but the worst-group margin (0.32) indicates potential robustness or fairness limitations for specific subpopulations.
+**Program Identifier:** Generation 39 - Patch Name shared_long_range_xx - Correct Program: True
+
+**Program Name: Symmetric Global-Mixing Quantum Ansatz**  
+- **Implementation**: Employs an 8-qubit circuit with symmetry-tied RY “global_mix” and RZ “global_phase” rotations, a fixed multiscale CZ entangling network (local, intermediate, long-range), and a uniform RX “global_tilt” output mixer, using only 5 total (3 distinct) trainable parameters.  
+- **Performance**: Achieved a combined score of 0.71 with 100% training accuracy and 98% validation/test accuracy, a 2% generalization gap, in a depth-18, 108-gate circuit.  
+- **Feedback**: Symmetry tying and hierarchical entangling yielded strong regularization and convergence in ~60 steps despite low parameter count, though the worst-group margin (0.35) trails the overall validation margin (0.73), suggesting room to boost group robustness.
+**Program Identifier:** Generation 41 - Patch Name phase_aligned_butterfly - Correct Program: True
+
+**Program Name: 8-Qubit Multiscale CZ Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with two global shared single-qubit mixers (“global_mix” RY layer and “global_tilt” RX layer) surrounding a multiscale CZ entangling pattern (distance-1, -2, -4 and crossover links).  
+- **Performance**: Combined score: 0.0 (fails all validation tests).  
+- **Feedback**: The use of singular “wire” versus plural “wires” keys likely breaks the ansatz parser, causing immediate validation failures. Additionally, over-constraining parameters with only two global angles may limit circuit expressivity and hinder optimization.
+**Program Identifier:** Generation 42 - Patch Name global_mix_augmented_butterfly - Correct Program: False
+
+**Program Name: Global-Tied Butterfly Ansatz**  
+- **Implementation**: An 8-qubit variational circuit uses two globally shared parameters (“global_tilt” for RX layers and “global_mix” for RY mixers) interleaved with CZ gates in a distance-1, 2, and 4 butterfly pattern, reusing the tilt layer at readout. This design yields only 2 distinct parameters (4 total gates) with a circuit depth of 18 and 108 gates.  
+- **Performance**: Achieved a combined score of 0.72 with perfect training accuracy and 98% validation/test accuracy, a 0.02 generalization gap, 0.21 loss, and a parameter efficiency of 0.25.  
+- **Feedback**: Global parameter tying delivered high accuracy and fast convergence (~60 steps) with minimal parameters, though the worst-group margin (0.34) indicates potential robustness limitations in some subpopulations.
+**Program Identifier:** Generation 37 - Patch Name shared_rx_seed_butterfly - Correct Program: True
+
+**Program Name: Global Mixer and Phase-Locked Ansatz**
+- **Implementation**: An 8-qubit circuit with a single globally shared RY mixer, fixed CZ links for nearest-, medium- and long-range entanglement, and a phase-locked CRZ/CRX pair sharing two distinct parameters across all wires. The ansatz has depth 15 and 84 gates but only four total parameters (two unique).
+- **Performance**: Combined score 0.42; train/validation/test accuracy stuck at 0.50 with loss 1.00, parameter efficiency 0.12, no observed convergence.
+- **Feedback**: The heavy parameter sharing yields strong regularization but underfits the task, delivering only chance-level accuracy; increasing distinct parameters or expressive depth may be required for meaningful learning.
+**Program Identifier:** Generation 43 - Patch Name phase_locked_butterfly - Correct Program: True
+
+**Program Name: Symmetric Global-Phase Ansatz for Eight Qubits**  
+- **Implementation**: An 8-qubit circuit uses three shared parameters—global_mix for RY mixing, global_phase for RZ rotations and CRZ medium-range entanglement, and rx_out for final RX readout—interleaved with distance-1 and distance-4 CZ “butterfly” layers to enforce strong symmetry priors.  
+- **Performance**: Achieves a combined score of 0.47 with train_accuracy 0.88, validation_accuracy 0.73, test_accuracy 0.74, a generalization gap of 0.13, and parameter efficiency of 0.15 using only 3 distinct parameters over 108 gates.  
+- **Feedback**: The globally tied parameters and balanced entangling layers deliver stable, high training accuracy with minimal variance, but reusing the single global_phase in both local and medium-range gates may limit expressivity and contribute to the moderate validation/test performance.
+**Program Identifier:** Generation 45 - Patch Name tunable_medium_phase - Correct Program: True
+
+**Program Name: Shared Mixer CZ Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with two half-shared RY mixers (global_mix_a/global_mix_b), layered CZ gates encoding distance-1, distance-2, and distance-4 correlations, and concludes with a shared RX mixer (global_tilt); the `run_experiment` function passes this spec to a fixed backend for training and evaluation.  
+- **Performance**: Achieves perfect train/validation/test accuracy (combined score 0.72) with zero generalization gap, converging in 60 steps using 5 parameters (3 distinct) over a circuit of depth 15 and 84 gates.  
+- **Feedback**: Extensive parameter sharing drives robust small-data generalization, but the moderate validation/test loss (~0.18) and worst-group margin (0.36) suggest opportunities to streamline circuit depth or improve parameter efficiency.
+**Program Identifier:** Generation 46 - Patch Name split_ry_mixer - Correct Program: True
+
+**Program Name: Eight-Qubit Shared-Parameter Ansatz**  
+- **Implementation**: Uses two global parameters (“global_mix” for RY/CRZ layers and “global_tilt” for RX layers) applied uniformly across eight qubits in a repeated distance-1/2/4 CZ/CRZ connectivity pattern, yielding depth 30, 168 gates, and only 4 total parameters (2 unique).  
+- **Performance**: Combined score 0.42; train/validation/test accuracies all 0.50 (±0.00), zero generalization gap, and parameter efficiency 0.12.  
+- **Feedback**: Heavy parameter tying imposed strong regularization leading to underfitting at chance-level accuracy; doubling circuit depth without increasing unique parameters failed to boost expressivity or learning.
+**Program Identifier:** Generation 47 - Patch Name tunable_distance2_phase - Correct Program: True
+
+**Program Name: Parity-Tied Butterfly Quantum Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with parity-tied RY rotations on even/odd wires, a globally shared RZ phase alignment, multiscale butterfly-pattern CZ entanglement, shared RX readout rotations, and repeats the entire block with parameter tying to boost expressivity without increasing parameter count.  
+- **Performance**: Combined score of 0.0; fails all validation tests.  
+- **Feedback**: Structured entanglement and heavy parameter sharing streamline the circuit, but missing or incorrect data-encoding and fixed-task integration prevent successful execution, leading to validation failures and zero performance.
+**Program Identifier:** Generation 40 - Patch Name global_phase_alignment - Correct Program: False
+
+**Program Name: Globally Shared Butterfly Ansatz**  
+- **Implementation**: An 8-qubit circuit that applies globally-tied RY mixers, CZ “butterfly” entangling layers at distances 1 and 4, shared CRZ gates for medium-range phase correlations, and a global RX tilt, yielding 18-depth and 90-gate structure with only three distinct parameters.  
+- **Performance**: Achieved a combined score of 0.71 with perfect train/test accuracy (1.00), 0.99 validation accuracy, 0.19 loss, zero generalization gap, 0.20 parameter efficiency, and convergence in 90 steps.  
+- **Feedback**: Globally shared parameters effectively regularize the small-data regime and capture medium-range structure, producing stable high accuracy; however, the high gate-to-parameter ratio limits parameter efficiency.
+**Program Identifier:** Generation 44 - Patch Name shared_mix_tunable_midlinks - Correct Program: True
+
+**Program Name: 8-Qubit Globally-Tied Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit of depth 30 and 168 gates, applying two shared trainable parameters (“global_mix” for RY layers and “global_tilt” for XX and RX layers) across repeated RY mixing, CZ entanglement, XX tilts, and RX mixer stages.  
+- **Performance**: Achieves a combined score of 0.69 with perfect training accuracy (1.00), 95% validation accuracy, 96% test accuracy, and a small generalization gap of 0.04.  
+- **Feedback**: Global parameter tying provided strong regularization and high parameter efficiency (0.24), while repeated noncommuting interactions maintained expressivity and enabled convergence by step 90 with low loss (0.24) and robust margin metrics.
+**Program Identifier:** Generation 48 - Patch Name shared_xx_medium_links - Correct Program: True
+
+**Program Name: Global-Shared Mixer Quantum Ansatz**  
+- **Implementation**: Defines an eight-qubit circuit with two half-wise shared RY mixer parameters (“global_mix_a” on qubits 0–3, “global_mix_b” on qubits 4–7), three fixed CZ entangling layers at distances 1, 2, and 4, and a final globally shared RX tilt mixer, delegating execution to a backend.  
+- **Performance**: Achieved a combined score of 0.0.  
+- **Feedback**: The heavily parameter-shared structure and rigid entangling pattern limited expressivity, and the program failed all validation tests, pointing to specification or integration errors in the ansatz.
+**Program Identifier:** Generation 49 - Patch Name split_mixer_fixed_links - Correct Program: False
+
+**Program Name: Multiscale CZ-RY-RX Ansatz**
+- **Implementation**: Defines an 8-qubit circuit with two global rotation parameters (global_mix on RY layers, global_tilt on RX layers) interleaved with CZ entangling layers at distances 4, 2, and 1 in a butterfly multiscale pattern, yielding a 16-depth, 84-gate ansatz with heavy parameter sharing.  
+- **Performance**: Achieved a combined score of 0.73 with train/validation/test accuracies of 1.00/0.98/0.98, a 0.02 generalization gap, 4 total parameters (2 distinct), and convergence in 60 steps.  
+- **Feedback**: The hierarchical CZ structure and global parameter-sharing deliver high accuracy and minimal overfitting, but parameter efficiency is modest (0.25) and a worst-group margin of 0.35 indicates some vulnerability to edge-case distributions.
+**Program Identifier:** Generation 50 - Patch Name frontload_long_range_entanglement - Correct Program: True
+
+**Program Name: Global-Mixer Butterfly Quantum Ansatz**  
+- **Implementation**: This 8-qubit ansatz applies globally tied RY mixers, distance-1 and distance-4 CZ butterfly layers, shared CRZ phase rotations and RX readout mixers, yielding 4 trainable parameters (2 distinct) in an 18-depth, 90-gate circuit.  
+- **Performance**: It achieves a combined score of 0.50 with perfect training accuracy, 0.79 validation and 0.81 test accuracy (0.19 generalization gap) and a parameter efficiency of 0.20.  
+- **Feedback**: Parameter tying effectively regularizes the small-data regime and captures medium-range correlations with minimal trainable angles, though the high gate count and depth could impact scalability.
+**Program Identifier:** Generation 51 - Patch Name tie_phase_to_tilt - Correct Program: True
+
+**Program Name: Single-Parameter Multiscale Ansatz**
+- **Implementation**: Defines an 8-qubit variational circuit where a single shared rotation angle parameterizes all RY and RX gates, interleaved with three layers of CNOT entangling operations at long-, intermediate-, and local-range scales.
+- **Performance**: Combined score to maximize: 0.0; does not pass validation tests.
+- **Feedback**: The use of one shared angle enforces a strong low-capacity bias that restricts expressibility and prevents the ansatz from fitting the data, indicating a need for additional independent parameters or alternative gate structures.
+**Program Identifier:** Generation 53 - Patch Name shared_parity_mixer - Correct Program: False
+
+**Program Name: Staggered Shared-Parameter 8-Qubit Ansatz**  
+- **Implementation**: The circuit applies two global parameters (“global_mix” via RY rotations and “global_tilt” via RX rotations) in a staggered even-odd mixing pattern, interleaved with CZ entangling gates first within four-qubit partitions and then across circuit halves, yielding a depth-16, 84-gate ansatz with just two distinct parameters.  
+- **Performance**: Achieves a combined score of 0.73 with 1.00 train, 0.99 validation, and 0.98 test accuracies, a 0.01 generalization gap, and a parameter efficiency of 0.25.  
+- **Feedback**: The staggered entanglement and heavy parameter sharing drive high accuracy and strong generalization with minimal trainable parameters, though the extremely low distinct-parameter count may constrain expressivity on more complex problems.
+**Program Identifier:** Generation 54 - Patch Name parity_staggered_butterfly - Correct Program: True
+
+**Program Name: Multiscale 8-Qubit Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with shared RY mixers on each half, hierarchical CZ entanglers at distances 4, 2, and 1, and half-specific RX tilts using three global parameters (“global_mix”, “tilt_left”, “tilt_right”). All other training, input encoding, and measurement logic is fixed in an external backend.  
+- **Performance**: Achieved a combined score of 0.0, failing all validation tests.  
+- **Feedback**: The aggressive parameter sharing and rigid entanglement layering broke validation, likely due to missing or mis-specified parameterization in two-qubit gates and insufficient expressivity for the fixed training pipeline.
+**Program Identifier:** Generation 56 - Patch Name split_half_tilts - Correct Program: False
+
+**Program Name: Global-Symmetric Multiscale CZ Ansatz**  
+- **Implementation**: Applies a single global rotation parameter via RY then RX on all eight qubits, interleaved with a three-scale butterfly network of CZ gates to entangle qubits.  
+- **Performance**: Combined score 0.75 with 100% training accuracy, 98% validation/test accuracy, 0.02 generalization gap, depth 15, 84 gates, and 3 parameters (1 distinct).  
+- **Feedback**: Reusing one parameter across non-commuting rotations enforces symmetry and yields high parameter efficiency (0.33) and strong generalization, while the multiscale CZ pattern provides sufficient entanglement to converge in ≈60 steps without overfitting.
+**Program Identifier:** Generation 57 - Patch Name single_angle_butterfly - Correct Program: True
+
+**Program Name: Global-mix Butterfly Ansatz**
+
+- **Implementation**: Defines an 8-qubit ansatz using a single shared parameter (“global_mix”) for RY/RX rotations on all wires, interleaved with CZ entangling gates at distances 1, 2, and 4 in a butterfly pattern, and repeats the full mixing–entanglement stage twice to increase depth without adding parameters.
+- **Performance**: Achieves a combined score of 0.75 with 100% train accuracy, ~99% validation/test accuracy, a tiny generalization gap (0.01), 168 gates over depth 30, and only 3 total parameters (1 distinct), converging in ~60 steps.
+- **Feedback**: Global parameter tying strongly regularizes the model for small-data settings, yielding high parameter efficiency and expressive entanglement, though the worst-group margin (0.34) indicates potential subgroup performance variability.
+**Program Identifier:** Generation 52 - Patch Name tie_global_angles - Correct Program: True
+
+**Program Name: Multiscale Global-Tilt 8-Qubit Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with two shared parameters (“global_mix” for RY mixers and “global_tilt” for XX and RX rotations), interleaving long-range CZ gates, transverse XX layers, and local CZ couplings in a 16-layer depth.  
+- **Performance**: Achieved a combined score of 0.73 with perfect training (1.00), 0.98 validation and 0.99 test accuracies, a 0.01 generalization gap, and 0.25 parameter efficiency over 84 gates.  
+- **Feedback**: Using only two distinct parameters provides strong expressivity and rapid convergence (~60 steps) with minimal overfitting, though a worst-group margin of 0.34 indicates room to improve robustness on edge cases.
+**Program Identifier:** Generation 55 - Patch Name transverse_distance2 - Correct Program: True
+
+**Program Name: Globally Tied Butterfly Ansatz**
+- **Implementation**: Constructs an 8-qubit circuit using just two shared parameters—“global_mix” for RY mixers on every qubit and “global_tilt” for both XX interactions and final RX mixers—interleaved with distance-1 and distance-4 CZ butterfly layers plus extra CZ links.  
+- **Performance**: Combined score to maximize: 0.0; fails all validation tests.  
+- **Feedback**: Overly aggressive parameter sharing limits expressiveness and leads to incorrect behavior under validation; introducing additional independent parameters or refining the entangling pattern may be necessary to pass tests and boost performance.
+**Program Identifier:** Generation 59 - Patch Name shared_transverse_coupling - Correct Program: False
+
+**Program Name: Symmetric Butterfly Quantum Ansatz**  
+- **Implementation**: Defines an 8-qubit variational circuit with a global RY mixer, fixed multiscale CZ “butterfly” entanglement, half-partitioned RX tilts, and a repeated CZ/RY/RX block with shared parameters to limit trainable degrees of freedom. Execution is delegated to a backend via a simple `run_experiment(ANSATZ_SPEC)` wrapper.  
+- **Performance**: Combined score: 0.0.  
+- **Feedback**: The rigid symmetry priors and absence of parameterized two-qubit gates severely limit expressivity, and the ansatz specification fails validation tests—likely due to unmet format or gate-usage constraints—resulting in no measurable performance.
+**Program Identifier:** Generation 60 - Patch Name single_block_half_tilts - Correct Program: False
+
+**Program Name: Single-Parameter Staggered CZ Ansatz**  
+- **Implementation**: Defines an 8-qubit circuit with RY mixers on alternating wires using one global trainable angle, three layers of CZ entanglers (local pairs, next-nearest neighbors, cross-half connections), and final RX rotations reusing the same angle on all qubits.  
+- **Performance**: Combined score of 0.0; fails to pass validation tests.  
+- **Feedback**: Using only a single trainable parameter severely limits expressivity and learning capacity, and although the staggered CZ layering provides structured entanglement, the lack of parameter diversity prevents the ansatz from fitting the target data.
+**Program Identifier:** Generation 62 - Patch Name staggered_shared_butterfly - Correct Program: False
+
+**Program Name: 8-Qubit Symmetric Butterfly Mixer Ansatz**  
+- **Implementation**: This ansatz employs four tied parameters—global RY mixers (global_mix, mix_even/odd) and global RX “tilt”—interleaved with a repeated butterfly CZ entangling pattern across an 8-qubit register, yielding a 30-depth, 168-gate circuit.  
+- **Performance**: Achieved a combined score of 0.71 with perfect training and validation accuracy (1.00), near-perfect test accuracy (0.99), a minimal generalization gap (0.01), and high parameter efficiency (0.17).  
+- **Feedback**: Globally tying mixer parameters and using a structured butterfly entangling layout drove strong accuracy and generalization with only four distinct trainable parameters, though the moderate circuit depth and gate count may pose challenges for scaling to larger qubit counts.
+**Program Identifier:** Generation 58 - Patch Name economical_d2_d4_d1_butterfly - Correct Program: True
+
+**Program Name: Global Multiscale Mixer Ansatz**  
+- **Implementation**: Designed an 8-qubit circuit that uses a single global mixer parameter applied via RY and RX rotations, interleaved with CZ entangling layers arranged in a hierarchical (distance-4, 2, 1) pattern to rapidly distribute correlations.  
+- **Performance**: Achieved a combined score of 0.77 with 1.00 train accuracy, 0.99 validation/test accuracy, a 0.01 generalization gap, 3 parameters (1 distinct), depth 16, 84 gates, and convergence in 30 steps.  
+- **Feedback**: The reuse of one strongly regularized parameter drives fast convergence and near-perfect accuracy but may cap expressivity; the multiscale CZ network effectively builds nonlocal correlations, supporting robust generalization.
+**Program Identifier:** Generation 61 - Patch Name retie_global_axes - Correct Program: True
+
+**Program Name: Global Mixer CZ Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz using a single shared parameter `"global_mix"` for RY and RX mixers, interleaved with CZ layers arranged in distance-1, 2, and 4 “butterfly” patterns, followed by a parameter-free long-range CZ echo.  
+- **Performance**: Combined score 0.0; does not pass validation tests.  
+- **Feedback**: Reusing a single global parameter overly constrains expressivity and may violate validation requirements, leading to an invalid circuit specification and zero performance.
+**Program Identifier:** Generation 63 - Patch Name single_angle_long_range_echo - Correct Program: False
+
+**Program Name: Single-Parameter Hierarchical Parity Ansatz**
+- **Implementation**: Constructs an 8-qubit circuit with three layers of CNOT “echoes” at distances 1, 2, and 4, interleaved with RY rotations, and concludes with RX rotations; all parameterized by a single shared `global_angle`. The `run_experiment` function simply passes this fixed ansatz spec to the backend.  
+- **Performance**: Combined score of 0.0; does not pass validation.  
+- **Feedback**: Sharing one angle across all gates severely under-parameterizes the circuit, preventing effective learning, and the implementation fails required validation checks.
+**Program Identifier:** Generation 64 - Patch Name tied_parity_echo - Correct Program: False
+
+**Program Name: Global-Mix Multiscale Quantum Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with two shared parameters (“global_mix” for RY/RX layers and “global_link” for CRZ links) interleaved with fixed CZ couplings; single-qubit gates use a “wire” key while two-qubit gates use “wires.”  
+- **Performance**: Combined score = 0.0 (does not pass validation).  
+- **Feedback**: The ansatz structure is conceptually sound but the inconsistent use of “wire” vs. “wires” breaks the expected spec format, causing parser errors; unifying key names and verifying backend requirements should resolve validation failures.
+**Program Identifier:** Generation 66 - Patch Name adaptive_long_range_butterfly - Correct Program: False
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Single Shared “global_mix” Across Non-Commuting Gates  
+  • Global Multiscale Mixer Ansatz (score 0.77) reuses one parameter on all RY and RX rotations (n_distinct_params=1, n_params=3), matching the strong regularization seen in Gen 52 (Global-mix Butterfly, score 0.75) but with fewer blocks.  
+- Hierarchical CZ Entanglement (distances 4→2→1) Front-Loaded  
+  • The current best program’s block orders CZ([0,4]…,[3,7]) → CZ at distance 2 → CZ at distance 1 before applying RX. This “multiscale” layout rapidly builds both long- and short-range correlations and underpins the jump from 0.75 (Gen 52) to 0.77 (Gen 61).  
+- Shallow Single-Block Design for Fast Convergence  
+  • A single RY→CZ4→RY→CZ2→CZ1→RX block (depth 16, 84 gates) converges in 30 steps with 1.00 train / 0.99 val & test accuracy, outperforming deeper repeats (depth 30, 168 gates → ~60 steps in Gen 52).  
+- Combined RY-CZ-RX Block without Repetition  
+  • Dropping block repetition retains expressivity (val/test 0.99) and halves resource usage (depth, gate count) compared to earlier 2-block designs, raising the combined score while keeping the generalization gap minimal (0.01).  
+
+## Ineffective Approaches  
+- Over-Parameterization with Multiple Mixer Angles  
+  • 8-Qubit Symmetric Butterfly Mixer Ansatz (score 0.71) uses four distinct parameters (global_mix, mix_even/odd, global_tilt) and depth 30, but yields lower parameter efficiency (0.17) and score.  
+- Over-Aggressive Parameter Sharing without RX  
+  • Global Mixer CZ Ansatz (score 0.0) tied a single parameter to RY/RX but omitted the RX layer in the proper position, violating expressivity needs and failing validation.  
+- Inconsistent ANSATZ_SPEC Key Usage  
+  • Global-Mix Multiscale Quantum Ansatz (score 0.0) was structurally sound but mixed “wire” vs. “wires,” causing parser errors.  
+- Single-Parameter Echo-Only Layouts  
+  • Single-Parameter Hierarchical Parity Ansatz (score 0.0) stacked CNOT echoes with one RY/RX angle, under-parameterizing the circuit and failing both learning and spec checks.  
+
+## Implementation Insights  
+- Flat List of Dicts in ANSATZ_SPEC  
+  • Every gate as {"gate":…, "wire"/"wires":…, "param":…} passes backend validation. The current best strictly uses this, avoiding inconsistent keys.  
+- Reuse of “global_mix” on RY then RX  
+  • Applying the same parameter first in phase (RY) and later in population (RX) layers introduces non-commutativity for richer expressivity without extra parameters.  
+- Early Long-Range CZ Couplings  
+  • Front-loading distance-4 CZs (e.g., [0,4]) before any RX enhances cross-half entanglement early, as seen in the top-scoring design.  
+- Minimal Block Count  
+  • A single copy of the multiscale block suffices—extra repetition (as in Gen 52) yields diminishing returns relative to added depth.  
+
+## Performance Analysis  
+- Combined Score vs. Block Depth  
+  • Reducing from 2 blocks (score 0.75, depth 30) to 1 block (score 0.77, depth 16) boosted overall performance and halved convergence time (60 → 30 steps).  
+- Gate Count and Convergence  
+  • 84 gates in the current best converge in 30 steps; 168 gates in deeper designs need ~60 steps.  
+- Parameter Efficiency Correlates with Score  
+  • 1 distinct param designs top the leaderboard (0.77, 0.75), whereas ≥2 distinct params cap at ~0.73 or below.  
+- Stable Generalization  
+  • Across top designs, generalization_gap stays at 0.01 and val/test accuracy at 0.99, confirming that the multiscale single-parameter pattern reliably balances expressivity and regularization.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Parameterize only the distance-4 CZs with a second shared angle “global_link.” In your ANSATZ_SPEC, change the four front-loaded CZs on wires [0,4], [1,5], [2,6], [3,7] to  
+   {"gate":"CZ","wires":[…],"param":"global_link"}  
+   leaving all other gates unchanged. This n_distinct=2 variant concentrates extra flexibility on the weakest nonlocal couplings while preserving the single-parameter regularization on the rest of the block.
+
+2. Replace each distance-2 CZ with a controlled-phase rotation CRZ that reuses “global_mix.” Swap  
+   {"gate":"CZ","wires":[…]}  
+   for  
+   {"gate":"CRZ","wires":[…],"param":"global_mix"}  
+   on [0,2],[1,3],[4,6],[5,7]. This adds a continuous mid-range phase degree of freedom under the same strong regularization, testing if richer mesoscopic correlations boost performance without raising n_distinct.
+
+3. Insert a global RZ phase layer immediately after the distance-2 operations. After your four CRZ/CZ mid-scale gates, add eight gates  
+   {"gate":"RZ","wire":i,"param":"global_phase"} for i=0…7  
+   before the distance-1 CZs. This single-parameter layer targets phase adjustments at the mesoscopic scale, building on the successful idea of minimal extra parameters for added expressivity.
+
+4. Append an unparameterized entanglement “echo” of the long-range CZs after the RX layer. After the eight RX‐“global_mix” gates, reapply CZ([0,4],[1,5],[2,6],[3,7]) with no “param.” This lightly deepens the circuit (+4 gates) to reinforce global correlations at the end without increasing n_distinct_params, following the observed benefit of entanglement echoes.
+
+5. Decouple the mixing and population axes into two global angles. Leave all RY gates as  
+   {"param":"global_mix"}  
+   but switch every RX to  
+   {"param":"global_tilt"}.  
+   This moves from n_distinct=1 to n_distinct=2, giving separate—but still fully shared—control over phase buildup versus population mixing, a small flexibility boost that has previously tightened the generalization gap.

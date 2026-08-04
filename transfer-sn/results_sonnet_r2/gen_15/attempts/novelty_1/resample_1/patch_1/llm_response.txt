@@ -1,0 +1,28 @@
+<NAME>
+alternating_cz_ring_direction
+
+<DESCRIPTION>
+The current ansatz block uses a fixed forward CZ/CRZ entanglement ring (0-1,1-2,...,7-0) applied identically in every one of the 6 blocks (N_UPLOADS=3 x N_REPEATS=2). Since the block index is available to apply_ansatz_block, we can alternate the direction of the entangling ring between even and odd blocks to mix forward and backward information flow across layers, increasing expressivity without adding any parameters or gates. This is implemented by defining two ring variants in the EVOLVE-BLOCK (ascending and descending CZ/CRZ chains sharing the same param names) and selecting between them based on block_index parity in apply_ansatz_block. Since apply_ansatz_block is outside the evolve block, we instead encode both directions as data and pick using a helper stored inside the evolve block, then reference it from the fixed function via a wrapper list. To keep the change strictly inside the EVOLVE-BLOCK while still affecting per-block behavior, we redefine ANSATZ_SPEC as a function-like structure is not allowed by the schema, so instead we duplicate entangling gates for both directions using CZ gates that are direction-agnostic (CZ is symmetric), and only alternate the CRZ control/target roles, which does change the generated unitary due to the asymmetric role of control vs target in CRZ. This preserves gate count and parameter count exactly while enhancing the entangling structure's diversity.
+
+Since ANSATZ_SPEC itself has no notion of block index, and apply_ansatz_block is fixed (not editable), the practical way to realize "alternate by block index" within the allowed schema is to give the CRZ gates reversed control/target assignments compared to the seed, i.e., changing the entangling ring direction once at the spec level (descending instead of ascending), which still changes the fixed circuit structure applied identically at every block but explores a different entangling topology (right-to-left ring with wraparound) that may better match the fixed feature-map connectivity (FEATURE_PAIRS). This is a low-risk, zero-parameter-count change worth trying as it only permutes wire roles.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_1"},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_2"},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_3"},
+    {"gate": "CZ", "wires": [7, 0]},
+=======
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_0"},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_1"},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_2"},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_3"},
+    {"gate": "CZ", "wires": [0, 7]},
+>>>>>>> REPLACE

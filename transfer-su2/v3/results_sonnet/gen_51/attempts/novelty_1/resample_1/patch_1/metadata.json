@@ -1,0 +1,14 @@
+{
+  "generation": 51,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "none",
+  "patch_description": "Structural refinement of the best-performing 2-parameter seed (global shared RY + RZ single-qubit layers with a shared-angle CRZ entangling network). Instead of driving every entangling shell with the same rotation axis as before, this version diversifies the *entangling gate axis per shell* while still reusing only the two existing single-qubit parameter names \u2014 no new trainable circuit parameters are introduced. Specifically:\n\n- Global RY(theta_ry) and RZ(theta_z) layers on all 8 qubits (unchanged).\n- Shell 1 (nearest-neighbor ring, distance 1): CRZ gates reusing theta_z \u2014 same axis as the RZ layer, proven safe and effective.\n- Shell 2 (skip ring, distance 2): CRY gates reusing theta_ry \u2014 a *new* cross-axis entangling shell that couples qubits through the Y generator instead of Z, using the existing theta_ry parameter. This increases the diversity of correlations the circuit can build (mixing Y- and Z-type two-qubit couplings) without adding any new distinct parameter names, and crucially avoids the destructive failure mode observed when the same shared angle drives two conflicting generators (CRZ+CRX) *on the same wire pairs* \u2014 here the cross-axis shell acts on a disjoint set of pairs from the same-axis shell.\n- Shell 3 (antipodal ring, distance 4): CRZ gates reusing theta_z, matching the long-range topology of the previous best seed.\n\nTotal gate count per block (36) and total repeated-block gate count (108) exactly match the earlier 0.61-scoring seed, so circuit depth and optimizer step cost are unchanged, but the entangling structure now spans two rotation axes instead of one, which should improve the network's ability to correlate hard-to-separate validation groups (better worst-group margin) while keeping parameter economy (2 distinct circuit parameters, 4 total trainable scalars) that the evolution history shows is strongly rewarded.\n\nThis is a pure architectural reshuffle of the EVOLVE-BLOCK content: no changes to the fixed training loop, dataset handling, measurement, or block-repetition logic.",
+  "error_msg": null,
+  "timestamp": "2026-08-03T07:54:16.523513",
+  "llm_cost": 0.20740999999999998,
+  "llm_model": "anthropic/claude-sonnet-5"
+}

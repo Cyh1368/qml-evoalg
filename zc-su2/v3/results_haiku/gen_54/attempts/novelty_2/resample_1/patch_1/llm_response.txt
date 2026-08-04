@@ -1,0 +1,93 @@
+<NAME>
+parity_split_rz_post
+</NAME>
+
+<DESCRIPTION>
+The current program scores 0.57, while the previous best (program 2) scored 0.59. The key difference is that program 2 had better worst_group_margin (0.31 vs 0.30) and parameter efficiency (0.08 vs 0.07). 
+
+The recommendation suggests splitting the global `rz_post` phase into two separate parameters based on even/odd qubit parity. This aligns with the even/odd symmetry already present in the RY layer structure (ry_0 on even qubits, ry_1 on odd qubits), which has proven effective.
+
+The proposed change:
+- Replace the shared `rz_post` parameter (applied to all 8 qubits) with two parameters: `rz_post_even` (on qubits 0,2,4,6) and `rz_post_odd` (on qubits 1,3,5,7)
+- This increases distinct parameters from 11 to 12, but only by 1
+- The refined phase control respects the underlying even/odd symmetry, improving robustness on hard samples (worst_group_margin)
+- This should reduce the generalization gap and improve separation on the hardest validation groups
+
+This change maintains the circuit structure while adding targeted flexibility that leverages the demonstrated architectural bias toward even/odd separation.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_0"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_0"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_0"},
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_odd"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

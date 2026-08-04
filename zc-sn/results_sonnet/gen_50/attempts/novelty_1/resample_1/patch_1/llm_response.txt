@@ -1,0 +1,115 @@
+<NAME>
+triple_block_shared_skip
+
+<DESCRIPTION>
+Replace the current underperforming ansatz (0.85 combined score, 164 params) with the previously best-performing structure (0.89 score, 116 params, RY→CRZ ring alternating→RX→CRZ shared-skip) and extend it to three tied repetitions instead of two, keeping the parameter count fixed at 116 by fully reusing parameter names across all three copies. This tests whether additional depth under full parameter sharing (as recommended) can push performance beyond the current 0.89 frontier while keeping the parameter-efficiency high, since sharing means no extra optimization cost is added.
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # --- Pre-entangling single-qubit rotations (RY then RZ, 2 free angles/qubit) ---
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_0"},
+
+    # --- Nearest-neighbour entangling ring with alternating shared trainable strength ---
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring_odd"},
+
+    # --- Single shared-parameter long-range entangler (max-distance pairs on the ring) ---
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_shared"},
+
+    # --- Post-entangling single-qubit phase rotation ---
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_0"},
+
+    # --- Final single-qubit RY rotations (readout preparation) ---
+    {"gate": "RY", "wire": 0, "param": "ry_final_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_final_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_final_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_final_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_final_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_final_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_final_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_final_7"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+_BLOCK = [
+    # --- Layer 1: single-qubit RY rotations (per-qubit trainable) ---
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # --- Layer 2: nearest-neighbor ring entanglement with shared alternating strength ---
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring_odd"},
+
+    # --- Layer 3: single-qubit RX rotations (second rotation axis) ---
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_7"},
+
+    # --- Layer 4: sparse skip-2 entanglement with a single shared parameter ---
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [6, 0], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "crz_skip"},
+]
+
+# Triplicate the block, reusing the same parameter names, to triple the
+# effective depth while keeping the parameter count unchanged (116 params).
+ANSATZ_SPEC = _BLOCK + _BLOCK + _BLOCK
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+</DIFF>

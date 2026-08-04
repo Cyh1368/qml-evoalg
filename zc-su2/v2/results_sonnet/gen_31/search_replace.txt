@@ -1,0 +1,109 @@
+<NAME>
+dual_diagonal_sandwich_block
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses one entangling block with cross-couplings along one diagonal set ([0,4],[1,5],[2,6],[3,7]). To increase robustness for the hardest validation group without adding any new trainable parameters, we duplicate the entire RY→CNOT→RZ→ZZ(ring+diagonal)→CNOT→RZ block a second time, reusing the exact same four parameter names (ry_a, ry_b, rz_p, zz_ring), but switch the long-range diagonal couplings in the second block to the complementary set ([0,5],[1,6],[2,7],[3,4]). This gives the circuit access to both diagonal connectivity patterns of the qubit register while keeping n_distinct_params=4 (same parameter efficiency score), at the cost of increased depth/gate count. Covering both diagonal directions should improve the worst-group margin (the dominant score term) since the hardest samples may rely on correlations that only one diagonal set captures. This directly follows the given recommendation and mirrors the sandwich motif that already improved margin/generalization in prior iterations (seed2 outperformed seed1 by adding CNOT ladders and diagonal ZZ couplings at zero parameter cost).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE
+=======
+placeholder
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Reuse the same global phase parameter after the entangling ring,
+    # reinforcing the encoding without adding a new trainable name.
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+]
+
+=======
+    # Reuse the same global phase parameter after the entangling ring,
+    # reinforcing the encoding without adding a new trainable name.
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+
+    # --- Second sandwich block: repeats the same structure, reusing all
+    # four parameter names (ry_a, ry_b, rz_p, zz_ring) so n_distinct_params
+    # stays at 4, but switches the long-range diagonal couplings to the
+    # complementary diagonal set to give the circuit access to both
+    # diagonal connectivity patterns of the register.
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+
+    # Complementary diagonal couplings, still sharing the same "zz_ring"
+    # parameter, to cover the other cross-link set not addressed by the
+    # first block.
+    {"gate": "ZZ", "wires": [0, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+
+    {"gate": "CNOT", "wires": [7, 6]},
+    {"gate": "CNOT", "wires": [6, 5]},
+    {"gate": "CNOT", "wires": [5, 4]},
+    {"gate": "CNOT", "wires": [4, 3]},
+    {"gate": "CNOT", "wires": [3, 2]},
+    {"gate": "CNOT", "wires": [2, 1]},
+    {"gate": "CNOT", "wires": [1, 0]},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+]
+
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,121 @@
+<NAME>
+initial_rz_sandwich_chain
+</NAME>
+
+<DESCRIPTION>
+The current program scores 0.87, significantly lower than the prior best (0.91). Analysis of the prior programs reveals:
+
+1. **Prior Program 1 (score 0.91)**: Uses alternating parameter sharing (ry_a, ry_b pairs across all qubits), linear chain CZ entanglement, a mid-circuit RZ sandwich, and reverse chain CRZ gates with 62 parameters.
+
+2. **Prior Program 2 (score 0.91)**: Similar structure but without the mid-circuit RZ sandwich, using only 50 parameters with better convergence (330 steps).
+
+3. **Current Program (score 0.87)**: Uses 4-way parameter grouping (ry_a, ry_b, ry_c, ry_d) with sparse diagonal skip-link topology and only nearest-neighbor chains. This reduced connectivity and increased parameter count (74 params) hurt performance.
+
+**Key observations**:
+- The alternating pair-based sharing (ry_a on qubits 0,2,4,6 + ry_b on 1,3,5,7) significantly outperforms 4-way grouping
+- Linear chain CZ entanglement with full connectivity is superior to sparse skip-link topology
+- The mid-circuit RZ sandwich in Program 1 provides +0.04 accuracy boost with minimal parameter cost (62 vs 50 params)
+- Parameter efficiency matters: fewer well-chosen parameters converge faster
+
+**Proposed solution**:
+Adopt the proven structure from Prior Program 1 (which achieved 0.91) but implement the recommendation for an initial RZ block to seed the optimization landscape. This adds early phase flexibility:
+- Keep the alternating pair-based RY sharing
+- Restore the linear chain CZ topology
+- Add initial RZ seeding on even/odd qubit groups
+- Include the mid-circuit RZ sandwich for enhanced phase control
+- Use the proven reverse chain CRZ pattern
+
+This combines the best practices: parameter-efficient alternating sharing, proven linear-chain entanglement, and layered phase control through initial + mid + post RZ blocks.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial seeding RZ block on alternating qubit groups
+    # Provides early phase flexibility to smooth optimization landscape
+    {"gate": "RZ", "wire": 0, "param": "rz_init_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_init_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_init_a"},
+    {"gate": "RZ", "wire": 6, "param": "rz_init_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_init_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_init_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_init_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_init_b"},
+    # Shared initial RY rotations - pairs of qubits share parameters
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    # Shared pre-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    # Linear chain CZ gates (proven topology)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Mid-circuit RZ sandwich for enhanced phase flexibility
+    # Two shared parameters on alternating qubit groups
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_b"},
+    # Reverse chain with parametrized CRZ gates for enhanced expressivity
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

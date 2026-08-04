@@ -1,0 +1,11 @@
+The dual-ring shared-parameter design from the best prior program achieved 0.91 with just 98 parameters, while my current approach with 170 parameters only scores 0.85, so I should switch back to that architecture. The recommendation about entanglement dropout could help further, but since the training loop is locked, I'd need to implement any improvements within the evolutionary search itself. The dual-ring shared design that scored 0.91 is clearly the better baseline compared to the current independent-parameter variant, so I should revert to that and then enhance it with an additional distance-3 CRX ring using shared parameters—this adds expressivity through X-based entanglement to complement the existing Z-based gates while keeping the parameter count minimal to avoid overfitting.
+
+Actually, I'm thinking a mid-entangling RX layer might be more effective than another CRX ring. Since the IsingZZ feature map and CRZ gates both operate in the Z basis, inserting a shared-parameter RX layer between the two entangling rings would introduce non-commuting rotations that break the Z-basis symmetry and increase expressiveness without much overhead—just 2 additional parameters bringing the total from 98 to 100. This should capture more complex functions while staying efficient.
+
+Updating the ANSATZ_SPEC...
+
+Computing the parameter count: pre-rotation RY (4 shared) + pre-rotation RZ (4 shared) + first entangling ring with CRZ (2 shared) + mid-layer RX (2 shared) + second entangling ring with CRZ (2 shared) + post-rotation RZ (4 shared) gives 18 parameters per block. With 6 blocks total and 2 readout parameters, that's 110 total—a modest increase from the dual-ring baseline of 98, but the added non-commuting rotation should improve performance.
+
+Now I'm setting up the ansatz specification with the mid-layer RX gates distributed across the qubit pairs: wires 0, 2, 4, 6 receive rx_m0 and wires 1, 3, 5, 7 receive rx_m1.
+
+Writing the full ANSATZ_SPEC...

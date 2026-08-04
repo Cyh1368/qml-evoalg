@@ -1,0 +1,92 @@
+# Analysis
+
+Looking at the prior programs and current performance:
+
+**Prior Program 2 (Best):** Score 0.58
+- n_distinct_params: 10
+- test_accuracy: 0.96
+- worst_group_margin: 0.28
+- convergence_step: 150
+- No mid-circuit structure, clean parity-alternating ry_0/ry_1 pattern
+
+**Current Program:** Score 0.50
+- n_distinct_params: 11 (added crz_diag)
+- test_accuracy: 0.84 (worse!)
+- worst_group_margin: 0.30 (slightly better)
+- convergence_step: 510 (much slower!)
+- generalization_gap: 0.16 (much worse!)
+
+The current program has **degraded** from the best prior result. The problem is:
+1. Added 4 CRZ gates with shared param "crz_diag" → n_distinct increased to 11
+2. This hurt generalization (gap went from 0.04 to 0.16)
+3. Convergence is 3x slower (510 vs 150 steps)
+4. Test accuracy dropped significantly (0.96 to 0.84)
+
+**Key insight from the recommendation:** Insert a mid-circuit parity-swapped RY+shared RZ layer AFTER the XX/YY/ZZ block and BEFORE the final rz_post. This should:
+- Add expressivity through a mirrored parity structure
+- Add only ONE new distinct parameter (rz_mid)
+- Keep distinct parameter count at or near 10
+- Improve worst_group_margin by better handling hard samples
+
+The recommendation suggests:
+- RY gates with alternating ry_1 (even wires) and ry_0 (odd wires) [parity-swapped from initial]
+- Single RZ(rz_mid) on all wires
+
+This is more elegant than the CRZ approach and aligns with what worked in Prior Program 2.
+
+<NAME>
+midcircuit_parity_swapped_ry_rz
+</NAME>
+
+<DESCRIPTION>
+The current program added CRZ gates that increased n_distinct_params to 11 and degraded performance (score 0.50 vs prior 0.58). Instead of controlled gates, insert a mid-circuit parity-swapped RY layer followed by a shared RZ gate, mirroring the proven parity-alternating structure from Prior Program 2 but with the parity roles reversed mid-circuit.
+
+This approach:
+1. Adds only ONE new distinct parameter (rz_mid), keeping the parameter count lean
+2. Provides mid-circuit expressivity and potential information mixing
+3. Uses the same proven parity pattern that worked well in Prior Program 2
+4. Removes the problematic CRZ gates to restore generalization
+
+The insertion point is after the XX/YY/ZZ blocks and before the final rz_post gates, creating a natural "breathing" point in the circuit with symmetry.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "CRZ", "wires": [0, 5], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [1, 6], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [2, 7], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_diag"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+=======
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_0"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_0"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_0"},
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+>>>>>>> REPLACE
+
+</DIFF>

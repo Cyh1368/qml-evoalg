@@ -1,0 +1,79 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name:** Tic-Tac-Toe QML Ansatz Classifier  
+- **Implementation:** Features are encoded via RX rotations; the ansatz consists of per-qubit RY–RZ layers with CZ entanglement over grid edges, repeated twice per upload for three uploads, using batched QNode calls and validation-loss early stopping.  
+- **Performance:** Achieved mean test accuracy 0.59 with a generalization gap of 0.05 and combined score 0.58 using 162 parameters.  
+- **Feedback:** The structured RY–RZ–CZ ansatz yields only moderate accuracy and very low parameter efficiency, suggesting limited expressivity for tic-tac-toe classification. Batch broadcasting improved simulation throughput, but the convergence threshold was not reached within the epoch cap.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Structured Triple-Gate Tic-Tac-Toe QNN**  
+- **Implementation**: A 9-qubit Pennylane QNN encodes board states via RX feature rotations and applies three uploads of a two-repeat ansatz block combining shared pre/post-entanglement RZ, individual RY, CZ grid entanglers, eight ZZZ MultiRZ gates on winning lines and two CCRZ rotations, totaling 150 parameters, trained with Adam and validation-loss early stopping on an L2 expectation-based loss.  
+- **Performance**: Achieves a combined score of 0.59 with train/validation/test accuracies of 65%/64%/58% and a generalization gap of 0.07.  
+- **Feedback**: Despite embedding game-structured three-qubit motifs, parameter efficiency is essentially zero and accuracy plateaus around 58% on test data, suggesting limited expressive benefit from the structured ZZZ/CCRZ gates; training is stable (zero std) but yields only moderate performance.
+**Program Identifier:** Generation 5 - Patch Name winline_three_qubit_expressivity - Correct Program: True
+
+**Program Name: Motif-Discovery Tic-Tac-Toe QML Ansatz**
+- **Implementation**: A nine-qubit PennyLane classifier with three data re-uploadings and two ansatz repeats, featuring symmetry-grouped RY/RZ rotations, motif-based three-qubit ZZZ interactions on all eight winning lines, grid CZ entanglement, validated ansatz specification, batch-broadcasted circuit execution, and autograd backprop L2 training on balanced tic-tac-toe boards.  
+- **Performance**: Achieves mean train/validation/test accuracies of 0.62/0.58/0.58, a 0.04 generalization gap, L2 loss ≈2.3, parameter efficiency 0.01, combined score 0.58 with 54 parameters, 87-depth, and 255 gates.  
+- **Feedback**: Three-qubit motifs correctly integrated but delivered only moderate accuracy, suggesting limited expressivity; early stopping on validation loss and class-balanced sampling ensured stable convergence yet performance plateaued.
+**Program Identifier:** Generation 6 - Patch Name motif_symmetry_ansatz - Correct Program: True
+
+**Program Name: Tic-Tac-Toe QML Ansatz with 3-Qubit Motifs**  
+- **Implementation**: Uses Pennylane to encode tic-tac-toe boards via RX feature maps, applies symmetry-shared RY/RZ rotations on corners, edges, and center, entangles grid edges with CZ gates, and embeds domain-inspired parametrized ZZZ interactions on all eight winning lines across three uploads and two repeats; training employs Adam optimization with validation-loss early stopping and balanced class sampling.  
+- **Performance**: Achieved validation accuracy 0.59 and test accuracy 0.56 (generalization gap 0.03) with 84 parameters, circuit depth 88, gate count 255, and combined score 0.59.  
+- **Feedback**: Domain-motivated triple-gate motifs modestly encoded winning lines but yielded only slight accuracy gains, resulting in low parameter efficiency; the small generalization gap indicates good overfitting control but highlights limited expressivity of the current ansatz.
+**Program Identifier:** Generation 7 - Patch Name enhanced_ansatz_with_structured_entanglement - Correct Program: True
+
+**Program Name: Motif-Targeted 9-Qubit Tic-Tac-Toe Ansatz**  
+- **Implementation**: Defines a 9-qubit Pennylane QNN with three uploads and two repeats per upload. Each block applies per-qubit RY, shared RZ rotations, CZ entanglement on grid edges, shared CRZ between center and neighbors, and shared ZZZ three-qubit rotations on all eight winning lines, capped by a final shared RZ.  
+- **Performance**: Combined score 0.55 with train/validation accuracy of 0.56, test accuracy of 0.49, generalization gap of 0.07, using 78 parameters in a 118-depth, 333-gate circuit.  
+- **Feedback**: The specialized ZZZ motif layers increased expressivity and depth but yielded low parameter efficiency (0.01) and did not boost test performance, indicating limited generalization benefit from the three-qubit motifs.
+**Program Identifier:** Generation 12 - Patch Name shared-triplet-motif-block - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+- Structured three-qubit motifs on tic-tac-toe winning lines (ZZZ) combined with a few targeted doubly-controlled RZ rotations (CCRZ) yielded the top combined score of 0.59 (train 0.65/val 0.64/test 0.58, gap 0.07). This is the Configuration-5 “Structured Triple-Gate Tic-Tac-Toe QNN” and matches the current best seed run.
+- Pre- and post-entanglement RZ layers with symmetry-based parameter sharing (corners, edges, center) stabilized training across uploads and repeats without bloating parameter count (150 total) and contributed to zero stddev in accuracies.
+- Three data re-uploads with two ansatz repeats each provided consistent feature re-injection that differentiated high-scoring architectures (Generation 5/current best) from single-upload designs, enabling deeper interaction patterns without overfitting.
+- Batch broadcasting of the QNode over the sample dimension (7× speedup on default.qubit/backprop) was critical for reaching convergence thresholds in reasonable time, ensuring stable loss trajectories in the best program.
+
+## Ineffective Approaches
+
+- Purely motif-based ZZZ layers without selective CCRZ controls (Generation 6 “Motif-Discovery Tic-Tac-Toe QML Ansatz”) plateaued at combined score 0.58 (train 0.62/val 0.58/test 0.58, gap 0.04) despite only 54 parameters, indicating ZZZ alone lacks sufficient expressivity.
+- Adding excessive depth and gates (Generation 12 “Motif-Targeted” with 118 depth/333 gates) degraded test accuracy to 0.49 (combined 0.55), showing that unpruned motif layers can harm generalization.
+- Simply increasing parameter count (Generation 0 with 162 params) did not improve beyond a 0.58 combined score, highlighting that more parameters without targeted three-qubit structure is wasteful.
+- Over-entangling via full grid-edge CZs plus all possible triple-gate permutations (without domain guidance) led to vanishing parameter efficiency (≈0.00) and no test-score gains in several variants.
+
+## Implementation Insights
+
+- Leveraging qml.MultiRZ for ZZZ interactions and qml.ctrl(qml.RZ) for CCRZ integrates seamlessly with backprop, enabling efficient gradient flow through three-qubit gates (as in the best program’s ANSATZ_SPEC).
+- Grouping RZ parameters by qubit symmetry (corners, edges, center) reduced the per-block key count from a potential 9+9 to 3+9+3, striking a balance between expressivity and overparameterization.
+- The generic `apply_ansatz_block` pattern with a central `PARAMETER_KEYS_PER_BLOCK` lookup and block-index offsets simplified extending the gate vocabulary (single, two-qubit, and three-qubit) without altering the training loop.
+- Broadcasting the input batch into a single QNode call (`circuit_z_expectations`) and then reshaping outputs allowed ~7× faster throughput, making routines like early-stopping and frequent evaluation practicable on CPU simulators.
+
+## Performance Analysis
+
+- Across seven evaluated programs, the maximum test accuracy clustered tightly at ~0.58–0.59; only the structured triple-gate variant reached 0.58 with no stddev, underlining its stability.
+- Generalization gaps ranged from 0.03 (Generation 7) to 0.07 (current best and some others); the best balance of test accuracy and gap was still the structured ZZZ+CCRZ design despite its slightly higher gap.
+- Parameter efficiency was effectively zero for all high-param designs (78–162 params), with only the 54-parameter motif-only model reaching 0.01—but at the cost of worse overall accuracy.
+- Depth beyond ~100 layers (Operations >300) correlated with performance drops; the current best’s depth of 106 and gate count of 321 sat at a “sweet spot” before over-entanglement degraded generalization.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Introduce targeted two-qubit CRZ entanglers on the high-leverage edge-center pairs. In your ANSATZ_SPEC, replace the fixed CZ gates on wires [1, 8] and [5, 8] with parametrized CRZ operations (qml.CRZ) using two new keys (e.g. “crz_edge_pair1” shared between [1, 8] & [5, 8], and “crz_edge_pair2” shared between [3, 8] & [7, 8]). This adds mid-level conditional rotations exactly where three-qubit CCRZs proved powerful, without a big depth penalty.  
+
+2. Test replacing low-impact ZZZ motifs with CCRZ controls on non-central winning lines. Swap out the “zzz_bottom” ([6, 5, 4]) and “zzz_right” ([2, 3, 4]) MultiRZ blocks for doubly-controlled RZs (qml.ctrl(qml.RZ)) parameterized by “ccrz_bottom” and “ccrz_right.” This probes whether selective three-qubit controls can outperform uniform ZZZ on less critical lines.  
+
+3. Apply symmetry-based parameter sharing to all CCRZ gates. Merge your existing “ccrz_corner_center_main” and “ccrz_corner_center_anti” into a single key (e.g. “ccrz_diag_shared”), and map it to both diagonal triples ([0, 4, 8] and [2, 6, 8]). Reducing CCRZ parameter count in this way echoes the success of the corner/edge/center RZ grouping and should improve parameter efficiency.  
+
+4. Explore deeper local repeats by increasing N_REPEATS from 2 to 3. Keep N_UPLOADS=3 and the current ANSATZ_SPEC, but set N_REPEATS=3 so each upload has three ansatz blocks. Monitor the resulting circuit depth (aiming to stay near the ~100–120 sweet spot) to see if the extra repeat yields gains without triggering over-entanglement.  
+
+5. Augment your triple-gate vocabulary with X-basis entanglers on winning lines. For each WIN_LINES triple, insert a new block in ANSATZ_SPEC that wraps a ZZZ MultiRZ with Hadamard gates on its wires (i.e. H on each qubit, MultiRZ(angle_xxx), H on each qubit), using new shared keys like “xxx_top”, “xxx_diag”, etc. This introduces complementary XXX-type interactions and tests whether axis-diverse three-qubit rotations can further boost generalization.

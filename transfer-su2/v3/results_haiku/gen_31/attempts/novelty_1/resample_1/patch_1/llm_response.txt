@@ -1,0 +1,382 @@
+<NAME>
+cyclic_entangler_pattern_diversity
+</NAME>
+
+<DESCRIPTION>
+The recommendation to break the strict 3× repetition symmetry is sound and well-motivated. The current program applies an identical ansatz block 3 times, which can lead to overfitting on small training sets and poor generalization on held-out difficult samples (as evidenced by the worst_group_margin dropping to 0.26).
+
+By introducing three block variants (A, B, C) that cyclically permute the two-qubit gate wiring while sharing all rotation parameters, we achieve:
+
+1. **Entangler-pattern diversity without parameter inflation**: The same parameter values are reused (no extra trainable parameters), but the gate connectivity changes per repetition. This breaks symmetry and helps the circuit learn more diverse feature representations.
+
+2. **Improved worst-case margin**: The prior program with 12 distinct params achieved worst_group_margin of 0.31 on the best run (0.54 combined score), suggesting that richer connectivity patterns help. Cyclic permutation of YY and ZZ pairs is a principled way to increase this diversity.
+
+3. **Better generalization with fewer parameters**: The current program has 9 distinct params but lower worst_group_margin (0.26), indicating the entanglement structure is too rigid. Permuting wiring keeps the structure but diversifies application.
+
+The strategy:
+- Define three block builders that each shift the YY and ZZ pair indices by a different offset modulo 8.
+- Block A uses the original wiring.
+- Block B shifts each diagonal by +1 (mod 8).
+- Block C shifts each diagonal by +2 (mod 8).
+- Rotation and phase layers remain identical across all three blocks.
+- Apply blocks in sequence [A, B, C] instead of repeating the same block thrice.
+
+This introduces controlled diversity that should reduce overfitting and improve the worst-case margin metric, which is the dominant scoring factor for robust separation.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_rotation_layer() -> list[dict]:
+    """Build initial RY layer with even/odd parameter sharing."""
+    return [
+        {"gate": "RY", "wire": 0, "param": "ry_even"},
+        {"gate": "RY", "wire": 1, "param": "ry_odd"},
+        {"gate": "RY", "wire": 2, "param": "ry_even"},
+        {"gate": "RY", "wire": 3, "param": "ry_odd"},
+        {"gate": "RY", "wire": 4, "param": "ry_even"},
+        {"gate": "RY", "wire": 5, "param": "ry_odd"},
+        {"gate": "RY", "wire": 6, "param": "ry_even"},
+        {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    ]
+
+
+def _build_nn_entanglement_layer() -> list[dict]:
+    """Build nearest-neighbor XX entanglement with shared parameters."""
+    return [
+        {"gate": "XX", "wires": [0, 1], "param": "xx_near"},
+        {"gate": "XX", "wires": [2, 3], "param": "xx_near"},
+        {"gate": "XX", "wires": [4, 5], "param": "xx_near"},
+        {"gate": "XX", "wires": [6, 7], "param": "xx_near"},
+    ]
+
+
+def _build_mid_range_entanglement_layer() -> list[dict]:
+    """Build mid-range XX entanglement with shared parameters."""
+    return [
+        {"gate": "XX", "wires": [1, 2], "param": "xx_far"},
+        {"gate": "XX", "wires": [3, 4], "param": "xx_far"},
+        {"gate": "XX", "wires": [5, 6], "param": "xx_far"},
+    ]
+
+
+def _build_phase_layer() -> list[dict]:
+    """Build RZ phase layer with even/odd parameter sharing."""
+    return [
+        {"gate": "RZ", "wire": 0, "param": "rz_even"},
+        {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 2, "param": "rz_even"},
+        {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 4, "param": "rz_even"},
+        {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 6, "param": "rz_even"},
+        {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    ]
+
+
+def _build_cross_layer_coupling() -> list[dict]:
+    """Build cross-layer YY coupling for expressivity."""
+    return [
+        {"gate": "YY", "wires": [1, 3], "param": "yy_cross_a"},
+        {"gate": "YY", "wires": [4, 6], "param": "yy_cross_a"},
+    ]
+
+
+def _build_long_range_coupling() -> list[dict]:
+    """Build long-range diagonal ZZ coupling."""
+    return [
+        {"gate": "ZZ", "wires": [0, 3], "param": "zz_diag"},
+        {"gate": "ZZ", "wires": [4, 7], "param": "zz_diag"},
+    ]
+
+
+def _build_crz_cross_layer() -> list[dict]:
+    """Build sparse CRZ cross-layer for phase correlation on diagonals."""
+    return [
+        {"gate": "CRZ", "wires": [1, 3], "param": "crz_cross"},
+        {"gate": "CRZ", "wires": [5, 7], "param": "crz_cross"},
+    ]
+
+
+# Assemble the complete ansatz from layers
+ANSATZ_SPEC = (
+    _build_rotation_layer()
+    + _build_nn_entanglement_layer()
+    + _build_phase_layer()
+    + _build_cross_layer_coupling()
+    + _build_crz_cross_layer()
+    + _build_mid_range_entanglement_layer()
+    + _build_long_range_coupling()
+)
+=======
+def _build_rotation_layer() -> list[dict]:
+    """Build initial RY layer with even/odd parameter sharing."""
+    return [
+        {"gate": "RY", "wire": 0, "param": "ry_even"},
+        {"gate": "RY", "wire": 1, "param": "ry_odd"},
+        {"gate": "RY", "wire": 2, "param": "ry_even"},
+        {"gate": "RY", "wire": 3, "param": "ry_odd"},
+        {"gate": "RY", "wire": 4, "param": "ry_even"},
+        {"gate": "RY", "wire": 5, "param": "ry_odd"},
+        {"gate": "RY", "wire": 6, "param": "ry_even"},
+        {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    ]
+
+
+def _build_nn_entanglement_layer() -> list[dict]:
+    """Build nearest-neighbor XX entanglement with shared parameters."""
+    return [
+        {"gate": "XX", "wires": [0, 1], "param": "xx_near"},
+        {"gate": "XX", "wires": [2, 3], "param": "xx_near"},
+        {"gate": "XX", "wires": [4, 5], "param": "xx_near"},
+        {"gate": "XX", "wires": [6, 7], "param": "xx_near"},
+    ]
+
+
+def _build_phase_layer() -> list[dict]:
+    """Build RZ phase layer with even/odd parameter sharing."""
+    return [
+        {"gate": "RZ", "wire": 0, "param": "rz_even"},
+        {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 2, "param": "rz_even"},
+        {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 4, "param": "rz_even"},
+        {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 6, "param": "rz_even"},
+        {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    ]
+
+
+def _build_cyclic_entanglement_block(offset: int) -> list[dict]:
+    """Build cyclic-shifted YY and ZZ entanglement for pattern diversity.
+    
+    Offset determines the shift of diagonal pairs modulo 8.
+    Offset 0: original wiring [0,3], [4,7] and [1,3], [4,6]
+    Offset 1: shifted by +1 mod 8
+    Offset 2: shifted by +2 mod 8
+    """
+    gates = []
+    # YY cross-layer couplings: shift by offset modulo 8
+    yy_pairs = [(1, 3), (4, 6)]
+    for a, b in yy_pairs:
+        a_shifted = (a + offset) % 8
+        b_shifted = (b + offset) % 8
+        if a_shifted != b_shifted:
+            gates.append({"gate": "YY", "wires": [a_shifted, b_shifted], "param": "yy_cross_a"})
+    
+    # ZZ long-range couplings: shift by offset modulo 8
+    zz_pairs = [(0, 3), (4, 7)]
+    for a, b in zz_pairs:
+        a_shifted = (a + offset) % 8
+        b_shifted = (b + offset) % 8
+        if a_shifted != b_shifted:
+            gates.append({"gate": "ZZ", "wires": [a_shifted, b_shifted], "param": "zz_diag"})
+    
+    # CRZ sparse layer: shift by offset modulo 8
+    crz_pairs = [(1, 3), (5, 7)]
+    for a, b in crz_pairs:
+        a_shifted = (a + offset) % 8
+        b_shifted = (b + offset) % 8
+        if a_shifted != b_shifted:
+            gates.append({"gate": "CRZ", "wires": [a_shifted, b_shifted], "param": "crz_cross"})
+    
+    return gates
+
+
+# Assemble the complete ansatz with three cyclic block variants
+ANSATZ_SPEC = (
+    _build_rotation_layer()
+    + _build_nn_entanglement_layer()
+    + _build_phase_layer()
+    + _build_cyclic_entanglement_block(0)  # Block variant A (original)
+    + _build_rotation_layer()
+    + _build_nn_entanglement_layer()
+    + _build_phase_layer()
+    + _build_cyclic_entanglement_block(1)  # Block variant B (shifted by +1)
+    + _build_rotation_layer()
+    + _build_nn_entanglement_layer()
+    + _build_phase_layer()
+    + _build_cyclic_entanglement_block(2)  # Block variant C (shifted by +2)
+)
+>>>>>>> REPLACE
+
+</DIFF>
+
+Wait, I need to reconsider this. The current code applies N_REPEATS=3 identical blocks, and looking at the `apply_ansatz_block` function, it applies the same ANSATZ_SPEC N_REPEATS times. If I change ANSATZ_SPEC to be 3x longer, the function will apply it 3 times, making it 9 repeats total, which would break the design.
+
+Let me reconsider the approach. The recommendation says to "apply the sequence [A, B, C] instead of repeating the identical block" - but the fixed training loop repeats the block N_REPEATS times. I need to keep ANSATZ_SPEC compact and define variants that are selected per repetition.
+
+Actually, re-reading the constraint: "The fixed code will train each candidate with Adam in a simulated PennyLane circuit" and "The block is applied N_REPEATS times with the SAME parameter values each time". This means ANSATZ_SPEC should define ONE block, and it gets applied 3 times.
+
+The recommendation wants to break symmetry while keeping parameter sharing. The way to do this within the fixed framework is to have the ANSATZ_SPEC define variant blocks that can be selected. But `apply_ansatz_block` doesn't currently support that.
+
+Let me reconsider: I can modify ANSATZ_SPEC to contain metadata that `apply_ansatz_block` can use to select variants. But that would require changing apply_ansatz_block, which is outside the EVOLVE-BLOCK.
+
+Actually, looking more carefully at the code structure and the constraint "Only edit the EVOLVE-BLOCK", I cannot modify `apply_ansatz_block`. So I'm constrained to defining ANSATZ_SPEC as a list of gate dicts.
+
+Given this constraint, the best I can do is refactor the current spec to be more parameter-efficient while keeping strong entanglement. Let me focus on improving the worst_group_margin by:
+1. Reducing parameters (they said parameter economy is critical)
+2. Keeping connectivity rich enough to separate hard samples
+
+Let me propose a simpler, more focused edit:
+
+<NAME>
+reduce_params_improve_margin
+</NAME>
+
+<DESCRIPTION>
+Analysis of prior programs shows:
+- Program 1 (score 0.51): 7 distinct params, worst_group_margin 0.36, validation_margin 0.57
+- Program 2 (score 0.54): 12 distinct params, worst_group_margin 0.31, validation_margin 0.58
+- Current (score 0.46): 9 distinct params, worst_group_margin 0.26, validation_margin 0.51
+
+The current program performs worse than even the simpler Program 1, despite having more params. This suggests the current structure is neither parameter-efficient nor entanglement-effective.
+
+Key insight: The evaluation explicitly states "fewer distinct trainable parameter names ALWAYS scores higher, with no point of diminishing returns." This means we should aggressively reduce parameters while maintaining classification power.
+
+Strategy:
+1. Remove the mid_range and crz layers (high param cost, unclear benefit)
+2. Keep only the strongest entanglement: nearest-neighbor XX (shared), diagonal YY and ZZ (shared)
+3. Use maximal parameter sharing: collapse yy_cross_a and zz_diag into single shared values
+4. Focus depth on rotation + one strong entanglement round, repeated 3x
+
+This targets the simplicity/expressivity sweet spot seen in Program 1.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_rotation_layer() -> list[dict]:
+    """Build initial RY layer with even/odd parameter sharing."""
+    return [
+        {"gate": "RY", "wire": 0, "param": "ry_even"},
+        {"gate": "RY", "wire": 1, "param": "ry_odd"},
+        {"gate": "RY", "wire": 2, "param": "ry_even"},
+        {"gate": "RY", "wire": 3, "param": "ry_odd"},
+        {"gate": "RY", "wire": 4, "param": "ry_even"},
+        {"gate": "RY", "wire": 5, "param": "ry_odd"},
+        {"gate": "RY", "wire": 6, "param": "ry_even"},
+        {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    ]
+
+
+def _build_nn_entanglement_layer() -> list[dict]:
+    """Build nearest-neighbor XX entanglement with shared parameters."""
+    return [
+        {"gate": "XX", "wires": [0, 1], "param": "xx_near"},
+        {"gate": "XX", "wires": [2, 3], "param": "xx_near"},
+        {"gate": "XX", "wires": [4, 5], "param": "xx_near"},
+        {"gate": "XX", "wires": [6, 7], "param": "xx_near"},
+    ]
+
+
+def _build_mid_range_entanglement_layer() -> list[dict]:
+    """Build mid-range XX entanglement with shared parameters."""
+    return [
+        {"gate": "XX", "wires": [1, 2], "param": "xx_far"},
+        {"gate": "XX", "wires": [3, 4], "param": "xx_far"},
+        {"gate": "XX", "wires": [5, 6], "param": "xx_far"},
+    ]
+
+
+def _build_phase_layer() -> list[dict]:
+    """Build RZ phase layer with even/odd parameter sharing."""
+    return [
+        {"gate": "RZ", "wire": 0, "param": "rz_even"},
+        {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 2, "param": "rz_even"},
+        {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 4, "param": "rz_even"},
+        {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 6, "param": "rz_even"},
+        {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    ]
+
+
+def _build_cross_layer_coupling() -> list[dict]:
+    """Build cross-layer YY coupling for expressivity."""
+    return [
+        {"gate": "YY", "wires": [1, 3], "param": "yy_cross_a"},
+        {"gate": "YY", "wires": [4, 6], "param": "yy_cross_a"},
+    ]
+
+
+def _build_long_range_coupling() -> list[dict]:
+    """Build long-range diagonal ZZ coupling."""
+    return [
+        {"gate": "ZZ", "wires": [0, 3], "param": "zz_diag"},
+        {"gate": "ZZ", "wires": [4, 7], "param": "zz_diag"},
+    ]
+
+
+def _build_crz_cross_layer() -> list[dict]:
+    """Build sparse CRZ cross-layer for phase correlation on diagonals."""
+    return [
+        {"gate": "CRZ", "wires": [1, 3], "param": "crz_cross"},
+        {"gate": "CRZ", "wires": [5, 7], "param": "crz_cross"},
+    ]
+
+
+# Assemble the complete ansatz from layers
+ANSATZ_SPEC = (
+    _build_rotation_layer()
+    + _build_nn_entanglement_layer()
+    + _build_phase_layer()
+    + _build_cross_layer_coupling()
+    + _build_crz_cross_layer()
+    + _build_mid_range_entanglement_layer()
+    + _build_long_range_coupling()
+)
+=======
+def _build_rotation_layer() -> list[dict]:
+    """Build initial RY layer with even/odd parameter sharing."""
+    return [
+        {"gate": "RY", "wire": 0, "param": "ry_even"},
+        {"gate": "RY", "wire": 1, "param": "ry_odd"},
+        {"gate": "RY", "wire": 2, "param": "ry_even"},
+        {"gate": "RY", "wire": 3, "param": "ry_odd"},
+        {"gate": "RY", "wire": 4, "param": "ry_even"},
+        {"gate": "RY", "wire": 5, "param": "ry_odd"},
+        {"gate": "RY", "wire": 6, "param": "ry_even"},
+        {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    ]
+
+
+def _build_entanglement_layer() -> list[dict]:
+    """Build diverse entanglement: nearest-neighbor XX, cross YY, diagonal ZZ."""
+    return [
+        # Nearest-neighbor XX gates
+        {"gate": "XX", "wires": [0, 1], "param": "xx_near"},
+        {"gate": "XX", "wires": [2, 3], "param": "xx_near"},
+        {"gate": "XX", "wires": [4, 5], "param": "xx_near"},
+        {"gate": "XX", "wires": [6, 7], "param": "xx_near"},
+        # Cross-layer YY coupling on diagonals (shared parameter)
+        {"gate": "YY", "wires": [1, 3], "param": "yy_diag"},
+        {"gate": "YY", "wires": [4, 6], "param": "yy_diag"},
+        # Long-range ZZ coupling (shared parameter)
+        {"gate": "ZZ", "wires": [0, 3], "param": "zz_diag"},
+        {"gate": "ZZ", "wires": [4, 7], "param": "zz_diag"},
+    ]
+
+
+def _build_phase_layer() -> list[dict]:
+    """Build RZ phase layer with even/odd parameter sharing."""
+    return [
+        {"gate": "RZ", "wire": 0, "param": "rz_even"},
+        {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 2, "param": "rz_even"},
+        {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 4, "param": "rz_even"},
+        {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 6, "param": "rz_even"},
+        {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    ]
+
+
+# Assemble the complete ansatz from layers: focus on simplicity and parameter economy
+ANSATZ_SPEC = (
+    _build_rotation_layer()
+    + _build_entanglement_layer()
+    + _build_phase_layer()
+)
+>>>>>>> REPLACE
+
+</DIFF>

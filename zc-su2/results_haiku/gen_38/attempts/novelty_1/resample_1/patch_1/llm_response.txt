@@ -1,0 +1,81 @@
+Looking at the performance metrics across the three programs:
+
+1. **First program** (2 blocks): Score 0.72, n_params=14, depth=65, convergence_step=90
+2. **Second program** (1 block): Score 0.72, n_params=14, depth=35, convergence_step=90
+3. **Current program** (1 block + circular CZ): Score 0.72, n_params=14, depth=66, convergence_step=150
+
+All achieve perfect accuracy (100% train/val/test) but have identical parameter counts. The key differentiators are:
+- **Convergence speed**: Current program needs 150 steps vs 90 for previous versions
+- **Depth/gate efficiency**: Current program has depth 66 vs 35 for the optimized single-block version
+- **Parameter economy**: Still 14 parameters across all versions
+
+The recommendation to split Z rotations into `rz_pre` and `rz_post` is excellent because:
+1. It increases expressiveness by decoupling the phase adjustment before and after entanglement
+2. The parameter count increase (14→15) is minimal and still maintains excellent parameter economy
+3. This gives the optimizer more flexibility to improve convergence speed and reduce the train-test gap
+4. Empirically, pre- and post-entanglement phases often require different values for optimal performance
+
+The current program's slower convergence (150 vs 90 steps) suggests the optimizer is struggling to find good parameter values. More expressiveness could help it converge faster while maintaining accuracy.
+
+<NAME>
+split_rz_phases
+</NAME>
+
+<DESCRIPTION>
+Split the shared Z rotation parameter into two independent parameters: `rz_pre` (before the CZ chain) and `rz_post` (after the CZ chain). This increases expressiveness by decoupling phase adjustment before and after entanglement, allowing the optimizer to independently tune each phase for better convergence and generalization. Parameter count increases from 14 to 15, which is still highly efficient. This addresses the slower convergence (150 steps) observed in the current program compared to earlier versions.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+=======
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+>>>>>>> REPLACE
+
+</DIFF>

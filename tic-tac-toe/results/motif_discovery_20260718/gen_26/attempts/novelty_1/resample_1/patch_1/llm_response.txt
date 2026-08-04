@@ -1,0 +1,89 @@
+<NAME>
+lift_reupload_symmetry
+</NAME>
+
+<DESCRIPTION>
+The previous candidate used a fixed set of parameter keys for every ansatz block across all data re-uploads. While this is parameter-efficient, it forces the circuit to apply the same transformation regardless of where it sits in the serial embedding chain. 
+
+I am lifting this symmetry by introducing distinct parameter pools for each of the 3 uploads (u0, u1, u2). By giving each upload its own local rotation parameters (RY and RZ), following the recommendation to break full across-upload symmetry, we allow the model to learn different weighting strategies for the same input features as they are re-introduced to the system. This increases the total parameter count to 102 but allows for significantly more expressive non-linear mappings. I have kept the motif gates (ZZZ, CCRZ) and the center-controlled spokes (CRZ) shared within the block to maintain regularized entanglement.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+=======
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    # Determine which upload this block belongs to (0, 1, or 2)
+    upload_idx = block_index // N_REPEATS
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wire = int(item["wire"])
+=======
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            # Lift re-upload symmetry for local rotations by suffixing param key with upload index
+            pname = item["param"]
+            if any(rot in pname for rot in ["ry_", "rz_"]):
+                pname = f"{pname}_u{upload_idx}"
+            
+            angle = params[offset + key_to_position[pname]]
+            wire = int(item["wire"])
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+=======
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            pname = item["param"]
+            angle = params[offset + key_to_position[pname]]
+            wires = [int(w) for w in item["wires"]]
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        elif gate in ALLOWED_PARAM_THREE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+=======
+        elif gate in ALLOWED_PARAM_THREE_QUBIT_GATES:
+            pname = item["param"]
+            angle = params[offset + key_to_position[pname]]
+            wires = [int(w) for w in item["wires"]]
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+N_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS
+=======
+def _get_lifted_keys():
+    errors, base_keys = validate_ansatz_spec(ANSATZ_SPEC)
+    lifted = []
+    for u in range(N_UPLOADS):
+        for k in base_keys:
+            if any(rot in k for rot in ["ry_", "rz_"]):
+                lifted.append(f"{k}_u{u}")
+            else:
+                lifted.append(k)
+    return errors, list(dict.fromkeys(lifted))
+
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = _get_lifted_keys()
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+N_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS
+>>>>>>> REPLACE
+</DIFF>

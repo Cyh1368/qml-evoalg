@@ -1,0 +1,82 @@
+<NAME>
+global_rotation_xx_enhanced_ring
+</NAME>
+
+<DESCRIPTION>
+Building on the best-performing prior variant (global RY/RZ rotations with a closed CZ ring, score 0.72, 14 params), this edit collapses the current group-based rotations to a single global RY/RZ pair (like the winning seed) and additionally injects tunable two-qubit interaction strength by replacing every second CZ in the ring with an "XX" Ising gate sharing one new parameter "xx_ent". This keeps the parameter count extremely low (3 unique parameters per repetition instead of 3 group params or more), while giving the entangling layer parametric flexibility that a pure CZ ring lacks, which should help both expressivity and generalization from few examples.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Pre-entanglement rotations: 3 groups (3,3,2 qubits), each group driven
+    # by a single shared parameter (RY on all wires of the group).
+    {"gate": "RY", "wire": 0, "param": "p_g0"},
+    {"gate": "RY", "wire": 1, "param": "p_g0"},
+    {"gate": "RY", "wire": 2, "param": "p_g0"},
+    {"gate": "RY", "wire": 3, "param": "p_g1"},
+    {"gate": "RY", "wire": 4, "param": "p_g1"},
+    {"gate": "RY", "wire": 5, "param": "p_g1"},
+    {"gate": "RY", "wire": 6, "param": "p_g2"},
+    {"gate": "RY", "wire": 7, "param": "p_g2"},
+
+    # Nearest-neighbor entangling chain (fixed, no parameters).
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Post-entanglement rotations: reuse the SAME parameters as the
+    # corresponding pre-entanglement RY gates, but on a different axis (RZ),
+    # keeping the parameter count at 3 unique values per repetition.
+    {"gate": "RZ", "wire": 0, "param": "p_g0"},
+    {"gate": "RZ", "wire": 1, "param": "p_g0"},
+    {"gate": "RZ", "wire": 2, "param": "p_g0"},
+    {"gate": "RZ", "wire": 3, "param": "p_g1"},
+    {"gate": "RZ", "wire": 4, "param": "p_g1"},
+    {"gate": "RZ", "wire": 5, "param": "p_g1"},
+    {"gate": "RZ", "wire": 6, "param": "p_g2"},
+    {"gate": "RZ", "wire": 7, "param": "p_g2"},
+]
+=======
+ANSATZ_SPEC = [
+    # Pre-entanglement rotations: ALL 8 qubits share a single global RY
+    # parameter (most extreme reduction from group-based sharing).
+    {"gate": "RY", "wire": 0, "param": "ry_global"},
+    {"gate": "RY", "wire": 1, "param": "ry_global"},
+    {"gate": "RY", "wire": 2, "param": "ry_global"},
+    {"gate": "RY", "wire": 3, "param": "ry_global"},
+    {"gate": "RY", "wire": 4, "param": "ry_global"},
+    {"gate": "RY", "wire": 5, "param": "ry_global"},
+    {"gate": "RY", "wire": 6, "param": "ry_global"},
+    {"gate": "RY", "wire": 7, "param": "ry_global"},
+
+    # Entangling layer: closed ring where every second link is upgraded from
+    # a fixed CZ to a parametrized XX rotation sharing a single "xx_ent"
+    # parameter, injecting tunable two-qubit interaction strength at minimal
+    # extra cost (one new parameter) while keeping depth nearly unchanged.
+    {"gate": "XX", "wires": [0, 1], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Post-entanglement rotations: ALL 8 qubits share a single global RZ
+    # parameter, distinct from the RY one.
+    {"gate": "RZ", "wire": 0, "param": "rz_global"},
+    {"gate": "RZ", "wire": 1, "param": "rz_global"},
+    {"gate": "RZ", "wire": 2, "param": "rz_global"},
+    {"gate": "RZ", "wire": 3, "param": "rz_global"},
+    {"gate": "RZ", "wire": 4, "param": "rz_global"},
+    {"gate": "RZ", "wire": 5, "param": "rz_global"},
+    {"gate": "RZ", "wire": 6, "param": "rz_global"},
+    {"gate": "RZ", "wire": 7, "param": "rz_global"},
+]
+>>>>>>> REPLACE
+</DIFF>

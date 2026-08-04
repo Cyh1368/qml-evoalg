@@ -1,0 +1,67 @@
+<NAME>
+add_antidiag_zz_couplings
+</NAME>
+
+<DESCRIPTION>
+The current architecture achieves good generalization (0.60 combined score) but leaves room for improvement in worst-group margin (0.32), which is the dominating factor in robust separation on hard validation samples.
+
+**Analysis:**
+- Current entanglement uses: 4 nearest-neighbor XX + 2 cross-layer YY + 2 long-range ZZ = 8 two-qubit gates
+- This maintains the lean 7-parameter structure (no new parameters added)
+- The long-range ZZ coupling currently only includes [0,3] and [4,7], missing anti-diagonal connectivity
+
+**Proposed improvement:**
+Add three complementary anti-diagonal ZZ couplings using the existing "diag" parameter:
+- [1,6]: connects qubit 1 (first odd layer) to qubit 6 (second even layer, opposite end)
+- [2,5]: symmetric diagonal pairing in the middle layers
+- [3,4]: bridges the central layer boundary
+
+This enriches global correlations and long-range entanglement symmetries without increasing parameter count or circuit depth materially. The strategy mirrors Gen 50's anti-diagonal connectivity pattern while maintaining the proven 15/72 sweet spot for depth/gate-count.
+
+**Expected benefit:**
+- Stronger worst-group margin via richer global entanglement structure
+- No parameter increase (reuses "diag" parameter)
+- Improved separation of hard validation samples through complementary long-range couplings
+- Maintain parameter efficiency and generalization gap
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_entanglement_layer() -> list[dict]:
+    """Build diverse entanglement: nearest-neighbor XX, cross YY, diagonal ZZ."""
+    return [
+        # Nearest-neighbor XX gates
+        {"gate": "XX", "wires": [0, 1], "param": "ent_near"},
+        {"gate": "XX", "wires": [2, 3], "param": "ent_near"},
+        {"gate": "XX", "wires": [4, 5], "param": "ent_near"},
+        {"gate": "XX", "wires": [6, 7], "param": "ent_near"},
+        # Cross-layer YY coupling on diagonals (shared parameter)
+        {"gate": "YY", "wires": [1, 3], "param": "cross"},
+        {"gate": "YY", "wires": [4, 6], "param": "cross"},
+        # Long-range ZZ coupling (shared parameter)
+        {"gate": "ZZ", "wires": [0, 3], "param": "diag"},
+        {"gate": "ZZ", "wires": [4, 7], "param": "diag"},
+    ]
+=======
+def _build_entanglement_layer() -> list[dict]:
+    """Build diverse entanglement: nearest-neighbor XX, cross YY, diagonal ZZ."""
+    return [
+        # Nearest-neighbor XX gates
+        {"gate": "XX", "wires": [0, 1], "param": "ent_near"},
+        {"gate": "XX", "wires": [2, 3], "param": "ent_near"},
+        {"gate": "XX", "wires": [4, 5], "param": "ent_near"},
+        {"gate": "XX", "wires": [6, 7], "param": "ent_near"},
+        # Cross-layer YY coupling on diagonals (shared parameter)
+        {"gate": "YY", "wires": [1, 3], "param": "cross"},
+        {"gate": "YY", "wires": [4, 6], "param": "cross"},
+        # Long-range ZZ coupling: main diagonals and anti-diagonals (shared parameter)
+        {"gate": "ZZ", "wires": [0, 3], "param": "diag"},
+        {"gate": "ZZ", "wires": [4, 7], "param": "diag"},
+        # Anti-diagonal ZZ couplings for enriched global correlations
+        {"gate": "ZZ", "wires": [1, 6], "param": "diag"},
+        {"gate": "ZZ", "wires": [2, 5], "param": "diag"},
+        {"gate": "ZZ", "wires": [3, 4], "param": "diag"},
+    ]
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,63 @@
+<NAME>
+decouple_cry_entanglement
+</NAME>
+
+<DESCRIPTION>
+The current program uses a single parameter `cry_nnn` for all 8 next-nearest-neighbor CRY gates. The prior recommendation suggests decoupling nearest-neighbor and next-nearest-neighbor entanglement by introducing two separate keys: `cry_nn` for nearest-neighbor CRY gates and `cry_nnn` for next-nearest-neighbor CRY gates.
+
+This change adds only one extra parameter per block (from 4 to 5 parameters: ry_init, rz_main, cry_nn, cry_nnn, ry_final), which is well within the acceptable range (prior runs show combined ≥0.92 with up to ~32 total parameters). The benefit is that the optimizer can now independently tune the strength of short-range (nearest-neighbor) vs. long-range (next-nearest-neighbor) coupling, rather than forcing them to share the same rotation angle.
+
+Looking at the prior programs:
+- First program (score 0.91): 32 params, used cry_nn and cry_nnn separately with 8 NN and 8 NNN gates
+- Second program (score 0.92): 26 params, collapsed all CRY gates to use cry_nnn only
+- Current program (score 0.91): 26 params, also uses cry_nnn only
+
+The hypothesis is that re-introducing the separate cry_nn parameter will allow finer control over entanglement patterns and improve the combined score back toward 0.92 or higher, while keeping parameter count reasonable at 30 total (5 per block × 3 uploads × 2 repeats + 2 readout).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 5: Parametrized next-nearest-neighbor CRY
+    {"gate": "CRY", "wires": [0, 2], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [2, 4], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [4, 6], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [6, 0], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [1, 3], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [3, 5], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [5, 7], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [7, 1], "param": "cry_nnn"},
+
+    # Layer 6: Final RY readout layer with sharing
+=======
+    # Layer 5a: Parametrized nearest-neighbor CRY (Sublayer 1: commuting even pairs)
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_nn"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_nn"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_nn"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_nn"},
+
+    # Layer 5b: Parametrized nearest-neighbor CRY (Sublayer 2: commuting odd pairs)
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_nn"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_nn"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_nn"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_nn"},
+
+    # Layer 5c: Parametrized next-nearest-neighbor CRY (Sublayer 3: commuting even pairs)
+    {"gate": "CRY", "wires": [0, 2], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [4, 6], "param": "cry_nnn"},
+
+    # Layer 5d: Parametrized next-nearest-neighbor CRY (Sublayer 4: commuting odd pairs)
+    {"gate": "CRY", "wires": [2, 4], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [6, 0], "param": "cry_nnn"},
+
+    # Layer 5e: Parametrized next-nearest-neighbor CRY (Sublayer 5: other even pairs)
+    {"gate": "CRY", "wires": [1, 3], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [5, 7], "param": "cry_nnn"},
+
+    # Layer 5f: Parametrized next-nearest-neighbor CRY (Sublayer 6: other odd pairs)
+    {"gate": "CRY", "wires": [3, 5], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [7, 1], "param": "cry_nnn"},
+
+    # Layer 6: Final RY readout layer with sharing
+>>>>>>> REPLACE
+
+</DIFF>

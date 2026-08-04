@@ -1,0 +1,14 @@
+{
+  "generation": 15,
+  "novelty_attempt": 2,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "none",
+  "patch_description": "All three seed programs are identical (a linear RY\u2192RZ\u2011pre\u2192CZ\u2011chain\u2192RZ\u2011post block), so the crossover focuses on structurally improving this common ansatz rather than blending divergent designs. Two concrete architectural changes are introduced while keeping the parameter budget close to the original (146 params) so that overfitting risk stays low and reported gains are attributable to structure, not extra capacity:\n\n1. **Ring closure of the entangler** \u2013 the original chain CZ(0,1)...CZ(6,7) leaves qubits 0 and 7 only weakly correlated (distance 7 in the ladder). Adding a wrap\u2011around CZ(7,0) turns the linear chain into a ring, reducing the effective graph diameter and improving information mixing across all qubits without adding any parameters.\n\n2. **A single shared long\u2011range CRZ layer** \u2013 four CRZ gates connect qubits that are maximally separated in the ring (0\u20114, 1\u20115, 2\u20116, 3\u20117), all sharing **one** parameter name `\"crz_shared\"`. This gives the circuit direct long-range entangling capability (bypassing the need for the information to propagate hop-by-hop through the ring) at the cost of just one extra trainable parameter, which is a very parameter-efficient way to boost expressivity and, empirically for such shallow HEA-style circuits, tends to reduce the train/validation gap because it lets the model capture non-local correlations directly instead of requiring deeper stacks of local gates.\n\nThe pre-entangling single-qubit stage keeps the RY\u2192RZ (\"pre\") Euler-like rotation (2 free angles) and the post-entangling stage keeps the single RZ per qubit, exactly mirroring the original per-qubit parameter budget (24 unique single-qubit parameters), so total added parameters are only +1 relative to the original 24 same-purpose params per block repetition (146 \u2192 ~152 total after all reps, still well within budget while giving strictly more expressive/entangling power per repetition).\n\nThis keeps the design simple, cheap to train, and directly targets the main weakness visible in the metrics (generalization_gap_mean 0.07, val/test accuracy noticeably below train accuracy) by improving global connectivity rather than blindly adding local parameters.",
+  "error_msg": null,
+  "timestamp": "2026-07-25T11:10:36.188654",
+  "llm_cost": 0.062244,
+  "llm_model": "anthropic/claude-sonnet-5"
+}

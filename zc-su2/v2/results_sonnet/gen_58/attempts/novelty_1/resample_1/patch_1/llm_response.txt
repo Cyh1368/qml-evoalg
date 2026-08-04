@@ -1,0 +1,167 @@
+<NAME>
+merge_rzp_zzring_into_theta
+
+<DESCRIPTION>
+The two prior seeds show that fewer distinct trainable parameters strongly improve the combined score: the 2-distinct-parameter variant (ry_a, theta) scored 0.73, beating the 3-distinct-parameter variant (ry_a, rz_p, zz_ring) which scored only 0.71, despite the latter having strictly richer connectivity (extra skip-2 ZZ shell, XX ring, etc.). This strongly suggests parameter economy dominates over marginal connectivity gains here.
+
+This edit merges the "rz_p" (global phase) and "zz_ring" (all entangling ZZ/XX couplings) parameter names into a single shared parameter "theta", cutting n_distinct_params from 3 to 2 while keeping the exact same gate structure (same depth, same connectivity, same gate count). This should combine the parameter-economy benefit of the 0.73 seed with the richer connectivity (skip-2 ZZ shell + XX ring) of the current 0.71 seed, hopefully pushing the score above both.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Single shared global phase parameter applied to all qubits before the
+    # entangling shells.
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+
+    # Parametrized entangling ring: one shared coupling strength across the
+    # full nearest-neighbor ring topology (wraps around 7-0).
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+
+    # Long-range "opposite qubit" couplings reusing the SAME shared
+    # parameter, giving a hypercube-like connectivity without adding a new
+    # trainable parameter name.
+    {"gate": "ZZ", "wires": [0, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "zz_ring"},
+
+    # Additional "skip-2" shell, still sharing zz_ring, enriching
+    # connectivity further to help separate the hardest validation group
+    # without introducing any new trainable parameter.
+    {"gate": "ZZ", "wires": [0, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 0], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 1], "param": "zz_ring"},
+
+    # Orthogonal XX nearest-neighbor ring, reusing the SAME shared
+    # parameter "zz_ring". Interleaving an X-basis coupling with the
+    # Z-basis couplings above enriches the reachable operator space
+    # (boosted expressivity) without adding any new trainable name.
+    {"gate": "XX", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "XX", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "XX", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "XX", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "XX", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "XX", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "XX", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "XX", "wires": [7, 0], "param": "zz_ring"},
+
+    # Fixed CNOT ladder (backward) - additional entangling mixing, still no
+    # extra trainable parameters.
+    {"gate": "CNOT", "wires": [7, 6]},
+    {"gate": "CNOT", "wires": [6, 5]},
+    {"gate": "CNOT", "wires": [5, 4]},
+    {"gate": "CNOT", "wires": [4, 3]},
+    {"gate": "CNOT", "wires": [3, 2]},
+    {"gate": "CNOT", "wires": [2, 1]},
+    {"gate": "CNOT", "wires": [1, 0]},
+
+    # Reuse the same global phase parameter after the entangling shells,
+    # reinforcing the encoding without adding a new trainable name.
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+]
+=======
+    # Single shared global phase parameter applied to all qubits before the
+    # entangling shells. Now merged into "theta" (shared with all
+    # entangling ZZ/XX gates below) to minimize distinct parameter count.
+    {"gate": "RZ", "wire": 0, "param": "theta"},
+    {"gate": "RZ", "wire": 1, "param": "theta"},
+    {"gate": "RZ", "wire": 2, "param": "theta"},
+    {"gate": "RZ", "wire": 3, "param": "theta"},
+    {"gate": "RZ", "wire": 4, "param": "theta"},
+    {"gate": "RZ", "wire": 5, "param": "theta"},
+    {"gate": "RZ", "wire": 6, "param": "theta"},
+    {"gate": "RZ", "wire": 7, "param": "theta"},
+
+    # Parametrized entangling ring: one shared coupling strength across the
+    # full nearest-neighbor ring topology (wraps around 7-0).
+    {"gate": "ZZ", "wires": [0, 1], "param": "theta"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "theta"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "theta"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "theta"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "theta"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "theta"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "theta"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "theta"},
+
+    # Long-range "opposite qubit" couplings reusing the SAME shared
+    # parameter, giving a hypercube-like connectivity without adding a new
+    # trainable parameter name.
+    {"gate": "ZZ", "wires": [0, 4], "param": "theta"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "theta"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "theta"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "theta"},
+
+    # Additional "skip-2" shell, still sharing theta, enriching
+    # connectivity further to help separate the hardest validation group
+    # without introducing any new trainable parameter.
+    {"gate": "ZZ", "wires": [0, 2], "param": "theta"},
+    {"gate": "ZZ", "wires": [1, 3], "param": "theta"},
+    {"gate": "ZZ", "wires": [2, 4], "param": "theta"},
+    {"gate": "ZZ", "wires": [3, 5], "param": "theta"},
+    {"gate": "ZZ", "wires": [4, 6], "param": "theta"},
+    {"gate": "ZZ", "wires": [5, 7], "param": "theta"},
+    {"gate": "ZZ", "wires": [6, 0], "param": "theta"},
+    {"gate": "ZZ", "wires": [7, 1], "param": "theta"},
+
+    # Orthogonal XX nearest-neighbor ring, reusing the SAME shared
+    # parameter "theta". Interleaving an X-basis coupling with the
+    # Z-basis couplings above enriches the reachable operator space
+    # (boosted expressivity) without adding any new trainable name.
+    {"gate": "XX", "wires": [0, 1], "param": "theta"},
+    {"gate": "XX", "wires": [1, 2], "param": "theta"},
+    {"gate": "XX", "wires": [2, 3], "param": "theta"},
+    {"gate": "XX", "wires": [3, 4], "param": "theta"},
+    {"gate": "XX", "wires": [4, 5], "param": "theta"},
+    {"gate": "XX", "wires": [5, 6], "param": "theta"},
+    {"gate": "XX", "wires": [6, 7], "param": "theta"},
+    {"gate": "XX", "wires": [7, 0], "param": "theta"},
+
+    # Fixed CNOT ladder (backward) - additional entangling mixing, still no
+    # extra trainable parameters.
+    {"gate": "CNOT", "wires": [7, 6]},
+    {"gate": "CNOT", "wires": [6, 5]},
+    {"gate": "CNOT", "wires": [5, 4]},
+    {"gate": "CNOT", "wires": [4, 3]},
+    {"gate": "CNOT", "wires": [3, 2]},
+    {"gate": "CNOT", "wires": [2, 1]},
+    {"gate": "CNOT", "wires": [1, 0]},
+
+    # Reuse the same shared parameter after the entangling shells,
+    # reinforcing the encoding without adding a new trainable name.
+    {"gate": "RZ", "wire": 0, "param": "theta"},
+    {"gate": "RZ", "wire": 1, "param": "theta"},
+    {"gate": "RZ", "wire": 2, "param": "theta"},
+    {"gate": "RZ", "wire": 3, "param": "theta"},
+    {"gate": "RZ", "wire": 4, "param": "theta"},
+    {"gate": "RZ", "wire": 5, "param": "theta"},
+    {"gate": "RZ", "wire": 6, "param": "theta"},
+    {"gate": "RZ", "wire": 7, "param": "theta"},
+]
+>>>>>>> REPLACE
+</DIFF>

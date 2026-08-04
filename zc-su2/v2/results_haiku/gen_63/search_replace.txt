@@ -1,0 +1,120 @@
+# Analysis
+
+Looking at the performance metrics:
+
+**Prior best (Program 2):** Combined score 0.68
+- 6 distinct parameters, depth 20, gate_count 93
+- worst_group_margin: 0.36
+
+**Current program:** Combined score 0.66
+- 7 distinct parameters, depth 33, gate_count 129
+- worst_group_margin: 0.35
+- Introduced `ent_off` parameter (YY gates) and added CZ fixed gates + ZZ gates, but this DECREASED performance
+
+**Key insight from recommendation:** The prior programs achieved worst_group_margin of 0.36 by using a bracketing pattern on odd qubits: `ry_mid` → final operations → `rz_final`. The recommendation suggests extending this parity-based bracketing to even qubits.
+
+**Strategy:**
+1. Remove the added complexity (separate `ent_off` parameter, unnecessary ZZ gates, CZ fixed gates) that degraded performance
+2. Return to the simpler 6-parameter structure from Program 2
+3. Apply the bracketing pattern to even qubits: insert RY(ry_mid) + RZ(rz_final) before the final global RZ layer for wires {0, 2, 4, 6}
+4. This creates symmetric parity-based feature sharpening that should improve worst_group_margin while maintaining parameter efficiency
+
+This approach:
+- Reduces parameter count (back to 6 distinct)
+- Maintains the proven simpler structure
+- Adds targeted decision boundary sharpening via symmetric bracketing
+- Should reduce depth compared to current while improving worst_group_margin
+
+<NAME>
+symmetric_parity_bracketing
+</NAME>
+
+<DESCRIPTION>
+Remove the counterproductive recent additions (separate ent_off parameter, ZZ gates, CZ gates) that increased complexity without improving scores. Return to the simpler 6-parameter structure. Then extend the successful odd-qubit ry_mid→rz_final bracketing pattern to even qubits {0, 2, 4, 6} to create symmetric parity-based decision boundary sharpening. This should improve worst_group_margin (currently 0.35) back to 0.36+ while reducing parameter count and depth.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # Narrow CRX layer to enrich entanglement variety
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+
+    # Narrow ZZ sublayer for Z-axis Ising interactions
+    {"gate": "ZZ", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "ent_nn"},
+
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+=======
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_nn"},
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Skip-3 CZ entangling layer for hard-sample discrimination
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [4, 7]},
+
+    # Final rotation layer with shared parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+=======
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Even-qubit bracketing: RY intermediate rotations for decision boundary sharpening
+    {"gate": "RY", "wire": 0, "param": "ry_mid"},
+    {"gate": "RY", "wire": 2, "param": "ry_mid"},
+    {"gate": "RY", "wire": 4, "param": "ry_mid"},
+    {"gate": "RY", "wire": 6, "param": "ry_mid"},
+
+    # Final rotation layer with shared parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+>>>>>>> REPLACE
+</DIFF>

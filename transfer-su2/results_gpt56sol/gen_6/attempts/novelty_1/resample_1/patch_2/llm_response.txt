@@ -1,0 +1,48 @@
+<NAME>
+shared_parity_ring
+</NAME>
+
+<DESCRIPTION>
+This block reduces each repetition to only three independent circuit parameters: one shared RY angle and two parity-shared RZ angles. The alternating RZ parameters retain more flexibility than a fully global rotation while strongly reducing overfitting and optimization cost. A fixed CZ ring supplies nearest-neighbor entanglement, including the previously missing wraparound connection between qubits 7 and 0. Placing the CZ ring between noncommuting rotation layers makes all six repetitions useful while keeping the total ansatz parameter count at 18.
+</DESCRIPTION>
+
+<CODE>
+```python
+# EVOLVE-BLOCK-START
+
+ANSATZ_SPEC = [
+    # Shared basis-changing layer.
+    {"gate": "RY", "wire": 0, "param": "mix"},
+    {"gate": "RY", "wire": 1, "param": "mix"},
+    {"gate": "RY", "wire": 2, "param": "mix"},
+    {"gate": "RY", "wire": 3, "param": "mix"},
+    {"gate": "RY", "wire": 4, "param": "mix"},
+    {"gate": "RY", "wire": 5, "param": "mix"},
+    {"gate": "RY", "wire": 6, "param": "mix"},
+    {"gate": "RY", "wire": 7, "param": "mix"},
+
+    # Parameter-free entangling ring.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Two shared phase parameters preserve even/odd spatial structure.
+    {"gate": "RZ", "wire": 0, "param": "phase_even"},
+    {"gate": "RZ", "wire": 2, "param": "phase_even"},
+    {"gate": "RZ", "wire": 4, "param": "phase_even"},
+    {"gate": "RZ", "wire": 6, "param": "phase_even"},
+
+    {"gate": "RZ", "wire": 1, "param": "phase_odd"},
+    {"gate": "RZ", "wire": 3, "param": "phase_odd"},
+    {"gate": "RZ", "wire": 5, "param": "phase_odd"},
+    {"gate": "RZ", "wire": 7, "param": "phase_odd"},
+]
+
+# EVOLVE-BLOCK-END
+``` 
+</CODE>

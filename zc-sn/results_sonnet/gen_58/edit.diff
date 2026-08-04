@@ -1,0 +1,152 @@
+--- a/original.py
++++ b/original.py
+@@ -1,55 +1,116 @@
+ """Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+ 
+ Everything else about the task, that is how inputs are encoded, how the circuit
+ is measured, how training works and how metrics are computed, is fixed and lives
+ in a module that is not reproduced here. No information about the data is
+ available in this file.
+ """
+ 
+ from _backend import run_experiment as _run
+ 
+ N_QUBITS = 8
+ ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ 
+ 
+ # EVOLVE-BLOCK-START
+-ANSATZ_SPEC = [
+-    {"gate": "RY", "wire": 0, "param": "ry_0"},
+-    {"gate": "RY", "wire": 1, "param": "ry_1"},
+-    {"gate": "RY", "wire": 2, "param": "ry_2"},
+-    {"gate": "RY", "wire": 3, "param": "ry_3"},
+-    {"gate": "RY", "wire": 4, "param": "ry_4"},
+-    {"gate": "RY", "wire": 5, "param": "ry_5"},
+-    {"gate": "RY", "wire": 6, "param": "ry_6"},
+-    {"gate": "RY", "wire": 7, "param": "ry_7"},
+-    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+-    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+-    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+-    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+-    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+-    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+-    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+-    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+-    {"gate": "CZ", "wires": [0, 1]},
+-    {"gate": "CZ", "wires": [1, 2]},
+-    {"gate": "CZ", "wires": [2, 3]},
+-    {"gate": "CZ", "wires": [3, 4]},
+-    {"gate": "CZ", "wires": [4, 5]},
+-    {"gate": "CZ", "wires": [5, 6]},
+-    {"gate": "CZ", "wires": [6, 7]},
+-    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+-    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+-    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+-    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+-    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+-    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+-    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+-    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+-]
++def _ry_layer(qubits, prefix="ry"):
++    """Per-qubit RY rotations, one trainable parameter each."""
++    return [{"gate": "RY", "wire": q, "param": f"{prefix}_{q}"} for q in qubits]
++
++
++def _rx_layer(qubits, prefix="rx"):
++    """Per-qubit RX rotations, one trainable parameter each."""
++    return [{"gate": "RX", "wire": q, "param": f"{prefix}_{q}"} for q in qubits]
++
++
++def _ring_crz(n, even_param="crz_ring_even", odd_param="crz_ring_odd"):
++    """Nearest-neighbor ring entanglement with alternating shared strength."""
++    gates = []
++    for i in range(n):
++        j = (i + 1) % n
++        param = even_param if i % 2 == 0 else odd_param
++        gates.append({"gate": "CRZ", "wires": [i, j], "param": param})
++    return gates
++
++
++def _mid_rz_layer(pairs, prefix="rz_mid"):
++    """Mirror-paired RZ phase layer: each antipodal-ish pair of qubits shares
++    a single trainable phase parameter, applied independently to both qubits
++    in the pair. This is a cheap (only len(pairs) extra parameters) way to
++    inject a global phase-correlation signal at the point where local (RX)
++    and mid-range (skip) information starts to mix."""
++    gates = []
++    for idx, (q1, q2) in enumerate(pairs):
++        pname = f"{prefix}_{idx}"
++        gates.append({"gate": "RZ", "wire": q1, "param": pname})
++        gates.append({"gate": "RZ", "wire": q2, "param": pname})
++    return gates
++
++
++def _skip_crz(n, step=2, param="crz_skip"):
++    """Sparse skip-`step` entanglement with a single shared parameter,
++    acting as an implicit regularizer while still providing longer-range
++    mixing than the nearest-neighbor ring."""
++    return [{"gate": "CRZ", "wires": [i, (i + step) % n], "param": param} for i in range(n)]
++
++
++def _diameter_crz(n, even_param="crz_diam_even", odd_param="crz_diam_odd"):
++    """Antipodal (distance n/2) entanglement with two shared parameters,
++    following an alternating-strength pattern analogous to the ring layer.
++    Adds genuinely global connectivity at minimal parameter cost."""
++    half = n // 2
++    gates = []
++    for i in range(half):
++        j = i + half
++        param = even_param if i % 2 == 0 else odd_param
++        gates.append({"gate": "CRZ", "wires": [i, j], "param": param})
++    return gates
++
++
++def _build_block(n=N_QUBITS):
++    """Compose one full ansatz block from modular layers:
++      1. Per-qubit RY rotations (expressivity).
++      2. Ring CRZ entanglement, alternating shared strength (local mixing).
++      3. Per-qubit RX rotations (second rotation axis, more expressivity).
++      4. Mirror-paired RZ phase layer (cheap global phase correlation,
++         +4 shared parameters), inserted right between the local (RX) and
++         mid-range (skip) mixing stages.
++      5. Skip-2 CRZ entanglement, single shared parameter (mid-range mixing,
++         regularized via sharing).
++      6. Diameter CRZ entanglement, two shared parameters (global mixing,
++         regularized via sharing).
++    """
++    half = n // 2
++    mid_pairs = [(i, i + half) for i in range(half // 2)] + \
++                [(half // 2 + i, half - 1 - i + half) for i in range((half + 1) // 2)]
++    # For n=8: half=4 -> pairs (0,4) and (1, 6),(2,5)? we want the exact
++    # mirror pairing requested: (0,7), (1,6), (2,5), (3,4).
++    mid_pairs = [(i, n - 1 - i) for i in range(n // 2)]
++
++    block = []
++    block += _ry_layer(range(n))
++    block += _ring_crz(n)
++    block += _rx_layer(range(n))
++    block += _mid_rz_layer(mid_pairs)
++    block += _skip_crz(n, step=2)
++    block += _diameter_crz(n)
++    return block
++
++
++_BLOCK = _build_block(N_QUBITS)
++
++# Apply the block twice, reusing identical parameter names across both
++# copies. This deepens the circuit (more expressive power, more entangling
++# layers) while keeping the parameter count unchanged compared to a single
++# copy -- the same regularizing "shared depth" trick that drove earlier
++# generations' accuracy gains, now combined with a mirror-paired mid-block
++# RZ phase layer for cheap, structured global phase control that should
++# sharpen local expressivity and speed up convergence.
++ANSATZ_SPEC = _BLOCK + _BLOCK
+ # EVOLVE-BLOCK-END
+ 
+ 
+ def run_experiment(**kwargs):
+     return _run(ANSATZ_SPEC, **kwargs)

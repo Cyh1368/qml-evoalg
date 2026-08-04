@@ -1,0 +1,120 @@
+Looking at the performance metrics, I can see:
+
+**Current state analysis:**
+- Current program: score 0.57, worst_group_margin 0.37, generalization_gap 0.10, convergence_step 180
+- Prior program 1: score 0.58, worst_group_margin 0.34, generalization_gap 0.05, convergence_step 120
+- Prior program 2: score 0.59, worst_group_margin 0.31, generalization_gap 0.05, convergence_step 90
+
+**Key observations:**
+1. The current program has significantly worse convergence (180 steps vs 90-120) and larger generalization gap (0.10 vs 0.05)
+2. Prior program 1 with the four-stage block structure (rz_pre → ry → interactions → ry_alternated → rz_mid → rz_post) performed better
+3. Prior program 1 used parity-split rz_post (rz_post_even/odd) with an intermediate rz_mid layer
+4. The recommendation suggests applying the same parity-split strategy to rz_pre
+
+**Strategy:**
+Apply the proven four-stage block structure with parity-split RZ layers from prior program 1, but maintain the current simplified interaction pattern. This should:
+- Improve convergence speed (avoid the 180-step plateau)
+- Reduce generalization gap through better parameter organization
+- Keep parameter efficiency high while improving worst-group margin
+
+<NAME>
+parity_split_rz_pre_post_with_mid
+</NAME>
+
+<DESCRIPTION>
+Restore the proven four-stage block structure from prior program 1, which achieved score 0.58. The key improvements are:
+
+1. Split the global rz_pre into rz_pre_even (wires 0,2,4,6) and rz_pre_odd (wires 1,3,5,7) to mirror the ry_0/ry_1 alternation pattern
+2. Reintroduce the rz_mid layer between the first and second RY stages, which provides better expressivity in the middle of the circuit
+3. Split rz_post into rz_post_even and rz_post_odd (already present in prior program 1)
+4. Alternate the RY parameters in the second RY stage (ry_1 on even wires, ry_0 on odd wires) to create symmetric expressivity
+
+This structure worked well in prior program 1 (score 0.58, convergence 120 steps, generalization_gap 0.05) and should improve upon the current program's poor convergence (180 steps) and large generalization gap (0.10).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_odd"},
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_0"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_0"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_0"},
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_odd"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

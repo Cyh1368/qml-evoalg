@@ -1,0 +1,32 @@
+<NAME>
+add_ring_entanglement_and_crz_coupling
+
+<DESCRIPTION>
+The current ansatz uses only a linear chain of CZ gates with independent RY/RZ rotations, giving limited entangling power and no parametrized two-qubit interactions. This can limit expressivity and lead to the observed train-validation-test gap.
+
+I propose:
+1. Close the entangling chain into a ring by adding a CZ gate between qubits 7 and 0, improving connectivity and information mixing across all qubits (helps combine distant features encoded via the fixed feature map pairs).
+2. Replace the fixed CZ ring with a mix of parametrized CRZ gates for half of the connections and fixed CZ for the others, which adds trainable two-qubit correlations without excessively increasing parameter count. This gives the ansatz more flexibility to learn multi-qubit correlations relevant to the binary classification task while remaining parameter-efficient (adds only 4 new params per block, i.e., 4*6=24 additional params overall, well within budget).
+3. Keep the pre/post RZ layers structure intact for stability, since these already provide good expressivity for single-qubit phases.
+
+This targeted change should increase the model's capacity to capture correlations between distant qubits (since IsingZZ feature encoding uses arbitrary fixed pairs), while keeping the parameter count modest and avoiding overfitting risk from too many parameters.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+=======
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_1"},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_2"},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_3"},
+    {"gate": "CZ", "wires": [7, 0]},
+>>>>>>> REPLACE

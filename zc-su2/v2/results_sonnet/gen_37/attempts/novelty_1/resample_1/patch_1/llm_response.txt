@@ -1,0 +1,126 @@
+<NAME>
+ansatz_shared3_ring_plus_longrange
+
+<DESCRIPTION>
+Crossover of the two top-scoring (0.71) seed variants, taken a step further along the "fewer distinct parameters always wins" guidance that the task description states explicitly. Both 0.71 seeds already reduced the trainable-parameter set to {ry_a, ry_b, rz_p, zz_ring} (4 distinct names) by sharing an RY parameter across each half of the register, a single global RZ phase before/after the entangling ring, and a single shared ZZ-ring coupling (including long-range "hypercube" cross-couplings) that costs nothing extra in parameter count. The current mutant that added a second rz_a/rz_b split (5 distinct params, more gates, no CNOT mixing) scored worse (0.69), confirming that adding parameters or dropping the zero-cost CNOT mixing layers hurts the metric even when accuracy stays perfect.
+
+This crossover keeps every zero-cost structural idea from the winning seeds (forward+backward CNOT ladders for mixing, global RZ phase reused twice, ZZ ring with long-range "opposite-qubit" couplings all sharing one coupling parameter) but merges the two RY groups (`ry_a`, `ry_b`) into a single shared `ry_a`, cutting the distinct-parameter count from 4 down to 3 (ry_a, rz_p, zz_ring). To compensate for the reduced expressivity from merging the RY groups and to help the worst-group margin (the dominant score term), an additional shared-parameter "skip-2" ZZ shell (0-2,1-3,2-4,3-5,4-6,5-7,6-0,7-1) is added — still reusing the single `zz_ring` parameter, so no new trainable names are introduced, but it enriches connectivity beyond the nearest-neighbor + opposite-qubit couplings of the seeds, aiming to better separate hard validation groups while remaining as parameter-economical as possible.
+
+This design targets: fewer distinct parameters (3 vs 4) for a higher parameter-economy score, at least as much or richer entangling structure to preserve/raise worst_group_margin, and no duplicate motif repetition (which was shown to hurt convergence/param count in the current program).
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # RY pre-rotation layer: single shared parameter across ALL 8 qubits.
+    # Merging the previous two-group split (ry_a / ry_b) into one name cuts
+    # the distinct-parameter count from 4 to 3 while the entangling
+    # structure below is kept (and slightly enriched) to preserve
+    # separability of the hardest validation group.
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_a"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_a"},
+
+    # Fixed CNOT ladder (forward) - zero-parameter entangling mixing across
+    # all 8 qubits before the parametrized entangling ring.
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]},
+
+    # Single shared global phase parameter applied to all qubits before the
+    # entangling ring.
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+
+    # Parametrized entangling ring: one shared coupling strength across the
+    # full nearest-neighbor ring topology (wraps around 7-0).
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+
+    # Long-range "opposite qubit" couplings reusing the SAME shared
+    # parameter, giving a hypercube-like connectivity without adding a new
+    # trainable parameter name.
+    {"gate": "ZZ", "wires": [0, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "zz_ring"},
+
+    # Additional "skip-2" shell, still sharing zz_ring, enriching
+    # connectivity further to help separate the hardest validation group
+    # without introducing any new trainable parameter.
+    {"gate": "ZZ", "wires": [0, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 0], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 1], "param": "zz_ring"},
+
+    # Fixed CNOT ladder (backward) - additional entangling mixing, still no
+    # extra trainable parameters.
+    {"gate": "CNOT", "wires": [7, 6]},
+    {"gate": "CNOT", "wires": [6, 5]},
+    {"gate": "CNOT", "wires": [5, 4]},
+    {"gate": "CNOT", "wires": [4, 3]},
+    {"gate": "CNOT", "wires": [3, 2]},
+    {"gate": "CNOT", "wires": [2, 1]},
+    {"gate": "CNOT", "wires": [1, 0]},
+
+    # Reuse the same global phase parameter after the entangling ring,
+    # reinforcing the encoding without adding a new trainable name.
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

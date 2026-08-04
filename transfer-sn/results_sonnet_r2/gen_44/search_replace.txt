@@ -1,0 +1,29 @@
+<NAME>
+add_ry_mixer_post_rz
+
+<DESCRIPTION>
+Adds a lightweight local mixing layer of RY rotations immediately after the existing `rz_post` layer, reusing the already-shared `ry_p0…ry_p3` parameter keys from the pre-rotation layer. Since these parameters are shared (same string key), this adds zero new trainable parameters while injecting an additional non-commuting rotation axis right before the next feature upload. This can help the model re-express information encoded in the Z-basis (from IsingZZ feature map and RZ layers) into the Y-basis, improving expressivity of each block without any parameter-count cost, potentially speeding convergence and improving accuracy without harming the train-test gap.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 6, "param": "rz_post_p3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_p3"},
+]
+
+=======
+    {"gate": "RZ", "wire": 6, "param": "rz_post_p3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_p3"},
+    # Post-rotation RY mixer: reuse pre-rotation RY shared angles (zero extra
+    # parameters) to inject an additional non-commuting rotation axis right
+    # before the next feature upload, improving per-block expressivity.
+    {"gate": "RY", "wire": 0, "param": "ry_p0"},
+    {"gate": "RY", "wire": 1, "param": "ry_p0"},
+    {"gate": "RY", "wire": 2, "param": "ry_p1"},
+    {"gate": "RY", "wire": 3, "param": "ry_p1"},
+    {"gate": "RY", "wire": 4, "param": "ry_p2"},
+    {"gate": "RY", "wire": 5, "param": "ry_p2"},
+    {"gate": "RY", "wire": 6, "param": "ry_p3"},
+    {"gate": "RY", "wire": 7, "param": "ry_p3"},
+]
+
+>>>>>>> REPLACE

@@ -1,0 +1,102 @@
+Looking at the performance metrics, I can see a clear pattern:
+
+**Analysis:**
+- Prior program 1 (score 0.55): 8 distinct params, good validation accuracy (0.92)
+- Prior program 2 (score 0.58): 10 distinct params, excellent validation accuracy (0.97), best worst_group_margin (0.28)
+- Current program (score 0.43): 6 distinct params, poor validation accuracy (0.68), worst_group_margin only (0.09)
+
+The current program is severely underfitting due to excessive parameter sharing. While it has the fewest parameters, it sacrificed expressiveness too much. The best prior (0.58) used 10 distinct parameters with Ising gates (XX, YY, ZZ) providing rich two-qubit entanglement.
+
+**Key insights:**
+1. The recommendation mentions duplicating Ising blocks with parameter reuse - this deepens entanglement while controlling parameter count
+2. Prior program 2 succeeded with diverse two-qubit interactions (XX, YY, ZZ on different pairs)
+3. Current program only uses XX gates - lacks YY and ZZ diversity
+4. Worst_group_margin is critical for robust separation; current at 0.09 vs. prior at 0.28
+
+**Strategy:** Implement a two-layer Ising block approach with parameter reuse, combining:
+- Layer 1: Adjacent pair interactions (XX, YY, ZZ on consecutive pairs)
+- Layer 2: Cross interactions (XX, YY, ZZ on different pairs with reused parameters)
+- This maintains ~10 distinct parameters while maximizing entanglement and expressiveness
+
+<NAME>
+dual_ising_reuse
+</NAME>
+
+<DESCRIPTION>
+This approach implements two sequential layers of Ising two-qubit gates with strategic parameter reuse. The first layer applies XX, YY, and ZZ gates on adjacent qubit pairs, establishing local entanglement. The second layer reuses the same parameters on different qubit pairs, creating long-range interactions and deeper entanglement. This dual-layer structure with parameter sharing balances three critical objectives: (1) sufficient expressiveness to separate hard samples (worst_group_margin), (2) parameter economy (fewer distinct params), and (3) generalization from small training sets. Unlike the current underfitted approach that over-shares parameters, this design provides rich two-qubit interactions while keeping the distinct parameter count at ~10, matching the highest-scoring prior program's efficiency.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial single-qubit rotations
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    
+    # Pre-entanglement RZ layer
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    
+    # First Ising layer: adjacent pairs with diverse gates
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    
+    # Cross-pair interactions: second layer reuses parameters on different pairs
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    
+    # Second Ising layer: duplicate first layer with reused parameters for deeper entanglement
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    
+    # Final RZ layer
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

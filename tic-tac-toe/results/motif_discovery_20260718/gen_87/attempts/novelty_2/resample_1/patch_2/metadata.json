@@ -1,0 +1,14 @@
+{
+  "generation": 87,
+  "novelty_attempt": 2,
+  "resample_attempt": 1,
+  "patch_attempt": 2,
+  "success": false,
+  "num_applied": 0,
+  "patch_name": "learnable_feature_scaling_per_orbit",
+  "patch_description": "The current implementation uses a fixed FEATURE_SCALE constant (2\u03c0/3) for all qubits. However, different symmetry orbits (corners, edges, center) may benefit from learning their own feature-injection strengths. This allows the circuit to:\n\n1. **Accelerate early correlation buildup**: Corners and edges may encode different amounts of information; learning per-orbit scales lets the circuit adapt input sensitivity.\n2. **Improve expressivity**: Three learnable parameters (feat_corner, feat_edge, feat_center) replace the constant, enabling the circuit to discover optimal input encoding for each region.\n3. **Maintain parameter budget**: We keep N_PARAMS_PER_BLOCK = 13 by introducing these 3 new parameters in the feature map (outside the ansatz) and removing the \"crz_center\" parameter from Layer 2 (merging all center-edge CRZs into \"crz_ring\"), which frees up exactly 3 parameters.\n\nThis approach is inspired by adaptive data encoding in quantum machine learning, where input scaling is learned to maximize expressivity and reduce training time. The feature map becomes part of the trainable circuit, allowing gradients to flow through input encoding.\n\n**Changes**:\n1. Modify ANSATZ_SPEC to add three FEATURE_SCALE meta-parameter entries and merge crz_center into crz_ring.\n2. Update validate_ansatz_spec() to handle FEATURE_SCALE gate type.\n3. Modify feature_map() to accept learnable feature-scaling parameters.\n4. Update circuit_z_expectations() to extract and pass feature-scaling params.\n5. Update circuit_metadata() similarly.",
+  "error_msg": "Attempted to edit outside EVOLVE-BLOCK regions\n\nFound text: 'def validate_ansatz_spec(spec: list[dict]) -> tuple[list[str], list[str]]:'\nAt position: 12152\n\nContext around found text:\n     Line 291:     return summary\n     Line 292: \n     Line 293: \n >>> Line 294: def validate_ansatz_spec(spec: list[dict]) -> tuple[list[str], list[str]]:\n     Line 295:     \"\"\"Validate ANSATZ_SPEC and return errors plus ordered parameter keys.\"\"\"\n     Line 296:     errors = []\n     Line 297:     parameter_keys = []\n\nThis text was found in an immutable (non-editable) region.\n\nAvailable editable regions (EVOLVE-BLOCK content):\n  Region 1 (chars 2446-7297):\n    ANSATZ_SPEC = [\n        # Layer 1: Compact local rotations (shared by symmetry)\n        {\"gate\": \"RY\", \"wire\": 0, \"param\": \"ry_corners\"},\n    ... (85 more lines)\n\nSuggestions:\n1. Move your edit to within an EVOLVE-BLOCK region\n2. Check if similar code exists in the editable regions above\n3. Ensure your search text targets code within # EVOLVE-BLOCK-START/END markers",
+  "timestamp": "2026-07-18T12:04:11.298322",
+  "llm_cost": 0.086563,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

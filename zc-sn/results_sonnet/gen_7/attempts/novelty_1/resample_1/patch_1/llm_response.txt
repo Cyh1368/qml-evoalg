@@ -1,0 +1,55 @@
+<NAME>
+merge_redundant_rz_add_entangling_cry_ring_close
+
+<DESCRIPTION>
+Analysis: since RZ gates and CZ gates are both diagonal in the computational basis, they mutually commute. This means the current block's `rz_pre_i` and `rz_post_i` layers (separated only by a chain of CZ gates) are mathematically equivalent to a *single* combined RZ rotation per qubit (rz_pre_i + rz_post_i) — i.e. half of the 16 RZ parameters are redundant and contribute no extra expressive power, just wasted parameter budget and extra circuit depth.
+
+Fix: remove the redundant duplicate RZ layer, replace the CZ ring entangler with a parametrized CRY ring (which does NOT commute with the surrounding RY/RZ layers, so it contributes genuine entangling expressivity), and close the ring (qubit 7 -> qubit 0) to give a fully connected entangling topology in one pass. This keeps the parameter count roughly the same (8 RY + 8 CRY + 8 RZ = 24 per block, versus 8+8+8=24 previously) while using every parameter meaningfully, which should improve expressivity per parameter, reduce the train/val gap, and potentially speed convergence.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_0"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_1"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_2"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_3"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_4"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_5"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_6"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+>>>>>>> REPLACE
+</DIFF>

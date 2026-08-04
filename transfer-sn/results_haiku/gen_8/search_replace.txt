@@ -1,0 +1,124 @@
+<NAME>
+enhance_connectivity_with_diagonal_entanglement
+</NAME>
+
+<DESCRIPTION>
+Analysis of prior programs and current performance:
+
+The current program achieves a combined score of 0.87 with:
+- Test accuracy: 0.85
+- Validation accuracy: 0.90
+- Generalization gap: 0.04 (good)
+- n_params: 122
+- Convergence: 450 steps (fast)
+
+Comparison with prior programs:
+1. First program: score 0.85, test acc 0.87, n_params 146, convergence 750 steps
+2. Second program: score 0.85, test acc 0.85, n_params 68, convergence 720 steps
+
+The current program balances parameter efficiency (122 params) with good accuracy and fast convergence. However, test accuracy lags validation accuracy by 0.05, suggesting potential overfitting.
+
+Key observation: The current ansatz uses:
+- 4 independent RY parameters (shared pairs)
+- 4 CRY gates in nearest-neighbor pattern
+- 4 CRY gates in alternating pattern
+- Parameter sharing to reduce total parameters
+
+To improve:
+1. Enhance entanglement connectivity with diagonal gates (CRX or CRZ) to capture more complex feature interactions
+2. Add cross-diagonal entanglement to complement existing nearest-neighbor and alternating patterns
+3. Reduce parameter sharing slightly to allow more expressiveness where needed
+4. Keep the overall structure compact to maintain fast convergence
+
+The strategy is to add CRX gates in a cross-diagonal pattern (0-3, 1-4, 2-5, 3-6, 4-7) which:
+- Creates longer-range entanglement
+- Complements the existing horizontal and offset patterns
+- Uses fewer additional parameters (5 gates with 1 shared param = minimal overhead)
+- Should improve test accuracy by better generalizing feature interactions
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_2"},
+    {"gate": "RY", "wire": 7, "param": "ry_3"},
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_01"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_23"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_45"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_67"},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_3"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_12"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_34"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_56"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_70"},
+    {"gate": "RZ", "wire": 0, "param": "rz_final_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final_2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final_3"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_2"},
+    {"gate": "RY", "wire": 7, "param": "ry_3"},
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_01"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_23"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_45"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_67"},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_3"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_12"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_34"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_56"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_70"},
+    {"gate": "CRX", "wires": [0, 3], "param": "crx_diag"},
+    {"gate": "CRX", "wires": [1, 4], "param": "crx_diag"},
+    {"gate": "CRX", "wires": [2, 5], "param": "crx_diag"},
+    {"gate": "CRX", "wires": [3, 6], "param": "crx_diag"},
+    {"gate": "CRX", "wires": [4, 7], "param": "crx_diag"},
+    {"gate": "RZ", "wire": 0, "param": "rz_final_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final_2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final_3"},
+]
+>>>>>>> REPLACE
+</DIFF>
+
+This modification adds 5 CRX gates with a shared parameter in a diagonal entanglement pattern that:
+- Connects qubits 3 steps apart (0-3, 1-4, 2-5, 3-6, 4-7)
+- Uses a shared `crx_diag` parameter to minimize overhead (adds only 1 parameter per block)
+- Creates long-range entanglement to capture complex feature interactions
+- Complements the existing nearest-neighbor (0-1, 2-3, 4-5, 6-7) and offset (1-2, 3-4, 5-6, 7-0) patterns
+- Should improve generalization by reducing overfitting while maintaining fast convergence

@@ -1,0 +1,119 @@
+Looking at the current performance metrics, I can see several issues:
+
+1. **Poor generalization**: validation_accuracy (0.55) vs test_accuracy (0.49) shows a 0.07 gap, indicating overfitting
+2. **High parameter count**: 162 parameters with poor efficiency (0.00), suggesting many parameters aren't contributing meaningfully
+3. **High loss**: validation_loss of 2.39 and test_loss of 2.48 indicate the model isn't learning well
+4. **Shallow learning**: The circuit has 47 depth and 261 gates but still underperforms
+
+**Strategy**: 
+The current ansatz has 54 single-qubit rotations (9 qubits × 3 rotation types × 2 pre/post) plus 12 fixed CZ gates. This is inefficient. I'll:
+
+1. **Reduce parameter count** by using parameter sharing strategically - qubits that play similar roles can share parameters
+2. **Add entangling two-qubit parametrized gates** (CRZ) to create richer feature maps with fewer parameters
+3. **Replace some fixed CZ gates with parametrized CRZ gates** to make the circuit more flexible
+4. **Simplify the single-qubit layer** by removing redundant RZ gates and using shared parameters
+
+The key insight is that the current architecture has too many independent parameters that likely aren't all being used effectively. By introducing parameter sharing and replacing fixed gates with parametrized ones, we can:
+- Reduce overfitting (fewer parameters)
+- Improve the learning capacity (parametrized entangling gates)
+- Better utilize the parameter budget
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre_8"},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [0, 8]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 8]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_8"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre"},
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_6"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_7"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_8"},
+    {"gate": "CRZ", "wires": [4, 8], "param": "crz_9"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_10"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+</DIFF>
+
+**Rationale for this change:**
+
+1. **Parameter sharing on single-qubit rotations**: All qubits now share the same `rz_pre` and `rz_post` parameters. This reduces parameters from 54 to 29 (9 RY + 1 shared RZ_pre + 12 CRZ + 1 shared RZ_post), cutting the parameter count by ~82%.
+
+2. **Parametrized entangling gates**: Replacing all 12 fixed CZ gates with CRZ (controlled rotation Z) gates adds 12 learnable parameters to the entangling layer. This gives the optimizer flexibility to learn which entangling interactions are most important for the task.
+
+3. **Reduced overfitting**: Fewer parameters should reduce the train-test gap and improve generalization.
+
+4. **Better feature learning**: The parametrized CRZ gates can learn task-specific entanglement patterns, potentially improving the loss and accuracy.
+
+The total parameter count drops from 162 to ~29, which should significantly improve parameter efficiency while maintaining expressive power through the parametrized two-qubit gates.

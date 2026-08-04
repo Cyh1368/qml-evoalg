@@ -1,0 +1,112 @@
+<NAME>
+add_readout_calibration_layer
+</NAME>
+
+<DESCRIPTION>
+The current program has a score of 0.87 and shows a validation accuracy of 0.87 with test accuracy of 0.88, indicating reasonable but improvable performance. The two prior programs scored 0.90 and 0.91 respectively.
+
+The key observation from the recommendation is to add compact per-wire variational readout rotations after all ansatz blocks and before measurement. This approach:
+
+1. **Captures residual phase offsets per qubit**: After the ansatz and feature map layers, each qubit may have residual phase misalignment that a global gain/bias cannot correct. Per-wire RY and RZ rotations provide fine-grained calibration.
+
+2. **Minimal depth overhead**: Two shared parameter keys ("ry_read" and "rz_read") applied to all 8 qubits add only 16 gates per measurement, which is negligible compared to the existing ~300 gates per block.
+
+3. **Similar to successful prior approaches**: The prior programs with higher scores (0.90 and 0.91) likely benefited from similar readout refinement, suggesting this is a known effective technique.
+
+4. **Addresses train-test gap**: The current program has a generalization gap of 0.04, which is larger than the prior best (0.01). Per-wire readout calibration can help align training and test distributions by capturing systematic per-qubit biases.
+
+The implementation adds two new shared parameter keys to the readout layer in `circuit_z_expectations`, allowing the circuit to learn per-qubit phase corrections before computing Z expectations. This should improve validation accuracy, reduce the generalization gap, and enhance parameter efficiency.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(records)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(circuit_params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+=======
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(records)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(circuit_params, block_index)
+    
+    # Per-wire variational readout calibration
+    # Extract readout parameters (last 2 params after circuit params)
+    readout_offset = N_CIRCUIT_PARAMS
+    ry_read_param = circuit_params[readout_offset] if readout_offset < len(circuit_params) else 0.0
+    rz_read_param = circuit_params[readout_offset + 1] if readout_offset + 1 < len(circuit_params) else 0.0
+    
+    # Apply per-wire RY and RZ rotations for phase calibration
+    for wire in range(N_QUBITS):
+        qml.RY(ry_read_param, wires=wire)
+        qml.RZ(rz_read_param, wires=wire)
+    
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+=======
+N_READOUT_PARAMS = 4  # trainable output calibration: gain, bias, ry_read, rz_read
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: calibrated mean of qubit Z expectations."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+    z = pnp.stack(circuit_z_expectations(records, circuit_params))  # (N_QUBITS, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+=======
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: calibrated mean of qubit Z expectations."""
+    # Extend circuit_params to include readout parameters for the circuit
+    circuit_params_with_readout = params[:N_CIRCUIT_PARAMS + 2]
+    gain = params[N_CIRCUIT_PARAMS + 2]
+    bias = params[N_CIRCUIT_PARAMS + 3]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+    z = pnp.stack(circuit_z_expectations(records, circuit_params_with_readout))  # (N_QUBITS, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+=======
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 0.0       # ry_read starts at 0
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # rz_read starts at 0
+    init[N_CIRCUIT_PARAMS + 2] = 1.0   # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 3] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+>>>>>>> REPLACE
+
+</DIFF>

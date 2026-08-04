@@ -1,0 +1,219 @@
+<NAME>
+alternating_blocks_with_swapped_entanglement
+</NAME>
+
+<DESCRIPTION>
+The current program (score 0.40) shows poor generalization (gap 0.24) and worst-group margin (0.24). The prior Gen 2 program (score 0.54) achieved better worst-group margin (0.31) with heterogeneous structure but higher parameter count (12 distinct params).
+
+Following the recommendation to break strict 3× repetition symmetry, I will implement two variant ansatz blocks (A and B) that are applied in an A–B–A sequence. This introduces structural heterogeneity across the three repetitions while maintaining ~12 distinct parameters.
+
+**Key changes:**
+1. Block A uses ZZ entanglement on pairs (0,3) and (4,7)
+2. Block B swaps these to (1,4) and (5,2), plus uses YY instead of ZZ for diversity
+3. Apply blocks in sequence: A→B→A
+
+This alternation mimics the successful pattern from Gen 2 but with tighter parameter economy and more deliberate symmetry breaking. The hypothesis is that:
+- Heterogeneous connectivity across layers should better separate hard samples (improving worst_group_margin)
+- Reduced redundancy from varied entanglement patterns should improve generalization
+- The A–B–A structure remains learnable with modest parameter sharing
+
+The resulting circuit will have ~11–12 distinct parameters and maintain competitive depth.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Shared initial rotation layer with 3-way alternation for more expressiveness
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_c"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_a"},
+    # Symmetric entangling layer with learnable XX gates: even-odd pairs
+    {"gate": "XX", "wires": [0, 1], "param": "ent_0"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_1"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_2"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_3"},
+    # Additional cross-layer entanglement: bridge even qubits with YY
+    {"gate": "YY", "wires": [0, 2], "param": "cross_a"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross_a"},
+    # Diagonal entanglement for orthogonal channel: ZZ on complementary pairs
+    {"gate": "ZZ", "wires": [0, 4], "param": "diag_a"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "diag_a"},
+    # Sparse star XX layer: hub qubit 0 to peripheral qubits for non-local correlations
+    {"gate": "XX", "wires": [0, 2], "param": "xx_star"},
+    {"gate": "XX", "wires": [0, 4], "param": "xx_star"},
+    {"gate": "XX", "wires": [0, 6], "param": "xx_star"},
+    # Final rotation layer (2 shared params)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+# Block A: standard entanglement on (0,3) & (4,7)
+ANSATZ_SPEC_A = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Nearest-neighbor XX
+    {"gate": "XX", "wires": [0, 1], "param": "xx_near"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_near"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_near"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_near"},
+    # Block A-specific diagonal ZZ
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz_a"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "zz_a"},
+    # Final RZ shared
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+
+# Block B: swapped entanglement on (1,4) & (5,2), using YY for diversity
+ANSATZ_SPEC_B = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Nearest-neighbor XX (same as block A)
+    {"gate": "XX", "wires": [0, 1], "param": "xx_near"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_near"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_near"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_near"},
+    # Block B-specific swapped diagonal YY
+    {"gate": "YY", "wires": [1, 4], "param": "yy_b"},
+    {"gate": "YY", "wires": [5, 2], "param": "yy_b"},
+    # Final RZ shared
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+
+ANSATZ_SPEC = ANSATZ_SPEC_A
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC.
+
+    Parameters are shared across repetitions: every application of the block
+    reads the same values, so block_index is accepted only for API symmetry.
+    """
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    del block_index  # parameters are tied across repeats
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+            elif gate == "XX":
+                qml.IsingXX(angle, wires=wires)
+            elif gate == "YY":
+                qml.IsingYY(angle, wires=wires)
+            elif gate == "ZZ":
+                qml.IsingZZ(angle, wires=wires)
+=======
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC.
+
+    Implements alternating blocks A–B–A to break repetition symmetry.
+    block_index selects which block to apply (0 or 2 -> A, 1 -> B).
+    """
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    # Select block variant: A at indices 0,2 and B at index 1
+    selected_spec = ANSATZ_SPEC_A if block_index != 1 else ANSATZ_SPEC_B
+    
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in selected_spec:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+            elif gate == "XX":
+                qml.IsingXX(angle, wires=wires)
+            elif gate == "YY":
+                qml.IsingYY(angle, wires=wires)
+            elif gate == "ZZ":
+                qml.IsingZZ(angle, wires=wires)
+>>>>>>> REPLACE
+</DIFF>

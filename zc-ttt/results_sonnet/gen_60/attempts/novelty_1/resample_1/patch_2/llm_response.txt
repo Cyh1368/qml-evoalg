@@ -1,0 +1,27 @@
+<NAME>
+add_zzz_correlation_layer
+
+<DESCRIPTION>
+The previous mid-layer RY "refresh" addition regressed the combined score (0.61 vs. seed's 0.63), suggesting that a plain single-qubit rotation between the CRZ entangling layer and the final phase layer does not add useful expressivity here — it likely just adds depth/overfitting noise without capturing new correlations.
+
+Instead, I replace that mid-layer RY block with two three-qubit ZZZ interaction gates placed on qubits that are NOT already directly coupled by the existing two-qubit CRZ backbone (0,4,6) and (1,5,8). These three-qubit gates introduce genuine higher-order (three-body) correlations among the encoded features that pairwise CRZ gates cannot capture, while only adding 2 new parameters (with no sharing needed since each triple is independent) and 2 gates — a much smaller footprint than the previous 4-gate RY refresh. This should improve model capacity/train accuracy while keeping the generalization gap controlled, since three-qubit gates concentrated on previously-unconnected qubit triples add complementary information rather than redundant rotations on already-entangled wires.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # --- Mid-layer amplitude refresh: RY on high-connectivity qubits ---
+    # Targets qubits 1, 3, 5, 7, each touching 2-3 entangling edges above,
+    # giving the readout layer a locally-refreshed feature before the
+    # final phase rotations.
+    {"gate": "RY", "wire": 1, "param": "ry_mid_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid_3"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid_5"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid_7"},
+=======
+    # --- Higher-order correlation layer: three-qubit ZZZ gates on triples
+    # that are not directly coupled by the CRZ backbone above, adding
+    # genuine three-body correlations with minimal parameter overhead.
+    {"gate": "ZZZ", "wires": [0, 4, 6], "param": "zzz_0"},
+    {"gate": "ZZZ", "wires": [1, 5, 8], "param": "zzz_1"},
+>>>>>>> REPLACE
+</DIFF>

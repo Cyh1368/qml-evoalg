@@ -1,0 +1,104 @@
+Looking at the performance metrics:
+
+**Current state analysis:**
+- Current program: score 0.66, worst_group_margin 0.35, 150 gates, depth 39, convergence at step 60
+- Prior best: score 0.68, worst_group_margin 0.36, 93 gates, depth 20, convergence at step 30
+- The current program doubled the circuit complexity (repeated motifs) but degraded performance
+
+**Key observations:**
+1. **Worst-group margin is the bottleneck** (0.35 vs 0.36 prior best) - this is the dominant scoring term
+2. **The cyclic CRX closure is missing** - the recommendation specifically suggests adding `{"gate":"CRX","wires":[7,0],"param":"ent_nn"}` to complete the narrow-CRX ring
+3. **Circuit is too deep** - the repeated motifs add complexity without improving margins
+4. **Parameter efficiency matters** - fewer distinct parameters always scores higher
+
+**Strategy:**
+1. Remove the redundant second motif (reduces complexity back to prior level)
+2. Add the cyclic CRX closure [7,0] under `ent_nn` (recommended action to boost worst-group margin)
+3. Keep the essential single-motif structure that was more effective
+
+The prior second-best (score 0.68) had a single motif with XX+YY+CRZ gates at 93 gates. By streamlining back to that structure but adding the cyclic CRX edge, we should improve worst-group margin while maintaining parameter efficiency and circuit depth.
+
+<NAME>
+cyclic_crx_closure_single_motif
+</NAME>
+
+<DESCRIPTION>
+The current program repeats the entire entanglement motif twice, which increases complexity (150 gates, depth 39) without improving worst-group margin (0.35 vs prior best 0.36). The key recommendation is to complete the CRX ring by adding the cyclic edge [7,0] under parameter "ent_nn", which was shown in generation 41 to boost margins without extra parameters.
+
+Strategy:
+1. Remove the redundant second motif (XX, CRX, YY, CRZ blocks) to return to a simpler, more generalizable structure
+2. Add the cyclic CRX closure {"gate":"CRX","wires":[7,0],"param":"ent_nn"} immediately after the first CRX enrichment layer
+3. This completes the nearest-neighbor CRX ring and should improve worst-group margin through better cyclic entanglement connectivity
+4. Result: ~100 gates, depth ~20, single motif, cyclic completeness
+
+This addresses the core bottleneck (worst-group margin) by improving the expressivity of the narrow-CRX layer while reducing overall complexity and improving generalization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # CRX enrichment layer on offset pairs
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+
+    # Second block: offset nearest-neighbor YY gates
+=======
+    # CRX enrichment layer on offset pairs with cyclic closure
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [7, 0], "param": "ent_nn"},
+
+    # Second block: offset nearest-neighbor YY gates
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    # Third block: long-range CRZ gates
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # ==================== SECOND ENTANGLEMENT MOTIF ====================
+    # Intermediate rotations on selected qubits
+    {"gate": "RY", "wire": 1, "param": "ry_mid"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid"},
+
+    # Second motif: nearest-neighbor XX gates (reusing ent_nn)
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # Second motif: CRX enrichment on offset pairs (reusing ent_nn)
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+
+    # Second motif: offset nearest-neighbor YY gates (reusing ent_off)
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+
+    # Second motif: long-range CRZ gates (reusing ent_lr)
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Final rotation layer with shared parameters
+=======
+    # Third block: long-range CRZ gates
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Final rotation layer with shared parameters
+>>>>>>> REPLACE
+</DIFF>

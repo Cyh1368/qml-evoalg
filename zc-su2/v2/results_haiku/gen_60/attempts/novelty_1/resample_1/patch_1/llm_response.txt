@@ -1,0 +1,77 @@
+# Analysis
+
+Looking at the prior programs and current state:
+
+**Prior best performance (0.68):**
+- 6 distinct parameters
+- Simple, lean structure
+- Good worst_group_margin (0.36)
+- Fast convergence (30 steps)
+
+**Current program (0.66):**
+- 7 distinct parameters (regression from 6)
+- Added extra CRZ and CZ gates
+- Slightly worse worst_group_margin (0.35)
+- Same convergence (30 steps)
+- More gates (111 vs 93)
+
+**Key insight from the recommendation and history:**
+The recommendation suggests replacing YY gates with CRX in the offset entangling block. However, looking at the scores more carefully:
+- When the first prior program had CRX gates interspersed (102 gates, 0.68 score), it performed better
+- The current program replaced those CRX gates with just YY gates and added extra unparametrized CZ gates
+- The extra complexity (more params, more gates) hurt the score without improving margins
+
+**Strategy to improve:**
+1. **Implement the recommendation:** Replace the offset YY gates with CRX gates. This adds gate diversity under the same parameter budget, which helped in the first prior program.
+2. **Reduce unnecessary complexity:** Remove the extra CRZ gates (3->6) and the unparametrized CZ gates that were added in the current version. These increased depth and parameters without corresponding benefit.
+3. **Return to leaner parameterization:** Use a single `ent_nn` parameter for both the XX and CRX gates in the offset entangling block, matching the prior successful structure.
+
+This should:
+- Reduce distinct parameters from 7 back toward 6
+- Maintain gate diversity (XX + CRX combination)
+- Reduce overall gate count and depth
+- Improve worst_group_margin by reducing overfitting
+
+<NAME>
+crx_offset_entangle_lean
+</NAME>
+
+<DESCRIPTION>
+Replace offset YY gates with CRX gates under a shared ent_nn parameter, and remove the extra CRZ and unparametrized CZ gates that were added in the current version. This aligns with the first prior program's successful structure (0.68 score) which benefited from gate-type diversity (XX + CRX) under parameter sharing. The current program's additions (extra CRZ, CZ gates, separate ent_off param) increased complexity without improving margins. Reverting to the leaner structure with CRX gates should restore parameter efficiency, reduce depth, and improve worst_group_margin by concentrating gradient flow effectively.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+=======
+    # Second entangling block: offset nearest-neighbor CRX gates
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [5, 0], "param": "ent_lr"},
+
+    # Skip-4 CZ entangling layer for complementary long-range structure
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+=======
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+>>>>>>> REPLACE
+</DIFF>

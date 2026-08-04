@@ -1,0 +1,116 @@
+<NAME>
+crz_seq_shared_midlayer
+
+<DESCRIPTION>
+This crossover combines the two best-performing seed structures. Analysis of
+the metrics shows that the *sequential* (non-reordered) CRZ entangling layer
+with symmetric-edge parameter sharing (27 distinct params per block) achieved
+the best score (0.63), while re-ordering those same gates into "parallel
+commuting sublayers" hurt performance (0.58) even though the resulting
+unitary is logically equivalent — this suggests the backend's initialization
+and optimization trajectory is sensitive to gate ordering, so we keep the
+proven sequential order intact rather than reshuffling it.
+
+The variant that added a full extra RY "mid-layer" (4 new independent
+parameters) slightly *decreased* the score (0.62 vs 0.63) despite adding
+expressivity, likely because the extra free parameters increased overfitting
+risk / optimization difficulty without enough benefit. To capture the
+potential benefit of an extra non-linearity between the entangling layer and
+the final phase layer while minimizing added parameter count, this version
+reintroduces a mid-circuit RY rotation on the "odd" qubits (1, 3, 5, 7) but
+shares a *single* parameter across all four gates. This adds only 1 extra
+distinct parameter (28 total vs 27) instead of 4, giving mild extra
+expressivity/entanglement-breaking without materially increasing the risk of
+overfitting or convergence difficulty seen in the 186-param variant.
+
+Structure:
+1. Initial RY layer on all 9 qubits (independent params).
+2. CRZ entangling layer over all 12 allowed 2-qubit pairs, using the proven
+   sequential ordering and parameter-sharing pattern from the best scoring
+   seed (crz_0..crz_11, with symmetric pairs sharing 2, 3, 4).
+3. A single shared-parameter RY "mid" rotation on qubits {1,3,5,7} to add a
+   touch of extra expressivity for negligible parameter cost.
+4. Final RZ phase layer on all 9 qubits (independent params).
+
+This keeps parameter count essentially unchanged (28 vs 27 distinct params
+per repetition) while blending the strongest structural traits of both
+parent programs.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 9
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_THREE_QUBIT_GATES = {"ZZZ", "CCRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial single-qubit rotation layer
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+
+    # Entangling layer: parametrized CRZ over all 12 allowed pairs, using the
+    # proven sequential ordering (kept intact rather than reshuffled into
+    # commuting sublayers, since that reordering previously hurt the score).
+    # Symmetric edges deliberately share parameters to control growth while
+    # retaining full connectivity.
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [4, 8], "param": "crz_9"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_10"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+
+    # Mid-circuit non-linearity: a single shared-parameter RY rotation on
+    # the "odd" qubits, adding a touch of extra expressivity between the
+    # entangling layer and the final phase layer at minimal parameter cost
+    # (only 1 extra distinct parameter instead of 4 independent ones).
+    {"gate": "RY", "wire": 1, "param": "ry_mid"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid"},
+
+    # Final single-qubit phase layer
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_8"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

@@ -1,0 +1,14 @@
+{
+  "generation": 13,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "zz_nearest_neighbor_minimal",
+  "patch_description": "Analysis of prior programs:\n\n1. **First program** (hybrid_ry_zz_minimal): \n   - Achieved perfect accuracy (1.00) with only **26 parameters** (4 per block)\n   - Used selective RY on even qubits, RZ on odd qubits, and only 2 ZZ gates\n   - Very efficient: depth=12, gate_count=60, convergence_step=60\n   - **This is the gold standard for parameter economy**\n\n2. **Second program** (expanded CZ line):\n   - Achieved perfect accuracy (1.00) with 26 parameters\n   - But significantly more complex: depth=35, gate_count=186, convergence_step=90\n   - Slower convergence due to much higher gate count\n\n3. **Current program** (shared RY/RZ with XX):\n   - Perfect accuracy (1.00) but **38 parameters** (6 per block)\n   - Moderate complexity: depth=18, gate_count=120\n   - Parameter efficiency is lower (0.03 vs 0.04 in the first program)\n\n**Key insight**: The first program's selective RY/RZ + minimal ZZ strategy was optimal. However, the recommendation suggests extending ZZ connectivity while keeping parameter count minimal by using just 2 shared parameters (\"zz_even\" and \"zz_odd\").\n\n**Proposed improvement**: Replace the current 6-parameter block (ry_shared, xx_0-3, rz_shared) with a 4-parameter block that:\n- Applies selective RY rotations (even qubits only, parameter \"ry_even\")\n- Applies selective RZ rotations (odd qubits only, parameter \"rz_odd\")\n- Replaces the 4 independent XX gates with all 7 nearest-neighbor ZZ interactions\n- Uses only 2 unique ZZ parameters:\n  - \"zz_even\": for pairs (0,1), (2,3), (4,5), (6,7)\n  - \"zz_odd\": for pairs (1,2), (3,4), (5,6)\n\nThis returns to the 4-parameter-per-block efficiency of the first program while expanding the entanglement topology beyond just two pairs. The increased connectivity (7 ZZ gates vs 2 ZZ gates) may improve expressibility while keeping parameter count at the minimal economy level (26 total parameters).\n\nExpected improvements:\n- **Reduce n_params from 38 to 26** (restore parameter economy)\n- **Maintain or improve accuracy** (1.00 expected)\n- **Improve parameter_efficiency** from 0.03 to 0.04\n- **Reduce gate_count** from 120 to a lower value\n- **Faster convergence** due to simpler parameter space",
+  "error_msg": null,
+  "timestamp": "2026-07-24T08:13:32.541203",
+  "llm_cost": 0.027075000000000002,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

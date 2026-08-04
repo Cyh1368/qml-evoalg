@@ -1,0 +1,54 @@
+<NAME>
+cross_ring_mixer
+</NAME>
+
+<DESCRIPTION>
+This block uses parameter-efficient, noncommuting mixing to complement the IsingZZ feature map. Independent RY rotations let each qubit adapt to its feature incidence, while parity-shared RZ parameters regularize the model and reduce the train-test gap. A CZ ring provides stable global connectivity, and four parametrized CRY gates across opposing qubits introduce directed, data-dependent mixing without excessive parameter growth. Reversing the direction of alternating CRY links avoids a single control-qubit bottleneck. The block uses only 14 unique parameters, making the six independently parameterized applications comparatively efficient and fast to optimize.
+</DESCRIPTION>
+
+<CODE>
+```python
+# EVOLVE-BLOCK-START
+
+ANSATZ_SPEC = [
+    # Local adaptive mixing.
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # Shared parity phases provide regularization while remaining
+    # noncommuting with the surrounding Y-axis mixers.
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+
+    # Stable nearest-neighbor entangling backbone.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Long-range directed mixers connect opposite regions of the ring.
+    {"gate": "CRY", "wires": [0, 4], "param": "cross_0"},
+    {"gate": "CRY", "wires": [5, 1], "param": "cross_1"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cross_2"},
+    {"gate": "CRY", "wires": [7, 3], "param": "cross_3"},
+]
+
+# EVOLVE-BLOCK-END
+```
+</CODE>

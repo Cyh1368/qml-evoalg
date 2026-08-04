@@ -1,0 +1,93 @@
+<NAME>
+group_wise_readout_gains
+</NAME>
+
+<DESCRIPTION>
+The current readout uses a single global gain and bias to calibrate the mean of all two-qubit Z-Z correlators. The recommendation suggests splitting the measured correlators into two groups and learning separate gains for each group before averaging, plus the existing bias. This allows the model to differentially weight informative correlator subsets.
+
+**Rationale:**
+- The second prior program achieves a combined score of 1.00 with only 26 parameters (vs. 74 in the first), demonstrating that parameter economy is critical.
+- The current program also has 26 parameters but shows worse convergence (90 steps vs. 60) and higher gate count (186 vs. 138), suggesting the ansatz is less efficient.
+- Adding group-wise gains (just 1 extra parameter: 27 total) is minimal and leverages the zero-gap stability of the readout layer while allowing the model to learn which correlator subsets are most discriminative.
+- This is a low-risk, high-reward modification that should improve both accuracy and convergence without significantly increasing parameter count.
+
+**Implementation:**
+1. Modify `predict_batch()` to split `READOUT_PAIRS` into two groups (e.g., even-indexed pairs vs. odd-indexed pairs).
+2. Compute the mean for each group separately.
+3. Apply independent gains to each group, then average before adding the shared bias.
+4. Update `N_READOUT_PARAMS` from 2 to 3 (gain_even, gain_odd, bias).
+5. Initialize the new gain parameters to 1.0 in `run_experiment()`.
+
+This keeps the ansatz structure unchanged while enhancing the readout's expressiveness through minimal parameter overhead.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+=======
+N_READOUT_PARAMS = 3  # trainable output calibration: gain_even, gain_odd, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per state: calibrated mean of the fixed correlators."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    states = pnp.array(np.asarray(x_batch, dtype=complex), requires_grad=False)
+    z = pnp.stack(circuit_pair_expectations(states, circuit_params))  # (n_pairs, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+=======
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per state: group-wise calibrated mean of the fixed correlators."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain_even = params[N_CIRCUIT_PARAMS]
+    gain_odd = params[N_CIRCUIT_PARAMS + 1]
+    bias = params[N_CIRCUIT_PARAMS + 2]
+    states = pnp.array(np.asarray(x_batch, dtype=complex), requires_grad=False)
+    z = pnp.stack(circuit_pair_expectations(states, circuit_params))  # (n_pairs, B)
+    
+    # Split correlators into even and odd groups by pair index
+    n_pairs = z.shape[0]
+    even_indices = pnp.arange(0, n_pairs, 2)
+    odd_indices = pnp.arange(1, n_pairs, 2)
+    
+    z_even = z[even_indices]  # (n_even, B)
+    z_odd = z[odd_indices]    # (n_odd, B)
+    
+    mean_even = pnp.mean(z_even, axis=0) if z_even.shape[0] > 0 else 0.0
+    mean_odd = pnp.mean(z_odd, axis=0) if z_odd.shape[0] > 0 else 0.0
+    
+    # Apply group-wise gains and average
+    calibrated = pnp.mean(
+        pnp.stack([gain_even * mean_even, gain_odd * mean_odd]),
+        axis=0
+    )
+    return calibrated - bias
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+=======
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain_even starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 1.0   # gain_odd starts at 1
+    init[N_CIRCUIT_PARAMS + 2] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+>>>>>>> REPLACE
+
+</DIFF>

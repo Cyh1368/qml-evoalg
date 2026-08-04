@@ -1,0 +1,118 @@
+<NAME>
+crx_long_range_reuse_theta_ry
+
+<DESCRIPTION>
+The previous candidate (using a dedicated "theta_xx_long" parameter for the antipodal shell) regressed performance (0.55 vs 0.61 for the simpler 2-parameter design). The 2-parameter design (global RY + global RZ, all three CRZ shells sharing "theta_z") was the best-performing configuration so far, but it uses only Z-type generators for all entanglers, which may limit how well it can separate the hardest validation samples (Z-only entanglement is insensitive to certain X/Y-plane state features).
+
+Instead of adding a brand-new parameter for long-range coupling (which hurt generalization) or reusing "theta_z" on the same wires with an X-type gate (which the seed's own analysis found kills the gradient by composing to a near-fixed net rotation), we replace only the long-range (distance-4, antipodal) shell's CRZ gates with CRX gates that reuse the existing "theta_ry" parameter. This is the natural entangling counterpart of the RY single-qubit layer (mirroring how CRZ is the natural counterpart of the RZ layer), injects a genuinely non-commuting (X-type) long-range correlation channel, and does so without adding any new trainable parameter (still 2 distinct circuit params, 4 total with gain/bias) and without the same-wire same-angle double-rotation degeneracy that broke trainability before (CRX(theta_ry) acts on different wires — the antipodal ring — than the CRZ(theta_z) short-range shells, and pairs with a genuinely different generator than the co-located RZ layer, avoiding accidental cancellation). This should improve robustness on hard validation groups while preserving the strong parameter economy of the best prior result.
+
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+# Two-axis shared-entangler ansatz with a dedicated long-range XX shell.
+#
+# Design rationale:
+# - A single global RY angle ("theta_ry") is applied to every qubit, and a
+#   single global RZ angle ("theta_z") is applied to every qubit. The RZ
+#   layer's angle is reused as the controlled-rotation angle for the two
+#   short-range entangling shells (distance 1 and distance 2 rings), which
+#   was found to generalize better than a dedicated third "theta_ent"
+#   parameter and to be much more parameter-efficient (2 distinct circuit
+#   params instead of 3).
+# - The long-range antipodal shell (distance 4) previously reused CRZ (same
+#   generator as the short-range shells) or mixed CRZ+CRX with a SHARED
+#   angle on the SAME wires -- the latter collapsed trainability entirely
+#   (validation accuracy stuck at 0.50): a Z-rotation and an X-rotation tied
+#   to the identical angle on the same qubit pair compose into a fixed net
+#   rotation that is largely insensitive to the encoded input state, wiping
+#   out the gradient signal. Instead, the long-range links get their own
+#   IsingXX coupling on a NEW dedicated shared parameter "theta_xx_long".
+#   IsingXX is a genuinely different (X-type, non-commuting with Z)
+#   generator, so it injects long-range correlations the local RY/RZ + CRZ
+#   layers cannot reach, without destructively reusing an angle across
+#   incompatible generators on the same wires.
+# - Total: 3 distinct circuit parameters (theta_ry, theta_z, theta_xx_long)
+#   plus 2 readout params = 5 total.
+ANSATZ_SPEC = []
+
+# Global single-qubit layer: one shared RY angle for all 8 qubits.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "theta_ry"})
+
+# Global single-qubit layer: one shared RZ angle for all 8 qubits.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": _i, "param": "theta_z"})
+
+# Shell 1: nearest-neighbor ring (distance 1), reuses theta_z via CRZ.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, (_i + 1) % N_QUBITS], "param": "theta_z"})
+
+# Shell 2: skip ring (distance 2), reuses theta_z via CRZ.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, (_i + 2) % N_QUBITS], "param": "theta_z"})
+
+# Shell 3: antipodal pairing (distance 4), dedicated IsingXX coupling on a
+# new shared parameter "theta_xx_long" for genuinely long-range, non-Z-type
+# correlations.
+for _i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "XX", "wires": [_i, _i + N_QUBITS // 2], "param": "theta_xx_long"})
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+# Two-axis shared-entangler ansatz with an X-type long-range shell that
+# reuses the existing RY parameter (no new trainable parameter).
+#
+# Design rationale:
+# - A single global RY angle ("theta_ry") is applied to every qubit, and a
+#   single global RZ angle ("theta_z") is applied to every qubit. The RZ
+#   layer's angle is reused as the controlled-rotation angle for the two
+#   short-range entangling shells (distance 1 and distance 2 rings): this
+#   was the best-performing configuration found so far (2 distinct circuit
+#   params, high parameter efficiency, strong validation accuracy).
+# - Making ALL shells Z-type (CRZ everywhere) limits the circuit to
+#   correlations diagonal in the computational basis, which can miss
+#   features relevant to the hardest validation samples. A dedicated new
+#   parameter for a non-commuting long-range shell (tried previously) hurt
+#   generalization by adding parameter count without enough training signal
+#   to justify it. Reusing an existing angle with an X-type gate on the SAME
+#   wires as a co-located Z-type gate also failed: composing a Z-rotation
+#   and an X-rotation with the identical angle on the same qubit pair yields
+#   a near-fixed net rotation that starves the gradient.
+# - Here the long-range (distance 4, antipodal) shell instead uses CRX
+#   gates that reuse "theta_ry" -- the natural entangling counterpart of the
+#   RY single-qubit layer, mirroring how CRZ is the natural counterpart of
+#   the RZ layer. These CRX gates act on a DIFFERENT set of wire pairs than
+#   any CRZ gate and are not co-located with an RZ using the same angle, so
+#   they avoid the same-wire/same-angle cancellation while still injecting a
+#   genuinely non-commuting, long-range correlation channel. No new
+#   parameter is introduced: still 2 distinct circuit params (theta_ry,
+#   theta_z) plus 2 readout params = 4 total, matching the best prior
+#   parameter economy while adding richer entanglement structure.
+ANSATZ_SPEC = []
+
+# Global single-qubit layer: one shared RY angle for all 8 qubits.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "theta_ry"})
+
+# Global single-qubit layer: one shared RZ angle for all 8 qubits.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": _i, "param": "theta_z"})
+
+# Shell 1: nearest-neighbor ring (distance 1), reuses theta_z via CRZ.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, (_i + 1) % N_QUBITS], "param": "theta_z"})
+
+# Shell 2: skip ring (distance 2), reuses theta_z via CRZ.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, (_i + 2) % N_QUBITS], "param": "theta_z"})
+
+# Shell 3: antipodal pairing (distance 4), reuses theta_ry via CRX for a
+# non-commuting, long-range correlation channel at zero parameter cost.
+for _i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CRX", "wires": [_i, _i + N_QUBITS // 2], "param": "theta_ry"})
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+
+</DIFF>

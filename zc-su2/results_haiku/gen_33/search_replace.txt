@@ -1,0 +1,76 @@
+# Analysis
+
+Looking at the performance metrics:
+
+**Prior Programs:**
+1. First program (XX-chain): score 0.68, n_params=20, depth=35, convergence_step=60
+2. Second program (CZ-chain): score 0.72, n_params=14, depth=35, convergence_step=90
+
+**Current Program (2× CZ-chain):** score 0.72, n_params=14, depth=65, convergence_step=90
+
+## Key Observations
+
+1. The current program has **doubled the circuit depth (65 vs 35)** while maintaining only 14 parameters (same as the single-block CZ version), yet achieves identical score 0.72
+2. The CZ-chain (fixed gates) outperformed the XX-chain (parametrized gates) by 0.04 points, but doubles convergence time
+3. Parameter efficiency is already maxed at 0.07, so additional parameters won't help
+4. The recommendation suggests making the CZ chain **tunable with CRZ gates** while keeping a **single shared parameter**
+
+## Proposed Strategy
+
+Replace the fixed CZ ladder with **parametrized CRZ gates sharing one new parameter `phi_shared`**. This will:
+- Keep parameter count at **15** (adding just 1 new parameter)
+- Maintain the successful linear ladder topology
+- Allow the circuit to learn entangling angles per block, improving expressiveness
+- Potentially reduce convergence time by making entanglement learnable
+- Keep depth similar
+
+This is a minimal, targeted change that adds learnable expressiveness to the most expensive part of the circuit (the entanglers) without significantly increasing parameter count.
+
+<NAME>
+crz_shared_entanglers
+</NAME>
+
+<DESCRIPTION>
+Replace the fixed CZ chain with parametrized CRZ gates that share a single parameter `phi_shared`. This preserves the efficient linear ladder topology while allowing the circuit to learn entangling angles. The recommendation specifically suggests this upgrade: substitute each fixed CZ gate with a CRZ gate having a shared parameter. This adds only 1 new parameter (to 15 total) while potentially improving expressiveness and reducing convergence time compared to fixed CZ gates.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+=======
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_shared"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+=======
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,101 @@
+<NAME>
+sublattice_readout_calibration
+</NAME>
+
+<DESCRIPTION>
+The current program achieves a combined score of 0.51, with validation_margin_mean of 0.57 and worst_group_margin_mean of 0.36. The gap between these metrics indicates that the classifier struggles with certain difficult sample groups, and a single global gain/bias calibration cannot account for systematic biases that may differ across sublattices.
+
+The second prior program (score 0.60) achieved superior generalization and robustness, with worst_group_margin_mean of 0.32 (closer to validation margin), suggesting better balanced separation. The key difference is structural simplicity with 7 distinct parameters.
+
+Following the recommendation, I propose introducing sublattice-specific readout calibration: separate gain/bias pairs for even-indexed and odd-indexed qubits in the readout pairs. This minimal 2-parameter extension (gain_even, bias_even, gain_odd, bias_odd) allows the model to correct systematic sublattice biases without increasing circuit complexity. This addresses the worst_group_margin gap directly by letting the readout adapt to the structure of the measurement pairs.
+
+The change requires:
+1. Expand N_READOUT_PARAMS from 2 to 4
+2. Modify predict_batch to compute separate means for even/odd starting indices in READOUT_PAIRS
+3. Apply sublattice-specific calibration before combining
+
+This is orthogonal to the ansatz and can improve robustness on hard samples without additional circuit depth or gate count penalties.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+=======
+N_READOUT_PARAMS = 4  # trainable output calibration: gain_even, bias_even, gain_odd, bias_odd
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per state: calibrated mean of the fixed correlators."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    states = pnp.array(np.asarray(x_batch, dtype=complex), requires_grad=False)
+    z = pnp.stack(circuit_pair_expectations(states, circuit_params))  # (n_pairs, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+=======
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per state: sublattice-calibrated mean of the fixed correlators."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain_even = params[N_CIRCUIT_PARAMS]
+    bias_even = params[N_CIRCUIT_PARAMS + 1]
+    gain_odd = params[N_CIRCUIT_PARAMS + 2]
+    bias_odd = params[N_CIRCUIT_PARAMS + 3]
+    states = pnp.array(np.asarray(x_batch, dtype=complex), requires_grad=False)
+    z = pnp.stack(circuit_pair_expectations(states, circuit_params))  # (n_pairs, B)
+    
+    # Separate correlators by sublattice: even if first qubit in pair is even, odd otherwise
+    even_indices = [i for i, (a, b) in enumerate(READOUT_PAIRS) if a % 2 == 0]
+    odd_indices = [i for i, (a, b) in enumerate(READOUT_PAIRS) if a % 2 == 1]
+    
+    if len(even_indices) > 0:
+        raw_even = pnp.mean(z[even_indices, :], axis=0)
+    else:
+        raw_even = pnp.array(0.0)
+    
+    if len(odd_indices) > 0:
+        raw_odd = pnp.mean(z[odd_indices, :], axis=0)
+    else:
+        raw_odd = pnp.array(0.0)
+    
+    # Combine sublattice predictions
+    weight_even = pnp.array(len(even_indices) / max(len(READOUT_PAIRS), 1))
+    weight_odd = pnp.array(len(odd_indices) / max(len(READOUT_PAIRS), 1))
+    
+    return (weight_even * gain_even * (raw_even - bias_even) + 
+            weight_odd * gain_odd * (raw_odd - bias_odd))
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    # Angles are initialised across the full period rather than near zero. A
+    # near-identity start is a dead zone for some candidate structures, and the
+    # ranking noise that produces is an optimiser artifact rather than a
+    # property of the circuit. The wide init applies to every candidate alike.
+    init_scale = float(os.environ.get("INIT_SCALE", str(np.pi)))
+    init = rng.uniform(-init_scale, init_scale, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+=======
+    rng = np.random.default_rng(seed)
+    # Angles are initialised across the full period rather than near zero. A
+    # near-identity start is a dead zone for some candidate structures, and the
+    # ranking noise that produces is an optimiser artifact rather than a
+    # property of the circuit. The wide init applies to every candidate alike.
+    init_scale = float(os.environ.get("INIT_SCALE", str(np.pi)))
+    init = rng.uniform(-init_scale, init_scale, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain_even starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias_even starts at 0
+    init[N_CIRCUIT_PARAMS + 2] = 1.0   # gain_odd starts at 1
+    init[N_CIRCUIT_PARAMS + 3] = 0.0   # bias_odd starts at 0
+    params = pnp.array(init, requires_grad=True)
+>>>>>>> REPLACE
+</DIFF>

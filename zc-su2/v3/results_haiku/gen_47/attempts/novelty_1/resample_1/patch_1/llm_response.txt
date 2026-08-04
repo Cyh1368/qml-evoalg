@@ -1,0 +1,84 @@
+<NAME>
+dual_ising_entangler_light
+</NAME>
+
+<DESCRIPTION>
+The current program suffers from overfitting (16% generalization gap) and slow convergence (510 steps). Analysis of prior programs shows that:
+
+1. **Gen 2 success**: Simpler architectures with 10 distinct params and depth 15 achieved score 0.59 with better generalization (5% gap)
+2. **Parameter sharing insight**: Reusing parameters reduces parameter count and improves generalization without sacrificing expressivity
+3. **Entangler diversity**: The prior successful program used 6 distinct two-qubit interactions (XX, YY, ZZ with different wirings)
+
+The current program adds CRZ gates with full parameter sharing, which appears to increase training difficulty without improving robustness to hard samples (worst_group_margin stuck at 0.30).
+
+**Novel approach**: Return to the lean, high-performing structure from Gen 2 (6 Ising entanglers) but expand the entangler set by two additional distinct links as recommended: ZZ on [0,3] and XX on [2,7]. This creates an 8-parameter two-qubit layer that:
+- Maintains lean parameter count (~11 distinct params)
+- Provides richer connectivity for worst-group separation
+- Keeps depth moderate (~17 steps)
+- Removes the problematic CRZ diagonal layer that increased convergence time
+- Uses only proven Ising gates (XX, YY, ZZ) with independent parameters
+
+The structure interleaves single-qubit rotations (RY/RZ) with diverse two-qubit entanglers, allowing the circuit to learn both local and global correlations efficiently without overfitting.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "XX", "wires": [2, 7], "param": "xx_27"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz_03"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

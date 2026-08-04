@@ -1,0 +1,88 @@
+<NAME>
+mobius_shared_zz
+</NAME>
+
+<DESCRIPTION>
+Replace the underexpressive one-parameter kicked-Ising ring with the stronger collective RY/RZ Möbius-ladder architecture, then add a translation-symmetric nearest-neighbor ZZ layer controlled by one shared angle. The fixed CZ ladder supplies parameter-free local and long-range mixing, while the shared ZZ interaction adds tunable correlation processing without introducing per-edge parameters. This retains strong few-shot regularization at only three circuit parameters, while avoiding the current model’s severe underfitting and near-zero validation margins.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # First half of a translation-symmetric nearest-neighbour interaction.
+    # The disjoint matching keeps this stage shallow.
+    {"gate": "ZZ", "wires": [0, 1], "param": "ising_angle"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "ising_angle"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "ising_angle"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "ising_angle"},
+
+    # A collective noncommuting mixer. Sharing its angle with the interaction
+    # leaves a single circuit parameter and strongly regularizes few-shot
+    # training while retaining a nonlinear kicked-Ising trajectory.
+    {"gate": "RX", "wire": 0, "param": "ising_angle"},
+    {"gate": "RX", "wire": 1, "param": "ising_angle"},
+    {"gate": "RX", "wire": 2, "param": "ising_angle"},
+    {"gate": "RX", "wire": 3, "param": "ising_angle"},
+    {"gate": "RX", "wire": 4, "param": "ising_angle"},
+    {"gate": "RX", "wire": 5, "param": "ising_angle"},
+    {"gate": "RX", "wire": 6, "param": "ising_angle"},
+    {"gate": "RX", "wire": 7, "param": "ising_angle"},
+
+    # Shifted matching closes the periodic ring. Across three repeated blocks,
+    # local pair information is mixed through the complete register.
+    {"gate": "ZZ", "wires": [1, 2], "param": "ising_angle"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "ising_angle"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "ising_angle"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "ising_angle"},
+]
+=======
+ANSATZ_SPEC = [
+    # Collective rotations impose a strong symmetry prior suitable for the
+    # small training set.
+    {"gate": "RY", "wire": 0, "param": "global_y"},
+    {"gate": "RY", "wire": 1, "param": "global_y"},
+    {"gate": "RY", "wire": 2, "param": "global_y"},
+    {"gate": "RY", "wire": 3, "param": "global_y"},
+    {"gate": "RY", "wire": 4, "param": "global_y"},
+    {"gate": "RY", "wire": 5, "param": "global_y"},
+    {"gate": "RY", "wire": 6, "param": "global_y"},
+    {"gate": "RY", "wire": 7, "param": "global_y"},
+
+    # A parameter-free Möbius ladder combines periodic nearest-neighbour
+    # connectivity with opposite-wire links for rapid global mixing.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # One shared ZZ angle adds trainable local correlation processing while
+    # preserving translation symmetry and parameter economy.
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_nn"},
+
+    {"gate": "RZ", "wire": 0, "param": "global_z"},
+    {"gate": "RZ", "wire": 1, "param": "global_z"},
+    {"gate": "RZ", "wire": 2, "param": "global_z"},
+    {"gate": "RZ", "wire": 3, "param": "global_z"},
+    {"gate": "RZ", "wire": 4, "param": "global_z"},
+    {"gate": "RZ", "wire": 5, "param": "global_z"},
+    {"gate": "RZ", "wire": 6, "param": "global_z"},
+    {"gate": "RZ", "wire": 7, "param": "global_z"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

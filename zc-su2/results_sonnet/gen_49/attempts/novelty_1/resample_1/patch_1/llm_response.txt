@@ -1,0 +1,93 @@
+<NAME>
+shared_theta_mixed_entangler
+
+<DESCRIPTION>
+The two highest-scoring prior programs both used a single shared trainable parameter "theta" reused across RX/RY/RZ rotation layers on all 8 qubits (n_params=8, combined_score=0.80), vastly outperforming the current 20-parameter design (combined_score=0.68) despite identical accuracy — confirming the score is dominated by parameter economy. I revert to the single-shared-parameter scheme, but apply the specific recommendation to alternate CNOT and CZ gates in the nearest-neighbor ring (instead of pure CZ), which mixes entangling primitives (CNOT introduces basis-state flips correlated with control, CZ introduces phase-only correlation) while preserving the same zero-parameter cost and connectivity degree. This richer primitive mixture, combined with the fixed skip-2 CZ layer and the theta-shared long-range CRZ layer from the best-performing seed, should preserve convergence speed and generalization while adding no new trainable parameters, aiming to recover and potentially exceed the 0.80 combined score with fewer gates/depth than the original all-CZ variant.
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Pre-entanglement rotations: 2 groups of 4 qubits, each group driven by
+    # a single shared parameter (RY on all wires of the group). This is the
+    # parameter-efficient scheme that achieved the best combined score.
+    {"gate": "RY", "wire": 0, "param": "p_g0"},
+    {"gate": "RY", "wire": 1, "param": "p_g0"},
+    {"gate": "RY", "wire": 2, "param": "p_g0"},
+    {"gate": "RY", "wire": 3, "param": "p_g0"},
+    {"gate": "RY", "wire": 4, "param": "p_g1"},
+    {"gate": "RY", "wire": 5, "param": "p_g1"},
+    {"gate": "RY", "wire": 6, "param": "p_g1"},
+    {"gate": "RY", "wire": 7, "param": "p_g1"},
+
+    # Nearest-neighbor entangling chain: every second link is replaced by a
+    # parametrized XX rotation sharing a single "xx_ent" parameter, giving
+    # tunable two-qubit interaction strength at minimal extra parameter
+    # cost (+1). Remaining links stay as fixed, zero-parameter CZ gates.
+    {"gate": "XX", "wires": [0, 1], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_ent"},
+
+    # Post-entanglement rotations: reuse the SAME parameters as the
+    # corresponding pre-entanglement RY gates, but on a different axis (RZ),
+    # halving the parameter count relative to using distinct post params.
+    {"gate": "RZ", "wire": 0, "param": "p_g0"},
+    {"gate": "RZ", "wire": 1, "param": "p_g0"},
+    {"gate": "RZ", "wire": 2, "param": "p_g0"},
+    {"gate": "RZ", "wire": 3, "param": "p_g0"},
+    {"gate": "RZ", "wire": 4, "param": "p_g1"},
+    {"gate": "RZ", "wire": 5, "param": "p_g1"},
+    {"gate": "RZ", "wire": 6, "param": "p_g1"},
+    {"gate": "RZ", "wire": 7, "param": "p_g1"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 0. Pre-entanglement rotation layer, axis RX: ALL 8 qubits share the SAME
+#    single trainable parameter "theta". Combined with the RY layer below
+#    (different, non-commuting axis, no entangler in between) this gives a
+#    richer per-qubit rotation while keeping only ONE trainable parameter
+#    for the entire block.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+
+# 1. Pre-entanglement rotation layer, axis RY, reusing the SAME "theta".
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 2a. Fixed nearest-neighbor entangling ring (closed chain), zero trainable
+#     parameters, alternating CNOT and CZ primitives around the ring to mix
+#     bit-flip-correlated and phase-only correlations while preserving the
+#     same degree-3-per-qubit connectivity as a pure-CZ ring.
+for i in range(N_QUBITS):
+    gate = "CNOT" if i % 2 == 0 else "CZ"
+    ANSATZ_SPEC.append({"gate": gate, "wires": [i, (i + 1) % N_QUBITS]})
+
+# 2b. Additional zero-parameter "skip-2" CZ links (distance-2 neighbors),
+#     densifying entanglement to degree-4 connectivity per qubit (2 ring
+#     neighbors + 2 skip-2 neighbors) without adding any trainable
+#     parameters.
+for i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 2) % N_QUBITS]})
+
+# 2c. Parametrized entangling layer on antipodal pairs (distance 4 on the
+#     8-cycle), reusing the SAME shared "theta" parameter (no new
+#     trainable parameter name is introduced). This injects a
+#     non-commuting, tunable entangling interaction reinforcing the fixed
+#     long-range connectivity above, without any parameter-count penalty.
+for i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [i, i + N_QUBITS // 2], "param": "theta"})
+
+# 3. Post-entanglement rotation layer, axis RZ, reusing the SAME "theta"
+#    parameter, keeping the total unique parameter count per block at
+#    exactly 1.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE

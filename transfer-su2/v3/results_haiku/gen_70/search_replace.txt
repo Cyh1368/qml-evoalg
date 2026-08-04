@@ -1,0 +1,97 @@
+<NAME>
+parity_mid_rotation_boost
+</NAME>
+
+<DESCRIPTION>
+The current architecture achieves strong baseline performance (0.60 combined score) with 7 distinct parameters and robust separation (worst_group_margin of 0.32). However, the worst_group_margin is the limiting factor—the hardest samples still have moderate separation.
+
+The recommendation suggests injecting a parity-shared mid-block rotation layer between entanglement and phase layers. This approach:
+
+1. **Maintains parameter economy**: Reuses only 4 distinct parameter names (ry_even, ry_odd, rz_even, rz_odd) which are already present in the circuit, so no NEW distinct parameters are added overall.
+
+2. **Enhances local expressivity**: By adding intermediate single-qubit rotations after entanglement, the circuit gains more fine-grained control to sculpt the state between correlation-building and phase-tuning layers. This is particularly valuable for hardest-to-separate samples.
+
+3. **Leverages parameter sharing pattern**: The even/odd parity structure reuses what already works in the first and final layers, reducing the search space for the optimizer and improving generalization.
+
+4. **Tightens worst-case margins**: Early experiments with parity-tied mutants showed this pattern tightens margins in harder groups—exactly what we need to push the worst_group_margin from 0.32 to 0.35+.
+
+5. **Computational cost**: Gate count increases moderately (16 additional single-qubit gates per block × 3 repetitions = 48 gates total), but depth stays reasonable since these are parallel single-qubit operations.
+
+The change is minimal, surgical, and directly addresses the bottleneck: separating the hardest validation samples.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_phase_layer() -> list[dict]:
+    """Build RZ phase layer with even/odd parameter sharing."""
+    return [
+        {"gate": "RZ", "wire": 0, "param": "rz_even"},
+        {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 2, "param": "rz_even"},
+        {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 4, "param": "rz_even"},
+        {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 6, "param": "rz_even"},
+        {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    ]
+
+
+# Assemble the complete ansatz from layers: focus on simplicity and parameter economy
+ANSATZ_SPEC = (
+    _build_rotation_layer()
+    + _build_entanglement_layer()
+    + _build_phase_layer()
+)
+=======
+def _build_mid_rotation_layer() -> list[dict]:
+    """Build parity-shared mid-block RY and RZ rotations between entanglement and phase.
+
+    This layer enhances local expressivity after entanglement without adding new
+    distinct parameters, by reusing the even/odd parity scheme from the initial layer.
+    """
+    return [
+        {"gate": "RY", "wire": 0, "param": "ry_even"},
+        {"gate": "RY", "wire": 1, "param": "ry_odd"},
+        {"gate": "RY", "wire": 2, "param": "ry_even"},
+        {"gate": "RY", "wire": 3, "param": "ry_odd"},
+        {"gate": "RY", "wire": 4, "param": "ry_even"},
+        {"gate": "RY", "wire": 5, "param": "ry_odd"},
+        {"gate": "RY", "wire": 6, "param": "ry_even"},
+        {"gate": "RY", "wire": 7, "param": "ry_odd"},
+        {"gate": "RZ", "wire": 0, "param": "rz_even"},
+        {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 2, "param": "rz_even"},
+        {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 4, "param": "rz_even"},
+        {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 6, "param": "rz_even"},
+        {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    ]
+
+
+def _build_phase_layer() -> list[dict]:
+    """Build RZ phase layer with even/odd parameter sharing."""
+    return [
+        {"gate": "RZ", "wire": 0, "param": "rz_even"},
+        {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 2, "param": "rz_even"},
+        {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 4, "param": "rz_even"},
+        {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 6, "param": "rz_even"},
+        {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    ]
+
+
+# Assemble the complete ansatz from layers: focus on simplicity and parameter economy
+# Mid-block rotation layer injected between entanglement and final phase to enhance
+# expressivity on hard-to-separate samples without adding distinct parameters.
+ANSATZ_SPEC = (
+    _build_rotation_layer()
+    + _build_entanglement_layer()
+    + _build_mid_rotation_layer()
+    + _build_phase_layer()
+)
+>>>>>>> REPLACE
+
+</DIFF>

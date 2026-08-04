@@ -1,0 +1,61 @@
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 9
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_THREE_QUBIT_GATES = {"ZZZ", "CCRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Tie amplitude rotations across symmetry-related vertices.
+    {"gate": "RY", "wire": 1, "param": "ry_14"},
+    {"gate": "RY", "wire": 2, "param": "ry_23"},
+    {"gate": "RY", "wire": 3, "param": "ry_23"},
+    {"gate": "RY", "wire": 4, "param": "ry_14"},
+    {"gate": "RY", "wire": 5, "param": "ry_56"},
+    {"gate": "RY", "wire": 6, "param": "ry_56"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # Tie phases across symmetry-related vertices of the interaction graph.
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_14"},
+    {"gate": "RZ", "wire": 2, "param": "rz_23"},
+    {"gate": "RZ", "wire": 3, "param": "rz_23"},
+    {"gate": "RZ", "wire": 4, "param": "rz_14"},
+    {"gate": "RZ", "wire": 5, "param": "rz_56"},
+    {"gate": "RZ", "wire": 6, "param": "rz_56"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_8"},
+
+    # Preserve the complete allowed interaction graph.
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [0, 8]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 8]},
+    {"gate": "CCRZ", "wires": [5, 6, 7], "param": "ccrz_567"},
+
+    # Add noncommuting boundary mixing after graph entanglement.
+    {"gate": "RX", "wire": 0, "param": "rx_0_post"},
+    {"gate": "RX", "wire": 8, "param": "rx_8_post"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

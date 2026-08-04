@@ -1,0 +1,107 @@
+Looking at the performance metrics, I can see:
+
+**Prior approach (2nd program):** 14 parameters, score 0.72
+- RY layer → RZ layer → CZ chain → RZ layer (one block)
+- Clean Y-Z sandwich with fixed CZ interactions
+
+**Current program:** 20 parameters, score 0.68
+- Same structure but XX chain instead of CZ chain
+- More parameters, lower score despite same accuracy
+
+The issue is that the XX gate introduces an extra parameter (xx_shared) without improving performance, reducing parameter efficiency (0.05 vs 0.07). The prior CZ-based approach was superior.
+
+**Recommendation:** The suggestion to "prepend a global X-axis rotation layer" is sound. Adding a shared RX layer before the proven RY→RZ→CZ→RZ structure would:
+1. Add only 1 parameter (rx_shared) instead of many individual parameters
+2. Provide cross-axis rotation expressivity (RX operates on Y-Z plane, complementary to RY on Z-X plane and RZ on both)
+3. Maintain the compact, parameter-efficient design that achieved 0.72
+4. Revert from XX back to CZ (which worked better)
+
+This creates an RX→RY→RZ→CZ→RZ structure with just 16 parameters (3 shared parameters × multiple repetitions).
+
+<NAME>
+reinstate_cz_add_rx_prepend
+</NAME>
+
+<DESCRIPTION>
+Revert to the superior CZ-based chain architecture from the second prior program (which achieved 0.72 score with 14 parameters) but add a shared RX prepend layer. This combines the proven RY→RZ→CZ→RZ pattern with a global RX rotation to provide cross-axis expressivity. The RX layer adds only 1 new parameter (rx_shared) while maintaining parameter economy. The X-axis rotation operates in a complementary plane to the existing RY and RZ rotations, potentially improving the circuit's ability to explore the solution space. This hybrid approach balances expressivity with parameter efficiency while reverting from the less effective XX chain to the working CZ backbone.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_shared"},
+    {"gate": "XX", "wires": [1, 2], "param": "xx_shared"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_shared"},
+    {"gate": "XX", "wires": [3, 4], "param": "xx_shared"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_shared"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx_shared"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RX", "wire": 0, "param": "rx_shared"},
+    {"gate": "RX", "wire": 1, "param": "rx_shared"},
+    {"gate": "RX", "wire": 2, "param": "rx_shared"},
+    {"gate": "RX", "wire": 3, "param": "rx_shared"},
+    {"gate": "RX", "wire": 4, "param": "rx_shared"},
+    {"gate": "RX", "wire": 5, "param": "rx_shared"},
+    {"gate": "RX", "wire": 6, "param": "rx_shared"},
+    {"gate": "RX", "wire": 7, "param": "rx_shared"},
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE
+</DIFF>

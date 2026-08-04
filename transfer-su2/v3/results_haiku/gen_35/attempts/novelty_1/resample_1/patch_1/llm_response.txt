@@ -1,0 +1,138 @@
+<NAME>
+deterministic_entangler_dropout
+</NAME>
+
+<DESCRIPTION>
+The recommendation is to introduce deterministic "entangler dropout" in `apply_ansatz_block`. This lightweight per-repeat variation will selectively skip one two-qubit entangling gate per repetition (cycling through them), regularizing the circuit structure without adding any trainable parameters.
+
+**Rationale:**
+- The current program shows good train accuracy (1.00) but poor worst-group margin (0.22), indicating the classifier overfits to easy samples and fails on hard ones.
+- Gen 9's shallow-varied blocks and the second prior program both achieved better worst-group margins (0.31, 0.33) with fewer distinct parameters and faster convergence.
+- By skipping one entangler per repeat in a deterministic pattern, we:
+  1. **Reduce redundancy**: Each full repetition is now slightly different, preventing the fixed three-pass from being identical.
+  2. **Preserve parameter economy**: No new trainable parameters are introduced—only structural variation.
+  3. **Regularize the circuit**: The circuit becomes a learnable ensemble of related sub-circuits, sharpening margin on held-out data.
+  4. **Converge faster**: Fewer active gates per repeat reduce training overhead.
+
+**Implementation:**
+- Identify all two-qubit parametrized gates (XX, YY, ZZ) in `ANSATZ_SPEC` at specification time.
+- In `apply_ansatz_block`, use `skip = block_index % n_entanglers` to deterministically choose which entangler to omit on each repeat.
+- This creates three distinct circuit "flavours" across the three repetitions, improving generalization on hard validation groups.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC.
+
+    Parameters are shared across repetitions: every application of the block
+    reads the same values, so block_index is accepted only for API symmetry.
+    """
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    del block_index  # parameters are tied across repeats
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+            elif gate == "XX":
+                qml.IsingXX(angle, wires=wires)
+            elif gate == "YY":
+                qml.IsingYY(angle, wires=wires)
+            elif gate == "ZZ":
+                qml.IsingZZ(angle, wires=wires)
+=======
+def _collect_entangler_indices(spec: list[dict]) -> list[int]:
+    """Collect indices of all two-qubit parametrized gates (entanglers) in ANSATZ_SPEC."""
+    entanglers = []
+    for idx, item in enumerate(spec):
+        gate = str(item.get("gate", "")).upper()
+        if gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            entanglers.append(idx)
+    return entanglers
+
+
+_ENTANGLER_INDICES = _collect_entangler_indices(ANSATZ_SPEC)
+
+
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC.
+
+    Parameters are shared across repetitions: every application of the block
+    reads the same values. Per-repeat variation via deterministic entangler
+    dropout: one two-qubit gate is skipped each repeat (cycling pattern),
+    regularizing the circuit structure without adding parameters.
+    """
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    # Deterministic entangler dropout: skip one entangler per repeat
+    n_entanglers = len(_ENTANGLER_INDICES)
+    skip_entangler_idx = None
+    if n_entanglers > 0:
+        skip_entangler_idx = _ENTANGLER_INDICES[block_index % n_entanglers]
+    
+    for item_idx, item in enumerate(ANSATZ_SPEC):
+        # Skip the designated entangler for this repeat
+        if skip_entangler_idx is not None and item_idx == skip_entangler_idx:
+            continue
+        
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+            elif gate == "XX":
+                qml.IsingXX(angle, wires=wires)
+            elif gate == "YY":
+                qml.IsingYY(angle, wires=wires)
+            elif gate == "ZZ":
+                qml.IsingZZ(angle, wires=wires)
+>>>>>>> REPLACE
+
+</DIFF>

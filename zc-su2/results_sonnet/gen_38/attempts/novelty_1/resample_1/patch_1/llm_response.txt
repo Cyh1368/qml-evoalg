@@ -1,0 +1,83 @@
+<NAME>
+shared_theta_with_antipodal_crz
+</NAME>
+
+<DESCRIPTION>
+Revert to a single shared parameter "theta" per block (as in the best-performing seed with n_params=8, score=0.80) instead of the two-group split that inflated n_params to 14 and hurt the score. On top of that, inject a parametrized entangling layer using CRZ gates on antipodal qubit pairs, reusing the SAME shared "theta" parameter (no new parameter names introduced), as suggested by the recommendation. This should increase expressivity of the entangling structure beyond pure fixed CZ gates, without any increase in trainable-parameter count, potentially improving accuracy/generalization/convergence while keeping parameter economy at its current best.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 1. Coarse-grained RY rotation layer: 8 qubits split into 2 halves,
+#    sharing a single trainable parameter per half (2 unique params total).
+for wire in range(N_QUBITS):
+    group = wire // 4
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": f"p_g{group}"})
+
+# 2. Fixed nearest-neighbor CZ entangling chain (no wrap-around), zero
+#    extra trainable parameters, providing full connectivity across the
+#    register at minimal depth/gate cost.
+for i in range(N_QUBITS - 1):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + 1]})
+
+# 2b. Fixed 2-skip "twisted" ring of CZ gates, adding extra non-local
+#     entangling loops with zero additional trainable parameters. This
+#     probes whether richer connectivity improves expressivity/score
+#     while keeping the parameter count identical.
+for a, b in [(0, 2), (2, 4), (4, 6), (6, 0)]:
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [a, b]})
+
+# 3. Post-entanglement rotation layer reusing the SAME parameter names as
+#    step 1 (same 2 unique parameters), just on a different axis (RZ),
+#    giving the circuit extra expressivity at zero extra parameter cost.
+for wire in range(N_QUBITS):
+    group = wire // 4
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": f"p_g{group}"})
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 0. Pre-rotation layer: ALL 8 qubits share a SINGLE trainable parameter
+#    "theta" on the RX axis, combined with the RY layer below (different
+#    axis, no entangling gate in between) to realize a richer per-qubit
+#    rotation while keeping only ONE trainable parameter per block.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+
+# 1. Pre-entanglement RY layer reusing the SAME single shared parameter
+#    "theta".
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 2. Fixed nearest-neighbor CZ entangling chain (no wrap-around), zero
+#    extra trainable parameters, providing full connectivity across the
+#    register at minimal depth/gate cost.
+for i in range(N_QUBITS - 1):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + 1]})
+
+# 2b. Fixed 2-skip "twisted" ring of CZ gates, adding extra non-local
+#     entangling loops with zero additional trainable parameters.
+for a, b in [(0, 2), (2, 4), (4, 6), (6, 0)]:
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [a, b]})
+
+# 2c. Parametrized entangling layer on antipodal qubit pairs using CRZ
+#     gates, reusing the SAME shared "theta" parameter (no new trainable
+#     parameter names introduced). This adds a non-commuting, parametrized
+#     entangling interaction on top of the fixed CZ connectivity, probing
+#     whether richer entangling expressivity boosts accuracy/generalization
+#     without increasing the parameter count.
+for i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [i, i + N_QUBITS // 2], "param": "theta"})
+
+# 3. Post-entanglement rotation layer reusing the SAME single shared
+#    parameter "theta" (different axis, RZ), keeping the total unique
+#    parameter count per block at exactly 1.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,50 @@
+<NAME>
+add_trainable_entanglement_reduce_redundancy
+</NAME>
+
+<DESCRIPTION>
+The original block used RY -> RZ(pre) -> fixed CZ entangling layer -> RZ(post). The pre-CZ RZ layer is largely redundant since RY followed immediately by RZ is just a two-parameter single-qubit rotation that gets undone in expressivity terms by the post-CZ RZ layer anyway (both act before/after a fixed non-parametric entangler). Removing the pre-RZ layer frees up parameter budget without losing much expressivity, since the RY+post-RZ pair already spans the relevant single-qubit rotation axes needed given a subsequent trainable entangling stage.
+
+To compensate and to genuinely improve entangling expressivity (currently entanglement is completely non-parametric, limiting the circuit's ability to learn correlations relevant to the task), I convert half of the fixed CZ gates into trainable CRZ gates. This gives the ansatz the ability to learn the *strength* of entanglement between some qubit pairs while keeping the other half as fixed CZ for computational efficiency and to preserve some inductive bias/structure.
+
+Net effect: parameter count drops from 162 (27 params/rep * 6 reps) to 144 (24 params/rep * 6 reps), and part of that freed budget goes into more expressive trainable entanglement. This should help reduce the train-test gap (fewer redundant single-qubit params, so less overfitting) while improving expressivity via learnable entangling gates, hopefully improving validation/test accuracy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre_8"},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [0, 8]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 8]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 7]},
+=======
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_2"},
+    {"gate": "CZ", "wires": [0, 8]},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+    {"gate": "CZ", "wires": [4, 8]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 7]},
+>>>>>>> REPLACE
+</DIFF>

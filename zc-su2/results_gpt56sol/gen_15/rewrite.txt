@@ -1,0 +1,34 @@
+"""Collective low-parameter quantum ansatz."""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # A single shared trainable mode acts symmetrically on every qubit.
+    {"gate": "RY", "wire": 0, "param": "collective_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry"},
+
+    # Minimum-depth disjoint entangling layer.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

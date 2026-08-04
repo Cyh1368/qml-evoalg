@@ -1,0 +1,14 @@
+{
+  "generation": 59,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": false,
+  "num_applied": 0,
+  "patch_name": "split_readout_calibration_by_parity",
+  "patch_description": "The current bottleneck is the worst_group_margin_mean of 0.32, which is significantly lower than the validation_margin_mean of 0.64. This indicates that hard subgroups of validation samples are not being separated robustly enough.\n\nThe recommendation proposes splitting readout calibration by parity: instead of a single gain/bias pair applied to all pair correlators, we introduce separate calibration parameters for even-indexed and odd-indexed pair positions. This allows the model to decouple sublattice biases and tighten margins within each parity subgroup independently.\n\nImplementation:\n1. Increase N_READOUT_PARAMS from 2 to 4: \"gain_even\", \"bias_even\", \"gain_odd\", \"bias_odd\"\n2. Compute raw_even and raw_odd separately by filtering READOUT_PAIRS by parity\n3. Combine them as: gain_even*(raw_even\u2013bias_even) + gain_odd*(raw_odd\u2013bias_odd)\n4. Initialize the new parameters appropriately (gains=1, biases=0)\n\nThis +2-parameter tweak directly addresses the worst-group margin problem by allowing independent calibration of even and odd sublattices, which are natural geometric subdivisions in an 8-qubit system. The cost (2 extra parameters) is negligible, but the benefit for robust separation should be substantial.",
+  "error_msg": "Attempted to edit outside EVOLVE-BLOCK regions\n\nFound text: 'SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)'\nAt position: 7626\n\nContext around found text:\n     Line 174:     return errors, ordered_unique_keys\n     Line 175: \n     Line 176: \n >>> Line 177: SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)\n     Line 178: N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)\n     Line 179: N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK\n     Line 180: N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias\n\nThis text was found in an immutable (non-editable) region.\n\nAvailable editable regions (EVOLVE-BLOCK content):\n  Region 1 (chars 1907-4322):\n    def _build_rotation_layer() -> list[dict]:\n        \"\"\"Build initial RY layer with even/odd parameter sharing for parameter economy.\"\"\"\n        return [\n    ... (53 more lines)\n\nSuggestions:\n1. Move your edit to within an EVOLVE-BLOCK region\n2. Check if similar code exists in the editable regions above\n3. Ensure your search text targets code within # EVOLVE-BLOCK-START/END markers",
+  "timestamp": "2026-08-03T07:32:24.431575",
+  "llm_cost": 0.029808,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

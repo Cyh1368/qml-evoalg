@@ -1,0 +1,93 @@
+<NAME>
+low_param_shared_ansatz
+
+<DESCRIPTION>
+The current 24-parameter ansatz massively overfits (train 0.88 vs. val 0.63 vs. test 0.56, worst-group margin only 0.03). The instructions state that fewer distinct trainable parameters *always* score higher and that robust separation on the hardest validation group dominates the score. I redesign the ansatz to drastically cut the parameter count via deliberate sharing while keeping enough structural diversity to remain expressive across 3 repeated applications:
+
+- Two single-qubit RY parameters shared across alternating (even/odd) qubits, giving each half-lattice an independent local rotation while still tying 4 qubits per parameter (encourages permutation-symmetric, generalizable features rather than per-qubit overfitting).
+- A ring of ZZ Ising couplings with ONE shared parameter, giving nearest-neighbor entangling structure that is repeated identically at every position (translation-invariant ansatz component, a strong inductive bias that tends to generalize better with small training sets).
+- A long-range CRZ layer connecting each qubit to its "antipodal" partner (i, i+4) with a single shared parameter, injecting entanglement across the whole register beyond nearest neighbors, important since the readout observable acts on qubit pairs that may be far apart.
+- A final shared RZ layer (one parameter) on all qubits, giving a global phase-shaping stage before the next repetition/measurement.
+
+Total distinct circuit parameters: 5 (down from 24), plus the 2 fixed readout params (gain, bias) = 7 total trainable parameters. This should substantially reduce the generalization gap and increase parameter efficiency, while the ring + long-range entangling structure repeated 3 times (per N_REPEATS) still builds meaningful entangling depth for the two-qubit readout to exploit.
+
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+
+=======
+
+ANSATZ_SPEC = [
+    # Alternating local rotations: even/odd qubits share one parameter each,
+    # giving a translation-invariant local feature instead of 8 independent
+    # per-qubit angles (fewer params, less overfitting on few-shot data).
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Translation-invariant nearest-neighbor entangling ring, one shared angle.
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+    # Long-range entanglement between antipodal qubits, one shared angle.
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_long"},
+    # Global phase-shaping layer, one shared angle for all qubits.
+    {"gate": "RZ", "wire": 0, "param": "rz_all"},
+    {"gate": "RZ", "wire": 1, "param": "rz_all"},
+    {"gate": "RZ", "wire": 2, "param": "rz_all"},
+    {"gate": "RZ", "wire": 3, "param": "rz_all"},
+    {"gate": "RZ", "wire": 4, "param": "rz_all"},
+    {"gate": "RZ", "wire": 5, "param": "rz_all"},
+    {"gate": "RZ", "wire": 6, "param": "rz_all"},
+    {"gate": "RZ", "wire": 7, "param": "rz_all"},
+]
+
+>>>>>>> REPLACE
+</DIFF>

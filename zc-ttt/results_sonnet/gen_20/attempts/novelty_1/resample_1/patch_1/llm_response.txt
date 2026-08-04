@@ -1,0 +1,44 @@
+<NAME>
+add_ry_midlayer_prune_cz
+</NAME>
+
+<DESCRIPTION>
+Based on the recommendation to reallocate trainable capacity from less-central entangling gates toward single-qubit rotations, I prune the two least-central fixed CZ gates (edges [4,8] and [6,7], which are peripheral connections in the entangling graph) and insert a lightweight mid-circuit RY sublayer on qubits [1,3,5,7,8] with unique parameters (ry_mid_0…ry_mid_4). This keeps overall gate count and depth roughly comparable while giving the circuit more expressive single-qubit capacity right after the first entangling block, which should help it fit richer feature combinations without over-relying on the two weakest entangling links. This builds directly on the proven RY→entangler→RZ sandwich structure already in the ansatz, inserting the new RY layer between the CRZ chain and the final RZ layer.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Secondary locality cluster: 1-3-5 chain and 2-4-8 chain, interleaved by
+    # shared qubit but grouped so each qubit's gates are contiguous.
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+    {"gate": "CZ", "wires": [4, 8]},
+
+    # Final cluster: 5-7 and 6-7.
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_6"},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Post-entangling local phases
+=======
+    # Secondary locality cluster: 1-3-5 chain and 2-4-8 chain, interleaved by
+    # shared qubit but grouped so each qubit's gates are contiguous.
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+
+    # Final cluster: 5-7 (peripheral CZ links on [4,8] and [6,7] pruned in
+    # favor of extra single-qubit expressivity below).
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_6"},
+
+    # Mid-circuit RY sublayer: reallocates capacity from the pruned
+    # peripheral entanglers to single-qubit rotations on a spread of qubits.
+    {"gate": "RY", "wire": 1, "param": "ry_mid_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid_2"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid_3"},
+    {"gate": "RY", "wire": 8, "param": "ry_mid_4"},
+
+    # Post-entangling local phases
+>>>>>>> REPLACE
+</DIFF>

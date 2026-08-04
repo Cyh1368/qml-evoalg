@@ -1,0 +1,141 @@
+Looking at the performance data, I can identify the key issues:
+
+**Analysis of Prior Programs:**
+1. **First program (2 blocks, CZ-chain)**: Score 0.72, n_params=14, parameter_efficiency=0.07
+2. **Second program (1 block, CZ-chain)**: Score 0.72, n_params=14, parameter_efficiency=0.07, depth=35 (better efficiency)
+3. **Current program (1 block, XX-chain)**: Score 0.68, n_params=20, parameter_efficiency=0.05
+
+**Key Observations:**
+- The current program has degraded performance (0.68 vs 0.72) despite maintaining perfect accuracy
+- The parameter efficiency dropped from 0.07 to 0.05, and n_params increased from 14 to 20
+- The XX interaction (entangling, adds a parameter) replaced the fixed CZ gates, adding unnecessary parameters
+- The recommendation suggests block-specific shared parameters for multi-block designs
+
+**Strategy:**
+The second program achieves the best balance with a single block using CZ gates. To improve further, I'll:
+1. Restore the CZ-chain structure (removes the extra XX parameter)
+2. Add a second block with **block-specific RY/RZ parameters** (ry_1/rz_1 and ry_2/rz_2)
+3. This keeps CZ gates fixed (parameter economy) while allowing each block to learn distinct features
+4. Expected outcome: 4 parameters with potential for better expressivity and generalization
+
+<NAME>
+blockspecific_ryrz_czchain
+</NAME>
+
+<DESCRIPTION>
+Replace the XX-chain interaction in the current single-block design with a two-block architecture using fixed CZ gates and block-specific RY/RZ parameters. 
+
+Rationale:
+- The current XX-chain adds unnecessary parameters (20 params, score 0.68) compared to the CZ baseline (14 params, score 0.72)
+- The second prior program achieves excellent performance (0.72) with a single CZ-based block
+- Adding a second block with independent ry_1/rz_1 and ry_2/rz_2 parameter sets allows each block to capture distinct features while maintaining high parameter economy
+- Fixed CZ gates preserve connectivity without parameter overhead
+- This design balances expressivity (two blocks) with parameter efficiency (only 4 parameters total)
+- Convergence should remain efficient since both blocks use the same structure
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_shared"},
+    {"gate": "XX", "wires": [1, 2], "param": "xx_shared"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_shared"},
+    {"gate": "XX", "wires": [3, 4], "param": "xx_shared"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_shared"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx_shared"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    # First block: [ry_1] → [rz_1] → [CZ-chain] → [rz_1]
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "RZ", "wire": 0, "param": "rz_1"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_1"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_1"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_1"},
+    # Second block: [ry_2] → [rz_2] → [CZ-chain] → [rz_2]
+    {"gate": "RY", "wire": 0, "param": "ry_2"},
+    {"gate": "RY", "wire": 1, "param": "ry_2"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_2"},
+    {"gate": "RY", "wire": 4, "param": "ry_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_2"},
+    {"gate": "RY", "wire": 7, "param": "ry_2"},
+    {"gate": "RZ", "wire": 0, "param": "rz_2"},
+    {"gate": "RZ", "wire": 1, "param": "rz_2"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_2"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_2"},
+    {"gate": "RZ", "wire": 1, "param": "rz_2"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_2"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

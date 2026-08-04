@@ -1,0 +1,81 @@
+<NAME>
+collective_ising_qaoa
+</NAME>
+
+<DESCRIPTION>
+Replace the fixed-strength CZ circuit and three rotation parameters with a translationally symmetric, two-parameter QAOA-style block. One shared RY parameter learns a collective measurement basis, while one shared ZZ parameter continuously tunes correlation processing across the periodic nearest-neighbor graph. Repeating this same noncommuting mixer–interaction block three times provides useful nonlinear expressivity without qubit-specific parameters. This reduces the circuit parameter count from three to two, improves regularization and parameter efficiency, and allows training to suppress unnecessary entanglement rather than being forced through a maximal CZ layer.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Globally tied rotations strongly regularize the few-shot model while
+    # learning a common measurement basis for all qubits.
+    {"gate": "RY", "wire": 0, "param": "global_y"},
+    {"gate": "RY", "wire": 1, "param": "global_y"},
+    {"gate": "RY", "wire": 2, "param": "global_y"},
+    {"gate": "RY", "wire": 3, "param": "global_y"},
+    {"gate": "RY", "wire": 4, "param": "global_y"},
+    {"gate": "RY", "wire": 5, "param": "global_y"},
+    {"gate": "RY", "wire": 6, "param": "global_y"},
+    {"gate": "RY", "wire": 7, "param": "global_y"},
+
+    {"gate": "RZ", "wire": 0, "param": "global_z"},
+    {"gate": "RZ", "wire": 1, "param": "global_z"},
+    {"gate": "RZ", "wire": 2, "param": "global_z"},
+    {"gate": "RZ", "wire": 3, "param": "global_z"},
+    {"gate": "RZ", "wire": 4, "param": "global_z"},
+    {"gate": "RZ", "wire": 5, "param": "global_z"},
+    {"gate": "RZ", "wire": 6, "param": "global_z"},
+    {"gate": "RZ", "wire": 7, "param": "global_z"},
+
+    # A periodic entangling graph treats every qubit uniformly and lets the
+    # repeated tied block propagate pair information around the full register.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # A noncommuting shared post-rotation increases expressivity without
+    # introducing qubit-specific degrees of freedom.
+    {"gate": "RX", "wire": 0, "param": "global_x"},
+    {"gate": "RX", "wire": 1, "param": "global_x"},
+    {"gate": "RX", "wire": 2, "param": "global_x"},
+    {"gate": "RX", "wire": 3, "param": "global_x"},
+    {"gate": "RX", "wire": 4, "param": "global_x"},
+    {"gate": "RX", "wire": 5, "param": "global_x"},
+    {"gate": "RX", "wire": 6, "param": "global_x"},
+    {"gate": "RX", "wire": 7, "param": "global_x"},
+]
+=======
+ANSATZ_SPEC = [
+    # A shared collective mixer learns a common basis while strongly
+    # regularizing the few-shot classifier.
+    {"gate": "RY", "wire": 0, "param": "mixer"},
+    {"gate": "RY", "wire": 1, "param": "mixer"},
+    {"gate": "RY", "wire": 2, "param": "mixer"},
+    {"gate": "RY", "wire": 3, "param": "mixer"},
+    {"gate": "RY", "wire": 4, "param": "mixer"},
+    {"gate": "RY", "wire": 5, "param": "mixer"},
+    {"gate": "RY", "wire": 6, "param": "mixer"},
+    {"gate": "RY", "wire": 7, "param": "mixer"},
+
+    # A single shared interaction strength gives a tunable periodic correlation
+    # filter. Alternation with RY across the three tied repetitions produces a
+    # compact QAOA-like circuit instead of imposing fixed maximal entanglement.
+    {"gate": "ZZ", "wires": [0, 1], "param": "interaction"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "interaction"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "interaction"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "interaction"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "interaction"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "interaction"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "interaction"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "interaction"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

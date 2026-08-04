@@ -1,0 +1,58 @@
+<NAME>
+add_ring_entanglement_and_crz_couplings
+
+<DESCRIPTION>
+The current ansatz block uses only a linear chain of fixed CZ gates plus RY/RZ rotations, which limits the entangling power and expressivity per block (146 params, ~0.87 test accuracy with a 0.07 train-test gap). I propose:
+
+1. Close the entangling chain into a ring by adding a CZ(7,0) gate, giving full-loop connectivity instead of a linear chain — this improves information mixing across all qubits with no additional parameters.
+2. Replace the fixed CZ entangling layer with parametrized CRZ gates that share parameters in a structured way (each CRZ parameter tied to a neighbor pair), which adds trainable entangling strength without exploding the parameter count. This gives the ansatz the ability to learn how strongly qubits should be entangled at each block/upload, which should improve accuracy and reduce generalization gap since the model can adapt entanglement strength to the data rather than using a fixed maximal entangler.
+3. Keep the same RY+RZ single-qubit structure for consistency, but move an RY layer after the entangling layer too (sandwich structure) to give the block more capacity to rotate into the eigenbasis it needs after entanglement.
+
+This adds 8 more parameters (one per CRZ gate) per block, totaling 154 params overall (28 params/block × 6 blocks + 2 readout), well within reasonable limits, and should improve expressivity while maintaining reasonable depth.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_6"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_7"},
+    {"gate": "RY", "wire": 0, "param": "ry_post_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_post_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_post_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_post_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_post_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_post_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_post_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_post_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+>>>>>>> REPLACE
+</DIFF>

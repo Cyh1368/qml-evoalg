@@ -1,0 +1,63 @@
+Looking at the performance metrics, I can see that:
+
+1. **Current program (0.55)** vs **Second prior program (0.58)**: The second program achieves better performance by using more distinct parameters (10 vs 8), which improves generalization and worst_group_margin.
+
+2. **Key metrics analysis**:
+   - The worst_group_margin is critically low (0.24), which is the dominant scoring term
+   - The current program has lower validation_accuracy (0.92) and test_accuracy (0.88) compared to the prior (0.97, 0.96)
+   - The generalization_gap is high (0.12), indicating overfitting
+
+3. **Recommendation alignment**: The suggestion to insert a mid-circuit alternating RY layer addresses:
+   - **Expressivity**: Adding RY gates mid-circuit (before rz_post) increases model capacity to better separate hard samples
+   - **Parameter economy**: By reusing ry_even and ry_odd parameters, we don't create new distinct parameters, only add gate count
+   - **Heterogeneity**: This provides additional rotation diversity in a different phase of the circuit
+
+The key insight is that the current circuit lacks sufficient expressivity in the middle layers to handle the hardest samples (worst_group_margin = 0.24). Adding mid-circuit rotations before the final RZ layer will allow the circuit to learn more complex decision boundaries without increasing the distinct parameter count.
+
+<NAME>
+mid_circuit_alternating_ry
+</NAME>
+
+<DESCRIPTION>
+Insert a mid-circuit alternating RY layer before the final rz_post gates. This adds rotation gates on qubits [0,2,4,6] with parameter ry_even and on qubits [1,3,5,7] with parameter ry_odd, reusing the same parameters from the initial layer.
+
+This improves expressivity by:
+1. Providing additional rotation diversity in a different circuit phase
+2. Allowing the quantum circuit to learn more complex decision boundaries for hard samples
+3. Improving worst_group_margin (currently the critical bottleneck at 0.24)
+4. NOT increasing distinct parameter count, only gate count
+
+The pattern matches the prior high-performing program which used distinct parameters for different pairs, and the recommendation specifically targets the robustness to hard samples through increased mid-circuit heterogeneity.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+=======
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+>>>>>>> REPLACE
+</DIFF>

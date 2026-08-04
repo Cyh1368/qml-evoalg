@@ -1,0 +1,91 @@
+<NAME>
+decoupled_mobius_angles
+</NAME>
+
+<DESCRIPTION>
+Replace the underperforming chord-only trainable layer and tied terminal RZ rotations with the stronger prior Möbius topology: collective RY mixing, a fixed CZ ring plus diametric chords, and trainable ZZ correlations on the ring. The mixer and correlation layers receive separate global angles, allowing Adam to tune basis selection independently from correlation strength while retaining cyclic symmetry and only two circuit parameters. This keeps the current parameter count and gate count unchanged but uses them more effectively, removes the potentially restrictive RY/RZ parameter tying, and restores the topology associated with better validation and worst-group margins.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# A symmetry-regularized Möbius ladder with only two circuit parameters.
+# Collective basis rotations retain the strong few-shot inductive bias of the
+# best prior structure, while one shared angle tunes all non-local chords.
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "collective_angle"},
+    {"gate": "RY", "wire": 1, "param": "collective_angle"},
+    {"gate": "RY", "wire": 2, "param": "collective_angle"},
+    {"gate": "RY", "wire": 3, "param": "collective_angle"},
+    {"gate": "RY", "wire": 4, "param": "collective_angle"},
+    {"gate": "RY", "wire": 5, "param": "collective_angle"},
+    {"gate": "RY", "wire": 6, "param": "collective_angle"},
+    {"gate": "RY", "wire": 7, "param": "collective_angle"},
+
+    # Fixed nearest-neighbour ring supplies robust parameter-free mixing.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # All diametric links share one tunable strength, preserving cyclic
+    # symmetry while adapting the amount of long-range entanglement.
+    {"gate": "ZZ", "wires": [0, 4], "param": "cross_ent"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "cross_ent"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "cross_ent"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "cross_ent"},
+
+    {"gate": "RZ", "wire": 0, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 1, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 2, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 3, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 4, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 5, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 6, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 7, "param": "collective_angle"},
+]
+=======
+# Two globally shared angles separate basis mixing from correlation strength.
+# This preserves strong cyclic regularization while avoiding an unnecessarily
+# rigid equality between physically distinct one- and two-qubit operations.
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "mixer_angle"},
+    {"gate": "RY", "wire": 1, "param": "mixer_angle"},
+    {"gate": "RY", "wire": 2, "param": "mixer_angle"},
+    {"gate": "RY", "wire": 3, "param": "mixer_angle"},
+    {"gate": "RY", "wire": 4, "param": "mixer_angle"},
+    {"gate": "RY", "wire": 5, "param": "mixer_angle"},
+    {"gate": "RY", "wire": 6, "param": "mixer_angle"},
+    {"gate": "RY", "wire": 7, "param": "mixer_angle"},
+
+    # A fixed Möbius ladder transports both local and diametric information
+    # without consuming trainable parameters.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Translation-symmetric nearest-neighbour correlations use one independent
+    # angle so their optimal scale need not coincide with the basis rotation.
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_angle"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_angle"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_angle"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_angle"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_angle"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_angle"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_angle"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_angle"},
+]
+>>>>>>> REPLACE
+</DIFF>

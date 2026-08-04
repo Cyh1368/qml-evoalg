@@ -1,0 +1,96 @@
+<NAME>
+zz_nearest_neighbor_minimal
+</NAME>
+
+<DESCRIPTION>
+Analysis of prior programs:
+
+1. **First program** (hybrid_ry_zz_minimal):
+   - Achieved perfect accuracy (1.00) with only **26 parameters** (4 per block)
+   - Used selective RY on even qubits, RZ on odd qubits, and only 2 ZZ gates
+   - Very efficient: depth=12, gate_count=60, convergence_step=60
+   - **This is the gold standard for parameter economy**
+
+2. **Second program** (expanded CZ line):
+   - Achieved perfect accuracy (1.00) with 26 parameters
+   - But significantly more complex: depth=35, gate_count=186, convergence_step=90
+   - Slower convergence due to much higher gate count
+
+3. **Current program** (shared RY/RZ with XX):
+   - Perfect accuracy (1.00) but **38 parameters** (6 per block)
+   - Moderate complexity: depth=18, gate_count=120
+   - Parameter efficiency is lower (0.03 vs 0.04 in the first program)
+
+**Key insight**: The first program's selective RY/RZ + minimal ZZ strategy was optimal. However, the recommendation suggests extending ZZ connectivity while keeping parameter count minimal by using just 2 shared parameters ("zz_even" and "zz_odd").
+
+**Proposed improvement**: Replace the current 6-parameter block (ry_shared, xx_0-3, rz_shared) with a 4-parameter block that:
+- Applies selective RY rotations (even qubits only, parameter "ry_even")
+- Applies selective RZ rotations (odd qubits only, parameter "rz_odd")
+- Replaces the 4 independent XX gates with all 7 nearest-neighbor ZZ interactions
+- Uses only 2 unique ZZ parameters:
+  - "zz_even": for pairs (0,1), (2,3), (4,5), (6,7)
+  - "zz_odd": for pairs (1,2), (3,4), (5,6)
+
+This returns to the 4-parameter-per-block efficiency of the first program while expanding the entanglement topology beyond just two pairs. The increased connectivity (7 ZZ gates vs 2 ZZ gates) may improve expressibility while keeping parameter count at the minimal economy level (26 total parameters).
+
+Expected improvements:
+- **Reduce n_params from 38 to 26** (restore parameter economy)
+- **Maintain or improve accuracy** (1.00 expected)
+- **Improve parameter_efficiency** from 0.03 to 0.04
+- **Reduce gate_count** from 120 to a lower value
+- **Faster convergence** due to simpler parameter space
+
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Shared RY layer: apply same rotation to all qubits
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    # Parametrized XX interactions on alternating pairs
+    {"gate": "XX", "wires": [0, 1], "param": "xx_0"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_1"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_2"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_3"},
+    # Shared RZ layer: apply same rotation to all qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    # Selective RY layer: even qubits only (0, 2, 4, 6)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    # Selective RZ layer: odd qubits only (1, 3, 5, 7)
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    # Extended ZZ entanglement with parameter sharing:
+    # Even-indexed pairs (0,1), (2,3), (4,5), (6,7) share "zz_even"
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_even"},
+    # Odd-indexed pairs (1,2), (3,4), (5,6) share "zz_odd"
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_odd"},
+]
+>>>>>>> REPLACE
+</DIFF>

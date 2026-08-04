@@ -1,0 +1,33 @@
+<NAME>
+add_parity_rx_layer
+
+<DESCRIPTION>
+Add a translation-invariant RX rotation layer (split by even/odd parity, mirroring the existing RY structure) right before the ZZ entangling ring. This introduces mixed-axis local rotations (RY+RX) which, combined with the ZZ entangler, can generate richer non-commuting local rotations (approximating arbitrary single-qubit rotations before entanglement) without breaking the parity symmetry that has proven beneficial. Only 2 new parameters are added (rx_even, rx_odd), keeping the parameter count low while potentially improving the worst-group margin by giving the classifier more expressive single-qubit pre-processing before the entangling layers, which prior seeds show matters more than the number of entangling gates alone.
+
+This builds directly on the recommendation to inject a translation-invariant RX layer for mixed-axis local rotations, exploiting the established insight that moderate axis diversity (mixing RX/RY) improves expressivity while preserving the strong parity structure that ablations showed was critical.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Translation-invariant nearest-neighbor entangling ring, one shared angle.
+=======
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Mixed-axis local rotations: translation-invariant RX layer split by
+    # parity, mirroring the RY structure. Adds only 2 new parameters
+    # (rx_even, rx_odd) while giving the local single-qubit rotations an
+    # extra independent axis, which combined with RY approximates a fuller
+    # single-qubit rotation before entanglement — improving expressivity
+    # without sacrificing the parity symmetry that ablations showed matters.
+    {"gate": "RX", "wire": 0, "param": "rx_even"},
+    {"gate": "RX", "wire": 2, "param": "rx_even"},
+    {"gate": "RX", "wire": 4, "param": "rx_even"},
+    {"gate": "RX", "wire": 6, "param": "rx_even"},
+    {"gate": "RX", "wire": 1, "param": "rx_odd"},
+    {"gate": "RX", "wire": 3, "param": "rx_odd"},
+    {"gate": "RX", "wire": 5, "param": "rx_odd"},
+    {"gate": "RX", "wire": 7, "param": "rx_odd"},
+    # Translation-invariant nearest-neighbor entangling ring, one shared angle.
+>>>>>>> REPLACE
+</DIFF>

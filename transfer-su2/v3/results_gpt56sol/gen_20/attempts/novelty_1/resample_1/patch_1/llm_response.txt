@@ -1,0 +1,95 @@
+<NAME>
+readout_aligned_crz
+</NAME>
+
+<DESCRIPTION>
+Replace the underperforming palindromic RZ-RY-RZ plus ZZ ring with the stronger two-parameter collective RY/RZ Möbius-ladder baseline, then append a single shared CRZ angle on the dataset-provided readout pairs. The fixed CZ graph supplies parameter-free local and long-range mixing, while the readout-aligned CRZ layer concentrates one additional degree of freedom on correlations directly visible to the classifier. Because the layer ends every repeated block, its final occurrence is immediately adjacent to measurement. This uses only three circuit parameters and preserves strong symmetry and regularization for few-shot generalization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # A tied, palindromic collective basis transformation gives each repeated
+    # block an expressive Euler-like mixer with only two local parameters.
+    {"gate": "RZ", "wire": 0, "param": "global_z"},
+    {"gate": "RZ", "wire": 1, "param": "global_z"},
+    {"gate": "RZ", "wire": 2, "param": "global_z"},
+    {"gate": "RZ", "wire": 3, "param": "global_z"},
+    {"gate": "RZ", "wire": 4, "param": "global_z"},
+    {"gate": "RZ", "wire": 5, "param": "global_z"},
+    {"gate": "RZ", "wire": 6, "param": "global_z"},
+    {"gate": "RZ", "wire": 7, "param": "global_z"},
+
+    {"gate": "RY", "wire": 0, "param": "global_y"},
+    {"gate": "RY", "wire": 1, "param": "global_y"},
+    {"gate": "RY", "wire": 2, "param": "global_y"},
+    {"gate": "RY", "wire": 3, "param": "global_y"},
+    {"gate": "RY", "wire": 4, "param": "global_y"},
+    {"gate": "RY", "wire": 5, "param": "global_y"},
+    {"gate": "RY", "wire": 6, "param": "global_y"},
+    {"gate": "RY", "wire": 7, "param": "global_y"},
+
+    {"gate": "RZ", "wire": 0, "param": "global_z"},
+    {"gate": "RZ", "wire": 1, "param": "global_z"},
+    {"gate": "RZ", "wire": 2, "param": "global_z"},
+    {"gate": "RZ", "wire": 3, "param": "global_z"},
+    {"gate": "RZ", "wire": 4, "param": "global_z"},
+    {"gate": "RZ", "wire": 5, "param": "global_z"},
+    {"gate": "RZ", "wire": 6, "param": "global_z"},
+    {"gate": "RZ", "wire": 7, "param": "global_z"},
+
+    # One tied ZZ angle controls a periodic nearest-neighbour interaction.
+    # The sparse symmetric ring regularizes against the small training split.
+    {"gate": "ZZ", "wires": [0, 1], "param": "collective_zz"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "collective_zz"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "collective_zz"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "collective_zz"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "collective_zz"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "collective_zz"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "collective_zz"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "collective_zz"},
+]
+=======
+ANSATZ_SPEC = [
+    # Collective rotations impose a strong few-shot inductive bias.
+    {"gate": "RY", "wire": 0, "param": "global_y"},
+    {"gate": "RY", "wire": 1, "param": "global_y"},
+    {"gate": "RY", "wire": 2, "param": "global_y"},
+    {"gate": "RY", "wire": 3, "param": "global_y"},
+    {"gate": "RY", "wire": 4, "param": "global_y"},
+    {"gate": "RY", "wire": 5, "param": "global_y"},
+    {"gate": "RY", "wire": 6, "param": "global_y"},
+    {"gate": "RY", "wire": 7, "param": "global_y"},
+
+    # Parameter-free Möbius-ladder mixing covers local and long-range structure.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    {"gate": "RZ", "wire": 0, "param": "global_z"},
+    {"gate": "RZ", "wire": 1, "param": "global_z"},
+    {"gate": "RZ", "wire": 2, "param": "global_z"},
+    {"gate": "RZ", "wire": 3, "param": "global_z"},
+    {"gate": "RZ", "wire": 4, "param": "global_z"},
+    {"gate": "RZ", "wire": 5, "param": "global_z"},
+    {"gate": "RZ", "wire": 6, "param": "global_z"},
+    {"gate": "RZ", "wire": 7, "param": "global_z"},
+
+    # One shared angle adapts correlations specifically on measured pairs.
+    *[
+        {"gate": "CRZ", "wires": [a, b], "param": "readout_crz"}
+        for a, b in READOUT_PAIRS
+    ],
+]
+>>>>>>> REPLACE
+
+</DIFF>

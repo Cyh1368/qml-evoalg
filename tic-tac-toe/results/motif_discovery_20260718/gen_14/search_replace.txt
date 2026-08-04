@@ -1,0 +1,139 @@
+<NAME>
+symmetry_shared_zzz_crz_spokes
+</NAME>
+
+<DESCRIPTION>
+Reduce parameter count and improve inductive bias by:
+- Sharing single-qubit rotation parameters according to board symmetries (corners/edges/center) to regularize and improve generalization.
+- Grouping three-qubit ZZZ motif parameters by line type (rows/columns/diagonals) so the ansatz explicitly encodes winning-line motifs but with fewer parameters.
+- Replacing the bespoke CCRZ gates with a small set of shared CRZ "spoke" rotations connecting center spokes; CRZs are adjacent and give directional coupling to the center while using one shared parameter.
+- Keeping grid CZ entanglement but reordering slightly so motifs and entanglement interact naturally.
+Overall this reduces N_PARAMS substantially (from 25->10 per block), improving parameter efficiency and reducing overfitting while preserving motif-discovery capacity by explicitly allocating ZZZs to winning lines.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Pre-entanglement RZ with parameter sharing: corners share, edges share, center separate
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre_center"},
+    # Single-qubit RY rotations (no sharing for flexibility)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+    # Adjacent two-qubit entanglement (CZ on grid edges)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+    # Post-entanglement RZ with parameter sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_center"},
+    # Three-qubit ZZZ interactions on all 8 tic-tac-toe winning lines
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_top"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_middle"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_bottom"},
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_left"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_vert_center"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_right"},
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_diag_main"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_diag_anti"},
+    # Selective CCRZ for double-controlled rotations on strategic triples
+    {"gate": "CCRZ", "wires": [0, 4, 8], "param": "ccrz_corner_center_main"},
+    {"gate": "CCRZ", "wires": [2, 6, 8], "param": "ccrz_corner_center_anti"},
+]
+=======
+ANSATZ_SPEC = [
+    # Pre-entanglement RZ with symmetry sharing: corners/edges/center
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Single-qubit RY rotations shared by symmetry groups (corners/edges/center)
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Grid entanglement (CZ) on all adjacent edges
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+
+    # Parametrized CRZ "spokes" connecting center to its neighbors (shared param)
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_spoke"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_spoke"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_spoke"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_spoke"},
+
+    # Post-entanglement RZ reuse the same symmetry-shared params (regularizes)
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # ZZZ winning-line motifs grouped by type to encourage motif discovery
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_row"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_row"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_row"},
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_diag"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_diag"},
+]
+>>>>>>> REPLACE
+</DIFF>

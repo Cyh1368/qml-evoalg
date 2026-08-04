@@ -1,0 +1,82 @@
+<NAME>
+three_qubit_group_sharing
+</NAME>
+
+<DESCRIPTION>
+Building on the previous 4-group (2 qubits/group) RY/RZ-shared design that already halved parameters via axis reuse, this edit further compresses the parameter count by regrouping the 8 qubits into 3 groups (3,3,2 qubits) instead of 4 groups of 2. This drops the number of unique shared parameters per ansatz repetition from 4 to 3 (a 25% reduction), while keeping the same fixed nearest-neighbor CZ entangling chain and the RY/RZ same-parameter reuse trick (so pre- and post-entanglement rotations still share the same angle per group). Coarser grouping increases correlation between qubits' rotation angles, testing whether the model can still separate classes with fewer degrees of freedom—directly targeting the parameter-economy objective while hopefully preserving the 1.00 train/val/test accuracy and 0 generalization gap observed previously.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Pre-entanglement rotations: 4 groups of 2 qubits, each group driven by
+    # a single shared parameter (RY on both wires of the group).
+    {"gate": "RY", "wire": 0, "param": "p_g0"},
+    {"gate": "RY", "wire": 1, "param": "p_g0"},
+    {"gate": "RY", "wire": 2, "param": "p_g1"},
+    {"gate": "RY", "wire": 3, "param": "p_g1"},
+    {"gate": "RY", "wire": 4, "param": "p_g2"},
+    {"gate": "RY", "wire": 5, "param": "p_g2"},
+    {"gate": "RY", "wire": 6, "param": "p_g3"},
+    {"gate": "RY", "wire": 7, "param": "p_g3"},
+
+    # Nearest-neighbor entangling chain (fixed, no parameters).
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Post-entanglement rotations: reuse the SAME parameters as the
+    # corresponding pre-entanglement RY gates, but on a different axis (RZ),
+    # halving the parameter count relative to using distinct post params.
+    {"gate": "RZ", "wire": 0, "param": "p_g0"},
+    {"gate": "RZ", "wire": 1, "param": "p_g0"},
+    {"gate": "RZ", "wire": 2, "param": "p_g1"},
+    {"gate": "RZ", "wire": 3, "param": "p_g1"},
+    {"gate": "RZ", "wire": 4, "param": "p_g2"},
+    {"gate": "RZ", "wire": 5, "param": "p_g2"},
+    {"gate": "RZ", "wire": 6, "param": "p_g3"},
+    {"gate": "RZ", "wire": 7, "param": "p_g3"},
+]
+=======
+ANSATZ_SPEC = [
+    # Pre-entanglement rotations: 3 groups (3,3,2 qubits), each group driven
+    # by a single shared parameter (RY on all wires of the group).
+    {"gate": "RY", "wire": 0, "param": "p_g0"},
+    {"gate": "RY", "wire": 1, "param": "p_g0"},
+    {"gate": "RY", "wire": 2, "param": "p_g0"},
+    {"gate": "RY", "wire": 3, "param": "p_g1"},
+    {"gate": "RY", "wire": 4, "param": "p_g1"},
+    {"gate": "RY", "wire": 5, "param": "p_g1"},
+    {"gate": "RY", "wire": 6, "param": "p_g2"},
+    {"gate": "RY", "wire": 7, "param": "p_g2"},
+
+    # Nearest-neighbor entangling chain (fixed, no parameters).
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Post-entanglement rotations: reuse the SAME parameters as the
+    # corresponding pre-entanglement RY gates, but on a different axis (RZ),
+    # keeping the parameter count at 3 unique values per repetition.
+    {"gate": "RZ", "wire": 0, "param": "p_g0"},
+    {"gate": "RZ", "wire": 1, "param": "p_g0"},
+    {"gate": "RZ", "wire": 2, "param": "p_g0"},
+    {"gate": "RZ", "wire": 3, "param": "p_g1"},
+    {"gate": "RZ", "wire": 4, "param": "p_g1"},
+    {"gate": "RZ", "wire": 5, "param": "p_g1"},
+    {"gate": "RZ", "wire": 6, "param": "p_g2"},
+    {"gate": "RZ", "wire": 7, "param": "p_g2"},
+]
+>>>>>>> REPLACE
+=======
+>>>>>>> REPLACE
+</DIFF>

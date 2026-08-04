@@ -1,0 +1,40 @@
+<NAME>
+duplicate_block_deeper_shared_params
+
+<DESCRIPTION>
+Prior experiments show that increasing circuit depth while keeping the same shared parameter names (i.e., reusing the same trainable angles across more entangling layers) improves the combined score without any parameter-count penalty (the 5-param, depth-42 variant outperformed the 4-param, depth-26 variant). Applying this insight directly to the current best low-parameter circuit, I duplicate the entire rotation+entangling sequence (RY1 -> RZ1 -> CNOT ring -> CRZ ring -> RY2) a second time, reusing the exact same parameter names ("ry1", "rz1", "ent1", "ry2"). This doubles the effective depth and the number of entangling interactions (giving the optimizer more capacity to build a more expressive, better-separating feature map) while leaving n_distinct_params unchanged at 4, which should improve robustness/generalization (worst-group margin) without any parameter-economy cost.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Final shared RY rotation to mix entangled amplitudes before readout.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "ry2"})
+
+=======
+# Final shared RY rotation to mix entangled amplitudes before readout.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "ry2"})
+
+# --- Repeat the same block a second time (same shared params) to deepen
+# the circuit and boost expressivity without adding new trainable
+# parameters. This mirrors the depth-42, 5-param variant that scored
+# higher than the shallower one.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "ry1"})
+
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": _i, "param": "rz1"})
+
+for _i in range(N_QUBITS - 1):
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [_i, _i + 1]})
+
+for _i in range(N_QUBITS - 1):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, _i + 1], "param": "ent1"})
+
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "ry2"})
+
+>>>>>>> REPLACE
+
+</DIFF>
