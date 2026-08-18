@@ -1,0 +1,68 @@
+<NAME>
+efficient_ry_cnot_block
+</NAME>
+
+<DESCRIPTION>
+The current ansatz block uses a Hardware Efficient Ansatz structure with 24 parameters per block (8 `RY` and 16 `RZ` gates) and a deep staircase of 7 `CZ` gates, leading to a total of 146 parameters and significant circuit depth.
+
+Because the dataset's feature map applies an `IsingZZ` coupling to all 28 possible qubit pairs (a fully connected graph), it already creates massive amounts of Z-basis entanglement. To leverage this, we only need a simpler, highly efficient layer of `RY` gates to rotate this Z-entanglement into population differences (similar to QAOA's mixer), followed by a shallow depth-2 ring of `CNOT` gates to provide directed, non-commuting entanglement without adding any parameters.
+
+This proposed block reduces the parameter count per block from 24 down to 8. Over the 6 block repetitions, the total parameter count drops from 146 to just 50 parameters. This nearly 3x improvement in parameter efficiency should drastically boost the combined score, reduce the training depth, and allow the Adam optimizer to converge in fewer steps due to the lower-dimensional loss landscape, while maintaining or even improving the generalization accuracy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [7, 0]},
+]
+>>>>>>> REPLACE
+</DIFF>
