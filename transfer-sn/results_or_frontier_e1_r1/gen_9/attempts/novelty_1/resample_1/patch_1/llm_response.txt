@@ -1,0 +1,123 @@
+<NAME>
+symmetric_collective_decoder
+</NAME>
+
+<DESCRIPTION>
+Replace the wire-specific 24-parameter block with a permutation-equivariant collective ansatz. The complete-graph CZ network matches the all-pairs feature representation and is scheduled as seven disjoint matchings to limit depth. Sharing each rotation across all wires reduces the model from 146 to 26 total parameters, improving optimization speed, generalization, and parameter efficiency. Relative to the previously strong three-parameter collective block, the added post-entanglement RY layer provides an orthogonal decoding axis before RX and the mean-Z readout, increasing expressivity for lower L2 loss while preserving graph-permutation symmetry.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # RY rotation layer – rotate out of Z eigenstates
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    # RX rotation layer – second orthogonal axis (breaks Z-symmetry from IsingZZ)
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_7"},
+    # Entanglement layer 1: even pairs
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Entanglement layer 2: odd pairs (ring closure via 7-0)
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Entanglement layer 3: long-range cross connections
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    # Post-entanglement RZ layer – adjustable phases
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Collective preparation preserves invariance under vertex relabeling.
+    {"gate": "RY", "wire": 0, "param": "collective_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry"},
+    {"gate": "RZ", "wire": 0, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz"},
+    # Complete-graph entangler in seven parallelizable perfect matchings.
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [7, 1]},
+    {"gate": "CZ", "wires": [2, 0]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [7, 2]},
+    {"gate": "CZ", "wires": [3, 1]},
+    {"gate": "CZ", "wires": [4, 0]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 3]},
+    {"gate": "CZ", "wires": [4, 2]},
+    {"gate": "CZ", "wires": [5, 1]},
+    {"gate": "CZ", "wires": [6, 0]},
+    {"gate": "CZ", "wires": [7, 4]},
+    {"gate": "CZ", "wires": [5, 3]},
+    {"gate": "CZ", "wires": [6, 2]},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [7, 5]},
+    {"gate": "CZ", "wires": [6, 4]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 3]},
+    # Two-axis collective decoder converts entangled phases into Z signal.
+    {"gate": "RY", "wire": 0, "param": "collective_decode_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_decode_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_decode_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_decode_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_decode_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_decode_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_decode_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_decode_ry"},
+    {"gate": "RX", "wire": 0, "param": "collective_decode_rx"},
+    {"gate": "RX", "wire": 1, "param": "collective_decode_rx"},
+    {"gate": "RX", "wire": 2, "param": "collective_decode_rx"},
+    {"gate": "RX", "wire": 3, "param": "collective_decode_rx"},
+    {"gate": "RX", "wire": 4, "param": "collective_decode_rx"},
+    {"gate": "RX", "wire": 5, "param": "collective_decode_rx"},
+    {"gate": "RX", "wire": 6, "param": "collective_decode_rx"},
+    {"gate": "RX", "wire": 7, "param": "collective_decode_rx"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,118 @@
+<NAME>
+collective_interleaved_cube
+</NAME>
+
+<DESCRIPTION>
+This evolution proposes an ansatz block that leverages three key architectural principles to improve the combined score:
+
+1. **Collective Parameter Sharing**: Following the success of prior experiments, all eight qubits share a single parameter for each rotation layer. This serves as a strong regularization prior, significantly reducing the generalization gap (as seen in the 0.01 gap of Seed 2) and increasing parameter efficiency.
+2. **Interleaved Entanglement matchings**: Instead of applying all entangling gates in a single cluster, the three perfect matchings of a 3-cube (dimension 0, 1, and 2 edges) are interleaved with parametrized rotation layers. This increases the effective expressivity and mixing of the circuit per unit depth.
+3. **Multi-Axis Mixing**: The block utilizes RY, RZ, and RX rotations. Interspersing these non-commuting rotations between the Ising-like entanglement layers allows the model to better navigate the Hilbert space and transform the phase-encoded feature information into the Z-basis for measurement.
+
+The resulting block has 5 unique parameters, leading to a highly efficient total of 32 trainable parameters (including readout) across the full re-uploading circuit.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Initial collective mixing
+    {"gate": "RY", "wire": 0, "param": "p1"},
+    {"gate": "RY", "wire": 1, "param": "p1"},
+    {"gate": "RY", "wire": 2, "param": "p1"},
+    {"gate": "RY", "wire": 3, "param": "p1"},
+    {"gate": "RY", "wire": 4, "param": "p1"},
+    {"gate": "RY", "wire": 5, "param": "p1"},
+    {"gate": "RY", "wire": 6, "param": "p1"},
+    {"gate": "RY", "wire": 7, "param": "p1"},
+
+    {"gate": "RZ", "wire": 0, "param": "p2"},
+    {"gate": "RZ", "wire": 1, "param": "p2"},
+    {"gate": "RZ", "wire": 2, "param": "p2"},
+    {"gate": "RZ", "wire": 3, "param": "p2"},
+    {"gate": "RZ", "wire": 4, "param": "p2"},
+    {"gate": "RZ", "wire": 5, "param": "p2"},
+    {"gate": "RZ", "wire": 6, "param": "p2"},
+    {"gate": "RZ", "wire": 7, "param": "p2"},
+
+    # Interleaved Cube Matching 1 (Dim 0)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "RY", "wire": 0, "param": "p3"},
+    {"gate": "RY", "wire": 1, "param": "p3"},
+    {"gate": "RY", "wire": 2, "param": "p3"},
+    {"gate": "RY", "wire": 3, "param": "p3"},
+    {"gate": "RY", "wire": 4, "param": "p3"},
+    {"gate": "RY", "wire": 5, "param": "p3"},
+    {"gate": "RY", "wire": 6, "param": "p3"},
+    {"gate": "RY", "wire": 7, "param": "p3"},
+
+    # Interleaved Cube Matching 2 (Dim 1)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    {"gate": "RZ", "wire": 0, "param": "p4"},
+    {"gate": "RZ", "wire": 1, "param": "p4"},
+    {"gate": "RZ", "wire": 2, "param": "p4"},
+    {"gate": "RZ", "wire": 3, "param": "p4"},
+    {"gate": "RZ", "wire": 4, "param": "p4"},
+    {"gate": "RZ", "wire": 5, "param": "p4"},
+    {"gate": "RZ", "wire": 6, "param": "p4"},
+    {"gate": "RZ", "wire": 7, "param": "p4"},
+
+    # Interleaved Cube Matching 3 (Dim 2)
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Final conversion to Z-basis
+    {"gate": "RX", "wire": 0, "param": "p5"},
+    {"gate": "RX", "wire": 1, "param": "p5"},
+    {"gate": "RX", "wire": 2, "param": "p5"},
+    {"gate": "RX", "wire": 3, "param": "p5"},
+    {"gate": "RX", "wire": 4, "param": "p5"},
+    {"gate": "RX", "wire": 5, "param": "p5"},
+    {"gate": "RX", "wire": 6, "param": "p5"},
+    {"gate": "RX", "wire": 7, "param": "p5"},
+]
+>>>>>>> REPLACE
+</DIFF>

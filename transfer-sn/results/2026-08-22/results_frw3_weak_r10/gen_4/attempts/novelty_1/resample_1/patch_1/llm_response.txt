@@ -1,0 +1,55 @@
+<NAME>
+trainable_ring_ansatz
+</NAME>
+
+<DESCRIPTION>
+The proposed approach shifts from a static, fixed-connectivity entanglement strategy to a trainable, dynamic entanglement architecture. The previous implementation relied on a "collective" parameter-sharing scheme that, while efficient, was limited in its ability to express complex local feature interactions.
+
+My design uses a `CRZ` ring-topology entangler. By applying `CRZ` gates across all adjacent qubits in a ring, the circuit can learn to weight the importance of correlations between specific qubit pairs during training. This creates a "programmable connectivity" that adapts to the dataset's structure. I have balanced expressivity and parameter efficiency by using independent rotation parameters for each qubit (to allow local feature adaptation) while sharing a single parameter across the entangling layer (to keep the parameter count low and the training stable). This provides a significant boost in the model's ability to model non-linear data patterns compared to the fixed-symmetry ansatz.
+</DESCRIPTION>
+
+<CODE>
+```{python}
+# EVOLVE-BLOCK-START
+# The design utilizes a trainable ring-entangling architecture.
+# 1. Independent RY rotations capture local feature characteristics.
+# 2. A shared-parameter CRZ ring allows the model to learn the degree
+#    of entanglement between adjacent qubits dynamically.
+# 3. Independent RX rotations facilitate non-diagonal state mixing
+#    before the final measurement, which is crucial for capturing
+#    correlations beyond simple Z-axis alignments.
+
+ANSATZ_SPEC = [
+    # Local feature transformation layer
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # Trainable Ring Entanglement: Allows learning of adjacent correlations
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+
+    # Output mixing layer
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_7"},
+]
+# EVOLVE-BLOCK-END
+```
+</CODE>

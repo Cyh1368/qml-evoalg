@@ -1,0 +1,68 @@
+<NAME>
+parameter_efficient_ansatz
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses 140 parameters, which leads to high redundancy given we have already achieved 100% accuracy. I am modifying the `ANSATZ_SPEC` to share single-qubit rotation parameters across adjacent qubit pairs (0-1, 2-3, etc.). This reduces the number of independent RY parameters per block from 16 to 8, while keeping the rich CRZ entanglement structure. This reduction in parameters will directly improve the `parameter_efficiency` metric and is expected to maintain our high classification accuracy by enforcing useful structural symmetries.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "lyr0_ry0"},
+    {"gate": "RY", "wire": 1, "param": "lyr0_ry1"},
+    {"gate": "RY", "wire": 2, "param": "lyr0_ry2"},
+    {"gate": "RY", "wire": 3, "param": "lyr0_ry3"},
+    {"gate": "RY", "wire": 4, "param": "lyr0_ry4"},
+    {"gate": "RY", "wire": 5, "param": "lyr0_ry5"},
+    {"gate": "RY", "wire": 6, "param": "lyr0_ry6"},
+    {"gate": "RY", "wire": 7, "param": "lyr0_ry7"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_01"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_23"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_45"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_67"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_12"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_34"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_56"},
+    {"gate": "RY", "wire": 0, "param": "lyr1_ry0"},
+    {"gate": "RY", "wire": 1, "param": "lyr1_ry1"},
+    {"gate": "RY", "wire": 2, "param": "lyr1_ry2"},
+    {"gate": "RY", "wire": 3, "param": "lyr1_ry3"},
+    {"gate": "RY", "wire": 4, "param": "lyr1_ry4"},
+    {"gate": "RY", "wire": 5, "param": "lyr1_ry5"},
+    {"gate": "RY", "wire": 6, "param": "lyr1_ry6"},
+    {"gate": "RY", "wire": 7, "param": "lyr1_ry7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 0: Shared RY in pairs (4 unique params)
+    {"gate": "RY", "wire": 0, "param": "ry0_01"},
+    {"gate": "RY", "wire": 1, "param": "ry0_01"},
+    {"gate": "RY", "wire": 2, "param": "ry0_23"},
+    {"gate": "RY", "wire": 3, "param": "ry0_23"},
+    {"gate": "RY", "wire": 4, "param": "ry0_45"},
+    {"gate": "RY", "wire": 5, "param": "ry0_45"},
+    {"gate": "RY", "wire": 6, "param": "ry0_67"},
+    {"gate": "RY", "wire": 7, "param": "ry0_67"},
+
+    # CRZ entangling backbone (7 unique params)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_01"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_23"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_45"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_67"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_12"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_34"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_56"},
+
+    # Layer 1: Shared RY in pairs (4 unique params)
+    {"gate": "RY", "wire": 0, "param": "ry1_01"},
+    {"gate": "RY", "wire": 1, "param": "ry1_01"},
+    {"gate": "RY", "wire": 2, "param": "ry1_23"},
+    {"gate": "RY", "wire": 3, "param": "ry1_23"},
+    {"gate": "RY", "wire": 4, "param": "ry1_45"},
+    {"gate": "RY", "wire": 5, "param": "ry1_45"},
+    {"gate": "RY", "wire": 6, "param": "ry1_67"},
+    {"gate": "RY", "wire": 7, "param": "ry1_67"},
+]
+>>>>>>> REPLACE
+</DIFF>

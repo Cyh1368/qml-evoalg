@@ -1,0 +1,105 @@
+Looking at this problem, I need to improve the ansatz block for an 8-qubit classifier. The seed uses a simple line of CZ gates which limits entanglement propagation. I'll design a brick-layer entanglement pattern with long-range connections and an additional rotation layer for better expressibility.
+
+<NAME>
+brick_entangle_longrange_ry
+</NAME>
+
+<DESCRIPTION>
+The seed ansatz uses a linear chain of CZ gates, which requires many layers for information to propagate across all qubits. This redesign uses:
+
+1. RY+RZ rotations on all qubits (expressible single-qubit unitaries)
+2. Brick-layer entanglement: even pairs (0-1, 2-3, 4-5, 6-7) then odd pairs (1-2, 3-4, 5-6) - this creates faster entanglement spread than a linear chain
+3. Long-range CZ connections (0-4, 3-7) to bridge distant qubits, matching the fact that the IsingZZ feature map uses various qubit pairs
+4. A middle RY rotation layer between entangling layers for more expressibility
+5. Final RY layer to give the circuit enough freedom to prepare good measurement states
+
+This gives 32 unique parameters per block (vs 24 in seed). With p=2 and l=3, that's 192 total trainable ansatz parameters - expressive enough without overfitting risk.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry0"},
+    {"gate": "RZ", "wire": 0, "param": "rz0"},
+    {"gate": "RY", "wire": 1, "param": "ry1"},
+    {"gate": "RZ", "wire": 1, "param": "rz1"},
+    {"gate": "RY", "wire": 2, "param": "ry2"},
+    {"gate": "RZ", "wire": 2, "param": "rz2"},
+    {"gate": "RY", "wire": 3, "param": "ry3"},
+    {"gate": "RZ", "wire": 3, "param": "rz3"},
+    {"gate": "RY", "wire": 4, "param": "ry4"},
+    {"gate": "RZ", "wire": 4, "param": "rz4"},
+    {"gate": "RY", "wire": 5, "param": "ry5"},
+    {"gate": "RZ", "wire": 5, "param": "rz5"},
+    {"gate": "RY", "wire": 6, "param": "ry6"},
+    {"gate": "RZ", "wire": 6, "param": "rz6"},
+    {"gate": "RY", "wire": 7, "param": "ry7"},
+    {"gate": "RZ", "wire": 7, "param": "rz7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz0b"},
+    {"gate": "RZ", "wire": 1, "param": "rz1b"},
+    {"gate": "RZ", "wire": 2, "param": "rz2b"},
+    {"gate": "RZ", "wire": 3, "param": "rz3b"},
+    {"gate": "RZ", "wire": 4, "param": "rz4b"},
+    {"gate": "RZ", "wire": 5, "param": "rz5b"},
+    {"gate": "RZ", "wire": 6, "param": "rz6b"},
+    {"gate": "RZ", "wire": 7, "param": "rz7b"},
+]
+=======
+ANSATZ_SPEC = [
+    # --- Initial single-qubit rotations (RY + RZ) ---
+    {"gate": "RY", "wire": 0, "param": "ry0"},
+    {"gate": "RZ", "wire": 0, "param": "rz0"},
+    {"gate": "RY", "wire": 1, "param": "ry1"},
+    {"gate": "RZ", "wire": 1, "param": "rz1"},
+    {"gate": "RY", "wire": 2, "param": "ry2"},
+    {"gate": "RZ", "wire": 2, "param": "rz2"},
+    {"gate": "RY", "wire": 3, "param": "ry3"},
+    {"gate": "RZ", "wire": 3, "param": "rz3"},
+    {"gate": "RY", "wire": 4, "param": "ry4"},
+    {"gate": "RZ", "wire": 4, "param": "rz4"},
+    {"gate": "RY", "wire": 5, "param": "ry5"},
+    {"gate": "RZ", "wire": 5, "param": "rz5"},
+    {"gate": "RY", "wire": 6, "param": "ry6"},
+    {"gate": "RZ", "wire": 6, "param": "rz6"},
+    {"gate": "RY", "wire": 7, "param": "ry7"},
+    {"gate": "RZ", "wire": 7, "param": "rz7"},
+    # --- Entangling layer 1: even pairs ---
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # --- Mid RY rotations ---
+    {"gate": "RY", "wire": 0, "param": "ry0m"},
+    {"gate": "RY", "wire": 1, "param": "ry1m"},
+    {"gate": "RY", "wire": 2, "param": "ry2m"},
+    {"gate": "RY", "wire": 3, "param": "ry3m"},
+    {"gate": "RY", "wire": 4, "param": "ry4m"},
+    {"gate": "RY", "wire": 5, "param": "ry5m"},
+    {"gate": "RY", "wire": 6, "param": "ry6m"},
+    {"gate": "RY", "wire": 7, "param": "ry7m"},
+    # --- Entangling layer 2: odd pairs ---
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    # --- Long-range entanglement ---
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [3, 7]},
+    # --- Final RY rotations ---
+    {"gate": "RY", "wire": 0, "param": "ry0f"},
+    {"gate": "RY", "wire": 1, "param": "ry1f"},
+    {"gate": "RY", "wire": 2, "param": "ry2f"},
+    {"gate": "RY", "wire": 3, "param": "ry3f"},
+    {"gate": "RY", "wire": 4, "param": "ry4f"},
+    {"gate": "RY", "wire": 5, "param": "ry5f"},
+    {"gate": "RY", "wire": 6, "param": "ry6f"},
+    {"gate": "RY", "wire": 7, "param": "ry7f"},
+]
+>>>>>>> REPLACE
+</DIFF>

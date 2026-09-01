@@ -1,0 +1,29 @@
+An exceptionally effective and fundamentally different approach is to reconceptualize this classification problem as a parameterized Quantum Approximate Optimization Algorithm (QAOA). 
+
+### The Insight
+In the fixed pipeline, the dataset's features are encoded using an all-to-all `IsingZZ` coupling (acting on all 28 possible pairs of the 8 qubits). This means the `feature_map` is mathematically equivalent to applying the time-evolution of a fully-connected Ising problem Hamiltonian ($e^{-i \gamma \sum J_{ab} Z_a Z_b}$). 
+
+Prior architectures treated this like a standard Variational Quantum Eigensolver (VQE) task, adding arbitrary fixed two-qubit gates (like rings or 3D cubes of `CZ` gates) inside the ansatz. However, because the feature map *already* provides a dense, complete $K_8$ entanglement graph, injecting additional artificial two-qubit gates causes extreme over-entanglement, leading to barren plateaus, scrambling, and unnecessary depth. 
+
+### The Solution: Data-Driven QAOA
+We can completely eliminate all two-qubit gates from the ansatz block and rely **100% on the data for entanglement**.
+1. **Local Z-Fields ($h_q$)**: The ansatz begins with independent `RZ` rotations on every qubit. Because $Z$ commutes with the preceding `IsingZZ` feature map, these act as learnable local magnetic fields, allowing the model to independently weight the importance of each feature/qubit. (Prior collective models failed to do this because their parameters were tied).
+2. **Transverse Mixers**: We follow the $Z$ fields with collective `RY` and `RX` rotations. These act as the QAOA global transverse mixing Hamiltonians ($e^{-i \beta \sum X_i}$), rotating the state out of the computational basis to create interference for the next feature upload.
+
+This approach massively reduces the circuit depth and gate count, entirely circumvents over-entanglement barren plateaus, and strikes an optimal balance: it gives the model exactly enough expressivity to weight individual features (using only 10 parameters per block) while regularizing the mixing operations.
+
+<NAME>
+data_driven_qaoa
+</NAME>
+
+<DESCRIPTION>
+Reconceptualizes the classifier as a QAOA circuit for a data-defined Ising model. It completely removes artificial two-qubit entanglers from the ansatz, relying entirely on the dense all-to-all IsingZZ feature map for entanglement. It uses independent RZ gates to learn local field feature weights, followed by highly parameter-efficient collective RY and RX transverse mixers. This eliminates over-entanglement barren plateaus and dramatically reduces circuit depth.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program for ShinkaEvolve ansatz search: 8-qubit binary classifier.
+
+Records are 28-dimensional binary feature vectors from an external dataset.
+Each feature k is encoded by the fixed feature map as a two-qubit phase
+coupling on the qubit pair FEATURE_PAIRS[k]. Labels are +1

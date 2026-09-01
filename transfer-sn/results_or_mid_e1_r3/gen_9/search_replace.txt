@@ -1,0 +1,91 @@
+<NAME>
+adopt_best_param_sharing_pattern
+</NAME>
+
+<DESCRIPTION>
+The best-performing program (with combined score 0.69) achieved superior results through:
+1. Aggressive parameter sharing (only 5 unique params per block)
+2. Parametrized controlled rotations (CRZ) instead of fixed CNOT
+3. Systematic two-layer entanglement pattern with different pairings
+4. Fast convergence (120 steps) and perfect generalization (gap 0.00)
+5. Test accuracy of 0.93 with only 32 total parameters
+
+The current program (0.42 score) uses moderate sharing (6 params) and has slower convergence (300 steps) with test accuracy 0.90.
+
+I propose adopting the proven structure from the high-scoring program: alternating layers of shared single-qubit rotations and parametrized two-qubit controlled rotations on two complementary pairing patterns. This design enables efficient parameter usage and fast learning while maintaining high accuracy and excellent generalization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_a"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_b"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_a"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+=======
+ANSATZ_SPEC = [
+    # First RY layer - fully shared across all qubits
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_0"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_0"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_0"},
+
+    # First entanglement layer: diagonal pairs with shared parameter
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_0"},
+
+    # Middle RZ layer - fully shared
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_0"},
+    {"gate": "RZ", "wire": 4, "param": "rz_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_0"},
+    {"gate": "RZ", "wire": 6, "param": "rz_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_0"},
+
+    # Second entanglement layer: shifted pairs with shared parameter
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_1"},
+
+    # Final RY layer - fully shared
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+]
+>>>>>>> REPLACE
+</DIFF>

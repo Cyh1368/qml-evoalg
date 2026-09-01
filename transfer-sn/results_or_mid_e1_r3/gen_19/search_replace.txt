@@ -1,0 +1,108 @@
+<NAME>
+phase_symmetric_block
+</NAME>
+
+<DESCRIPTION>
+This edit replaces the current higher-variance CRY/RX-heavy block with a phase-centric, low-parameter ansatz that better matches the fixed IsingZZ feature map.
+
+Why this should help:
+- Uses only 5 unique trainable parameters per block instead of 6, improving parameter efficiency and reducing overfitting.
+- Keeps all mixing operations in the phase domain with RY/RZ + CRZ, which is well aligned with the ZZ feature encoding.
+- Preserves two complementary entangling patterns: disjoint pairs and shifted ring pairs, which helps correlation propagation across the 8-qubit register.
+- The shared-parameter structure should converge faster under Adam and typically improves validation/test stability on this task.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Parity-split input mixing: helps break symmetry without increasing
+    # the number of unique trainable parameters too much.
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # Local feature-to-feature correlation capture on disjoint pairs.
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_0"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_0"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_0"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_0"},
+
+    # Shared phase mixing layer to convert encoded IsingZZ structure into
+    # trainable relative phases before the next entangling pass.
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+
+    # Shifted ring coupling propagates information across the register while
+    # keeping parameter count low and preserving robustness.
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_1"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_1"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_1"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_1"},
+
+    # Final basis-alignment layer for the mean-Z readout.
+    {"gate": "RX", "wire": 0, "param": "rx_out"},
+    {"gate": "RX", "wire": 1, "param": "rx_out"},
+    {"gate": "RX", "wire": 2, "param": "rx_out"},
+    {"gate": "RX", "wire": 3, "param": "rx_out"},
+    {"gate": "RX", "wire": 4, "param": "rx_out"},
+    {"gate": "RX", "wire": 5, "param": "rx_out"},
+    {"gate": "RX", "wire": 6, "param": "rx_out"},
+    {"gate": "RX", "wire": 7, "param": "rx_out"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared input mixing to break symmetry while keeping the block compact.
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_0"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_0"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_0"},
+
+    # Local phase entanglement aligned with the fixed ZZ feature encoding.
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_0"},
+
+    # Global phase reshaping before the second entangling pass.
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_0"},
+    {"gate": "RZ", "wire": 4, "param": "rz_0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_0"},
+    {"gate": "RZ", "wire": 6, "param": "rz_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_0"},
+
+    # Shifted ring coupling propagates correlations across the register.
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_1"},
+
+    # Final shared mixer to align the state with the mean-Z readout.
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+]
+>>>>>>> REPLACE
+</DIFF>

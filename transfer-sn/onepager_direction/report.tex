@@ -1,0 +1,146 @@
+\documentclass[9pt]{extarticle}
+\usepackage[a4paper,margin=1.2cm]{geometry}
+\usepackage{multicol,booktabs,xcolor,microtype,enumitem}
+\usepackage[T1]{fontenc}
+\usepackage{tgpagella}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,urlcolor=black,linkcolor=black}
+\definecolor{inkc}{HTML}{1A1A1A}
+\definecolor{accc}{HTML}{8A3324}
+\definecolor{rulec}{HTML}{CFC8BE}
+\color{inkc}
+\setlength{\parskip}{2.2pt}\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=1em,itemsep=1pt,topsep=2pt}
+\setlist[enumerate]{leftmargin=1.25em,itemsep=1.5pt,topsep=2pt}
+\newcommand{\shead}[1]{\vspace{3.5pt}{\color{accc}\bfseries\footnotesize\MakeUppercase{#1}}\par\vspace{1pt}}
+\pagestyle{empty}
+\sloppy
+\begin{document}
+
+{\LARGE\bfseries Reporting discoveries from LLM-driven evolutionary search}\par
+\vspace{2pt}
+{\large\color{accc} A practitioner's rule, and the evidence behind it}\par
+\vspace{2pt}
+{\footnotesize Banana Labs \quad$\cdot$\quad 2026-08-18 \quad$\cdot$\quad assessment of the 2026-08-18 direction \quad$\cdot$\quad full report: \texttt{transfer-sn/DIRECTION\_ASSESSMENT\_2026-08-18.html}}\par
+\vspace{4pt}
+{\color{rulec}\hrule height 0.7pt}
+\vspace{5pt}
+
+\begin{tcolorbox}[colback=white,colframe=rulec,boxrule=0.5pt,arc=2pt,left=6pt,right=6pt,top=4pt,bottom=4pt]
+{\footnotesize\textbf{If you read nothing else.} Use a strong ensemble, run it 5 to 10 times with the
+same settings, check the \emph{circuits} rather than the commentary, and confirm by actually applying
+the transformation to the inputs. The model's own write-up of what it discovered carries no evidential
+weight: the mid-tier ensemble claimed the symmetry in 5 runs out of 5 and built it in 1.}
+\end{tcolorbox}
+
+\vspace{3pt}
+\begin{multicols}{2}
+
+\shead{What to notice}
+{\footnotesize
+\textbf{The model's write-up tells you nothing about whether it found something.} Mid-tier ensembles
+wrote confident symmetry notes in \emph{every} run, 5/5, and built the target structure in one. A
+researcher reading only the patch notes would have concluded five times over that the symmetry was
+found.\par
+\textbf{A high score does not merely fail, it points the wrong way.} The two best-scoring weak runs
+both had the wrong structure; the correct structure appeared at ranks 3 and 4. The natural move, take
+the winner and study it, is the move that misleads you.\par
+\textbf{Wild swings between identical reruns mean the instrument is not working.} Ten byte-identical
+weak runs spanned 0.00 to 0.75, and one never improved on the starting circuit at all.}
+
+\shead{What to do}
+{\footnotesize
+\begin{enumerate}
+\item \textbf{Run it 5 times, ideally 10, same settings.} Once is not an experiment.
+\item \textbf{Pull the actual circuit from each run and check whether the same structural pattern
+recurs.} Does one shared parameter drive the same gate across all qubits? Not ``does the model mention
+it'' but ``does the artifact contain it''. Ours: 3/3 strong, 1/5 mid, 2/10 weak. This is the test.
+\item \textbf{Then test the behaviour directly.} If you think you found ``relabelling the qubits does
+not matter'', relabel them and check the output is unchanged. No judgement call about which pattern to
+look for. Trust this one most.
+\item \textbf{Fix what counts as a hit before looking at results.} We chose ours knowing the answer:
+fine for a study, not for real work.
+\item \textbf{If only one model ever produces the structure, be suspicious.} One model found it 18/20
+cold starts against 1/21 for the other two. That may be about the model, not your problem.
+\end{enumerate}}
+
+\shead{The one thing this cannot yet tell you}
+{\footnotesize
+If reruns \emph{disagree}, that means ``this resolved nothing'', not ``there is no symmetry''. The two
+are indistinguishable from where you sit. Weak and mid gave inconsistent results on a problem that
+genuinely does have the symmetry, purely because they were not good enough to find it. We know a
+\emph{strong} ensemble correctly returns nothing when there is nothing (0/3 on a dataset built with no
+symmetry). What weak and mid do in that situation is the experiment still pending.}
+
+\columnbreak
+
+\shead{Evidence}
+{\scriptsize
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+& weak & mid & frontier \\
+\midrule
+runs ($n$) & 10 & 8 & 3 \\
+mean score & 0.373 & 0.365 & \textbf{0.988} \\
+sd / CV & 0.239 / 0.64 & 0.222 / 0.61 & \textbf{0.054 / 0.05} \\
+named any symmetry & 8.5\% & \textbf{81.2\%} & 40.8\% \\
+named \emph{permutation} & 0\% & \textbf{0\%} & 30.6\% \\
+named \emph{mirror} & 2.1\% & \textbf{75.0\%} & 2.1\% \\
+built the $S_8$ orbit & 27.7\% & \textbf{0\%} & 83.3\% \\
+motif in best program & 2/10 & 1/5 & \textbf{3/3} \\
+\bottomrule
+\end{tabular}\par}
+\vspace{1pt}
+{\scriptsize Negative control (2026-08-18): three frontier runs on a dataset identical except that the
+label rule was changed to destroy the symmetry. Best programs kept 16, 24 and 20 free parameters
+against the seed's 24, with \textbf{zero} tied families, versus 4, 2 and 5 parameters and 3/3 on the
+real task. Fisher $p=0.10$, pre-registered as suggestive. The null runs \emph{did} propose tied
+circuits early; the fitness function rejected them.}
+
+\shead{Correcting the framing}
+{\footnotesize
+\textbf{Not hallucination.} Matched claim to matched structure, mid's follow-through on the symmetry
+\emph{it} named is 35/36 = 97\%. It named \emph{mirror} symmetry (a real symmetry of the circuit
+layout, not of the task) in 75\% of proposals and \emph{permutation} symmetry in 0\%, and built mirror
+faithfully. The defect is \emph{hypothesis lock-in}, not honesty, and that is the stronger claim.\par
+\textbf{Verbal consistency across reruns fails as a rule.} Mid satisfies it 5/5 and is wrong in 4.
+Only structural recurrence separates.\par
+\textbf{Guideline, not benchmark.} weak vs mid is unresolvable ($d=0.19$, $\sim$63 runs/arm) and weak
+outscores mid at a third the cost.}
+
+\shead{Prior art, and the gap}
+{\footnotesize
+Stability selection (Meinshausen \& B\"uhlmann 2010) is the statistical ancestor but perturbs the
+data, whereas here the randomness is LLM sampling. AlphaEvolve, TurboEvolve and QuantaAlpha report
+rerun spread, always as an error bar and never as an inferential quantity. arXiv:2605.20086 is the
+likeliest partial scoop and is known only from a search snippet; read it before drafting. Nothing
+found treats rerun variance as a diagnostic for whether a discovery is \emph{real}, or validates such
+a criterion against a known hidden symmetry \emph{plus} a matched negative control.}
+
+\shead{Next, by value per dollar}
+{\footnotesize
+(1) Behavioural equivariance on the six best programs already extracted, $\sim$free, removes the
+protocol's most attackable point. (2) Weak and mid null arms, $\sim$\$9, closes the gap above.
+(3) Null replicates 3 $\to$ 10, $\sim$\$40, moves Fisher below 0.05. (4) A second symmetry class
+(\texttt{zc-su2}), fingerprint pre-registered, defends against ``permutation invariance is
+over-represented in pretraining''. Not yet scheduled.}
+
+\end{multicols}
+
+\vspace{-2pt}
+{\color{rulec}\hrule height 0.6pt}
+\vspace{3pt}
+{\fontsize{6.6}{7.8}\selectfont
+Every number is quoted from an artifact in \texttt{transfer-sn/}: \texttt{VALIDATION\_CRITERIA.md},
+\texttt{SAY\_VS\_BUILD.md}, \texttt{EXP1\_RESULTS.md}, \texttt{EXP1B\_RESULTS.md},
+\texttt{DISCOVERY\_ATTRIBUTION.md}, \texttt{RELATED\_WORK.md}, \texttt{BENCHMARK\_PLAN.md},
+\texttt{NULL\_CONTROL\_REPORT.html}, \texttt{launch\_null.sh}, \texttt{launch\_null\_tiers.sh},
+\texttt{onepager\_symmetry/report.tex} and \texttt{onepager\_symmetry/mirror\_stats.json}.
+Threats to the result, stated in full in the HTML report: the structural fingerprint was chosen
+knowing the answer and a looser one collapses the separation; $p=0.10$ at $n=3$; ensemble members
+share pretraining so their agreement is not independent; the frontier effect may be one model
+(gpt-5.6-sol, 18/20 cold starts against 1/21, Fisher $p=1.7\times10^{-8}$); a reliably failing
+searcher also has low variance. No claim rests on a run that had not completed at the time of writing.\par}
+
+\end{document}

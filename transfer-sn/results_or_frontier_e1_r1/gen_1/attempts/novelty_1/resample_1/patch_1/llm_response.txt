@@ -1,0 +1,104 @@
+Looking at the current metrics, the model has:
+- Training accuracy 0.94 (underfitting - not fully utilizing capacity)
+- Generalization gap of 0.07
+- Only linear-chain CZ entanglement (no ring closure, no long-range)
+- Only RY/RZ rotations (missing RX axis)
+
+The IsingZZ feature map encodes information as Z-basis phases. The current ansatz with only RY+RZ and linear CZ can't effectively extract these multi-qubit phase correlations. I'll redesign with:
+1. All three rotation axes (RY→RX→RZ) for full SU(2) coverage
+2. Ring connectivity (add 7→0 closure) via staggered CNOT pairs
+3. Long-range cross connections (0↔4, 1↔5, 2↔6, 3↔7)
+4. CNOT gates instead of CZ (creates X-basis entanglement, complementing Z-basis encoding)
+
+Same parameter count (24/block, 146 total) but much higher expressivity.
+
+<NAME>
+ring_cross_cnot_three_axis
+</NAME>
+
+<DESCRIPTION>
+Redesign the ansatz block with three rotation axes (RY, RX, RZ) interleaved with three entanglement layers: even-pair CNOTs, odd-pair CNOTs (completing a ring), and cross CNOTs (long-range). This addresses the expressivity bottleneck (train acc only 0.94) by using all three Pauli rotation axes and much richer entanglement topology while keeping the same parameter count. CNOT gates create X-basis entanglement that complements the Z-basis IsingZZ encoding.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: RY rotations (converts Z-phase info to measurable amplitudes)
+    {"gate": "RY", "wire": 0, "param": "a0"},
+    {"gate": "RY", "wire": 1, "param": "a1"},
+    {"gate": "RY", "wire": 2, "param": "a2"},
+    {"gate": "RY", "wire": 3, "param": "a3"},
+    {"gate": "RY", "wire": 4, "param": "a4"},
+    {"gate": "RY", "wire": 5, "param": "a5"},
+    {"gate": "RY", "wire": 6, "param": "a6"},
+    {"gate": "RY", "wire": 7, "param": "a7"},
+    # Even-pair CNOT entanglement
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    # Layer 2: RX rotations (orthogonal axis for expressivity)
+    {"gate": "RX", "wire": 0, "param": "b0"},
+    {"gate": "RX", "wire": 1, "param": "b1"},
+    {"gate": "RX", "wire": 2, "param": "b2"},
+    {"gate": "RX", "wire": 3, "param": "b3"},
+    {"gate": "RX", "wire": 4, "param": "b4"},
+    {"gate": "RX", "wire": 5, "param": "b5"},
+    {"gate": "RX", "wire": 6, "param": "b6"},
+    {"gate": "RX", "wire": 7, "param": "b7"},
+    # Odd-pair CNOT entanglement (completes ring topology)
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [7, 0]},
+    # Layer 3: RZ rotations (phase adjustment)
+    {"gate": "RZ", "wire": 0, "param": "c0"},
+    {"gate": "RZ", "wire": 1, "param": "c1"},
+    {"gate": "RZ", "wire": 2, "param": "c2"},
+    {"gate": "RZ", "wire": 3, "param": "c3"},
+    {"gate": "RZ", "wire": 4, "param": "c4"},
+    {"gate": "RZ", "wire": 5, "param": "c5"},
+    {"gate": "RZ", "wire": 6, "param": "c6"},
+    {"gate": "RZ", "wire": 7, "param": "c7"},
+    # Cross CNOT entanglement (long-range connections)
+    {"gate": "CNOT", "wires": [0, 4]},
+    {"gate": "CNOT", "wires": [1, 5]},
+    {"gate": "CNOT", "wires": [2, 6]},
+    {"gate": "CNOT", "wires": [3, 7]},
+]
+>>>>>>> REPLACE
+</DIFF>

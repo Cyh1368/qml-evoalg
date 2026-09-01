@@ -24,7 +24,8 @@ export PYTHONIOENCODING=utf-8
 export NUM_RUNS="${NUM_RUNS:-1}"
 export SAMPLE_WITH_REPLACEMENT="${SAMPLE_WITH_REPLACEMENT:-1}"
 export USE_TEST_IN_SCORE="${USE_TEST_IN_SCORE:-0}"
-export TTT_LOG_DIR="${TTT_LOG_DIR:-logs/training}"
+export TTT_LOG_DIR="${TTT_LOG_DIR:-$HOME/project/transfer_sn/logs/training/${SLURM_JOB_ID:-$$}}"
+mkdir -p "$TTT_LOG_DIR" 2>/dev/null || true
 export DATA_SEED="${DATA_SEED:-2027}"
 export TRAIN_SIZE="${TRAIN_SIZE:-450}"
 export VALIDATION_SIZE="${VALIDATION_SIZE:-300}"

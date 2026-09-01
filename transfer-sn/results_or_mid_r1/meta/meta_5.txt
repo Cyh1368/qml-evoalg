@@ -1,0 +1,99 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit Coupled Ansatz Classifier**  
+- **Implementation**: Encodes 28 binary features via fixed IsingZZ pairwise couplings on 8 qubits, interleaves 3 feature uploads with 2 repeats of an ansatz block comprising per-qubit RY rotations, pre- and post-RZ rotations, and a linear chain of CZ gates, yielding 146 trainable parameters plus gain and bias optimized with Adam on an L2 loss.  
+- **Performance**: Achieves mean train/validation/test accuracies of 0.94/0.89/0.87 (combined raw score 0.85), with a 0.07 generalization gap and 0.01 parameter efficiency.  
+- **Feedback**: The deep CZ-entangled, multi-upload design delivers strong accuracy and fast convergence (750 steps) but at the cost of high circuit depth (99) and low parameter efficiency, suggesting potential over-parameterization.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: 8-Qubit Reuploading CZ-RY Ansatz Classifier**  
+- **Implementation**: The circuit uses a fixed IsingZZ feature-map with three reuploads, interleaved with two repeats per upload of an ansatz block defined by RY input/output rotations, CZ entanglers and mid-layer RZs; built as a Pennylane QNode with autograd backprop, Adam optimization, trainable gain/bias calibration and early stopping.  
+- **Performance**: Achieved train/validation/test accuracies of 0.94/0.91/0.87, a generalization gap of 0.07, depth 87, gate count 276, 98 parameters (efficiency 0.01) and combined raw score 0.88.  
+- **Feedback**: The layered CZ-RY structure delivers stable, high accuracy with zero performance variance, but its large parameter and gate count limits efficiency—streamlining depth or reducing repeats could improve resource use without compromising accuracy.
+**Program Identifier:** Generation 2 - Patch Name shared_butterfly_ansatz - Correct Program: True
+
+**Program Name: 8-Qubit Re-uploading CRY Ansatz Classifier**  
+- **Implementation**: The circuit encodes 28 binary features on 8 qubits using three IsingZZ feature-upload steps interleaved with two repeats per upload of an ansatz block comprising RY rotations, parametric CRY entanglers in ring+shift patterns, and RZ rotations. Training optimizes 140 parameters (including readout gain and bias) via the Adam optimizer on MSE loss with early stopping and best-weight restoration.  
+- **Performance**: Achieved a combined raw score of 0.81 with train/validation/test accuracies of 0.94/0.89/0.88, circuit depth 81, and 222 gates.  
+- **Feedback**: The ansatz yields high and stable generalization (gap 0.06) but suffers from low parameter efficiency (~0.01) and a relatively deep, gate-heavy design, suggesting possible over-parameterization.
+**Program Identifier:** Generation 3 - Patch Name parametrized_cry_efficient_ansatz - Correct Program: True
+
+**Program Name: 8-Qubit Re-uploading CRX Ring Ansatz**  
+- **Implementation**: Alternates a fixed IsingZZ feature map for 28 binary features across three uploads with two ansatz repeats, each block comprising RY and RZ rotations and ring-CRX entanglers; uses a Pennylane autograd QNode, Adam optimizer, gain/bias calibration, and early stopping.  
+- **Performance**: Achieved combined score 0.86 with train/validation/test accuracies 0.93/0.88/0.86, generalization gap 0.06, 74 parameters, depth 114, and gate count 228.  
+- **Feedback**: The ring-CRX entanglement plus re-uploading delivered high expressivity and robust accuracy, but parameter efficiency was low (0.01) and circuit depth moderate, suggesting opportunities to streamline entanglement or reduce depth.
+**Program Identifier:** Generation 4 - Patch Name modular_circuit_manager - Correct Program: True
+
+**Program Name: Multi-layer CZ Ansatz for 8-Qubit Classification**  
+- **Implementation**: Encodes 28 binary features via fixed IsingZZ feature maps on predefined qubit pairs and applies three data-upload layers each followed by two repeats of an ansatz block composed of per-qubit RY→RZ pre-rotations, a mesh of CZ entangling gates, and per-qubit RX post-rotations, yielding 146 trainable parameters. Training uses an Adam optimizer with backprop, L2 loss, output gain/bias calibration, mini-batch updates, and early stopping on validation loss.  
+- **Performance**: Achieved combined_score_raw = 0.84, train 0.92, validation 0.87, test 0.86 accuracies, generalization gap 0.06, depth 93, gate_count 300, and parameter efficiency 0.01.  
+- **Feedback**: The dense CZ-only entanglement and high parameter count drive strong training accuracy but result in low parameter efficiency, suggesting potential overparameterization; nonetheless, the small generalization gap indicates acceptable test performance despite the lack of trainable two-qubit rotations.
+**Program Identifier:** Generation 5 - Patch Name butterfly_mixer_rx_readout - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Layered CZ-RY ansatz with mid-layer RZ rotations:  
+  – Best exemplified by the “8-Qubit Reuploading CZ-RY Ansatz Classifier” (Gen 2), yielding combined_score_raw = 0.88 (versus 0.85–0.86 for others).  
+  – The inclusion of trainable RZ gates between CZ and output RY boosts expressivity without excessive parameters.  
+- Three reuploads × two ansatz repeats:  
+  – All top-performers use N_UPLOADS = 3 and N_REPEATS = 2, with Gen 2 achieving zero performance variance and validation_accuracy = 0.91.  
+- Trainable readout gain and bias:  
+  – Every high-scoring circuit calibrates the mean Z readout via gain/bias, stabilizing convergence (Gen 2 converged in 570 steps).  
+- Pennylane QNode + Adam + early stopping:  
+  – Autograd backprop with Adam and validation-loss early stopping (patience = 75) yields fast, stable convergence across runs.
+
+## Ineffective Approaches  
+- Over-parameterized two-qubit rotations:  
+  – “8-Qubit Re-uploading CRY Ansatz Classifier” (Gen 3) used 140 parameters and CRY entanglers but scored only 0.81 combined, despite depth = 81.  
+  – Low parameter efficiency (0.01) and no accuracy gain vs. CZ-only variants indicate diminishing returns.  
+- Dense CZ meshes without trainable two-qubit phases:  
+  – “Multi-layer CZ Ansatz” (Gen 5) with 146 parameters, depth = 93, gate_count = 300 achieved only 0.84 combined; pure CZ entanglement lacked fine-grained control.  
+- Deep circuits with ring-CRX entanglers:  
+  – “8-Qubit Re-uploading CRX Ring Ansatz” (Gen 4) depth = 114, 74 parameters, combined = 0.86. High depth failed to offset limited expressivity of CRX rings.  
+- Excessive gate count vs. accuracy:  
+  – Both Gen 4 (228 gates) and Gen 5 (300 gates) consumed more two-qubit interactions but underperformed Gen 2’s 276 gates, highlighting that count alone isn’t predictive of accuracy.
+
+## Implementation Insights  
+- Parameter-key mapping via ANSATZ_SPEC:  
+  – The dynamic dict.fromkeys ordering and offset arithmetic in apply_ansatz_block cleanly scales to N_UPLOADS×N_REPEATS.  
+- Balanced single- vs. two-qubit layers:  
+  – Gen 2’s block of 8 RY → 6 CZ → 4 CZ (mesh) → 8 RZ → 8 RY per repeat optimizes entanglement bandwidth with local rotations.  
+- Circuit metadata introspection:  
+  – Using pennylane.queuing.AnnotatedQueue to compute depth/gate_count in circuit_metadata ensures accurate resource reporting.  
+- Readout calibration integrated in predict_batch:  
+  – Splitting circuit_params and readout_params simplifies gradient flow and isolates quantum vs. classical parameter effects.
+
+## Performance Analysis  
+- Sweet spot at ~98 parameters & depth ≈ 87:  
+  – Gen 2 (98 params, depth 87) leads with 0.88 combined.  
+  – Slightly higher params (140–146) or depth (93–114) correlate with lower combined scores (0.81–0.86).  
+- Consistent generalization gaps ~0.06–0.07:  
+  – All circuits yield train–test gaps ≤ 0.07, so absolute test accuracy drives ranking.  
+- Zero variance in Gen 2 vs. small std in others:  
+  – Stability (std = 0.00) indicates robust landscape; other ansätze had no variance reported but lower means.  
+- Trade-off of expressive entanglement vs. parameter efficiency:  
+  – Despite similar gate_count (Gen 2: 276 vs. Gen 5: 300), targeted CZ-RY layering outperforms brute entanglement meshes.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Introduce sparse trainable two-qubit phases  
+   Replace one fixed CZ gate per entangling mesh (e.g. the central CZ in the 6-CZ block) with a CRZ gate that has its own parameter. This adds fine-grained entanglement control—akin to the successful mid-layer RZ rotations—without substantially increasing depth or parameter count, and may boost expressivity where pure CZ proved too coarse.
+
+2. Add a pre-upload single-qubit phase layer  
+   Prepend each feature upload cycle in the `circuit_z_expectations` QNode with one RZ rotation on every qubit (with its own trainable parameter). This mirrors the proven benefit of mid-ansatz RZ gates, offering early circuit calibration before data encoding and potentially smoothing the optimization landscape.
+
+3. Explore an extra data reupload  
+   Change `N_UPLOADS` from 3 to 4 while keeping `N_REPEATS` at 2 (for eight total ansatz blocks) so that `N_PARAMS` stays near 98. This tests whether more frequent data injections—without blowing up the parameter budget—can further improve validation accuracy, building directly on the optimal 3×2 reupload×repeat pattern.
+
+4. Alternate CZ connectivity to diversify entanglement  
+   In every second ansatz block, swap the current 4- and 6-CZ mesh with a complementary pairing (e.g. wires [0,5],[1,4],[2,7],[3,6]). This diversity of entanglement pathways leverages CZ efficiency but broadens the circuit’s ability to capture different qubit correlations without adding gates or depth.
+
+5. Selectively untie one shared RY parameter  
+   Duplicate a single shared RY key (for example split `"ry_out_0"` into `"ry_out_0a"` on wire 0 and `"ry_out_0b"` on wire 7) to add one extra degree of freedom. This controlled break in symmetry tests whether a tiny increase in parameter uniqueness can lift accuracy while retaining the compact, layered CZ-RY structure that underpins Gen 2’s success.

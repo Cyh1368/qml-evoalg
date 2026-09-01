@@ -1,0 +1,82 @@
+<NAME>
+add_shared_rz_readout_layer
+</NAME>
+
+<DESCRIPTION>
+The current ansatz achieves excellent accuracy (1.00) but shows suboptimal convergence speed (210 steps vs. 150 in the best prior program) and slightly higher validation loss (0.04 vs. 0.03). The depth and gate count are also higher than necessary.
+
+Following the expert recommendation, I propose adding a final shared-parameter RZ phase layer after all ansatz blocks. This adds only 1 new parameter but 8 gates to fine-tune the measurement basis globally. This approach:
+
+1. Addresses the measurement calibration bottleneck with minimal parameter overhead
+2. Leverages the success of simple single-qubit rotations observed in prior programs
+3. Maintains the current block structure while enhancing the final readout rotation
+4. Should improve convergence speed by allowing the network to globally adjust the measurement axis
+5. Adds negligible computational complexity (8 RZ gates) with only 1 shared parameter
+
+The shared parameter `"rz_end"` is reused across all 8 qubits, making it an efficient fine-tuning knob for the measurement basis. This is similar to how gain/bias calibration works in the readout, but embedded within the quantum circuit.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_6"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_6"},
+    {"gate": "RZ", "wire": 0, "param": "rz_end"},
+    {"gate": "RZ", "wire": 1, "param": "rz_end"},
+    {"gate": "RZ", "wire": 2, "param": "rz_end"},
+    {"gate": "RZ", "wire": 3, "param": "rz_end"},
+    {"gate": "RZ", "wire": 4, "param": "rz_end"},
+    {"gate": "RZ", "wire": 5, "param": "rz_end"},
+    {"gate": "RZ", "wire": 6, "param": "rz_end"},
+    {"gate": "RZ", "wire": 7, "param": "rz_end"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

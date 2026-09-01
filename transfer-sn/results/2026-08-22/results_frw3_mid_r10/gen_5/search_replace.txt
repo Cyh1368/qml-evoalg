@@ -1,0 +1,127 @@
+<NAME>
+hybrid_shared_and_individual_params
+</NAME>
+
+<DESCRIPTION>
+The second program achieved the best combined score (0.45) by using collective (shared) parameters across all qubits, dramatically reducing the parameter count from 194 to 26 while achieving excellent generalization (gap 0.01) and fast convergence (270 steps).
+
+The current program (score 0.00) regressed to individual per-qubit parameters (146 params), resulting in slower convergence (750 steps) and worse generalization gap (0.07).
+
+My improvement strategy:
+1. Restore the hypercube connectivity structure from the winning program 2 (3 disjoint perfect matchings providing complete 8-vertex graph coverage)
+2. Use a hybrid parameter-sharing approach: keep collective shared parameters for the main transformations (input/output mixers, global phases) but add per-qubit RX parameters for fine-tuning expressiveness
+3. This balances the parameter efficiency and fast convergence of program 2 with slightly more flexibility
+
+The resulting ansatz:
+- Collective RY rotation (shared across all 8 qubits) - input mixer
+- Per-qubit RZ rotations - local phase fine-tuning
+- Three layers of CZ gates covering the hypercube edges - efficient entanglement
+- Collective RY rotation (shared) - output mixer
+- Collective RX rotation (shared) - additional mixing basis
+
+This yields ~12 unique parameters per block (vs 26 in program 2, vs 24 in current), which should:
+- Maintain fast convergence
+- Keep good generalization gap
+- Provide slightly more expressiveness than program 2 for potentially higher accuracy
+- Be significantly more parameter-efficient than the current approach
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Collective input mixer: shared RY across all qubits for efficient learning
+    {"gate": "RY", "wire": 0, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_in"},
+
+    # Per-qubit RZ for local phase fine-tuning and expressiveness
+    {"gate": "RZ", "wire": 0, "param": "rz_local_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_local_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_local_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_local_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_local_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_local_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_local_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_local_7"},
+
+    # Hypercube entanglement: three disjoint perfect matchings for full connectivity
+    # First matching: adjacent pairs
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Second matching: distance-2 pairs
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Third matching: distance-4 pairs (long-range)
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Collective output mixer: shared RY for efficient readout preparation
+    {"gate": "RY", "wire": 0, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_out"},
+
+    # Collective RX for additional basis mixing
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

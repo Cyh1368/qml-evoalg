@@ -1,0 +1,86 @@
+Looking at this task, I need to design a better ansatz block for the 8-qubit classifier. The seed uses a linear CZ chain which limits entanglement spread. I'll replace it with a brick-layer entanglement pattern that provides better qubit connectivity while keeping the same parameter count.
+
+**Key improvements:**
+1. Brick-layer CZ pattern (even/odd pairs) instead of linear chain — provides 2-step connectivity between any pair
+2. Ring topology with wrap-around CZ(7,0)
+3. RY layers between entangling layers for better expressivity
+4. Same 24 parameters per block — no overfitting risk increase
+
+<NAME>brick_layer_ring_entanglement</NAME>
+
+<DESCRIPTION>
+Replace the linear CZ chain with a brick-layer entanglement pattern. The seed ansatz uses CZ gates in a line (0-1, 1-2, ..., 6-7), which means qubits 0 and 7 are 7 hops apart. The brick-layer pattern uses two staggered sets of CZ pairs: even (0-1, 2-3, 4-5, 6-7) and odd (1-2, 3-4, 5-6, 7-0), with RY rotations between them. This creates a ring topology where any two qubits are at most 2 entangling layers apart. Combined with data re-uploading (l=3) and p=2 repetitions, this provides rich entanglement with the same parameter budget. The RZ final layer is retained for phase control.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry0"},
+    {"gate": "RY", "wire": 1, "param": "ry1"},
+    {"gate": "RY", "wire": 2, "param": "ry2"},
+    {"gate": "RY", "wire": 3, "param": "ry3"},
+    {"gate": "RY", "wire": 4, "param": "ry4"},
+    {"gate": "RY", "wire": 5, "param": "ry5"},
+    {"gate": "RY", "wire": 6, "param": "ry6"},
+    {"gate": "RY", "wire": 7, "param": "ry7"},
+    {"gate": "RZ", "wire": 0, "param": "rz0"},
+    {"gate": "RZ", "wire": 1, "param": "rz1"},
+    {"gate": "RZ", "wire": 2, "param": "rz2"},
+    {"gate": "RZ", "wire": 3, "param": "rz3"},
+    {"gate": "RZ", "wire": 4, "param": "rz4"},
+    {"gate": "RZ", "wire": 5, "param": "rz5"},
+    {"gate": "RZ", "wire": 6, "param": "rz6"},
+    {"gate": "RZ", "wire": 7, "param": "rz7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz2_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz2_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz2_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz2_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz2_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz2_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz2_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz2_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "a0"},
+    {"gate": "RY", "wire": 1, "param": "a1"},
+    {"gate": "RY", "wire": 2, "param": "a2"},
+    {"gate": "RY", "wire": 3, "param": "a3"},
+    {"gate": "RY", "wire": 4, "param": "a4"},
+    {"gate": "RY", "wire": 5, "param": "a5"},
+    {"gate": "RY", "wire": 6, "param": "a6"},
+    {"gate": "RY", "wire": 7, "param": "a7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RY", "wire": 0, "param": "b0"},
+    {"gate": "RY", "wire": 1, "param": "b1"},
+    {"gate": "RY", "wire": 2, "param": "b2"},
+    {"gate": "RY", "wire": 3, "param": "b3"},
+    {"gate": "RY", "wire": 4, "param": "b4"},
+    {"gate": "RY", "wire": 5, "param": "b5"},
+    {"gate": "RY", "wire": 6, "param": "b6"},
+    {"gate": "RY", "wire": 7, "param": "b7"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "RZ", "wire": 0, "param": "c0"},
+    {"gate": "RZ", "wire": 1, "param": "c1"},
+    {"gate": "RZ", "wire": 2, "param": "c2"},
+    {"gate": "RZ", "wire": 3, "param": "c3"},
+    {"gate": "RZ", "wire": 4, "param": "c4"},
+    {"gate": "RZ", "wire": 5, "param": "c5"},
+    {"gate": "RZ", "wire": 6, "param": "c6"},
+    {"gate": "RZ", "wire": 7, "param": "c7"},
+]
+>>>>>>> REPLACE
+</DIFF>

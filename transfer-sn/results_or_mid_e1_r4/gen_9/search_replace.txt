@@ -1,0 +1,75 @@
+<NAME>
+symmetry_shared_low_param_block
+</NAME>
+
+<DESCRIPTION>
+This edit replaces the current high-parameter block with a more regular, symmetry-aware ansatz that is better matched to the fixed 8-qubit readout.
+
+Key ideas:
+- Compress local rotations into four shared RY parameters on adjacent qubit pairs, which keeps the block expressive but reduces overfitting.
+- Add a fixed CZ chain to propagate correlations without adding trainable parameters.
+- Use long-range controlled rotations (CRX) across opposite qubits to capture nonlocal feature interactions induced by the dataset’s two-qubit ZZ feature map.
+- End the block with shared RX rotations instead of trailing phase-only gates, so the last repeated block still affects the final Z measurements.
+
+Overall this lowers the parameter count per block from 23 to 10, improving parameter efficiency and generalization while retaining enough nonlinearity for the classifier.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_even_0"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_even_1"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_even_2"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_even_3"},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_odd_0"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_odd_1"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_odd_2"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_pair_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_pair_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_pair_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_pair_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_pair_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_pair_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_pair_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_pair_3"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CRX", "wires": [0, 4], "param": "crx_04"},
+    {"gate": "CRX", "wires": [1, 5], "param": "crx_15"},
+    {"gate": "CRX", "wires": [2, 6], "param": "crx_26"},
+    {"gate": "CRX", "wires": [3, 7], "param": "crx_37"},
+    {"gate": "RX", "wire": 0, "param": "rx_even"},
+    {"gate": "RX", "wire": 1, "param": "rx_odd"},
+    {"gate": "RX", "wire": 2, "param": "rx_even"},
+    {"gate": "RX", "wire": 3, "param": "rx_odd"},
+    {"gate": "RX", "wire": 4, "param": "rx_even"},
+    {"gate": "RX", "wire": 5, "param": "rx_odd"},
+    {"gate": "RX", "wire": 6, "param": "rx_even"},
+    {"gate": "RX", "wire": 7, "param": "rx_odd"},
+]
+>>>>>>> REPLACE
+</DIFF>

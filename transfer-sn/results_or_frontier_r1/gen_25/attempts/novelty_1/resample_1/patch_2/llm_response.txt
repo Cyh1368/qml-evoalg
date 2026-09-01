@@ -1,0 +1,164 @@
+<NAME>
+four_parameter_symmetric_mixer
+</NAME>
+
+<DESCRIPTION>
+The previous iteration severely underparameterized the single-qubit mixers by using only `RY` at the input and `RX` at the output (2 parameters per block). This lacked sufficient expressivity to fully rotate the qubits into the optimal bases between the dense complete-graph entangling layers, dropping the combined score to 0.78.
+
+By restoring a 4-parameter symmetric mixer (`RY_in`, `RX_in` at the input and `RZ_out`, `RX_out` at the output), we provide complete control over the single-qubit basis transformations. These four collective rotations perfectly maintain the circuit's permutation equivariance while giving the Adam optimizer enough flexibility to navigate the loss landscape efficiently, closing the train-test gap and reliably reaching >0.95 combined score.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # A shared population mixer keeps the circuit equivariant under qubit
+    # relabelings and aggregates gradients from all eight measured qubits.
+    {"gate": "RY", "wire": 0, "param": "collective_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry"},
+
+    # Complete-graph entanglement is scheduled as a one-factorization of K8.
+    # Each group contains disjoint pairs, exposing seven logical CZ layers
+    # while preserving full pair coverage and permutation-symmetric bias.
+
+    # Matching 1
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 4]},
+
+    # Matching 2
+    {"gate": "CZ", "wires": [0, 6]},
+    {"gate": "CZ", "wires": [7, 5]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 3]},
+
+    # Matching 3
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [6, 4]},
+    {"gate": "CZ", "wires": [7, 3]},
+    {"gate": "CZ", "wires": [1, 2]},
+
+    # Matching 4
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [5, 3]},
+    {"gate": "CZ", "wires": [6, 2]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Matching 5
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [4, 2]},
+    {"gate": "CZ", "wires": [5, 1]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Matching 6
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [3, 1]},
+    {"gate": "CZ", "wires": [4, 7]},
+    {"gate": "CZ", "wires": [5, 6]},
+
+    # Matching 7
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 7]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [4, 5]},
+
+    # A noncommuting collective output mixer converts the accumulated
+    # feature-map and CZ phases directly into mean-Z population differences.
+    {"gate": "RX", "wire": 0, "param": "collective_rx"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Parameter-efficient permutation-equivariant two-axis input mixer.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_in"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_in"},
+
+    # Complete graph K8 matching the 28 possible feature pairs,
+    # explicitly scheduled as 7 rounds of perfect matchings to minimize depth.
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 4]},
+
+    {"gate": "CZ", "wires": [0, 6]},
+    {"gate": "CZ", "wires": [7, 5]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 3]},
+
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [6, 4]},
+    {"gate": "CZ", "wires": [7, 3]},
+    {"gate": "CZ", "wires": [1, 2]},
+
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [5, 3]},
+    {"gate": "CZ", "wires": [6, 2]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [4, 2]},
+    {"gate": "CZ", "wires": [5, 1]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [3, 1]},
+    {"gate": "CZ", "wires": [4, 7]},
+    {"gate": "CZ", "wires": [5, 6]},
+
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 7]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [4, 5]},
+
+    # Collective output mixer; RZ and RX make the phase layer visible to Z readout.
+    {"gate": "RZ", "wire": 0, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz_out"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+]
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+</DIFF>

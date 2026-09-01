@@ -1,8 +1,17 @@
 # Tic-Tac-Toe QML Ansatz Evolution
 
-Main results: [Ansatz Evolution Report](results/ttt_qml_cli_20260605_124906/ansatz_report.html)
+This folder contains a ShinkaEvolve search over quantum machine-learning ansatz blocks for a tic-tac-toe classification task, plus a `paper-replication/` analysis track.
 
-This folder contains a ShinkaEvolve search over quantum machine-learning ansatz blocks for a tic-tac-toe classification task. The current report summarizes the completed evolution run, including per-generation scores, ansatz circuit diagrams, metrics, and the best completed generation.
+## Main results (converged protocol — the only protocol valid for reported numbers)
+
+- **Evolved winner** (`cemoid_ea_converged`, gen 16, program `b6ba28a0`, 66 params): combined score **0.7393**, test accuracy **0.787** on the winning seed; **0.730 ± 0.041 over 500 seeds** (`paper-replication/SU2_ROBUSTNESS_500SEED_REPORT.md`). The evolution rediscovered board-symmetry weight sharing (corner/edge/center orbit tying + CRZ ring + CRX hub) unaided.
+- **Paper-ansatz baseline** (cemoid, 54 params, same geometry): **0.698 ± 0.042 over 500 seeds**.
+- Full analysis reports live in `paper-replication/` (L/P sweeps, robustness, gate insertion, perturbation stability, degeneracy PCA); summary: `paper-replication/RESULTS_SUMMARY.md`.
+
+> **Protocol warning:** quick-eval and converged-eval scores are **not comparable**
+> (see `docs/context/GOTCHAS.md`). Quick-protocol numbers — including the
+> historical headline `0.5984` of run `ttt_qml_cli_20260605_124906` — mis-rank
+> candidates and must not be cited as results.
 
 ## File Structure
 
@@ -51,7 +60,7 @@ This folder contains a ShinkaEvolve search over quantum machine-learning ansatz 
 - `results/ttt_qml_cli_20260605_124906/monitor_report.json`: structured monitor summary.
 - `results/ttt_qml_*` and older `results/ttt_qml_cli_*` directories: earlier runs.
 
-The current HTML report was generated for `ttt_qml_cli_20260605_124906`; it reports best completed generation `10` with score `0.5984`.
+The HTML report for `ttt_qml_cli_20260605_124906` (best gen `10`, score `0.5984`) is a **quick-protocol historical artifact** — see the protocol warning above; the converged-protocol results in `paper-replication/` supersede it.
 
 ## Logs
 

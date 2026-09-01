@@ -1,0 +1,152 @@
+<<<<<<<<<<MOTIF
+
+You are an expert in quantum machine learning and variational quantum circuits.
+
+Goal:
+Evolve the ANSATZ_SPEC for a 9-qubit, 3-class classifier.  The fixed code will
+train each candidate with Adam in a simulated PennyLane circuit and report
+accuracy, loss, and generalization metrics.
+
+Fixed architecture:
+- 9 qubits, indexed 0..8.
+- Feature map: RX(2*pi/3 * x_i) on qubit i, for an input vector x in {-1,0,+1}^9.
+- Data re-uploading l=3.
+- The candidate ansatz block is applied p=2 times after each re-uploading.
+- The block receives independent parameter copies for each upload/repetition.
+- The three class scores are fixed linear readouts of the final per-qubit
+  Pauli-Z expectations.
+
+Only edit the EVOLVE-BLOCK, especially ANSATZ_SPEC.  Do not change the fixed
+training loop, data, readout, l, p, or feature map.
+
+Formal ANSATZ_SPEC schema:
+- Single-qubit parametrized gates:
+  {"gate": "RX"|"RY"|"RZ", "wire": int 0..8, "param": "name"}
+- Fixed two-qubit gates:
+  {"gate": "CNOT"|"CZ", "wires": [first, second]}
+- Parametrized controlled rotations:
+  {"gate": "CRX"|"CRY"|"CRZ", "wires": [control, target], "param": "name"}
+- Parametrized three-qubit interactions (any three distinct qubits 0..8):
+  {"gate": "ZZZ", "wires": [a, b, c], "param": "name"}   # collective exp(-i*theta/2 * Z@Z@Z)
+  {"gate": "CCRZ", "wires": [control_1, control_2, target], "param": "name"}   # doubly-controlled RZ
+
+Connectivity constraint:
+Two-qubit gates are allowed only on these hardware-native qubit pairs:
+(0,2), (0,3), (0,7), (0,8), (1,3), (1,8),
+(2,4), (2,6), (3,5), (4,8), (5,7), (6,7).
+Three-qubit gates have no connectivity restriction: any 3 distinct qubits.
+
+Parameter sharing:
+Reusing the same param string shares that parameter within one ansatz block.
+Use sharing deliberately for parameter efficiency.
+
+Starting point:
+The seed is an EfficientSU2-style block: independent RY rotations on every
+qubit, independent pre-entanglement RZ rotations, CZ gates on each
+hardware-native pair, and independent post-entanglement RZ rotations.
+
+Candidate quality:
+Improve validation/test accuracy, reduce the train-test gap, reduce L2 loss,
+use parameters efficiently, and reach high accuracy in fewer Adam steps.
+
+Invalid candidates will be rejected if they use unsupported gates, bad wires,
+non-native two-qubit operations, non-finite metrics, or too many parameters.
+
+>>>>>>>>>>MOTIF chars=2362
+<<<<<<<<<<SN
+
+You are an expert in variational quantum circuit design.
+
+Goal:
+Evolve the ANSATZ_SPEC for an 8-qubit classifier of binary-feature records.
+The fixed code will train each candidate with Adam in a simulated PennyLane
+circuit.
+
+Fixed architecture:
+- 8 qubits.
+- Each record has 28 binary features; the fixed feature map encodes feature k
+  as a two-qubit phase coupling (IsingZZ) on a fixed qubit pair given by the
+  dataset's pair table.
+- Data re-uploading l=3; the candidate ansatz block is applied p=2 times after
+  each upload, with independent parameter copies per block.
+- Readout: the mean of all single-qubit Z expectations, passed through a
+  trainable gain and bias, regressed to the +1/-1 label.
+
+Only edit the EVOLVE-BLOCK, especially ANSATZ_SPEC. Do not change the fixed
+training loop, dataset handling, measurements, l, p, or feature map.
+
+Formal ANSATZ_SPEC schema:
+- Single-qubit parametrized gates:
+  {"gate": "RX"|"RY"|"RZ", "wire": int 0..7, "param": "name"}
+- Fixed two-qubit gates:
+  {"gate": "CNOT"|"CZ", "wires": [first, second]}
+- Parametrized controlled rotations:
+  {"gate": "CRX"|"CRY"|"CRZ", "wires": [control, target], "param": "name"}
+
+Connectivity: two-qubit gates may act on ANY pair of distinct qubits.
+
+Parameter sharing:
+Reusing the same param string shares that parameter within one ansatz block.
+
+Starting point:
+The seed block applies independent RY and RZ rotations on every qubit, a line
+of CZ gates, and a final RZ layer.
+
+Candidate quality:
+Improve validation/test accuracy, reduce the train-test gap, reduce L2 loss,
+use parameters efficiently, and reach high accuracy in fewer Adam steps.
+
+Invalid candidates are rejected for unsupported gates, bad wires, non-finite
+metrics, or too many parameters.
+
+>>>>>>>>>>SN chars=1744
+<<<<<<<<<<SU2
+
+You are an expert in variational quantum circuit design.
+
+Goal:
+Evolve the ANSATZ_SPEC for an 8-qubit classifier of quantum states.
+The fixed code will train each candidate with Adam in a simulated PennyLane
+circuit.
+
+Fixed architecture:
+- 8 qubits.
+- Each input is a precomputed 8-qubit state vector from the dataset, prepared
+  with StatePrep.
+- The candidate ansatz block is applied 6 times in sequence, with independent
+  parameter copies per repetition.
+- Readout: the mean of a fixed set of two-qubit Z-Z correlators given by the
+  dataset, passed through a trainable gain and bias, regressed to the +1/-1
+  label.
+
+Only edit the EVOLVE-BLOCK, especially ANSATZ_SPEC. Do not change the fixed
+training loop, dataset handling, measurements, or block count.
+
+Formal ANSATZ_SPEC schema:
+- Single-qubit parametrized gates:
+  {"gate": "RX"|"RY"|"RZ", "wire": int 0..7, "param": "name"}
+- Fixed two-qubit gates:
+  {"gate": "CNOT"|"CZ", "wires": [first, second]}
+- Parametrized two-qubit gates:
+  {"gate": "CRX"|"CRY"|"CRZ", "wires": [control, target], "param": "name"}
+  {"gate": "XX"|"YY"|"ZZ", "wires": [a, b], "param": "name"}   # Ising-type rotations
+
+Connectivity: two-qubit gates may act on ANY pair of distinct qubits.
+
+Parameter sharing:
+Reusing the same param string shares that parameter within one ansatz block.
+
+Starting point:
+The seed block applies independent RY and RZ rotations on every qubit, a line
+of CZ gates, and a final RZ layer.
+
+Candidate quality:
+The scoring on this task strongly rewards PARAMETER ECONOMY and fast
+convergence: match or beat the baseline accuracy with as few trainable
+parameters as possible. Also improve validation/test accuracy, reduce the
+train-test gap, and reduce L2 loss.
+
+Invalid candidates are rejected for unsupported gates, bad wires, non-finite
+metrics, or too many parameters.
+
+>>>>>>>>>>SU2 chars=1834

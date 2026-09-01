@@ -164,40 +164,29 @@ Top-3 programs from the evolutionary run `ttt_qml_cli_20260605_124906`, ranked b
 
 All three use the same re-upload structure as cemoid (N\_UPLOADS=3, N\_REPEATS=2), giving an identical 10-slot circuit skeleton and 270 possible gate-insertion positions.
 
-### 6.3 Seed Robustness (50 seeds × 3 programs = 150 runs)
+### 6.3–6.5 Superseded (2026-07-18): converged-EA analyses completed under separate reports
 
-*Results pending cluster completion — figure will be inserted here.*
+The 150-run / 210-run arrays planned above for the **quick-protocol** programs
+(`cec1d47c`, `9da56dab`, `a6487a61`) were never executed
+(`ea_robustness_histories/` and `ea_gate_insertion_results/` are empty), and
+running them is no longer scientifically justified: the 2026-06-18 protocol
+correction deemed quick-eval rankings unreliable, and the whole §6 question was
+re-asked — and answered — for the **converged-objective EA winner** (`b6ba28a0`,
+66 params, gen 16 of `cemoid_ea_converged`) at larger scale:
 
-![EA seed robustness distribution](ea_fig1_seed_distribution.png)
+| Analysis | Report | Headline |
+|---|---|---|
+| Seed robustness (**500** seeds) | `SU2_ROBUSTNESS_500SEED_REPORT.md` | **0.730 ± 0.041** (median 0.735, range 0.598–0.815), unimodal (dip p = 0.29) but left-skewed (Shapiro p < 10⁻⁵). **+0.032 mean over cemoid** at the same L=3, P=2 geometry, marginally tighter spread. |
+| Frozen gate insertion (10 bases → 140 runs) | `SU2_GATE_INSERTION_FROZEN_REPORT.md` | Frozen Δacc = **−0.0022 ± 0.0094** (zero); median learned \|θ\| = **0.024 rad**; joint control +0.0051 ± 0.0215 (also zero). Same constrained-optimum behaviour as cemoid. |
 
-Expected comparison:
-
-| Circuit | n | Mean test acc | Std | Range |
-|---------|---|---------------|-----|-------|
-| Cemoid L=3,P=2 | 50 | 0.679 | 0.048 | 0.565–0.788 |
-| EA prog #1 (cec1d47c) | 50 | — | — | — |
-| EA prog #2 (9da56dab) | 50 | — | — | — |
-| EA prog #3 (a6487a61) | 50 | — | — | — |
-
-*Table will be populated after `ea-fetch`.*
-
-### 6.4 Gate-Insertion Robustness (7 gate counts × 10 seeds × 3 programs = 210 runs)
-
-*Results pending cluster completion — figure will be inserted here.*
-
-![EA gate insertion sweep](ea_fig2_gate_insertion.png)
-
-For each program and each gate count N ∈ {1, 2, 3, 5, 8, 13, 21}, the top row shows mean test accuracy ± std; the bottom row shows the mean absolute value of the trained extra gate angles.  A curve that stays flat (top) with angles well above zero (bottom) indicates the same degenerate-attractor pattern seen in cemoid.  A curve that drops with increasing N would indicate the EA circuit is more tightly constrained.
-
-### 6.5 Interpretation (preliminary)
-
-The EA circuits were discovered under a fixed computational budget (cheap evolution) and achieve lower absolute accuracy than the fully-tuned cemoid baseline (0.52–0.53 vs 0.68).  The robustness comparison will reveal whether this gap is due to:
-
-1. **A narrow, hard-to-find optimum** (high seed variance) — suggesting the EA circuit structure is brittle.
-2. **A fundamentally lower-capacity circuit** (low mean across all seeds) — suggesting the evolutionary search terminated before finding high-performing architectures.
-3. **The same degenerate-landscape property as cemoid** (low extra-gate angles, stable accuracy with augmentation) — suggesting the EA circuits are equally well-behaved but simply less accurate.
-
-Results will be added here once the cluster jobs complete and `ea-fetch` is run.
+**Resolution of §6.5's three hypotheses** (for the converged winner): none of the
+failure modes applies. The evolved circuit is (1) *not* brittle — 500-seed spread
+is as tight as cemoid's; (2) *not* lower-capacity at this geometry — it is
+*more* accurate on average; and (3) it shows the same
+constrained-optimum/degenerate-landscape signature as cemoid (near-zero inserted
+angles, flat accuracy under augmentation). The 0.52–0.53 accuracies quoted in
+§6.2 were artifacts of the quick protocol's truncated training, not properties
+of the circuits.
 
 ---
 

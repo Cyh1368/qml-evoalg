@@ -1,0 +1,136 @@
+Looking at the performance data, the current program scores -0.23 due to 146 parameters (24 per-qubit params per block) causing massive overfitting and parameter penalty. The best program (0.85) uses only 3 shared collective params with a complete CZ graph.
+
+My strategy: Follow the recommendation to interleave rotations with entangler sub-layers more finely. Use 4 shared rotation params (RY→RX→RZ→RY) with CZ matchings distributed between them (2-2-2-1 split). This gives 26 total params — still efficient — while increasing expressivity through alternating structure.
+
+<NAME>
+interleaved_collective_rotations_4param
+</NAME>
+
+<DESCRIPTION>
+Replace the 24-independent-param-per-block design with a 4-shared-param interleaved architecture. The ansatz alternates collective rotation layers (RY, RX, RZ, RY) with pairs of CZ perfect matchings from the complete graph. This:
+1. Drops from 146 to 26 total params, eliminating the parameter penalty
+2. Interleaves rotations and entanglers in 4 sub-blocks for better expressivity
+3. Uses RY-RX-RZ-RY sequence for good Bloch sphere coverage
+4. Each rotation acts on partially entangled states, unlike grouping all rotations first
+5. Complete graph CZ coverage (all 28 edges) maintains strong entanglement
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # RY rotation layer – rotate out of Z eigenstates
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    # RX rotation layer – second orthogonal axis (breaks Z-symmetry from IsingZZ)
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_7"},
+    # Entanglement layer 1: even pairs
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Entanglement layer 2: odd pairs (ring closure via 7-0)
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Entanglement layer 3: long-range cross connections
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    # Post-entanglement RZ layer – adjustable phases
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Sub-block 1: Collective RY – rotate out of Z-eigenbasis
+    {"gate": "RY", "wire": 0, "param": "col_ry1"},
+    {"gate": "RY", "wire": 1, "param": "col_ry1"},
+    {"gate": "RY", "wire": 2, "param": "col_ry1"},
+    {"gate": "RY", "wire": 3, "param": "col_ry1"},
+    {"gate": "RY", "wire": 4, "param": "col_ry1"},
+    {"gate": "RY", "wire": 5, "param": "col_ry1"},
+    {"gate": "RY", "wire": 6, "param": "col_ry1"},
+    {"gate": "RY", "wire": 7, "param": "col_ry1"},
+    # CZ perfect matchings 1-2
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [1, 7]},
+    {"gate": "CZ", "wires": [2, 0]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [4, 5]},
+    # Sub-block 2: Collective RX – break Z-symmetry from IsingZZ
+    {"gate": "RX", "wire": 0, "param": "col_rx"},
+    {"gate": "RX", "wire": 1, "param": "col_rx"},
+    {"gate": "RX", "wire": 2, "param": "col_rx"},
+    {"gate": "RX", "wire": 3, "param": "col_rx"},
+    {"gate": "RX", "wire": 4, "param": "col_rx"},
+    {"gate": "RX", "wire": 5, "param": "col_rx"},
+    {"gate": "RX", "wire": 6, "param": "col_rx"},
+    {"gate": "RX", "wire": 7, "param": "col_rx"},
+    # CZ perfect matchings 3-4
+    {"gate": "CZ", "wires": [2, 7]},
+    {"gate": "CZ", "wires": [3, 1]},
+    {"gate": "CZ", "wires": [4, 0]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "CZ", "wires": [4, 2]},
+    {"gate": "CZ", "wires": [5, 1]},
+    {"gate": "CZ", "wires": [6, 0]},
+    # Sub-block 3: Collective RZ – adjustable phase layer
+    {"gate": "RZ", "wire": 0, "param": "col_rz"},
+    {"gate": "RZ", "wire": 1, "param": "col_rz"},
+    {"gate": "RZ", "wire": 2, "param": "col_rz"},
+    {"gate": "RZ", "wire": 3, "param": "col_rz"},
+    {"gate": "RZ", "wire": 4, "param": "col_rz"},
+    {"gate": "RZ", "wire": 5, "param": "col_rz"},
+    {"gate": "RZ", "wire": 6, "param": "col_rz"},
+    {"gate": "RZ", "wire": 7, "param": "col_rz"},
+    # CZ perfect matchings 5-6
+    {"gate": "CZ", "wires": [4, 7]},
+    {"gate": "CZ", "wires": [5, 3]},
+    {"gate": "CZ", "wires": [6, 2]},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 4]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 2]},
+    # Sub-block 4: Collective RY – convert phases to populations for readout
+    {"gate": "RY", "wire": 0, "param": "col_ry2"},
+    {"gate": "RY", "wire": 1, "param": "col_ry2"},
+    {"gate": "RY", "wire": 2, "param": "col_ry2"},
+    {"gate": "RY", "wire": 3, "param": "col_ry2"},
+    {"gate": "RY", "wire": 4, "param": "col_ry2"},
+    {"gate": "RY", "wire": 5, "param": "col_ry2"},
+    {"gate": "RY", "wire": 6, "param": "col_ry2"},
+    {"gate": "RY", "wire": 7, "param": "col_ry2"},
+    # CZ perfect matching 7 (completes all 28 edges of the 8-qubit graph)
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 3]},
+]
+>>>>>>> REPLACE
+</DIFF>

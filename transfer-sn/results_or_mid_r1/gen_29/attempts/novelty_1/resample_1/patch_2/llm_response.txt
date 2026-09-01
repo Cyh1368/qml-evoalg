@@ -1,0 +1,99 @@
+<NAME>
+cnot_mixed_entangler
+</NAME>
+
+<DESCRIPTION>
+This edit keeps the compact 74-parameter structure, but replaces the purely phase-based local entanglement with a mixed CZ/CNOT scaffold.
+
+Why this should help:
+- The original compact block already reduced overfitting and improved convergence speed.
+- CZ-only local mixing can be too diagonal for a readout based on mean Z expectations; inserting CNOTs on nearest-neighbor pairs creates basis-changing correlations that are often easier for Adam to exploit.
+- The long-range CZs remain to preserve the useful global parity-like coupling.
+- The mirrored shared RY/RZ parameterization is preserved, so parameter efficiency stays high and the train-test gap should remain controlled.
+
+This is a targeted ansatz-only change and stays fully within the allowed schema.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Mirrored pre-rotations: compact parameter sharing for better regularization
+    {"gate": "RY", "wire": 0, "param": "ry_in_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_in_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_in_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_in_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_in_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_in_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_in_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_in_3"},
+
+    # Alternating long-range CZ mesh: odd blocks use complementary links
+    {"gate": "CZ", "wires": [0, 4], "alt_wires": [0, 5]},
+    {"gate": "CZ", "wires": [1, 5], "alt_wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 6], "alt_wires": [2, 7]},
+    {"gate": "CZ", "wires": [3, 7], "alt_wires": [3, 6]},
+
+    # Local CZ scaffold remains fixed across blocks
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Lightweight controlled-rotation core for nonlinear mixing
+    {"gate": "CRX", "wires": [0, 7], "param": "crx_0"},
+    {"gate": "CRY", "wires": [1, 6], "param": "cry_1"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_2"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_3"},
+
+    # Mirrored post-rotations: phase refinement before the next upload
+    {"gate": "RZ", "wire": 0, "param": "rz_out_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_out_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_out_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_out_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_out_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_out_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_out_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_out_3"},
+]
+=======
+ANSATZ_SPEC = [
+    # Mirrored pre-rotations: compact parameter sharing for better regularization
+    {"gate": "RY", "wire": 0, "param": "ry_in_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_in_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_in_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_in_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_in_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_in_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_in_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_in_3"},
+
+    # Long-range phase mesh: global correlation channels
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Local basis-mixing scaffold: basis changes improve Z-readout sensitivity
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+
+    # Lightweight controlled-rotation core for nonlinear mixing
+    {"gate": "CRX", "wires": [0, 7], "param": "crx_0"},
+    {"gate": "CRY", "wires": [1, 6], "param": "cry_1"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_2"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_3"},
+
+    # Mirrored post-rotations: phase refinement before the next upload
+    {"gate": "RZ", "wire": 0, "param": "rz_out_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_out_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_out_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_out_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_out_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_out_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_out_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_out_3"},
+]
+>>>>>>> REPLACE
+</DIFF>

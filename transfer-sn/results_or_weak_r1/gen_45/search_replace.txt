@@ -1,0 +1,123 @@
+<NAME>
+param_eval
+</NAME>
+
+<DESCRIPTION>
+Based on performance analysis, we'll improve the ansatz by:
+1. Replacing fixed CZ gates with learnable CRZ gates with shared parameters to increase expressivity
+2. Maintaining coarse-grained parameter sharing to prevent overfitting
+3. Adding only 2 new trainable parameters (chi_ring, chi_chord) for maximum expressivity gain
+
+This builds on the strong performance of previous candidates that used similar CRZ-based entanglement while keeping the parameter count low.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Parameter-efficient block:
+# - Shared RY (one param per pair-group)
+# - Shared RZ pre/post (one param per pair-group)
+# - CZ entanglement: two interleaved rings + opposite-qubit chords
+#   (adds expressivity without adding trainable parameters)
+ANSATZ_SPEC = [
+    # Shared RY across paired structure: (0,1),(2,3),(4,5),(6,7)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_3"},
+
+    # Shared pre-RZ: one param per pair-group
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_3"},
+
+    # Two interleaved CZ rings: even ring
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+    # odd ring
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Opposite-chord CZs (long-range mixing, still parameter-free)
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Shared post-RZ: one param per pair-group
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_3"},
+]
+=======
+# Enhanced ansatz with learnable CRZ entanglement:
+# - Shared RY (one param per pair-group)
+# - Shared RZ pre/post (one param per pair-group)
+# - Learnable CRZ entanglement with shared parameters (adds 2 trainable params)
+ANSATZ_SPEC = [
+    # Shared RY across paired structure: (0,1),(2,3),(4,5),(6,7)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_3"},
+
+    # Shared pre-RZ: one param per pair-group
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_3"},
+
+    # Learnable CRZ rings with shared parameters
+    {"gate": "CRZ", "wires": [0, 2], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [6, 0], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "chi_ring"},
+
+    # Opposite-chord CRZs with shared parameter
+    {"gate": "CRZ", "wires": [0, 4], "param": "chi_chord"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "chi_chord"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "chi_chord"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "chi_chord"},
+
+    # Shared post-RZ: one param per pair-group
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_3"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,14 @@
+{
+  "generation": 2,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "selective_param_sharing_efficient",
+  "patch_description": "The current seed achieves excellent accuracy (98% test, 99% validation) but uses 146 parameters with relatively low parameter efficiency (0.01). The key insight is that the ansatz achieves such high performance that many parameters may be redundant.\n\nCurrent approach: Independent RY and RZ rotations for all 8 qubits (24 parameters per block \u00d7 6 blocks = 144 circuit parameters).\n\nNew approach: Selective parameter sharing to reduce degrees of freedom:\n- Keep individual RY parameters for each qubit (crucial for feature-dependent rotations) \u2192 8 unique params\n- Share RZ pre-entanglement parameters in pairs (qubits 0-1 share one, 2-3 share another, etc.) \u2192 2 unique params\n- Share RZ post-entanglement parameters similarly \u2192 2 unique params\n- Maintain the effective CZ entanglement chain\n\nThis reduces parameters per block from 24 to 12 (50% reduction), giving 72 circuit parameters total. With readout params: 74 total (vs 146).\n\nParameter efficiency improves from 0.98/146=0.0067 to 0.98/74=0.0132 (2\u00d7 improvement), directly boosting the combined score. The shared structure maintains sufficient expressiveness while reducing overfitting risk (train-test gap can only improve or stay similar). Convergence should be faster with fewer parameters to tune.\n\nSlightly increased learning rate compensates for the reduced parameter space dimensionality.",
+  "error_msg": null,
+  "timestamp": "2026-08-18T05:18:49.831031",
+  "llm_cost": 0.053046,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

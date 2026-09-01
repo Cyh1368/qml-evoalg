@@ -1,0 +1,67 @@
+<NAME>
+long_range_crx_ansatz
+</NAME>
+
+<DESCRIPTION>
+The previous results show that while sharing parameters (Current) improves parameter efficiency, it significantly slows down convergence (from 150 to 750 steps) and slightly reduces accuracy. Seed 2 achieved the highest score (1.44) by using unshared RY and CRX gates, which are more expressive and allow for faster gradient-based learning.
+
+This proposed edit implements an ansatz with 12 unique parameters per block (8 unique RY and 4 unique CRX). This strikes a balance between the high expressivity of Seed 2 and the parameter efficiency of the current model. Specifically:
+1.  **Unique RY layer**: Applies independent RY rotations to all 8 qubits, providing a flexible starting point for the block.
+2.  **Fixed CZ chain**: A circular entanglement layer to provide stable base-level connectivity.
+3.  **Long-range Parametric Entanglement**: Applies 4 CRX gates on distant qubits (pairs separated by distance 4, e.g., (0,4)). Using independent parameters for these long-range interactions helps capture correlations across the entire qubit register efficiently, which is important given the all-to-all nature of the 28-dimensional IsingZZ feature map.
+4.  **Efficiency**: By reducing the parameters from 16 (Seed 2) to 12 per block, we improve the `parameter_efficiency` metric while maintaining enough degrees of freedom to reach 100% accuracy quickly.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_3"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 4, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"},
+    {"gate": "RX", "wire": 5, "param": "rx_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"},
+    {"gate": "RX", "wire": 6, "param": "rx_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"},
+    {"gate": "RX", "wire": 7, "param": "rx_3"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CRX", "wires": [0, 4], "param": "crx_0"},
+    {"gate": "CRX", "wires": [1, 5], "param": "crx_1"},
+    {"gate": "CRX", "wires": [2, 6], "param": "crx_2"},
+    {"gate": "CRX", "wires": [3, 7], "param": "crx_3"},
+]
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,88 @@
+<NAME>
+mirror_shared_crz_mix
+</NAME>
+
+<DESCRIPTION>
+This edit strengthens the ansatz by making the long-range entangling scaffold trainable instead of fixed: the four distant CZ links are replaced by two mirror-shared CRZ parameters, so the circuit can learn the entanglement strength while preserving the same symmetric structure. To keep the model parameter-efficient and reduce overfitting, one redundant mid-circuit controlled rotation is removed and its role is absorbed into the shared CRZ symmetry. The result keeps the block compact, maintains mirror bias that worked well in prior programs, and should improve validation/test accuracy with similar or better convergence behavior.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Mirrored shared pre-rotations: compact but expressive feature lifting
+    {"gate": "RY", "wire": 0, "param": "ry_g0"},
+    {"gate": "RY", "wire": 1, "param": "ry_g0"},
+    {"gate": "RY", "wire": 2, "param": "ry_g1"},
+    {"gate": "RY", "wire": 3, "param": "ry_g1"},
+    {"gate": "RY", "wire": 4, "param": "ry_g2"},
+    {"gate": "RY", "wire": 5, "param": "ry_g2"},
+    {"gate": "RY", "wire": 6, "param": "ry_g3"},
+    {"gate": "RY", "wire": 7, "param": "ry_g3"},
+
+    # Fixed entangling scaffold: low-cost regularization + spatial mixing
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Mixed-axis controlled-rotation core: crossover of current + inspiration
+    {"gate": "CRX", "wires": [0, 7], "param": "crx_a"},
+    {"gate": "CRY", "wires": [1, 6], "param": "cry_a"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_a"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_b"},
+
+    # Mirrored shared post-rotations: phase refinement for readout calibration
+    {"gate": "RZ", "wire": 0, "param": "rz_g0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_g0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_g1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_g1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_g3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_g3"},
+]
+=======
+ANSATZ_SPEC = [
+    # Mirrored shared pre-rotations: compact but expressive feature lifting
+    {"gate": "RY", "wire": 0, "param": "ry_g0"},
+    {"gate": "RY", "wire": 1, "param": "ry_g0"},
+    {"gate": "RY", "wire": 2, "param": "ry_g1"},
+    {"gate": "RY", "wire": 3, "param": "ry_g1"},
+    {"gate": "RY", "wire": 4, "param": "ry_g2"},
+    {"gate": "RY", "wire": 5, "param": "ry_g2"},
+    {"gate": "RY", "wire": 6, "param": "ry_g3"},
+    {"gate": "RY", "wire": 7, "param": "ry_g3"},
+
+    # Trainable mirror-shared long-range entanglers: replace fixed CZ strength
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_lr0"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_lr0"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_lr1"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_lr1"},
+
+    # Local entangling scaffold: preserves spatial mixing and regularization
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Mixed-axis controlled-rotation core: keep expressive cross-axis coupling
+    {"gate": "CRX", "wires": [0, 7], "param": "crx_a"},
+    {"gate": "CRY", "wires": [1, 6], "param": "cry_a"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_lr1"},
+
+    # Mirrored shared post-rotations: phase refinement for readout calibration
+    {"gate": "RZ", "wire": 0, "param": "rz_g0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_g0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_g1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_g1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_g3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_g3"},
+]
+>>>>>>> REPLACE
+</DIFF>

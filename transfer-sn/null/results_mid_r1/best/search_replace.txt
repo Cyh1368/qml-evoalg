@@ -1,0 +1,105 @@
+<NAME>
+simplify_to_crx_with_control_swaps
+</NAME>
+
+<DESCRIPTION>
+The current program's ANSATZ_SPEC is overly complex (29 gates) with mixed fixed CNOT gates, parametrized CRY gates, and RZ intermediate rotations, resulting in:
+- Higher parameter count (122 vs. 98 in the best prior program)
+- Worse accuracy (0.99 vs. 1.00)
+- Slower convergence (240 vs. 150 steps)
+- Larger validation/test loss (0.08 vs. 0.03)
+
+The second prior program achieved the best combined score (1.50) using a minimalist CRX-only design with 16 gates and 98 parameters. This design:
+1. Uses a simple RY basis layer
+2. Applies CRX parametrized gates in two layers (even and odd qubit pairs)
+3. Requires fewer parameters and gates, reducing circuit complexity
+
+I propose to:
+1. Revert to the efficient CRX-based structure (8 RY + 8 CRX)
+2. Apply the recommended control-target swaps to half the second-layer CRX gates:
+   - Swap (3,4) → (4,3) and (7,0) → (0,7)
+   - Keep (1,2) and (5,6) unchanged
+
+This combines the best-performing minimal architecture with diversified entanglement symmetry via inverse conditional rotations, without adding extra gates or parameters.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+ANSATZ_SPEC = [
+    # 1. Primary Basis-Shift Layer: Transform Z-basis phases to interference-ready states.
+    {"gate": "RY", "wire": 0, "param": "ry0"},
+    {"gate": "RY", "wire": 1, "param": "ry1"},
+    {"gate": "RY", "wire": 2, "param": "ry2"},
+    {"gate": "RY", "wire": 3, "param": "ry3"},
+    {"gate": "RY", "wire": 4, "param": "ry4"},
+    {"gate": "RY", "wire": 5, "param": "ry5"},
+    {"gate": "RY", "wire": 6, "param": "ry6"},
+    {"gate": "RY", "wire": 7, "param": "ry7"},
+
+    # 2. Hypercube Entanglement Stage 1: Nearest-neighbor coupling (Distance 2^0).
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+
+    # 3. Intermediate Phase Modulation: Adjust states after initial entanglement.
+    {"gate": "RZ", "wire": 0, "param": "rz0"},
+    {"gate": "RZ", "wire": 1, "param": "rz1"},
+    {"gate": "RZ", "wire": 2, "param": "rz2"},
+    {"gate": "RZ", "wire": 3, "param": "rz3"},
+    {"gate": "RZ", "wire": 4, "param": "rz4"},
+    {"gate": "RZ", "wire": 5, "param": "rz5"},
+    {"gate": "RZ", "wire": 6, "param": "rz6"},
+    {"gate": "RZ", "wire": 7, "param": "rz7"},
+
+    # 4. Hypercube Entanglement Stage 2: Middle-range coupling (Distance 2^1).
+    {"gate": "CNOT", "wires": [0, 2]},
+    {"gate": "CNOT", "wires": [1, 3]},
+    {"gate": "CNOT", "wires": [4, 6]},
+    {"gate": "CNOT", "wires": [5, 7]},
+
+    # 5. Hypercube Entanglement Stage 3: Long-range adaptive coupling (Distance 2^2).
+    # Uses CRY to allow the circuit to learn the strength of global correlations.
+    {"gate": "CRY", "wires": [0, 4], "param": "cry0"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cry1"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry2"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cry3"},
+
+    # Final cleanup coupling to close the hypercube loop.
+    {"gate": "CZ", "wires": [7, 0]},
+]
+=======
+
+ANSATZ_SPEC = [
+    # Basis rotation layer for all qubits.
+    {"gate": "RY", "wire": 0, "param": "ry0"},
+    {"gate": "RY", "wire": 1, "param": "ry1"},
+    {"gate": "RY", "wire": 2, "param": "ry2"},
+    {"gate": "RY", "wire": 3, "param": "ry3"},
+    {"gate": "RY", "wire": 4, "param": "ry4"},
+    {"gate": "RY", "wire": 5, "param": "ry5"},
+    {"gate": "RY", "wire": 6, "param": "ry6"},
+    {"gate": "RY", "wire": 7, "param": "ry7"},
+    # First layer of controlled-X rotations (even pairs).
+    {"gate": "CRX", "wires": [0, 1], "param": "crx0"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx1"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx2"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx3"},
+    # Second layer of controlled-X rotations (odd pairs with diversified control structure).
+    {"gate": "CRX", "wires": [1, 2], "param": "crx4"},
+    {"gate": "CRX", "wires": [4, 3], "param": "crx5"},
+    {"gate": "CRX", "wires": [5, 6], "param": "crx6"},
+    {"gate": "CRX", "wires": [0, 7], "param": "crx7"},
+]
+>>>>>>> REPLACE
+
+</DIFF>
+
+**Rationale:**
+
+- **Parameter efficiency**: Reduces from 122 to 98 parameters (20% reduction), improving computational efficiency and generalization.
+- **Simplified circuit**: Replaces 29 complex gates with 16 minimal gates, lowering circuit depth and gate count.
+- **Faster convergence**: The minimal CRX design achieved 150 convergence steps in prior runs vs. 240 in the current program.
+- **Control-target diversity**: Swapping (3,4)→(4,3) and (7,0)→(0,7) injects asymmetric entanglement patterns without adding overhead, following the expert recommendation for improved symmetry breaking.
+- **Maintained accuracy**: The prior minimal CRX design achieved 100% test accuracy, demonstrating this structure is sufficient for the task.

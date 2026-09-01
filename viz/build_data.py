@@ -44,6 +44,14 @@ TASK_DISPLAY = {"ttt": "Tic-Tac-Toe", "su2": "SU(2) Transfer", "sn": "S_n Transf
 # DB discovery / loading
 # ---------------------------------------------------------------------------
 
+# Run directories that are on disk for provenance but are NOT part of the
+# analysis. The Azure-served ensembles (results_az_*) predate the switch to
+# OpenRouter; Azure lacked several models we wanted, so those rosters are not
+# the ensemble set we settled on. Every run shipped to the viewer must use the
+# current OpenRouter roster.
+EXCLUDED_RUN_DIRS = re.compile(r"^results_az[_-]", re.IGNORECASE)
+
+
 def find_databases(repo_root: Path) -> list[Path]:
     dbs = []
     for p in sorted(repo_root.rglob("programs.sqlite")):
@@ -51,6 +59,10 @@ def find_databases(repo_root: Path) -> list[Path]:
         if any(part.startswith(".venv") or part == "node_modules" for part in parts):
             continue
         if parts and parts[0] == "viz":
+            continue
+        if EXCLUDED_RUN_DIRS.match(p.parent.name):
+            print(f"[build_data] EXCLUDED (outdated Azure roster): "
+                  f"{p.parent.relative_to(repo_root)}")
             continue
         dbs.append(p)
     return _dedupe_by_content(dbs, repo_root)
@@ -104,7 +116,7 @@ def count_rows(con: sqlite3.Connection) -> int:
 PROGRAM_COLUMNS = (
     "id, parent_id, generation, timestamp, code_diff, combined_score, "
     "public_metrics, text_feedback, complexity, correct, children_count, "
-    "metadata, island_idx, code"
+    "metadata, island_idx, code, archive_inspiration_ids, top_k_inspiration_ids"
 )
 
 
@@ -115,16 +127,23 @@ def load_programs(con: sqlite3.Connection) -> list[dict]:
     out = []
     for (id_, parent_id, generation, timestamp, code_diff, combined_score,
          public_metrics_raw, text_feedback, complexity, correct,
-         children_count, metadata_raw, island_idx, code) in rows:
+         children_count, metadata_raw, island_idx, code,
+         archive_insp_raw, top_k_insp_raw) in rows:
         meta = _parse_json(metadata_raw, {})
         if not isinstance(meta, dict):
             meta = {}
         public_metrics = _parse_json(public_metrics_raw, {})
         if not isinstance(public_metrics, dict):
             public_metrics = {}
+        # The parent is the program the code_diff is applied to. Crossovers and
+        # inspired mutations also get shown other programs in the prompt; those
+        # are the ids below, and without them a "cross" patch looks like it came
+        # out of nowhere.
         out.append({
             "id": id_,
             "parent_id": parent_id,
+            "archive_inspiration_ids": _parse_id_list(archive_insp_raw),
+            "top_k_inspiration_ids": _parse_id_list(top_k_insp_raw),
             "generation": int(generation) if generation is not None else None,
             "island_idx": int(island_idx) if island_idx is not None else None,
             "combined_score": float(combined_score) if combined_score is not None else None,
@@ -146,6 +165,13 @@ def load_programs(con: sqlite3.Connection) -> list[dict]:
     return out
 
 
+def _parse_id_list(raw) -> list[str]:
+    val = _parse_json(raw, [])
+    if not isinstance(val, list):
+        return []
+    return [str(x) for x in val if x]
+
+
 def _parse_json(raw, fallback):
     if not raw:
         return fallback
@@ -165,6 +191,10 @@ def _parse_json(raw, fallback):
 
 def _norm_token(seg: str) -> str:
     """Strip filler words like 'result(s)' and collapse separators to '-'."""
+    # date-stamped batch dirs (results/2026-08-22/...) are provenance, not a
+    # variant: drop them so a batch groups with the runs it belongs to.
+    if re.fullmatch(r"\d{4}[-_]?\d{2}[-_]?\d{2}", seg):
+        return ""
     s = re.sub(r"results?", "", seg, flags=re.IGNORECASE)
     s = re.sub(r"[_\-]+", "-", s).strip("-")
     return s
@@ -223,7 +253,13 @@ def derive_identity(rel_dir_parts: tuple[str, ...], programs: list[dict]) -> dic
     elif len(distinct_models) == 0:
         model = model_base
     else:
-        model = "mixed/unknown"
+        # ensemble arm: several models proposed in one run. Name it after the run
+        # dir and list the members, so sibling arms stay distinguishable in the
+        # run picker instead of all reading "mixed/unknown".
+        members = " + ".join(
+            re.sub(r"^azure-", "", m.rsplit("/", 1)[-1]) for m in distinct_models
+        )
+        model = f"{model_base} ({members})" if model_base else members
 
     slug_raw = f"{task}-{variant}-{model_slug}".lower()
     slug = re.sub(r"[^a-z0-9_-]", "-", slug_raw)
@@ -233,7 +269,8 @@ def derive_identity(rel_dir_parts: tuple[str, ...], programs: list[dict]) -> dic
     variant_display = variant.replace("-", " ").title()
     label = f"{task_display} · {variant_display} · {model}"
 
-    return {"task": task, "variant": variant, "model": model, "slug": slug, "label": label}
+    return {"task": task, "variant": variant, "model": model, "slug": slug, "label": label,
+            "n_models": len(distinct_models)}
 
 
 # ---------------------------------------------------------------------------
@@ -365,6 +402,10 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--repo-root", default=".")
     ap.add_argument("--out", default="viz/data")
+    ap.add_argument("--include-single-model", action="store_true",
+                    help="also emit runs where only one model ever proposed. Excluded by "
+                         "default: the viewer compares ensemble arms, and the solo runs "
+                         "(haiku/sonnet/gpt56sol probes) only crowd the run picker.")
     args = ap.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
@@ -384,6 +425,7 @@ def main() -> None:
     runs_summary = []
     manifest_runs = []
     used_slugs: dict[str, int] = {}
+    skipped_single: list[tuple[str, str]] = []
 
     render_jobs = []  # (slug, programs) pairs still needing rendering
     run_records = []  # (identity, programs, db_path) after skip/empty filtering
@@ -405,6 +447,9 @@ def main() -> None:
             con.close()
 
         identity = derive_identity(rel.parts, programs)
+        if identity["n_models"] <= 1 and not args.include_single_model:
+            skipped_single.append((identity["slug"], identity["model"]))
+            continue
         slug = identity["slug"]
         if slug in used_slugs:
             used_slugs[slug] += 1
@@ -459,6 +504,12 @@ def main() -> None:
             "skipped": stats.get("skipped_incorrect", 0),
             "error_example": stats.get("failed_example_msg") or stats.get("batch_error_example", ""),
         })
+
+    if skipped_single:
+        print(f"[build_data] excluded {len(skipped_single)} single-model run(s) from the "
+              f"manifest (use --include-single-model to keep them):")
+        for slug, model in sorted(skipped_single):
+            print(f"[build_data]   - {slug}  ({model})")
 
     manifest_runs.sort(key=lambda r: (r["task"], r["variant"], r["model"]))
     write_manifest_js(out_dir, manifest_runs)

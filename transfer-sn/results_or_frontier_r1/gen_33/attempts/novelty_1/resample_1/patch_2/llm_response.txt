@@ -1,0 +1,39 @@
+<NAME>
+ring_cross_ry_rz_ansatz
+</NAME>
+
+<DESCRIPTION>
+This design uses a brick-wall-inspired structure with two key entanglement patterns: a full ring of CZ gates (nearest-neighbor circular) and cross CZ connections (stride-4, connecting qubit q to q+4) for long-range entanglement. Single-qubit layers alternate RY and RZ rotations to provide full Bloch sphere coverage. The structure is: RY layer → RZ layer → Ring CZ → RY layer → Cross CZ → RZ layer. This gives 32 independent parameters per block. With p=2 repetitions and l=3 data re-uploads, the ansatz has 192 total ansatz parameters plus gain/bias. The ring topology ensures every qubit is entangled with its neighbors while the stride-4 cross connections create non-local correlations across the register, which is important for capturing feature interactions encoded by the IsingZZ feature map across different qubit pairs.
+</DESCRIPTION>
+
+<CODE>
+```python
+# --- EVOLVE-BLOCK-START ---
+
+ANSATZ_SPEC = []
+
+# First rotation layer: RY + RZ for full single-qubit parametrization
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": q, "param": f"ry0_{q}"})
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": q, "param": f"rz0_{q}"})
+
+# Ring entanglement: CZ on circular nearest neighbors
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [q, (q + 1) % 8]})
+
+# Second rotation layer: RY for mid-block expressibility
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": q, "param": f"ry1_{q}"})
+
+# Cross entanglement: CZ with stride 4 for long-range correlations
+for q in range(4):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [q, q + 4]})
+
+# Final rotation layer: RZ
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": q, "param": f"rz1_{q}"})
+
+# --- EVOLVE-BLOCK-END ---
+```
+</CODE>

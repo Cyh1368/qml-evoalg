@@ -1,0 +1,65 @@
+<NAME>
+efficient_cz_cry_hybrid_ansatz
+</NAME>
+
+<DESCRIPTION>
+This evolution proposes a more parameter-efficient and faster-converging ansatz by combining fixed two-qubit gates (CZ) with a reduced number of parametrized entanglers (CRY). 
+
+The previous 1.49 score was achieved using 8 RY gates and a ring of 8 CRY gates, totaling 16 parameters per block (98 total parameters). My proposed block uses:
+1. A full layer of independent RY rotations (8 parameters) to maintain high expressive power for basis transformation.
+2. A fixed CZ ring to provide rapid entanglement without increasing the parameter count, which is expected to speed up Adam convergence (drawing inspiration from Seed 1's faster convergence).
+3. A set of 4 long-range CRY cross-links (0-4, 1-5, 2-6, 3-7) to facilitate global information flow across the 8-qubit register. These use 4 independent parameters.
+
+Total parameters per block are reduced from 16 to 12. This decreases the total model parameters from 98 to 74, significantly improving the `parameter_efficiency` metric. The combination of fixed circular entanglement and parametrized global bridges is designed to maintain 100% accuracy while lowering the final loss and improving training speed.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_0"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_1"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_2"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_3"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_4"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_5"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_6"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: Fully independent RY rotations (8 parameters)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    
+    # Layer 2: Fixed CZ Ring Entanglement (0 parameters)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    
+    # Layer 3: Parametrized Cross-Link Bridges (4 parameters)
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_bridge_0"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cry_bridge_1"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry_bridge_2"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cry_bridge_3"},
+]
+>>>>>>> REPLACE
+</DIFF>

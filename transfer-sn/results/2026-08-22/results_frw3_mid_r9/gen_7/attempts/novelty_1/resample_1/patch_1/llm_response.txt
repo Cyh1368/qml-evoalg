@@ -1,0 +1,65 @@
+<NAME>
+enhance_output_readout_flexibility
+</NAME>
+
+<DESCRIPTION>
+The current design achieves excellent performance (0.90 test accuracy, 0.01 generalization gap) with minimal parameters through aggressive parameter sharing. However, there is room to improve while maintaining efficiency.
+
+Key observation: The output layer currently uses collective parameter sharing (all qubits share `collective_ry_out` and `collective_rx_out`). This enforces perfect symmetry at readout, which is overly restrictive given that individual qubits may encode distinct information.
+
+Proposed change: Break parameter sharing on the RY output layer by giving each qubit an individual parameter, while keeping the RX layer collective. This modest increase (from 4 to 12 unique parameters, ~36 total params) should:
+
+1. Allow individual qubits to rotate optimally before measurement
+2. Preserve the efficient collective structure for phases and input mixing
+3. Improve test accuracy by removing artificial symmetry constraints at readout
+4. Maintain good generalization since we're only unfreezing a late-stage layer
+5. Converge quickly due to the small parameter increase
+
+This follows the principle of using shared parameters where symmetry is justified (input mixing, global phases) but individual parameters where qubits play different roles (just before measurement).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Non-diagonal output mixers convert the encoded phase information and
+    # entanglement into the fixed single-qubit Z measurements.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_out"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+=======
+    # Non-diagonal output mixers convert the encoded phase information and
+    # entanglement into the fixed single-qubit Z measurements.
+    # Individual RY parameters allow each qubit to optimize its own rotation,
+    # while collective RX preserves the symmetric global phase adjustment.
+    {"gate": "RY", "wire": 0, "param": "ry_out_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_7"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+>>>>>>> REPLACE
+</DIFF>

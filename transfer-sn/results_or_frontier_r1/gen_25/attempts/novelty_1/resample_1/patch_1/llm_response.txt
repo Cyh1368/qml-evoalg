@@ -1,0 +1,42 @@
+<NAME>
+three_parameter_euler_mixer
+</NAME>
+
+<DESCRIPTION>
+Improve the ansatz by implementing an elegant 3-parameter-per-block single-qubit mixer design that avoids parameter redundancy while maintaining full SU(2) expressivity between entangling layers. 
+
+In previous iterations, having both `RY_in` and `RX_in` alongside `RZ_out` and `RX_out` created a 4-rotation cascade (`RZ -> RX -> RY -> RX`) between subsequent blocks, which is overparameterized since only 3 rotations are needed for any SU(2) gate. Overparameterization creates flat directions in the loss landscape, slowing Adam's convergence.
+
+By using `RY` at the input and `RZ`, `RX` at the output, the inter-block cascade perfectly forms an `RZ -> RX -> RY` universal Euler sequence. This achieves maximum expressivity with exactly 3 parameters per block, maximizing parameter efficiency and test accuracy while eliminating redundancy. The perfect matchings of K8 are preserved to maintain strict S8 permutation equivariance, complementing the fixed feature map interactions.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # A shared population mixer keeps the circuit equivariant under qubit
+    # relabelings and aggregates gradients from all eight measured qubits.
+    {"gate": "RY", "wire": 0, "param": "collective_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry"},
+
+    # Complete-graph entanglement is scheduled as a one-factorization of K8.
+    # Each group contains disjoint pairs, exposing seven logical CZ layers
+    # while preserving full pair coverage and permutation-symmetric bias.
+
+    # Matching 1
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 4]},
+
+    # Matching 2
+    {"gate": "CZ", "wires": [0, 6]},
+    {"gate": "CZ", "wires": [7, 5]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ",

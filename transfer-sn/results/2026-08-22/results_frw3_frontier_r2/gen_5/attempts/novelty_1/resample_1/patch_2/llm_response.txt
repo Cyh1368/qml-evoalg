@@ -1,0 +1,60 @@
+Looking at this problem, I need to design an effective ansatz block for an 8-qubit classifier with data re-uploading (l=3) and p=2 repetitions per upload. The key is balancing expressibility with trainability while ensuring good entanglement coverage.
+
+<NAME>
+brick_cross_layered_ansatz
+</NAME>
+
+<DESCRIPTION>
+This design uses a "brick-layer + cross" entanglement strategy with three rotation layers. The key insights are:
+
+1. **Brick-layer entanglement**: Alternating even (0-1, 2-3, 4-5, 6-7) and odd (1-2, 3-4, 5-6, 7-0) CZ pairs create a ring topology through two staggered layers, ensuring all nearest-neighbor pairs interact.
+
+2. **Long-range cross connections**: CZ gates between antipodal qubits (0-4, 2-6) create shortcuts across the ring, reducing the effective diameter of the entanglement graph. This helps information flow between distant qubits that may be connected by the IsingZZ feature map.
+
+3. **Three rotation layers (RY+RZ, RY, RY+RZ)**: The initial and final layers use full Euler-angle coverage (RY+RZ), while the middle layer uses only RY to keep parameters moderate. This gives sufficient single-qubit expressibility while keeping the block at 40 parameters.
+
+4. **Moderate parameter count**: 40 params per block × 6 applications (3 uploads × 2 reps) = 240 total, which is enough for expressibility without overfitting on binary classification.
+
+The brick-layer pattern avoids barren plateaus better than all-to-all connectivity while the cross connections ensure the ansatz can capture long-range correlations in the feature-encoded state.
+</DESCRIPTION>
+
+<CODE>
+```python
+# --- EVOLVE-BLOCK-START ---
+ANSATZ_SPEC = []
+
+# Layer 1: Full single-qubit rotations (RY + RZ)
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": q, "param": f"ry0_{q}"})
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": q, "param": f"rz0_{q}"})
+
+# Layer 2: Even brick-layer CZ entanglement
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [0, 1]})
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [2, 3]})
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [4, 5]})
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [6, 7]})
+
+# Layer 3: Middle RY rotation layer
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": q, "param": f"ry1_{q}"})
+
+# Layer 4: Odd brick-layer CZ entanglement (completes the ring)
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [1, 2]})
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [3, 4]})
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [5, 6]})
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [7, 0]})
+
+# Layer 5: Long-range cross entanglement (diameter connections)
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [0, 4]})
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [2, 6]})
+
+# Layer 6: Final full single-qubit rotations (RY + RZ)
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": q, "param": f"ry2_{q}"})
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": q, "param": f"rz2_{q}"})
+
+# --- EVOLVE-BLOCK-END ---
+```
+</CODE>

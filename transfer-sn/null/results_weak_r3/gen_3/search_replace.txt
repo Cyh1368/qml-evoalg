@@ -1,0 +1,82 @@
+<NAME>
+shared_rotations_param_cut
+</NAME>
+
+<DESCRIPTION>
+Reduce the number of trainable ansatz parameters per block by aggressively sharing single-qubit rotation parameters across qubit pairs, while keeping the same CZ entangling ladder. Concretely:
+- Replace the 8 distinct RY + 16 distinct RZ parameters (24 params/block) with:
+  - 4 shared RY parameters for qubit pairs (0,1),(2,3),(4,5),(6,7)
+  - 4 shared post-entangling RZ parameters for the same qubit pairs
+- Keep the existing 7-qubit CZ chain to preserve expressivity.
+
+This targets higher `parameter_efficiency` (smaller `n_params`) while retaining high accuracy/generalization by maintaining entanglement and leaving re-uploading/repeating (fixed by the training loop) to recover representational power.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared RY across qubit pairs: (0,1),(2,3),(4,5),(6,7)
+    {"gate": "RY", "wire": 0, "param": "ry_pair_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_pair_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_pair_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_pair_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_pair_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_pair_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_pair_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_pair_3"},
+
+    # Entangling ladder (preserved)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Shared post-entangling RZ across the same qubit pairs
+    {"gate": "RZ", "wire": 0, "param": "rz_pair_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pair_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pair_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pair_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pair_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pair_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pair_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pair_3"},
+]
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,72 @@
+<NAME>
+add_parameterized_entanglement
+</NAME>
+
+<DESCRIPTION>
+The current program achieves excellent results (0.90 test accuracy, very low generalization gap, high parameter efficiency with only 26 params) through aggressive parameter sharing with collective layers. However, the gate count is high (348) relative to the parameter count, suggesting the structure is very efficient but potentially limited in expressiveness.
+
+To improve further, I propose adding a parameterized two-qubit layer using selective CRZ gates in a complementary pattern to the existing fixed CZ entanglement. This introduces controlled parameterized interactions while maintaining the efficient shared parameter structure. The new layer will:
+
+1. Add 4 parameterized CRZ gates using complementary diagonal pairs: [0,3], [1,4], [2,5], [6,7]
+2. Use a shared parameter "param_cz" for all 4 CRZ gates to keep the parameter count low while increasing expressiveness
+3. Place this layer after the fixed CZ entangler to allow both fixed and parameterized interactions
+
+This approach:
+- Increases expressiveness by allowing tunable entanglement on complementary pairs
+- Keeps parameter growth minimal (only +1 param per block = +6 params total)
+- Maintains the proven symmetry benefits of collective parameter sharing
+- Complements rather than replaces the existing fixed CZ pattern
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Non-diagonal output mixers convert the encoded phase information and
+    # entanglement into the fixed single-qubit Z measurements.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_out"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+=======
+    # Parameterized complementary entanglement layer. Uses CRZ on diagonal pairs
+    # complementary to the fixed CZ perfect matchings, with shared parameter to
+    # add controlled expressiveness while maintaining parameter efficiency.
+    {"gate": "CRZ", "wires": [0, 3], "param": "param_crz"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "param_crz"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "param_crz"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "param_crz"},
+
+    # Non-diagonal output mixers convert the encoded phase information and
+    # entanglement into the fixed single-qubit Z measurements.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_out"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+>>>>>>> REPLACE
+
+</DIFF>

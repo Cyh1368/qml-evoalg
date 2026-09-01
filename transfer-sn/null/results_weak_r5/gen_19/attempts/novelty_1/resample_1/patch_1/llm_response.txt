@@ -1,0 +1,52 @@
+<NAME>
+reinject_features_with_isingxx
+</NAME>
+
+<DESCRIPTION>
+Based on the recommendation, I'm augmenting the architecture with a fixed IsingXX re-injection layer between uploads. This adds no trainable parameters but increases expressivity by introducing nonlinearity across uploads. The IsingXX gates are applied between upload 1 and upload 2, mirroring the existing ZZ encoding but along the XX axis. This follows the multi-upload insight that expressivity derives more from interleaved couplings than sheer parameter count.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+_DEVICE = qml.device("default.qubit", wires=N_QUBITS, shots=None)
+
+
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(records)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(circuit_params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+=======
+_DEVICE = qml.device("default.qubit", wires=N_QUBITS, shots=None)
+
+
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks."""
+    # Upload 0
+    feature_map(records)
+    for repeat_index in range(N_REPEATS):
+        block_index = 0 * N_REPEATS + repeat_index
+        apply_ansatz_block(circuit_params, block_index)
+        
+    # Upload 1 + IsingXX reinjection
+    feature_map(records)
+    for k, (a, b) in enumerate(FEATURE_PAIRS):
+        qml.IsingXX(FEATURE_SCALE * records[..., k], wires=[a, b])
+    for repeat_index in range(N_REPEATS):
+        block_index = 1 * N_REPEATS + repeat_index
+        apply_ansatz_block(circuit_params, block_index)
+        
+    # Upload 2
+    feature_map(records)
+    for repeat_index in range(N_REPEATS):
+        block_index = 2 * N_REPEATS + repeat_index
+        apply_ansatz_block(circuit_params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+>>>>>>> REPLACE
+
+</DIFF>

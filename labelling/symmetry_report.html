@@ -1,0 +1,527 @@
+<title>Who Builds the Symmetry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#EEF2F1; --surface:#FFFFFF; --sunk:#E4EAE9;
+  --ink:#14201E; --ink2:#3C4A48; --muted:#66756F; --faint:#8B9995;
+  --rule:#D3DDDA; --rule2:#E6EDEB;
+  --accent:#00918A; --accent-ink:#00615C; --accent-wash:#DBEFEC;
+  --clay:#A8552F; --clay-wash:#F3E3DA;
+  --shadow:0 1px 2px rgba(20,32,30,.05),0 8px 24px -16px rgba(20,32,30,.28);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1614; --surface:#161F1D; --sunk:#1C2624;
+    --ink:#E6EDEB; --ink2:#C2CFCC; --muted:#93A29E; --faint:#77857F;
+    --rule:#28352F; --rule2:#1F2B28;
+    --accent:#28A899; --accent-ink:#5FCBBB; --accent-wash:#12302C;
+    --clay:#CE7047; --clay-wash:#332016;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -16px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1614; --surface:#161F1D; --sunk:#1C2624;
+  --ink:#E6EDEB; --ink2:#C2CFCC; --muted:#93A29E; --faint:#77857F;
+  --rule:#28352F; --rule2:#1F2B28;
+  --accent:#28A899; --accent-ink:#5FCBBB; --accent-wash:#12302C;
+  --clay:#CE7047; --clay-wash:#332016;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -16px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16.5px; line-height:1.62; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.page{
+  display:grid; gap:0 clamp(16px,4vw,48px); padding:0 clamp(16px,5vw,56px) 96px;
+  grid-template-columns:[full-start] minmax(0,1fr) [wide-start] minmax(0,64ch) [text-start] minmax(0,10ch) [text-end] minmax(0,1fr) [wide-end] minmax(0,1fr) [full-end];
+}
+.page>*{grid-column:wide-start/text-end}
+.wide{grid-column:wide-start/wide-end}
+.full{grid-column:full-start/full-end}
+@media (max-width:1000px){
+  .page{grid-template-columns:[full-start wide-start text-start] minmax(0,1fr) [text-end wide-end full-end]}
+  .page>*,.wide,.full{grid-column:1/-1}
+}
+
+h1,h2,h3{font-family:Newsreader,Georgia,serif; font-weight:600; text-wrap:balance; margin:0}
+h1{font-size:clamp(2.5rem,6.5vw,4rem); line-height:1.04; letter-spacing:-.015em}
+h2{font-size:1.72rem; line-height:1.2; margin:0}
+h3{font-size:1.12rem; font-family:"IBM Plex Sans",sans-serif; font-weight:600; letter-spacing:-.005em}
+p{margin:0}
+a{color:var(--accent-ink)}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.72rem;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
+}
+.lede{font-size:1.2rem; line-height:1.55; color:var(--ink2)}
+.small{font-size:.9rem; color:var(--muted); line-height:1.55}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+strong{font-weight:600}
+
+header.hero{padding:clamp(56px,9vw,110px) 0 0; display:flex; flex-direction:column; gap:22px}
+.hero .rule{height:2px; background:var(--ink); width:64px}
+.byline{display:flex; flex-wrap:wrap; gap:10px 22px; align-items:baseline}
+
+section{padding-top:clamp(44px,6vw,72px); display:flex; flex-direction:column; gap:18px}
+.sechead{display:flex; gap:14px; align-items:baseline; border-top:1px solid var(--rule); padding-top:14px}
+.secnum{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--accent-ink); letter-spacing:.08em; padding-top:.35em}
+
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:2px; background:var(--rule2); border:1px solid var(--rule); border-radius:3px; overflow:hidden}
+.tile{background:var(--surface); padding:20px 20px 22px; display:flex; flex-direction:column; gap:6px}
+.tile .n{font-family:Newsreader,Georgia,serif; font-size:2.5rem; line-height:1; font-variant-numeric:tabular-nums; color:var(--accent-ink)}
+.tile .k{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+.tile .d{font-size:.88rem; color:var(--ink2); line-height:1.45}
+
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:3px; padding:22px clamp(16px,3vw,26px); display:flex; flex-direction:column; gap:16px; box-shadow:var(--shadow)}
+.card>figcaption{font-size:.86rem; color:var(--muted); line-height:1.5}
+.cardtitle{display:flex; flex-direction:column; gap:4px}
+
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:.9rem}
+th,td{text-align:right; padding:8px 10px; border-bottom:1px solid var(--rule2); white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{
+  font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); font-weight:500;
+  border-bottom:1px solid var(--rule); vertical-align:bottom;
+}
+tbody tr:last-child td{border-bottom:none}
+td.num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+tr.hl td{background:var(--accent-wash)}
+.armtag{display:inline-flex; align-items:center; gap:7px}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+
+.chart{display:flex; flex-direction:column; gap:14px}
+.facet{display:flex; flex-direction:column; gap:9px}
+.facetname{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink2)}
+.bar-row{display:grid; grid-template-columns:minmax(96px,auto) 1fr minmax(86px,auto); gap:12px; align-items:center}
+.bar-lab{font-size:.86rem; color:var(--ink2)}
+.bar-val{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--muted); text-align:right; font-variant-numeric:tabular-nums}
+.track{position:relative; height:22px; background:var(--sunk); border-radius:3px}
+.fill{position:absolute; left:0; top:0; bottom:0; background:var(--accent); border-radius:0 4px 4px 0; min-width:2px}
+.ci{position:absolute; top:50%; height:2px; background:var(--faint); transform:translateY(-50%)}
+.ci::before,.ci::after{content:""; position:absolute; top:-4px; width:2px; height:10px; background:var(--faint)}
+.ci::before{left:0} .ci::after{right:0}
+.axis{display:flex; justify-content:space-between; font-family:"IBM Plex Mono",monospace; font-size:.68rem; color:var(--faint); padding-left:108px}
+@media (max-width:640px){
+  .bar-row{grid-template-columns:1fr; gap:4px}
+  .bar-val{text-align:left}
+  .axis{padding-left:0}
+}
+
+.strip{display:grid; grid-template-columns:minmax(96px,auto) 1fr; gap:12px; align-items:center}
+.stripline{position:relative; height:30px}
+.stripline .base{position:absolute; left:0; right:0; top:50%; height:1px; background:var(--rule)}
+.pt{position:absolute; top:50%; width:9px; height:9px; margin:-4.5px 0 0 -4.5px; border-radius:50%; background:var(--accent); opacity:.5; border:1.5px solid var(--surface)}
+.mean{position:absolute; top:50%; width:2px; height:18px; margin-top:-9px; background:var(--ink)}
+
+.gloss{display:flex; flex-direction:column; gap:0; border:1px solid var(--rule); border-radius:3px; overflow:hidden; background:var(--surface)}
+.gitem{display:grid; grid-template-columns:minmax(150px,auto) 1fr; gap:16px; padding:14px 18px; border-bottom:1px solid var(--rule2)}
+.gitem:last-child{border-bottom:none}
+.gname{font-family:"IBM Plex Mono",monospace; font-size:.82rem; color:var(--accent-ink)}
+.gdesc{font-size:.9rem; color:var(--ink2); line-height:1.5}
+@media (max-width:640px){.gitem{grid-template-columns:1fr; gap:4px}}
+
+.graphs{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:20px}
+.gfig{display:flex; flex-direction:column; gap:8px; align-items:center; text-align:center}
+.gfig .cap{font-size:.82rem; color:var(--muted); line-height:1.4}
+.gfig .capname{font-family:"IBM Plex Mono",monospace; font-size:.75rem; color:var(--ink2)}
+
+.layerstack{display:flex; flex-direction:column; gap:6px}
+.layer{display:grid; grid-template-columns:22px 1fr auto; gap:12px; align-items:center; padding:9px 12px; border:1px solid var(--rule); border-radius:3px; background:var(--surface); font-size:.85rem}
+.layer.sym{border-color:var(--accent); background:var(--accent-wash)}
+.layer .li{font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--faint)}
+.layer .ld{color:var(--ink2)}
+.layer .lt{font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--muted); text-align:right}
+.layer.sym .lt{color:var(--accent-ink)}
+.exhead{display:flex; flex-wrap:wrap; gap:6px 14px; align-items:baseline; font-size:.85rem; color:var(--muted)}
+
+.callout{border-left:2px solid var(--clay); background:var(--clay-wash); padding:16px 20px; border-radius:0 3px 3px 0; display:flex; flex-direction:column; gap:8px}
+.callout .h{font-weight:600; font-size:.95rem}
+.callout p{font-size:.92rem; line-height:1.55; color:var(--ink2)}
+
+ul.plain{margin:0; padding-left:1.15em; display:flex; flex-direction:column; gap:9px}
+ul.plain li{padding-left:.15em}
+code{font-family:"IBM Plex Mono",monospace; font-size:.86em; background:var(--sunk); padding:.1em .35em; border-radius:2px}
+pre{background:var(--sunk); border:1px solid var(--rule); border-radius:3px; padding:14px 16px; overflow-x:auto; font-family:"IBM Plex Mono",monospace; font-size:.8rem; line-height:1.6; margin:0}
+footer{padding-top:56px; border-top:1px solid var(--rule); margin-top:56px; color:var(--muted); font-size:.85rem; display:flex; flex-direction:column; gap:6px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){.fill,.pt{transition:none}}
+</style>
+
+<div class="page" id="page"></div>
+
+<script>
+const D = {"coverage":{"n_programs_total":854,"n_parsed":850,"n_unparsed":4,"n_own":704,"n_runs":56},"groups":[{"setting":"scratch","arm":"weak","n_runs":15,"n_programs":324,"gens_per_run":[20,50],"labels":{"all-double":{"run_k":1,"run_n":15,"run_p":0.06666666666666667,"run_lo":0.011866588606194856,"run_hi":0.2981707755242399,"prog_k":1,"prog_n":324,"prog_p":0.0030864197530864196,"prog_lo":0.0,"prog_hi":0.008174386920980926},"all-double-exact":{"run_k":0,"run_n":15,"run_p":0.0,"run_lo":0.0,"run_hi":0.20388926630434784,"prog_k":0,"prog_n":324,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-double-tied":{"run_k":0,"run_n":15,"run_p":0.0,"run_lo":0.0,"run_hi":0.20388926630434784,"prog_k":0,"prog_n":324,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-singular":{"run_k":15,"run_n":15,"run_p":1.0,"run_lo":0.7961107336956521,"run_hi":1.0,"prog_k":308,"prog_n":324,"prog_p":0.9506172839506173,"prog_lo":0.8915246781649188,"prog_hi":0.989010989010989},"all-singular-tied":{"run_k":11,"run_n":15,"run_p":0.7333333333333333,"run_lo":0.4804911034231324,"run_hi":0.8910272389681718,"prog_k":48,"prog_n":324,"prog_p":0.14814814814814814,"prog_lo":0.0756578947368421,"prog_hi":0.23492063492063492},"ring":{"run_k":13,"run_n":15,"run_p":0.8666666666666667,"run_lo":0.6211750079348376,"run_hi":0.9626395301086407,"prog_k":58,"prog_n":324,"prog_p":0.17901234567901234,"prog_lo":0.09771986970684039,"prog_hi":0.2831571800800027},"linear-chain":{"run_k":15,"run_n":15,"run_p":1.0,"run_lo":0.7961107336956521,"run_hi":1.0,"prog_k":93,"prog_n":324,"prog_p":0.28703703703703703,"prog_lo":0.16625916870415647,"prog_hi":0.4375},"mirror":{"run_k":15,"run_n":15,"run_p":1.0,"run_lo":0.7961107336956521,"run_hi":1.0,"prog_k":310,"prog_n":324,"prog_p":0.9567901234567902,"prog_lo":0.9376357182628062,"prog_hi":0.9775289902045519},"cyclic":{"run_k":14,"run_n":15,"run_p":0.9333333333333333,"run_lo":0.7018292244757601,"run_hi":0.9881334113938051,"prog_k":98,"prog_n":324,"prog_p":0.30246913580246915,"prog_lo":0.15824915824915825,"prog_hi":0.45910290237467016},"none":{"run_k":1,"run_n":15,"run_p":0.06666666666666667,"run_lo":0.011866588606194856,"run_hi":0.2981707755242399,"prog_k":1,"prog_n":324,"prog_p":0.0030864197530864196,"prog_lo":0.0,"prog_hi":0.009966777408637873}},"best_score":{"mean":0.3894164389047347,"lo":0.2654513212983822,"hi":0.5149386772413413},"best_scores":[0.3294445147802658,0.25655483475644275,0.16550400069150434,0.3606625942977421,0.15876148597487494,0.5486718651021951,0.5200772956875938,0.639154492689583,-0.022631659659838384,0.7539919363311121,0.8344407576620463,0.5096723939220481,0.09624697373140373,0.5516108215081339,0.13908427609591248]},{"setting":"scratch","arm":"mid","n_runs":8,"n_programs":192,"gens_per_run":[20,50],"labels":{"all-double":{"run_k":0,"run_n":8,"run_p":0.0,"run_lo":0.0,"run_hi":0.3244156195108769,"prog_k":0,"prog_n":192,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-double-exact":{"run_k":0,"run_n":8,"run_p":0.0,"run_lo":0.0,"run_hi":0.3244156195108769,"prog_k":0,"prog_n":192,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-double-tied":{"run_k":0,"run_n":8,"run_p":0.0,"run_lo":0.0,"run_hi":0.3244156195108769,"prog_k":0,"prog_n":192,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-singular":{"run_k":8,"run_n":8,"run_p":1.0,"run_lo":0.6755843804891231,"run_hi":1.0,"prog_k":160,"prog_n":192,"prog_p":0.8333333333333334,"prog_lo":0.7039473684210527,"prog_hi":0.9337016574585635},"all-singular-tied":{"run_k":7,"run_n":8,"run_p":0.875,"run_lo":0.5291051942301386,"run_hi":0.9775830911367038,"prog_k":38,"prog_n":192,"prog_p":0.19791666666666666,"prog_lo":0.05714285714285714,"prog_hi":0.37423312883435583},"ring":{"run_k":8,"run_n":8,"run_p":1.0,"run_lo":0.6755843804891231,"run_hi":1.0,"prog_k":69,"prog_n":192,"prog_p":0.359375,"prog_lo":0.2755102040816326,"prog_hi":0.47368421052631576},"linear-chain":{"run_k":6,"run_n":8,"run_p":0.75,"run_lo":0.40926987910258916,"run_hi":0.9285223111419724,"prog_k":14,"prog_n":192,"prog_p":0.07291666666666667,"prog_lo":0.022988505747126436,"prog_hi":0.16447368421052633},"mirror":{"run_k":8,"run_n":8,"run_p":1.0,"run_lo":0.6755843804891231,"run_hi":1.0,"prog_k":189,"prog_n":192,"prog_p":0.984375,"prog_lo":0.9570552147239264,"prog_hi":1.0},"cyclic":{"run_k":8,"run_n":8,"run_p":1.0,"run_lo":0.6755843804891231,"run_hi":1.0,"prog_k":97,"prog_n":192,"prog_p":0.5052083333333334,"prog_lo":0.3723849372384937,"prog_hi":0.6436781609195402},"none":{"run_k":0,"run_n":8,"run_p":0.0,"run_lo":0.0,"run_hi":0.3244156195108769,"prog_k":0,"prog_n":192,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0}},"best_score":{"mean":0.3922055107294303,"lo":0.24565539212065335,"hi":0.5312872246125564},"best_scores":[0.3482346663240785,0.0,0.6888285031382773,0.6463596606607617,0.303558522944813,0.27250520910961434,0.4443298309608026,0.433827692697095]},{"setting":"scratch","arm":"frontier","n_runs":3,"n_programs":85,"gens_per_run":[20,50],"labels":{"all-double":{"run_k":3,"run_n":3,"run_p":1.0,"run_lo":0.43849391955098227,"run_hi":1.0,"prog_k":24,"prog_n":85,"prog_p":0.2823529411764706,"prog_lo":0.05263157894736842,"prog_hi":0.3829787234042553},"all-double-exact":{"run_k":3,"run_n":3,"run_p":1.0,"run_lo":0.43849391955098227,"run_hi":1.0,"prog_k":21,"prog_n":85,"prog_p":0.24705882352941178,"prog_lo":0.05263157894736842,"prog_hi":0.3191489361702128},"all-double-tied":{"run_k":0,"run_n":3,"run_p":0.0,"run_lo":0.0,"run_hi":0.5615060804490177,"prog_k":0,"prog_n":85,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-singular":{"run_k":3,"run_n":3,"run_p":1.0,"run_lo":0.43849391955098227,"run_hi":1.0,"prog_k":84,"prog_n":85,"prog_p":0.9882352941176471,"prog_lo":0.9473684210526315,"prog_hi":1.0},"all-singular-tied":{"run_k":3,"run_n":3,"run_p":1.0,"run_lo":0.43849391955098227,"run_hi":1.0,"prog_k":62,"prog_n":85,"prog_p":0.7294117647058823,"prog_lo":0.47368421052631576,"prog_hi":0.851063829787234},"ring":{"run_k":3,"run_n":3,"run_p":1.0,"run_lo":0.43849391955098227,"run_hi":1.0,"prog_k":13,"prog_n":85,"prog_p":0.15294117647058825,"prog_lo":0.1276595744680851,"prog_hi":0.21052631578947367},"linear-chain":{"run_k":1,"run_n":3,"run_p":0.3333333333333333,"run_lo":0.0614903152761605,"run_hi":0.7923450448735121,"prog_k":3,"prog_n":85,"prog_p":0.03529411764705882,"prog_lo":0.0,"prog_hi":0.15789473684210525},"mirror":{"run_k":3,"run_n":3,"run_p":1.0,"run_lo":0.43849391955098227,"run_hi":1.0,"prog_k":53,"prog_n":85,"prog_p":0.6235294117647059,"prog_lo":0.47368421052631576,"prog_hi":0.8947368421052632},"cyclic":{"run_k":3,"run_n":3,"run_p":1.0,"run_lo":0.43849391955098227,"run_hi":1.0,"prog_k":22,"prog_n":85,"prog_p":0.25882352941176473,"prog_lo":0.10526315789473684,"prog_hi":0.5789473684210527},"none":{"run_k":0,"run_n":3,"run_p":0.0,"run_lo":0.0,"run_hi":0.5615060804490177,"prog_k":0,"prog_n":85,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0}},"best_score":{"mean":1.0270462852537718,"lo":0.9364529706635022,"hi":1.1001686256240462},"best_scores":[0.9364529706635022,1.0445172594737666,1.1001686256240462]},{"setting":"continue","arm":"weak","n_runs":10,"n_programs":40,"gens_per_run":[4],"labels":{"all-double":{"run_k":0,"run_n":10,"run_p":0.0,"run_lo":0.0,"run_hi":0.2775401687666166,"prog_k":0,"prog_n":40,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-double-exact":{"run_k":0,"run_n":10,"run_p":0.0,"run_lo":0.0,"run_hi":0.2775401687666166,"prog_k":0,"prog_n":40,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-double-tied":{"run_k":0,"run_n":10,"run_p":0.0,"run_lo":0.0,"run_hi":0.2775401687666166,"prog_k":0,"prog_n":40,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-singular":{"run_k":10,"run_n":10,"run_p":1.0,"run_lo":0.7224598312333834,"run_hi":1.0,"prog_k":32,"prog_n":40,"prog_p":0.8,"prog_lo":0.65,"prog_hi":0.925},"all-singular-tied":{"run_k":10,"run_n":10,"run_p":1.0,"run_lo":0.7224598312333834,"run_hi":1.0,"prog_k":27,"prog_n":40,"prog_p":0.675,"prog_lo":0.5,"prog_hi":0.85},"ring":{"run_k":1,"run_n":10,"run_p":0.1,"run_lo":0.01787574951572113,"run_hi":0.4041563854975721,"prog_k":2,"prog_n":40,"prog_p":0.05,"prog_lo":0.0,"prog_hi":0.15},"linear-chain":{"run_k":3,"run_n":10,"run_p":0.3,"run_lo":0.10778928748621183,"run_hi":0.6032267800204347,"prog_k":3,"prog_n":40,"prog_p":0.075,"prog_lo":0.0,"prog_hi":0.15},"mirror":{"run_k":10,"run_n":10,"run_p":1.0,"run_lo":0.7224598312333834,"run_hi":1.0,"prog_k":39,"prog_n":40,"prog_p":0.975,"prog_lo":0.925,"prog_hi":1.0},"cyclic":{"run_k":7,"run_n":10,"run_p":0.7,"run_lo":0.39677321997956516,"run_hi":0.892210712513788,"prog_k":9,"prog_n":40,"prog_p":0.225,"prog_lo":0.125,"prog_hi":0.325},"none":{"run_k":0,"run_n":10,"run_p":0.0,"run_lo":0.0,"run_hi":0.2775401687666166,"prog_k":0,"prog_n":40,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0}},"best_score":{"mean":0.48802878726083687,"lo":0.3753161038707356,"hi":0.5994371013106295},"best_scores":[0.20914254228427512,0.4190513954021686,0.4591402759104234,0.7681579907853799,0.20914254228427512,0.5713443017163407,0.7681579907853799,0.5233068052143653,0.4630883532197139,0.48975567500604655]},{"setting":"continue","arm":"mid","n_runs":10,"n_programs":40,"gens_per_run":[4],"labels":{"all-double":{"run_k":0,"run_n":10,"run_p":0.0,"run_lo":0.0,"run_hi":0.2775401687666166,"prog_k":0,"prog_n":40,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-double-exact":{"run_k":0,"run_n":10,"run_p":0.0,"run_lo":0.0,"run_hi":0.2775401687666166,"prog_k":0,"prog_n":40,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-double-tied":{"run_k":0,"run_n":10,"run_p":0.0,"run_lo":0.0,"run_hi":0.2775401687666166,"prog_k":0,"prog_n":40,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-singular":{"run_k":10,"run_n":10,"run_p":1.0,"run_lo":0.7224598312333834,"run_hi":1.0,"prog_k":32,"prog_n":40,"prog_p":0.8,"prog_lo":0.675,"prog_hi":0.9},"all-singular-tied":{"run_k":10,"run_n":10,"run_p":1.0,"run_lo":0.7224598312333834,"run_hi":1.0,"prog_k":28,"prog_n":40,"prog_p":0.7,"prog_lo":0.55,"prog_hi":0.85},"ring":{"run_k":4,"run_n":10,"run_p":0.4,"run_lo":0.16817758120350967,"run_hi":0.6873304525498135,"prog_k":4,"prog_n":40,"prog_p":0.1,"prog_lo":0.025,"prog_hi":0.175},"linear-chain":{"run_k":0,"run_n":10,"run_p":0.0,"run_lo":0.0,"run_hi":0.2775401687666166,"prog_k":0,"prog_n":40,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"mirror":{"run_k":10,"run_n":10,"run_p":1.0,"run_lo":0.7224598312333834,"run_hi":1.0,"prog_k":40,"prog_n":40,"prog_p":1.0,"prog_lo":1.0,"prog_hi":1.0},"cyclic":{"run_k":10,"run_n":10,"run_p":1.0,"run_lo":0.7224598312333834,"run_hi":1.0,"prog_k":13,"prog_n":40,"prog_p":0.325,"prog_lo":0.25,"prog_hi":0.4},"none":{"run_k":0,"run_n":10,"run_p":0.0,"run_lo":0.0,"run_hi":0.2775401687666166,"prog_k":0,"prog_n":40,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0}},"best_score":{"mean":0.4895572380103019,"lo":0.4113341122422053,"hi":0.5788287942817785},"best_scores":[0.4720648260114089,0.4671435405633507,0.47547943271118986,0.4207267233672394,0.613999949194498,0.44771504252627536,0.48566017351812146,0.2567385986912347,0.8083290509934248,0.44771504252627536]},{"setting":"continue","arm":"frontier","n_runs":5,"n_programs":15,"gens_per_run":[4],"labels":{"all-double":{"run_k":3,"run_n":5,"run_p":0.6,"run_lo":0.23071993220883708,"run_hi":0.8823817688407467,"prog_k":4,"prog_n":15,"prog_p":0.26666666666666666,"prog_lo":0.058823529411764705,"prog_hi":0.5},"all-double-exact":{"run_k":3,"run_n":5,"run_p":0.6,"run_lo":0.23071993220883708,"run_hi":0.8823817688407467,"prog_k":4,"prog_n":15,"prog_p":0.26666666666666666,"prog_lo":0.058823529411764705,"prog_hi":0.5},"all-double-tied":{"run_k":1,"run_n":5,"run_p":0.2,"run_lo":0.03622316096978745,"run_hi":0.6244717358814613,"prog_k":1,"prog_n":15,"prog_p":0.06666666666666667,"prog_lo":0.0,"prog_hi":0.2},"all-singular":{"run_k":5,"run_n":5,"run_p":1.0,"run_lo":0.5655085052479191,"run_hi":1.0,"prog_k":14,"prog_n":15,"prog_p":0.9333333333333333,"prog_lo":0.75,"prog_hi":1.0},"all-singular-tied":{"run_k":4,"run_n":5,"run_p":0.8,"run_lo":0.3755282641185388,"run_hi":0.9637768390302125,"prog_k":11,"prog_n":15,"prog_p":0.7333333333333333,"prog_lo":0.4166666666666667,"prog_hi":0.9375},"ring":{"run_k":1,"run_n":5,"run_p":0.2,"run_lo":0.03622316096978745,"run_hi":0.6244717358814613,"prog_k":1,"prog_n":15,"prog_p":0.06666666666666667,"prog_lo":0.0,"prog_hi":0.25},"linear-chain":{"run_k":0,"run_n":5,"run_p":0.0,"run_lo":0.0,"run_hi":0.43449149475208104,"prog_k":0,"prog_n":15,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"mirror":{"run_k":4,"run_n":5,"run_p":0.8,"run_lo":0.3755282641185388,"run_hi":0.9637768390302125,"prog_k":9,"prog_n":15,"prog_p":0.6,"prog_lo":0.2857142857142857,"prog_hi":0.8333333333333334},"cyclic":{"run_k":2,"run_n":5,"run_p":0.4,"run_lo":0.1176182311592533,"run_hi":0.769280067791163,"prog_k":3,"prog_n":15,"prog_p":0.2,"prog_lo":0.0,"prog_hi":0.4375},"none":{"run_k":0,"run_n":5,"run_p":0.0,"run_lo":0.0,"run_hi":0.43449149475208104,"prog_k":0,"prog_n":15,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0}},"best_score":{"mean":0.7319669297980279,"lo":0.5308499714900375,"hi":0.9220581701533324},"best_scores":[0.40013861513609744,0.806917190132921,0.9989448316792258,0.5510920134042512,0.9027419986376445]},{"setting":"continue","arm":"frontier-no-gpt","n_runs":4,"n_programs":8,"gens_per_run":[4],"labels":{"all-double":{"run_k":0,"run_n":4,"run_p":0.0,"run_lo":0.0,"run_hi":0.48990002040399916,"prog_k":0,"prog_n":8,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-double-exact":{"run_k":0,"run_n":4,"run_p":0.0,"run_lo":0.0,"run_hi":0.48990002040399916,"prog_k":0,"prog_n":8,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-double-tied":{"run_k":0,"run_n":4,"run_p":0.0,"run_lo":0.0,"run_hi":0.48990002040399916,"prog_k":0,"prog_n":8,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"all-singular":{"run_k":3,"run_n":4,"run_p":0.75,"run_lo":0.3006360524426366,"run_hi":0.9544139373553637,"prog_k":6,"prog_n":8,"prog_p":0.75,"prog_lo":0.3333333333333333,"prog_hi":1.0},"all-singular-tied":{"run_k":3,"run_n":4,"run_p":0.75,"run_lo":0.3006360524426366,"run_hi":0.9544139373553637,"prog_k":5,"prog_n":8,"prog_p":0.625,"prog_lo":0.2,"prog_hi":0.9090909090909091},"ring":{"run_k":0,"run_n":4,"run_p":0.0,"run_lo":0.0,"run_hi":0.48990002040399916,"prog_k":0,"prog_n":8,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"linear-chain":{"run_k":0,"run_n":4,"run_p":0.0,"run_lo":0.0,"run_hi":0.48990002040399916,"prog_k":0,"prog_n":8,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0},"mirror":{"run_k":4,"run_n":4,"run_p":1.0,"run_lo":0.5100999795960008,"run_hi":1.0,"prog_k":8,"prog_n":8,"prog_p":1.0,"prog_lo":1.0,"prog_hi":1.0},"cyclic":{"run_k":3,"run_n":4,"run_p":0.75,"run_lo":0.3006360524426366,"run_hi":0.9544139373553637,"prog_k":3,"prog_n":8,"prog_p":0.375,"prog_lo":0.2,"prog_hi":0.5},"none":{"run_k":0,"run_n":4,"run_p":0.0,"run_lo":0.0,"run_hi":0.48990002040399916,"prog_k":0,"prog_n":8,"prog_p":0.0,"prog_lo":0.0,"prog_hi":0.0}},"best_score":{"mean":0.39133198835228417,"lo":0.15877465131046797,"hi":0.6238893253941002},"best_scores":[0.6966866373839505,0.17236956857323388,0.1451797340477021,0.5510920134042501]}],"comparisons":[{"setting":"scratch","label":"all-double","a":"weak","b":"mid","ka":1,"na":15,"kb":0,"nb":8,"p":1.0},{"setting":"scratch","label":"all-singular-tied","a":"weak","b":"mid","ka":11,"na":15,"kb":7,"nb":8,"p":0.6213854795090493},{"setting":"scratch","label":"all-double","a":"weak","b":"frontier","ka":1,"na":15,"kb":3,"nb":3,"p":0.004901960784313726},{"setting":"scratch","label":"all-singular-tied","a":"weak","b":"frontier","ka":11,"na":15,"kb":3,"nb":3,"p":1.0},{"setting":"scratch","label":"all-double","a":"mid","b":"frontier","ka":0,"na":8,"kb":3,"nb":3,"p":0.006060606060606061},{"setting":"scratch","label":"all-singular-tied","a":"mid","b":"frontier","ka":7,"na":8,"kb":3,"nb":3,"p":1.0},{"setting":"continue","label":"all-double","a":"weak","b":"mid","ka":0,"na":10,"kb":0,"nb":10,"p":1.0},{"setting":"continue","label":"all-singular-tied","a":"weak","b":"mid","ka":10,"na":10,"kb":10,"nb":10,"p":1.0},{"setting":"continue","label":"all-double","a":"weak","b":"frontier","ka":0,"na":10,"kb":3,"nb":5,"p":0.021978021978021976},{"setting":"continue","label":"all-singular-tied","a":"weak","b":"frontier","ka":10,"na":10,"kb":4,"nb":5,"p":0.3333333333333333},{"setting":"continue","label":"all-double","a":"weak","b":"frontier-no-gpt","ka":0,"na":10,"kb":0,"nb":4,"p":1.0},{"setting":"continue","label":"all-singular-tied","a":"weak","b":"frontier-no-gpt","ka":10,"na":10,"kb":3,"nb":4,"p":0.2857142857142857},{"setting":"continue","label":"all-double","a":"mid","b":"frontier","ka":0,"na":10,"kb":3,"nb":5,"p":0.021978021978021976},{"setting":"continue","label":"all-singular-tied","a":"mid","b":"frontier","ka":10,"na":10,"kb":4,"nb":5,"p":0.3333333333333333},{"setting":"continue","label":"all-double","a":"mid","b":"frontier-no-gpt","ka":0,"na":10,"kb":0,"nb":4,"p":1.0},{"setting":"continue","label":"all-singular-tied","a":"mid","b":"frontier-no-gpt","ka":10,"na":10,"kb":3,"nb":4,"p":0.2857142857142857},{"setting":"continue","label":"all-double","a":"frontier","b":"frontier-no-gpt","ka":3,"na":5,"kb":0,"nb":4,"p":0.16666666666666669},{"setting":"continue","label":"all-singular-tied","a":"frontier","b":"frontier-no-gpt","ka":4,"na":5,"kb":3,"nb":4,"p":1.0}],"score_by_label":{"all-double":{"n_with":29,"n_without":675,"mean":0.71370883401213,"lo":0.5144664559661412,"hi":0.865490804201762,"median":0.8734297400754072,"mean_without":-0.16449949191744676,"mw_p":7.147303841544952e-14,"cliffs_delta":0.8201787994891443},"all-double-exact":{"n_with":25,"n_without":679,"mean":0.8031974970210897,"lo":0.650811796381233,"hi":0.9055276047763238,"median":0.886674053919899,"mean_without":-0.16262082221421512,"mw_p":5.025047871251758e-14,"cliffs_delta":0.8861855670103094},"all-double-tied":{"n_with":1,"n_without":703,"mean":0.9027419986376445,"lo":NaN,"hi":NaN,"median":0.9027419986376445,"mean_without":-0.12978996138913576},"all-singular":{"n_with":636,"n_without":68,"mean":-0.15220037957234214,"lo":-0.2075249605499893,"hi":-0.09782773427230589,"median":0.0121570098418176,"mean_without":0.09499765514830633,"mw_p":0.0017338919049180947,"cliffs_delta":-0.23092397336293002},"all-singular-tied":{"n_with":219,"n_without":485,"mean":0.32162644973871723,"lo":0.2543077481852648,"hi":0.3852839929551919,"median":0.40249842858512297,"mean_without":-0.33149648113547187,"mw_p":1.61203040418666e-38,"cliffs_delta":0.6104975756719861},"ring":{"n_with":147,"n_without":557,"mean":-0.5024847799974934,"lo":-0.6389418495385394,"hi":-0.37088029381752685,"median":-0.20192453084783046,"mean_without":-0.029576908794063324,"mw_p":1.5335592478122785e-09,"cliffs_delta":-0.323636097167772},"linear-chain":{"n_with":113,"n_without":591,"mean":-0.291142117753711,"lo":-0.37537641290414986,"hi":-0.21066899457505728,"median":-0.22637859789373665,"mean_without":-0.09719211768486541,"mw_p":2.498491418443498e-06,"cliffs_delta":-0.27930760822364975},"mirror":{"n_with":648,"n_without":56,"mean":-0.1746330199932868,"lo":-0.22740613372660015,"hi":-0.12299438155857903,"median":0.023110599533139868,"mean_without":0.40754635888794705,"mw_p":3.537533124304432e-10,"cliffs_delta":-0.5048500881834215},"cyclic":{"n_with":245,"n_without":459,"mean":-0.16247229671916744,"lo":-0.255576277115872,"hi":-0.07310344246227733,"median":0.11923652076092643,"mean_without":-0.11009561691008442,"mw_p":0.6331007246915754,"cliffs_delta":0.021830954604063812},"none":{"n_with":1,"n_without":703,"mean":0.2974146835492505,"lo":NaN,"hi":NaN,"median":0.2974146835492505,"mean_without":-0.12892889835202564}},"within_arm_all_double":[{"setting":"scratch","arm":"weak","n_with":1,"n_without":323,"with":{"mean":-1.1918323037105323,"lo":NaN,"hi":NaN},"without":{"mean":-0.19817050236229872,"lo":-0.26108194520143424,"hi":-0.1368932148515019}},{"setting":"scratch","arm":"mid","n_with":0,"n_without":192,"with":{"mean":NaN,"lo":NaN,"hi":NaN},"without":{"mean":-0.32989685304302213,"lo":-0.435113573526938,"hi":-0.2277465608782104}},{"setting":"scratch","arm":"frontier","n_with":24,"n_without":61,"with":{"mean":0.7622546006538591,"lo":0.597662577963529,"hi":0.8789305318795501},"without":{"mean":-0.04701524310677181,"lo":-0.3032956503603148,"hi":0.19843450739249435},"mw_p":4.963433581345095e-05},{"setting":"continue","arm":"weak","n_with":0,"n_without":40,"with":{"mean":NaN,"lo":NaN,"hi":NaN},"without":{"mean":0.2063808470846335,"lo":0.077861237385846,"hi":0.31815626791433893}},{"setting":"continue","arm":"mid","n_with":0,"n_without":40,"with":{"mean":NaN,"lo":NaN,"hi":NaN},"without":{"mean":0.20980467463527708,"lo":0.05528421936404843,"hi":0.34315421158573917}},{"setting":"continue","arm":"frontier","n_with":4,"n_without":11,"with":{"mean":0.8988195185924225,"lo":0.8308733922591018,"hi":0.9708771372393941},"without":{"mean":0.07093453978419179,"lo":-0.3237691292948269,"hi":0.37756967256270296},"mw_p":0.0014652014652014652},{"setting":"continue","arm":"frontier-no-gpt","n_with":0,"n_without":8,"with":{"mean":NaN,"lo":NaN,"hi":NaN},"without":{"mean":0.21904250326209063,"lo":0.06868404023548788,"hi":0.40194067321079935}}],"budget_matched_scratch":[{"arm":"weak","k":1,"n":15,"p":0.06666666666666667,"lo":0.011866588606194856,"hi":0.2981707755242399},{"arm":"mid","k":0,"n":8,"p":0.0,"lo":0.0,"hi":0.3244156195108769},{"arm":"frontier","k":3,"n":3,"p":1.0,"lo":0.43849391955098227,"hi":1.0}],"pair_coverage":[{"setting":"scratch","arm":"weak","mean":0.48333333333333334,"lo":0.4261904761904762,"hi":0.5690476190476191,"values":[0.42857142857142855,0.35714285714285715,0.4642857142857143,0.42857142857142855,0.42857142857142855,0.35714285714285715,0.4642857142857143,0.42857142857142855,0.5,0.42857142857142855,1.0,0.5714285714285714,0.4642857142857143,0.5,0.42857142857142855]},{"setting":"scratch","arm":"mid","mean":0.3571428571428571,"lo":0.30357142857142855,"hi":0.4107142857142857,"values":[0.42857142857142855,0.42857142857142855,0.2857142857142857,0.2857142857142857,0.42857142857142855,0.42857142857142855,0.2857142857142857,0.2857142857142857]},{"setting":"scratch","arm":"frontier","mean":1.0,"lo":1.0,"hi":1.0,"values":[1.0,1.0,1.0]},{"setting":"continue","arm":"weak","mean":0.4428571428571428,"lo":0.42857142857142855,"hi":0.4714285714285714,"values":[0.42857142857142855,0.42857142857142855,0.5714285714285714,0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855]},{"setting":"continue","arm":"mid","mean":0.42857142857142855,"lo":0.42857142857142855,"hi":0.42857142857142855,"values":[0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855]},{"setting":"continue","arm":"frontier","mean":0.7428571428571428,"lo":0.45714285714285713,"hi":1.0,"values":[0.2857142857142857,1.0,1.0,0.42857142857142855,1.0]},{"setting":"continue","arm":"frontier-no-gpt","mean":0.42857142857142855,"lo":0.42857142857142855,"hi":0.42857142857142855,"values":[0.42857142857142855,0.42857142857142855,0.42857142857142855,0.42857142857142855]}],"layer_stats":{"mean_layers":6.44,"median_layers":5.0,"hist":{"4":232,"5":194,"6":102,"7":91,"8":49,"9":37,"10":30,"3":26,"11":24,"12":15,"13":10,"17":9,"14":8,"19":5,"2":4,"18":3,"16":2,"15":2,"21":2,"20":2,"35":1,"23":1,"26":1},"n_layers_total":5474},"examples":{"frontier":{"run":"sn-transfer-or_frontier_e1_r2","gen":11,"score":1.0445172594737666,"model":"gpt-5.6-sol","layers":[{"gates":["RX"],"n1":8,"n2":0,"wires":8,"pairs":0,"params":1,"labels":["all-singular","all-singular-tied"]},{"gates":["CZ"],"n1":0,"n2":28,"wires":0,"pairs":28,"params":0,"labels":["all-double","all-double-exact"]},{"gates":["RY"],"n1":8,"n2":0,"wires":8,"pairs":0,"params":1,"labels":["all-singular","all-singular-tied"]}]},"weak":{"run":"sn-transfer-or_weak_r1","gen":38,"score":0.8344407576620463,"model":"qwen3-coder","layers":[{"gates":["RY"],"n1":8,"n2":0,"wires":8,"pairs":0,"params":2,"labels":["all-singular"]},{"gates":["RZ"],"n1":8,"n2":0,"wires":8,"pairs":0,"params":2,"labels":["all-singular"]},{"gates":["CRZ"],"n1":0,"n2":8,"wires":0,"pairs":8,"params":1,"labels":["cyclic","mirror"]},{"gates":["CRZ"],"n1":0,"n2":4,"wires":0,"pairs":4,"params":1,"labels":["cyclic","mirror"]},{"gates":["RZ"],"n1":8,"n2":0,"wires":8,"pairs":0,"params":2,"labels":["all-singular"]}]}}};
+
+const ARMNAME = {weak:"Weak", mid:"Mid", frontier:"Frontier", "frontier-no-gpt":"Frontier, no GPT"};
+const SETNAME = {scratch:"Started from scratch", continue:"Continued from a frontier circuit"};
+const g = (s,a) => D.groups.find(x => x.setting===s && x.arm===a);
+const f2 = x => (x==null||isNaN(x)) ? "—" : x.toFixed(2);
+const f3 = x => (x==null||isNaN(x)) ? "—" : x.toFixed(3);
+const pct = x => (x==null||isNaN(x)) ? "—" : Math.round(x*100) + "%";
+const pval = p => p===0 ? "&lt;1e-12" : p < 0.001 ? p.toExponential(1) : p.toFixed(3);
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+/* ---------- charts ---------- */
+function barChart(rowsBySetting, key, note){
+  let h = '<div class="chart">';
+  for (const [setting, arms] of rowsBySetting){
+    h += `<div class="facet"><div class="facetname">${SETNAME[setting]}</div>`;
+    for (const arm of arms){
+      const G = g(setting, arm), L = G.labels[key];
+      const tip = `${ARMNAME[arm]}, ${SETNAME[setting].toLowerCase()}: ${L.run_k} of ${L.run_n} runs (95% CI ${pct(L.run_lo)}–${pct(L.run_hi)})`;
+      h += `<div class="bar-row" title="${esc(tip)}">
+        <div class="bar-lab">${ARMNAME[arm]}</div>
+        <div class="track">
+          <div class="fill" style="width:${Math.max(L.run_p*100,0.8)}%"></div>
+          <div class="ci" style="left:${L.run_lo*100}%;width:${Math.max((L.run_hi-L.run_lo)*100,0.5)}%"></div>
+        </div>
+        <div class="bar-val">${L.run_k}/${L.run_n} &nbsp;${pct(L.run_p)}</div>
+      </div>`;
+    }
+    h += '</div>';
+  }
+  h += '<div class="axis"><span>0%</span><span>50%</span><span>100%</span></div>';
+  if (note) h += `<p class="small">${note}</p>`;
+  return h + '</div>';
+}
+
+function stripChart(){
+  let h = '<div class="chart">';
+  for (const [setting, arms] of [["scratch",["weak","mid","frontier"]],
+                                 ["continue",["weak","mid","frontier","frontier-no-gpt"]]]){
+    h += `<div class="facet"><div class="facetname">${SETNAME[setting]}</div>`;
+    for (const arm of arms){
+      const c = D.pair_coverage.find(x => x.setting===setting && x.arm===arm);
+      let pts = c.values.map(v =>
+        `<div class="pt" style="left:${v*100}%" title="one run: ${Math.round(v*28)} of 28 pairs"></div>`).join("");
+      h += `<div class="strip" title="${esc(ARMNAME[arm])}: mean ${f2(c.mean)} of the 28 pairs, 95% CI ${f2(c.lo)}–${f2(c.hi)}">
+        <div class="bar-lab">${ARMNAME[arm]}</div>
+        <div class="stripline"><div class="base"></div>${pts}
+          <div class="mean" style="left:${c.mean*100}%"></div></div>
+      </div>`;
+    }
+    h += '</div>';
+  }
+  h += '<div class="axis"><span>0 of 28 pairs</span><span>14</span><span>all 28</span></div>';
+  return h + '</div>';
+}
+
+function graphSVG(edges, hi){
+  const R=52, cx=64, cy=64, N=8;
+  const pos = i => [cx + R*Math.cos(-Math.PI/2 + 2*Math.PI*i/N), cy + R*Math.sin(-Math.PI/2 + 2*Math.PI*i/N)];
+  let s = `<svg viewBox="0 0 128 128" width="150" height="150" role="img" aria-label="8 qubits with ${edges.length} connections">`;
+  for (const [a,b] of edges){
+    const [x1,y1]=pos(a), [x2,y2]=pos(b);
+    s += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"
+      stroke="${hi?'var(--accent)':'var(--faint)'}" stroke-width="1.1" stroke-opacity="${hi?0.75:0.85}"/>`;
+  }
+  for (let i=0;i<N;i++){
+    const [x,y]=pos(i);
+    s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.4"/>`;
+  }
+  return s + '</svg>';
+}
+
+function exampleBlock(e){
+  let h = `<div class="exhead"><span class="mono">${esc(e.run)}</span><span>generation ${e.gen}</span>
+    <span>proposed by <span class="mono">${esc(e.model||"—")}</span></span>
+    <span>score <span class="mono">${f3(e.score)}</span></span></div><div class="layerstack">`;
+  e.layers.forEach((l,i) => {
+    const sym = l.labels.some(x => x==="all-double-exact" || x==="all-singular-tied");
+    const what = l.n2
+      ? `${l.n2} × ${l.gates.join("/")} over ${l.pairs} qubit pair${l.pairs===1?"":"s"}${l.params?`, ${l.params} angle${l.params===1?"":"s"}`:""}`
+      : `${l.n1} × ${l.gates.join("/")} over ${l.wires} qubits, ${l.params} angle${l.params===1?"":"s"}`;
+    h += `<div class="layer${sym?" sym":""}"><div class="li">${i+1}</div><div class="ld">${what}</div>
+      <div class="lt">${l.labels.join(" · ")}</div></div>`;
+  });
+  return h + '</div>';
+}
+
+/* ---------- page ---------- */
+const C = D.coverage, LS = D.layer_stats;
+const sf = g("scratch","frontier"), cf = g("continue","frontier");
+const exactAll = D.score_by_label["all-double-exact"];
+const wFront = D.within_arm_all_double.find(x => x.setting==="scratch" && x.arm==="frontier");
+const wCont  = D.within_arm_all_double.find(x => x.setting==="continue" && x.arm==="frontier");
+const fisherS = D.comparisons.find(c => c.setting==="scratch" && c.label==="all-double" && c.a==="mid" && c.b==="frontier");
+const fisherC = D.comparisons.find(c => c.setting==="continue" && c.label==="all-double" && c.a==="mid" && c.b==="frontier");
+const weakN = g("scratch","weak").n_runs + g("continue","weak").n_runs;
+const midN  = g("scratch","mid").n_runs + g("continue","mid").n_runs;
+
+const LABELDOC = [
+ ["all-double", "A layer that puts the same two-qubit gate on <em>every one</em> of the 28 possible qubit pairs. This is the shape the task's symmetry calls for."],
+ ["all-double-exact", "An <strong>all-double</strong> layer that is also genuinely symmetric under relabelling the qubits: either plain CZ gates (which do not care which qubit is which, and carry no angle), or controlled rotations that use one shared angle and appear in both directions on every pair. This is the strict version and the headline measure."],
+ ["all-singular", "The same single-qubit gate on all 8 qubits, one per qubit."],
+ ["all-singular-tied", "An <strong>all-singular</strong> layer where all 8 gates share one rotation angle, so the layer treats the 8 qubits as interchangeable."],
+ ["ring", "Two-qubit gates on the 8 neighbouring pairs around a closed loop: 0–1, 1–2, … 6–7, 7–0."],
+ ["linear-chain", "Two-qubit gates on the 7 neighbouring pairs in a line: 0–1, 1–2, … 6–7. This is the shape of the starting circuit everyone was given."],
+ ["mirror", "The layer is unchanged if you flip the qubit order (qubit <em>i</em> swaps with qubit 7−<em>i</em>). Chains and rings satisfy this automatically, so it is a weak signal."],
+ ["cyclic", "The layer is unchanged if you rotate all qubit numbers by one."],
+ ["none", "No pattern from this list."],
+];
+
+document.getElementById("page").innerHTML = `
+
+<header class="hero">
+   <div class="eyebrow">Circuit labelling report · Banana Labs</div>
+   <h1>Who builds the symmetry</h1>
+   <div class="rule"></div>
+   <p class="lede">Language models were asked to invent a quantum circuit for a problem whose
+   answer has an obvious, elegant shape. Some of them found that shape. This report cuts every
+   circuit they wrote into layers, labels what each layer is doing, and counts who got there.</p>
+   <div class="byline small">
+     <span>${C.n_runs} search runs · ${C.n_programs_total} circuits · ${LS.n_layers_total.toLocaleString()} layers labelled</span>
+   </div>
+</header>
+
+<div class="tiles wide" style="margin-top:38px">
+  <div class="tile"><div class="k">Frontier models</div><div class="n">${sf.labels["all-double-exact"].run_k}/${sf.labels["all-double-exact"].run_n}</div>
+    <div class="d">runs from scratch built a fully symmetric layer</div></div>
+  <div class="tile"><div class="k">Mid &amp; weak models</div><div class="n">0/${weakN+midN}</div>
+    <div class="d">runs built one, from scratch or continued</div></div>
+  <div class="tile"><div class="k">Score when built</div><div class="n">${f2(exactAll.mean)}</div>
+    <div class="d">mean, against ${f2(exactAll.mean_without)} for circuits without it</div></div>
+</div>
+
+<section>
+ <div class="sechead"><div class="secnum">01</div><h2>The task, in plain terms</h2></div>
+ <p>A quantum circuit here is a recipe: a list of small operations ("gates") applied to 8 wires
+ called qubits. Each gate acts on one qubit or on a pair of qubits, and many gates carry an
+ adjustable dial called an angle. Training the circuit means turning those dials until the circuit
+ sorts its inputs correctly.</p>
+ <p>The inputs describe a network of 8 points and which points are joined. The question the circuit
+ must answer is a property of that network. The important fact is that <strong>the 8 points have no
+ individual identity</strong>: renaming point 3 to point 6 everywhere changes nothing about the
+ answer. A circuit that treats all 8 qubits identically, and all 28 possible qubit pairs
+ identically, is therefore built on the right principle. A circuit that singles out particular
+ qubits is fighting the problem.</p>
+ <p>Every search run was given the same weak starting circuit, which connects qubits only in a
+ line: 0 to 1, 1 to 2, and so on. Getting from that line to the full set of 28 pairs is the
+ discovery being measured.</p>
+ <div class="card">
+  <div class="graphs">
+   <div class="gfig">${graphSVG(Array.from({length:7},(_,i)=>[i,i+1]), false)}
+    <div class="capname">linear-chain</div><div class="cap">The starting circuit: 7 connections along a line. Qubits at the ends are treated differently from those in the middle.</div></div>
+   <div class="gfig">${graphSVG(Array.from({length:8},(_,i)=>[i,(i+1)%8]), false)}
+    <div class="capname">ring</div><div class="cap">A common next step: 8 connections in a loop. Better, but still only neighbours are joined.</div></div>
+   <div class="gfig">${graphSVG([].concat(...Array.from({length:8},(_,i)=>Array.from({length:7-i},(_,k)=>[i,i+1+k]))), true)}
+    <div class="capname">all-double</div><div class="cap">All 28 pairs joined. Now no qubit is special, which is what the problem asks for.</div></div>
+  </div>
+  <figcaption>Each circle is one of the 8 qubits; each line is a two-qubit gate somewhere in the
+  circuit. These three pictures are the three shapes that show up most often in the results.</figcaption>
+ </div>
+</section>
+
+<section>
+ <div class="sechead"><div class="secnum">02</div><h2>Cutting a circuit into layers</h2></div>
+ <p>A circuit is stored as one long ordered list of gates, sometimes hundreds of them. Looking at
+ that list as a whole is misleading: a circuit may contain one block of two-qubit gates that joins
+ every pair and a second, later block that joins only a few, and pooling them together makes both
+ blocks look like noise. So each circuit was first cut into <strong>layers</strong>, and each layer
+ was labelled on its own.</p>
+ <p>The cut follows what the circuit's author actually wrote. Every gate is described by its type
+ (RX, RY, RZ, CZ, CNOT, CRX, CRY, CRZ) and, if it has an angle, by the name given to that angle.
+ Angle names almost always come in numbered families, such as <code>ry_0</code> through
+ <code>ry_7</code>. Two neighbouring gates belong to the same layer when they share a gate type and
+ an angle-name family, with the numbers stripped off. A layer is then a maximal run of neighbouring
+ gates that agree in this sense.</p>
+ <p>One extra pass handles circuits written qubit-by-qubit rather than layer-by-layer, where the
+ order goes RY, RZ, RY, RZ and so on. Whenever at least four one- or two-gate runs in a row draw on
+ at most three distinct types, they are merged back into a single layer. Across all
+ ${C.n_parsed.toLocaleString()} readable circuits this produced ${LS.n_layers_total.toLocaleString()}
+ layers, a median of ${LS.median_layers} per circuit.</p>
+ <div class="card">
+  <div class="cardtitle"><h3>What the layers look like</h3>
+   <p class="small">The best circuit any frontier run produced, next to the best any weak run
+   produced. Highlighted layers are the symmetric ones.</p></div>
+  ${exampleBlock(D.examples.frontier)}
+  <div style="height:6px"></div>
+  ${exampleBlock(D.examples.weak)}
+  <figcaption>The frontier circuit is three layers and nothing else: one shared-angle rotation on
+  every qubit, one CZ on every one of the 28 pairs, one more shared-angle rotation. The weak
+  circuit uses per-qubit angles and joins 8 pairs, then 4 more.</figcaption>
+ </div>
+</section>
+
+<section>
+ <div class="sechead"><div class="secnum">03</div><h2>The labels</h2></div>
+ <p>Each layer received every label below that applies to it. A circuit then inherits the union of
+ its layers' labels: one symmetric layer is enough to say the circuit contains that symmetry, since
+ the other layers may legitimately be doing something else.</p>
+ <div class="gloss">
+  ${LABELDOC.map(([n,d]) => `<div class="gitem"><div class="gname">${n}</div><div class="gdesc">${d}</div></div>`).join("")}
+ </div>
+ <p class="small">The <strong>mirror</strong> and <strong>cyclic</strong> labels were added during
+ the analysis, when it became clear that many layers were neither fully symmetric nor shapeless.
+ They turned out to be poor discriminators: a plain chain is mirror-symmetric by accident, so
+ mirror appears in ${pct(D.score_by_label["mirror"].n_with / (D.score_by_label["mirror"].n_with + D.score_by_label["mirror"].n_without))}
+ of all circuits and separates nothing. They are reported for completeness in section 07.</p>
+</section>
+
+<section>
+ <div class="sechead"><div class="secnum">04</div><h2>What went into the count</h2></div>
+ <p>Two families of run were analysed. In the <strong>from scratch</strong> family, each ensemble
+ started at the line-shaped circuit and searched on its own. In the <strong>continued</strong>
+ family, every run was handed the same frontier-produced circuit from generation 3 and asked to
+ carry on; the point was to see whether weaker models can build on a strong start.</p>
+ <p>In the continued runs, generations 0 to 3 are inherited frontier work and are
+ <strong>excluded</strong> from every count on this page. Only circuits a run's own ensemble
+ proposed are counted, identified by the model recorded against each circuit. Without this exclusion
+ the weaker ensembles would be credited with circuits they did not write.</p>
+ <div class="tablewrap card">
+  <table>
+   <thead><tr><th>Setting</th><th>Ensemble</th><th>Runs</th><th>Circuits counted</th><th>Generations per run</th><th>Mean best score</th></tr></thead>
+   <tbody>
+   ${D.groups.map(G => `<tr><td>${SETNAME[G.setting]}</td><td>${ARMNAME[G.arm]}</td>
+     <td class="num">${G.n_runs}</td><td class="num">${G.n_programs}</td>
+     <td class="num">${G.gens_per_run.join(", ")}</td>
+     <td class="num">${f2(G.best_score.mean)} <span style="color:var(--faint)">[${f2(G.best_score.lo)}, ${f2(G.best_score.hi)}]</span></td></tr>`).join("")}
+   </tbody>
+  </table>
+  <figcaption>Score is the search's own combined score: 0 is the starting circuit, 1 is the best
+  circuit found anywhere on this task, and negative means worse than the start. Brackets are 95%
+  bootstrap intervals over runs. ${C.n_unparsed} of ${C.n_programs_total} stored circuits could not
+  be read back (broken source in the record) and are dropped.</figcaption>
+ </div>
+</section>
+
+<section>
+ <div class="sechead"><div class="secnum">05</div><h2>Who actually built the symmetry</h2></div>
+ <p>The headline measure is whether a run ever produced a circuit containing an
+ <strong>exactly symmetric</strong> layer: the same gate on all 28 qubit pairs, in a form that
+ genuinely does not care which qubit is which. The unit is the run, not the circuit, because
+ circuits within a run are descendants of one another and are not independent.</p>
+ <div class="card">
+  <div class="cardtitle"><h3>Runs that built an exactly symmetric layer</h3>
+   <p class="small">Bars are the share of runs; whiskers are 95% Wilson intervals.</p></div>
+  ${barChart([["scratch",["weak","mid","frontier"]],["continue",["weak","mid","frontier","frontier-no-gpt"]]], "all-double-exact")}
+  <figcaption>Frontier ensembles built it in every from-scratch run and in ${cf.labels["all-double-exact"].run_k}
+  of ${cf.labels["all-double-exact"].run_n} continued runs. No weak or mid run built one, in either
+  setting. The gap is significant despite the small samples: Fisher's exact test on mid against
+  frontier gives p = ${pval(fisherS.p)} from scratch and p = ${pval(fisherC.p)} continued.</figcaption>
+ </div>
+ <p>The looser <strong>all-double</strong> label, which only asks that all 28 pairs be touched
+ without requiring the result to be symmetric, adds exactly one weak run to the tally. That run's
+ circuit put a differently-named angle on every pair and scored
+ ${f2(D.within_arm_all_double.find(x=>x.setting==="scratch"&&x.arm==="weak").with.mean)}, well below
+ the starting circuit. Touching every pair without tying the angles together does not help.</p>
+ <div class="callout">
+  <div class="h">The continued runs are short</div>
+  <p>Each continued run contributed only about four of its own circuits before stopping, so a weak
+  ensemble had few chances to build anything. The zero results there are consistent with "cannot",
+  but they are also consistent with "not enough attempts". The from-scratch runs, where weak
+  ensembles produced ${g("scratch","weak").n_programs} circuits across ${g("scratch","weak").n_runs}
+  runs without one exact layer, carry the stronger evidence.</p>
+ </div>
+</section>
+
+<section>
+ <div class="sechead"><div class="secnum">06</div><h2>Partial credit</h2></div>
+ <p>A pass-or-fail label hides how close a run came. For each run, the chart below takes its most
+ connected single layer and asks how many of the 28 pairs that layer joins.</p>
+ <div class="card">
+  <div class="cardtitle"><h3>Best single layer per run, as a share of the 28 pairs</h3>
+   <p class="small">One dot per run; the vertical line is the group mean.</p></div>
+  ${stripChart()}
+  <figcaption>Weak and mid runs cluster near 8 to 12 pairs of 28: chains, rings, and hand-picked
+  patterns like joining qubits that differ in one binary digit. They are not close to the full set
+  and stop at structures a person would draw by hand. Frontier from-scratch runs reach all 28 pairs
+  in every run.</figcaption>
+ </div>
+</section>
+
+<section>
+ <div class="sechead"><div class="secnum">07</div><h2>Does the symmetry pay off?</h2></div>
+ <p>Circuits with an exactly symmetric layer score far higher: mean ${f2(exactAll.mean)}
+ (95% CI ${f2(exactAll.lo)} to ${f2(exactAll.hi)}, n = ${exactAll.n_with}) against
+ ${f2(exactAll.mean_without)} for the ${exactAll.n_without.toLocaleString()} circuits without one.
+ The rank difference is large and significant (Mann–Whitney p ${pval(exactAll.mw_p)},
+ Cliff's delta ${f2(exactAll.cliffs_delta)}).</p>
+ <div class="callout">
+  <div class="h">Read that comparison carefully</div>
+  <p>Nearly every symmetric circuit was written by a frontier ensemble, and frontier ensembles score
+  higher regardless. Pooled across ensembles, the comparison cannot separate "the symmetry helps"
+  from "strong models write good circuits". The test that can is a comparison inside a single
+  ensemble.</p>
+ </div>
+ <p>Within the frontier from-scratch runs alone, circuits containing the symmetric layer score
+ ${f2(wFront.with.mean)} (95% CI ${f2(wFront.with.lo)} to ${f2(wFront.with.hi)}, n = ${wFront.n_with})
+ against ${f2(wFront.without.mean)} for the ${wFront.n_without} frontier circuits without it,
+ Mann–Whitney p = ${pval(wFront.mw_p)}. The continued frontier runs give the same direction:
+ ${f2(wCont.with.mean)} against ${f2(wCont.without.mean)}, p = ${pval(wCont.mw_p)}. Same models, same
+ task, same budget: the circuits carrying the symmetry are the ones that score.</p>
+ <div class="tablewrap card">
+  <div class="cardtitle"><h3>Every label, across all counted circuits</h3></div>
+  <table>
+   <thead><tr><th>Label</th><th>Circuits</th><th>Share</th><th>Mean score with</th><th>Mean score without</th><th>Mann–Whitney p</th></tr></thead>
+   <tbody>
+   ${["all-double-exact","all-double","all-double-tied","all-singular-tied","all-singular","ring","linear-chain","mirror","cyclic","none"].map(k => {
+     const v = D.score_by_label[k]; const n = v.n_with + v.n_without;
+     return `<tr class="${k==="all-double-exact"?"hl":""}"><td class="mono">${k}</td>
+      <td class="num">${v.n_with}</td><td class="num">${pct(v.n_with/n)}</td>
+      <td class="num">${f2(v.mean)} <span style="color:var(--faint)">${isNaN(v.lo)?"":`[${f2(v.lo)}, ${f2(v.hi)}]`}</span></td>
+      <td class="num">${f2(v.mean_without)}</td>
+      <td class="num">${v.mw_p===undefined?"—":pval(v.mw_p)}</td></tr>`;
+   }).join("")}
+   </tbody>
+  </table>
+  <figcaption>Shares are of the ${C.n_own} circuits proposed by a counted ensemble. Note that
+  <span class="mono">ring</span> and <span class="mono">linear-chain</span> carry
+  <em>below-average</em> scores: they are the shapes runs settle into when they do not find the
+  symmetry. Brackets are 95% bootstrap intervals on the mean.</figcaption>
+ </div>
+</section>
+
+<section>
+ <div class="sechead"><div class="secnum">08</div><h2>What this does not show</h2></div>
+ <ul class="plain">
+  <li><strong>Few frontier runs.</strong> Three from-scratch and five continued frontier runs.
+  "Every run" means three runs. The intervals in section 05 are wide on purpose.</li>
+  <li><strong>The frontier-no-GPT arm is nearly empty.</strong> Four runs contributing eight
+  circuits in total. Its zero is compatible with almost anything; the comparison against the full
+  frontier arm gives p = ${pval(D.comparisons.find(c=>c.setting==="continue"&&c.label==="all-double"&&c.b==="frontier-no-gpt"&&c.a==="frontier").p)}
+  and settles nothing.</li>
+  <li><strong>Budget is not held fixed.</strong> From-scratch runs used either 20 or 50 generations
+  and continued runs about 4. Restricting the from-scratch runs to their first 20 generations does
+  not change the picture: ${D.budget_matched_scratch.map(m => `${ARMNAME[m.arm].toLowerCase()} ${m.k}/${m.n}`).join(", ")}
+  runs reach an all-pairs layer.</li>
+  <li><strong>The labels are structural, not behavioural.</strong> A layer is called symmetric
+  because of how it is written, not because the trained circuit was tested for symmetric behaviour.
+  A circuit could in principle be written asymmetrically and still learn a symmetric function.</li>
+  <li><strong>Scores are noisy.</strong> Repeated identical runs on this task are known to span a
+  wide range of scores, so single-run scores should not be read closely. Every number here is a
+  group statistic with an interval attached.</li>
+  <li><strong>Ensembles differ in two ways at once.</strong> The weak, mid, and frontier arms differ
+  in model strength <em>and</em> in how much reasoning effort each model was given. This report
+  cannot separate those.</li>
+ </ul>
+</section>
+
+<section>
+ <div class="sechead"><div class="secnum">09</div><h2>How the numbers were produced</h2></div>
+ <p>Circuits were read from the stored search databases. Where the recorded source built its gate
+ list with a loop rather than writing it out, the block was executed to recover the list. Layer
+ cutting, labelling, and every statistic are in two scripts, run in order:</p>
+ <pre>labelling/label_circuits.py   # circuits -> layers -> labels  (labelling/labels.json)
+labelling/stats.py            # labels -> group statistics    (labelling/stats.json)</pre>
+ <p class="small">Proportions use Wilson 95% intervals. Means use 20,000-sample bootstrap
+ percentile intervals, resampling runs rather than circuits wherever a rate is pooled across a
+ group, so that circuits within a run are not treated as independent. Group comparisons on rates use
+ Fisher's exact test; comparisons on scores use the two-sided Mann–Whitney U test with Cliff's delta
+ as the effect size. No correction for multiple comparisons is applied, so the borderline p-values
+ in the full label table should be treated as descriptive.</p>
+</section>
+
+<footer>
+ <div>Circuit labelling report · Banana Labs</div>
+ <div>${C.n_runs} runs · ${C.n_parsed} circuits read of ${C.n_programs_total} stored · ${C.n_own} attributed to a counted ensemble</div>
+</footer>
+`;
+</script>

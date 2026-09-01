@@ -189,8 +189,40 @@ case "${1:-}" in
     ( cd "$LOCAL_DIR" && ../.venv-shinka-ttt/bin/python perturbation_stability.py --plot-only )
     ( cd "$LOCAL_DIR" && ../.venv-shinka-ttt/bin/python degeneracy_pca.py --analyze )
     ;;
+  # ── quotient-ansatz experiment (degeneracy-guided tying, 07-18) ──────────────
+  quotient-submit)
+    ssh "$HOST" "mkdir -p $REMOTE_DIR/slurm_logs $REMOTE_DIR/quotient_results"
+    rsync -av "$LOCAL_DIR/sweep.py" "$LOCAL_DIR/gate_insertion_frozen.py" \
+              "$LOCAL_DIR/quotient_ansatz.py" "$LOCAL_DIR/../initial_program.py" \
+              "$LOCAL_DIR/cluster/quotient_array.sbatch" "$HOST:$REMOTE_DIR/"
+    ssh "$HOST" "cd $REMOTE_DIR && sbatch quotient_array.sbatch"
+    ;;
+  quotient-status)
+    ssh "$HOST" "squeue --me -o '%.10i %.10j %.8T %.10M'; \
+      echo '--- quotient results done (of 110) ---'; find $REMOTE_DIR/quotient_results -name '*.json' 2>/dev/null | wc -l"
+    ;;
+  quotient-fetch)
+    rsync -av "$HOST:$REMOTE_DIR/quotient_results/" "$LOCAL_DIR/quotient_results/"
+    ( cd "$LOCAL_DIR" && ../.venv-shinka-ttt/bin/python quotient_ansatz.py --analyze )
+    ;;
+  # ── training-set-size sweep (Meyer/Baumann axes, 07-18) ──────────────────────
+  trainsize-submit)
+    ssh "$HOST" "mkdir -p $REMOTE_DIR/slurm_logs $REMOTE_DIR/train_size_results"
+    rsync -av "$LOCAL_DIR/sweep.py" "$LOCAL_DIR/sweep_ea.py" \
+              "$LOCAL_DIR/train_size_sweep.py" "$LOCAL_DIR/../initial_program.py" \
+              "$LOCAL_DIR/cluster/train_size_array.sbatch" "$HOST:$REMOTE_DIR/"
+    ssh "$HOST" "cd $REMOTE_DIR && sbatch train_size_array.sbatch"
+    ;;
+  trainsize-status)
+    ssh "$HOST" "squeue --me -o '%.10i %.10j %.8T %.10M'; \
+      echo '--- train-size results done (of 240) ---'; find $REMOTE_DIR/train_size_results -name '*.json' 2>/dev/null | wc -l"
+    ;;
+  trainsize-fetch)
+    rsync -av "$HOST:$REMOTE_DIR/train_size_results/" "$LOCAL_DIR/train_size_results/"
+    ( cd "$LOCAL_DIR" && ../.venv-shinka-ttt/bin/python train_size_sweep.py --analyze )
+    ;;
   *)
-    echo "usage: $0 {setup|submit|status|fetch|sweep-ext-submit|sweep-ext-status|sweep-ext-fetch|robustness-submit|robustness-status|robustness-fetch|gate-ins-submit|gate-ins-status|gate-ins-fetch|ea-submit|ea-status|ea-fetch|su2-sweep-{submit,status,fetch}|su2-robustness-{submit,status,fetch}|su2-frozen-{submit,status,fetch}|meeting-{submit,status,fetch}}"
+    echo "usage: $0 {setup|submit|status|fetch|sweep-ext-submit|sweep-ext-status|sweep-ext-fetch|robustness-submit|robustness-status|robustness-fetch|gate-ins-submit|gate-ins-status|gate-ins-fetch|ea-submit|ea-status|ea-fetch|su2-sweep-{submit,status,fetch}|su2-robustness-{submit,status,fetch}|su2-frozen-{submit,status,fetch}|meeting-{submit,status,fetch}|quotient-{submit,status,fetch}|trainsize-{submit,status,fetch}}"
     exit 1
     ;;
 esac

@@ -1,0 +1,169 @@
+<NAME>
+trainable_feature_scale_per_upload
+</NAME>
+
+<DESCRIPTION>
+The current fixed feature map uses a constant `FEATURE_SCALE = π/2` for all feature encodings across all data re-uploads. This restricts the network's ability to dynamically adjust the embedding strength at different stages of the circuit.
+
+The proposed improvement makes the feature-map scale trainable per upload (one scale parameter per N_UPLOADS=3 re-upload layer). This allows the optimizer to learn optimal embedding strengths at each re-upload stage independently, which can:
+
+1. **Improve data encoding flexibility**: Different reupload stages may benefit from different scaling factors as the quantum state evolves.
+2. **Reduce train-test gap**: More adaptive embedding can better generalize to unseen data.
+3. **Better parameter efficiency**: These 3 additional parameters (one per upload) provide direct gradient feedback to optimize the data encoding strength.
+
+The implementation extracts feature scale parameters from the circuit parameter vector and passes the appropriate scale to the feature map at each upload iteration. The feature scales are initialized to π/2 (the original constant value) and then trained via backpropagation.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+N_QUBITS = 8
+N_UPLOADS = 3
+N_REPEATS = 2
+FEATURE_SCALE = np.pi / 2
+=======
+N_QUBITS = 8
+N_UPLOADS = 3
+N_REPEATS = 2
+N_FEATURE_SCALE_PARAMS = N_UPLOADS
+=======
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+=======
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_FEATURE_SCALE_PARAMS + N_READOUT_PARAMS
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+def feature_map(records) -> None:
+    """Encode each feature as a fixed two-qubit phase coupling.
+
+    Accepts a batch of records (shape (B, N_FEATURES)); records[..., k]
+    broadcasts over the leading batch dimension.
+    """
+    for k, (a, b) in enumerate(FEATURE_PAIRS):
+        qml.IsingZZ(FEATURE_SCALE * records[..., k], wires=[a, b])
+=======
+def feature_map(records, feature_scale: float) -> None:
+    """Encode each feature as a two-qubit phase coupling with trainable scale.
+
+    Accepts a batch of records (shape (B, N_FEATURES)); records[..., k]
+    broadcasts over the leading batch dimension. feature_scale is the
+    trainable embedding scale for this upload layer.
+    """
+    for k, (a, b) in enumerate(FEATURE_PAIRS):
+        qml.IsingZZ(feature_scale * records[..., k], wires=[a, b])
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(records)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(circuit_params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+=======
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params, feature_scale_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks.
+    
+    Args:
+        records: batch of feature vectors
+        circuit_params: ansatz block parameters (N_CIRCUIT_PARAMS,)
+        feature_scale_params: trainable scales per upload (N_FEATURE_SCALE_PARAMS,)
+    """
+    for upload_index in range(N_UPLOADS):
+        feature_scale = feature_scale_params[upload_index]
+        feature_map(records, feature_scale)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(circuit_params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: calibrated mean of qubit Z expectations."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+    z = pnp.stack(circuit_z_expectations(records, circuit_params))  # (N_QUBITS, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+=======
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: calibrated mean of qubit Z expectations."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    feature_scale_params = params[N_CIRCUIT_PARAMS:N_CIRCUIT_PARAMS + N_FEATURE_SCALE_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS + N_FEATURE_SCALE_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + N_FEATURE_SCALE_PARAMS + 1]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+    z = pnp.stack(circuit_z_expectations(records, circuit_params, feature_scale_params))  # (N_QUBITS, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+def circuit_metadata() -> dict:
+    with qml.queuing.AnnotatedQueue() as queue:
+        for upload_index in range(N_UPLOADS):
+            feature_map(np.zeros((1, N_FEATURES)))
+            for repeat_index in range(N_REPEATS):
+                block_index = upload_index * N_REPEATS + repeat_index
+                apply_ansatz_block(np.zeros(max(N_CIRCUIT_PARAMS, 1)), block_index)
+    tape = qml.tape.QuantumScript.from_queue(queue)
+    operations = [(op.name, op.wires.tolist()) for op in tape.operations]
+    depth = tape.graph.get_depth() if hasattr(tape.graph, "get_depth") else len(operations)
+    return {
+        "operations": operations,
+        "depth": int(depth),
+        "gate_count": int(len(operations)),
+    }
+=======
+def circuit_metadata() -> dict:
+    with qml.queuing.AnnotatedQueue() as queue:
+        feature_scales = np.ones(N_FEATURE_SCALE_PARAMS) * (np.pi / 2)
+        for upload_index in range(N_UPLOADS):
+            feature_map(np.zeros((1, N_FEATURES)), feature_scales[upload_index])
+            for repeat_index in range(N_REPEATS):
+                block_index = upload_index * N_REPEATS + repeat_index
+                apply_ansatz_block(np.zeros(max(N_CIRCUIT_PARAMS, 1)), block_index)
+    tape = qml.tape.QuantumScript.from_queue(queue)
+    operations = [(op.name, op.wires.tolist()) for op in tape.operations]
+    depth = tape.graph.get_depth() if hasattr(tape.graph, "get_depth") else len(operations)
+    return {
+        "operations": operations,
+        "depth": int(depth),
+        "gate_count": int(len(operations)),
+    }
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+=======
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    # Feature scale parameters: initialize near π/2
+    init[N_CIRCUIT_PARAMS:N_CIRCUIT_PARAMS + N_FEATURE_SCALE_PARAMS] = np.pi / 2 + rng.uniform(-0.05, 0.05, size=N_FEATURE_SCALE_PARAMS)
+    # Readout calibration
+    init[N_CIRCUIT_PARAMS + N_FEATURE_SCALE_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + N_FEATURE_SCALE_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+>>>>>>> REPLACE
+</DIFF>

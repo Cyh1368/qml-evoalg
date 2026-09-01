@@ -1,0 +1,84 @@
+<NAME>
+mirrored_cnot_cry_ansatz
+</NAME>
+
+<DESCRIPTION>
+The candidate evolves the ansatz by replacing the hybrid CZ scaffold and mixed-axis controlled rotations with a more structured and symmetric topology. 
+
+1.  **Systematic Mirroring**: Maintains the mirror symmetry (mapping qubit $i$ to $7-i$) which was successful in the previous iteration, ensuring parameter efficiency.
+2.  **CNOT Ring Scaffold**: Replaces the localized CZ gates with a circular CNOT ring (0-1, 1-2, ..., 7-0). CNOT gates provide stronger basis-state mixing than CZ, and the ring topology ensures no qubit is isolated, facilitating global information flow across the 8-qubit register.
+3.  **Expanded Mirrored CRY Core**: Replaces the four-key mixed core with a 4-parameter (8-gate) CRY layer. CRY is particularly effective for binary classification as it directly modulates the amplitudes that determine the PauliZ expectations used in the readout. The chosen pairings (0-4, 1-5, 2-6, 3-7) and their mirrors provide long-range interaction while maintaining the same 12-parameter-per-block efficiency as the previous best candidate.
+4.  **Refined Phase Layer**: Retains the RZ layer for final phase alignment before measurement, which is crucial for calibrating the expectations of the Ising-encoded features.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Mirrored shared pre-rotations: compact but expressive feature lifting
+    {"gate": "RY", "wire": 0, "param": "ry_g0"},
+    {"gate": "RY", "wire": 1, "param": "ry_g0"},
+    {"gate": "RY", "wire": 2, "param": "ry_g1"},
+    {"gate": "RY", "wire": 3, "param": "ry_g1"},
+    {"gate": "RY", "wire": 4, "param": "ry_g2"},
+    {"gate": "RY", "wire": 5, "param": "ry_g2"},
+    {"gate": "RY", "wire": 6, "param": "ry_g3"},
+    {"gate": "RY", "wire": 7, "param": "ry_g3"},
+
+    # Fixed entangling scaffold: low-cost regularization + spatial mixing
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Mixed-axis controlled-rotation core: crossover of current + inspiration
+    {"gate": "CRX", "wires": [0, 7], "param": "crx_a"},
+    {"gate": "CRY", "wires": [1, 6], "param": "cry_a"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_a"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_b"},
+
+    # Mirrored shared post-rotations: phase refinement for readout calibration
+    {"gate": "RZ", "wire": 0, "param": "rz_g0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_g0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_g1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_g1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_g3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_g3"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Mirrored RY layer for initial state preparation
+    {"gate": "RY", "wire": 0, "param": "ry_0"}, {"gate": "RY", "wire": 7, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"}, {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"}, {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"}, {"gate": "RY", "wire": 4, "param": "ry_3"},
+
+    # Circular CNOT scaffold for global entanglement
+    {"gate": "CNOT", "wires": [0, 1]}, {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]}, {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]}, {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]}, {"gate": "CNOT", "wires": [7, 0]},
+
+    # Mirrored CRY core for parametrized feature interaction
+    {"gate": "CRY", "wires": [0, 4], "param": "cy_0"}, {"gate": "CRY", "wires": [7, 3], "param": "cy_0"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cy_1"}, {"gate": "CRY", "wires": [6, 2], "param": "cy_1"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cy_2"}, {"gate": "CRY", "wires": [5, 1], "param": "cy_2"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cy_3"}, {"gate": "CRY", "wires": [4, 0], "param": "cy_3"},
+
+    # Mirrored RZ layer for phase adjustment before Z-readout
+    {"gate": "RZ", "wire": 0, "param": "rz_0"}, {"gate": "RZ", "wire": 7, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"}, {"gate": "RZ", "wire": 6, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"}, {"gate": "RZ", "wire": 5, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"}, {"gate": "RZ", "wire": 4, "param": "rz_3"},
+]
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+</DIFF>

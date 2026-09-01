@@ -1,0 +1,77 @@
+<NAME>
+add_individual_parametrized_rotations
+</NAME>
+
+<DESCRIPTION>
+The current design achieves excellent performance (test accuracy 0.90, generalization gap 0.01) through heavy parameter sharing with only 4 unique parameters per ansatz block. While highly efficient, this aggressive symmetry may limit the model's expressiveness.
+
+To improve further, I propose adding individual per-qubit RX rotations after the CZ entangler layer. This breaks the collective symmetry in a controlled way, allowing the optimizer to learn qubit-specific corrections while maintaining the efficient collective structure for the main mixing layers.
+
+The new structure will be:
+1. Collective RY input mixer (shared across all 8 qubits)
+2. Collective RZ phase (shared across all 8 qubits)
+3. CZ entangler (fixed structure)
+4. **Individual RX rotations on each qubit** (NEW - 8 per block)
+5. Collective RY output mixer (shared across all 8 qubits)
+6. Collective RX output mixer (shared across all 8 qubits)
+
+This increases parameters from 26 to ~74 total (12 unique per block × 6 blocks + 2 readout), a conservative increase that should improve expressiveness while maintaining reasonable parameter efficiency and low generalization gap.
+
+The motivation: individual rotations after entanglement can capture qubit-specific phase corrections without breaking the efficient symmetry-preserving design of the main layers.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Non-diagonal output mixers convert the encoded phase information and
+    # entanglement into the fixed single-qubit Z measurements.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_out"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+=======
+    # Individual qubit-specific corrections after entanglement allow symmetry
+    # breaking while maintaining the efficiency of collective input/output layers.
+    {"gate": "RX", "wire": 0, "param": "individual_rx_0"},
+    {"gate": "RX", "wire": 1, "param": "individual_rx_1"},
+    {"gate": "RX", "wire": 2, "param": "individual_rx_2"},
+    {"gate": "RX", "wire": 3, "param": "individual_rx_3"},
+    {"gate": "RX", "wire": 4, "param": "individual_rx_4"},
+    {"gate": "RX", "wire": 5, "param": "individual_rx_5"},
+    {"gate": "RX", "wire": 6, "param": "individual_rx_6"},
+    {"gate": "RX", "wire": 7, "param": "individual_rx_7"},
+
+    # Non-diagonal output mixers convert the encoded phase information and
+    # entanglement into the fixed single-qubit Z measurements.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_out"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+>>>>>>> REPLACE
+
+</DIFF>

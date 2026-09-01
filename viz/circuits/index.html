@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ansatz gallery — transfer-sn circuits</title>
+<style>
+:root {
+  --bg: #0e1116;
+  --surface: #161b22;
+  --surface-2: #1c232c;
+  --line: #2a323d;
+  --text: #e6edf3;
+  --muted: #9aa7b4;
+  --accent: #58a6ff;
+  --wire: #4a5563;
+  --good: #3fb950;
+  --warn: #d29922;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+header {
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid var(--line);
+}
+header h1 { margin: 0 0 6px; font-size: 22px; font-weight: 600; }
+header p { margin: 0; color: var(--muted); max-width: 90ch; font-size: 14px; }
+
+.layout { display: flex; align-items: flex-start; }
+
+/* ---- sidebar ---- */
+nav {
+  width: 262px;
+  flex: 0 0 262px;
+  border-right: 1px solid var(--line);
+  padding: 18px 0 60px;
+  position: sticky;
+  top: 0;
+  max-height: 100vh;
+  overflow-y: auto;
+}
+nav .group {
+  padding: 14px 20px 6px;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+nav button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-left: 3px solid transparent;
+  color: var(--text);
+  padding: 8px 20px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+nav button:hover { background: var(--surface); }
+nav button.active {
+  background: var(--surface-2);
+  border-left-color: var(--accent);
+}
+nav button .sub {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---- main ---- */
+main { flex: 1; min-width: 0; padding: 24px 32px 80px; }
+.split { display: flex; gap: 28px; align-items: flex-start; }
+.left { flex: 1 1 auto; min-width: 0; }
+.right { flex: 0 0 400px; }
+@media (max-width: 1200px) { .split { flex-direction: column; } .right { flex: 1 1 auto; width: 100%; } }
+
+h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+.subtitle { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+.card h3 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.card p { margin: 0 0 10px; font-size: 14px; }
+.card p:last-child { margin-bottom: 0; }
+
+.scroller { overflow-x: auto; padding-bottom: 6px; }
+svg.circuit { display: block; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 14px;
+  min-width: 92px;
+}
+.stat .v { font-size: 19px; font-weight: 600; }
+.stat .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+td { padding: 4px 0; vertical-align: top; }
+td:first-child { color: var(--muted); padding-right: 14px; white-space: nowrap; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 3px 11px 3px 5px;
+  font-size: 12px;
+}
+.chip .dot { width: 13px; height: 13px; border-radius: 4px; display: inline-block; }
+.chip .n { color: var(--muted); }
+
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  margin-right: 6px;
+}
+.tag.jump { color: var(--good); border-color: #23502e; background: #12261a; }
+.delta { color: var(--good); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ansatz gallery — <span class="mono">transfer-sn</span></h1>
+  <p>
+    The variational blocks behind the 8-qubit graph-connectedness classifier: the ShinkaEvolve
+    seed, the hand-designed <span class="mono">S<sub>8</sub></span>-equivariant baseline, and the
+    best circuit found by each ensemble run &mdash; the OpenRouter arms (disjoint three-vendor
+    rosters at tiered reasoning effort) and the earlier Azure arms. Gates are colored by
+    <em>parameter family</em>, so gates sharing one trainable angle share one color — which is
+    exactly what makes a circuit permutation-equivariant.
+  </p>
+</header>
+
+<div class="layout">
+  <nav id="nav"></nav>
+  <main>
+    <h2 id="title"></h2>
+    <div class="subtitle" id="subtitle"></div>
+    <div class="stats" id="stats"></div>
+    <div class="split">
+      <div class="left">
+        <div class="card">
+          <h3>One ansatz block</h3>
+          <div class="scroller"><svg class="circuit" id="svg"></svg></div>
+          <div class="legend" id="legend"></div>
+        </div>
+      </div>
+      <div class="right" id="panel"></div>
+    </div>
+  </main>
+</div>
+
+<script src="circuits_data.js"></script>
+<script>
+// ---------------------------------------------------------------- narrative
+// Per-circuit prose. Data (gates, metrics, patch notes) comes from
+// circuits_data.js; this is the human explanation of what each one *is*.
+const NOTES = {
+  "seed": {
+    origin: "Written by hand as the starting point of every run. Not evolved.",
+    body: `<p>The ansatz ShinkaEvolve is handed at generation 0. Each of the 8 wires gets its
+      own <span class="mono">RY</span> and its own pre/post <span class="mono">RZ</span>, entangled by a
+      fixed nearest-neighbour <span class="mono">CZ</span> chain: <b>24 independent angles per block</b>,
+      146 parameters in total once the block is repeated 3 uploads x 2 repeats and the two readout
+      calibration parameters are added.</p>
+      <p>Nothing here knows about the task's symmetry. Every wire is free to behave differently, so the
+      circuit can and does memorise the fixed random scrambling of qubit indices: it reaches 86.7% test
+      accuracy with a <b>0.071 train-test gap</b>, the largest of any circuit on this page. It defines
+      the zero point of the rescaled score.</p>`
+  },
+  "baseline": {
+    origin: "Written by hand from the answer key. Not evolved — this is the “we already know the answer” comparison point.",
+    body: `<p>The records are the 28 upper-triangle adjacency bits of an 8-vertex graph and the label is
+      connectedness, so relabelling the vertices permutes qubits and features jointly and never changes
+      the answer: the true function is invariant under the full symmetric group
+      <span class="mono">S<sub>8</sub></span>. Under that group the 8 wires form a single orbit and the
+      C(8,2)=28 wire pairs form a single orbit.</p>
+      <p>So this block uses <b>one shared angle per orbit</b>: one <span class="mono">RY</span> on all 8
+      wires, one <span class="mono">CRZ</span> across all 28 pairs (the complete graph, so the entangling
+      structure is itself permutation-symmetric), one closing <span class="mono">RZ</span>.
+      <b>3 angles per block, 20 parameters total.</b> The result is exactly equivariant by construction,
+      not approximately so.</p>
+      <p>It scores 0.675 on the rescaled scale with a train-test gap of 0.002. Knowing the symmetry, with
+      no search at all, closes most of the distance to the best evolved solutions — a model that cannot
+      represent an asymmetric answer cannot overfit the scrambling.</p>`
+  },
+
+  // ---- OpenRouter arms (disjoint 3-vendor rosters, tiered reasoning effort) ----
+  "weak-gen38": {
+    origin: "Best program of the OpenRouter weak arm (gpt-5.4-nano / gemini-3.1-flash-lite / qwen3-coder, effort low), generation 38. Proposed by qwen3-coder.",
+    body: `<p>The weak arm never found the symmetry, and still scored <b>0.834</b> — more than
+      triple the mid arm and above the hand-designed baseline's 0.675. It gets there by a different
+      route: <b>8 angles per block, 50 parameters</b>, with the wires split into two half-orbits
+      (<span class="mono">ry_h</span>/<span class="mono">ry_h2</span>, 4 wires each) rather than one
+      tied family of 8.</p>
+      <p>That structure is <em>not</em> <span class="mono">S<sub>8</sub></span>-equivariant — a half-split
+      is only invariant under S<sub>4</sub>×S<sub>4</sub>. But it is symmetric enough: 95.2% test accuracy
+      at a 0.005 gap. The patch replaced every fixed <span class="mono">CZ</span> with a learnable
+      <span class="mono">CRZ</span> on two shared scales, a ring and a chord family.</p>
+      <p>Notable: the author is <span class="mono">qwen3-coder</span>, the one model in the whole
+      experiment that is <b>not</b> a reasoning model and received no effort setting at all.</p>`
+  },
+  "mid-gen20": {
+    origin: "Best program of the OpenRouter mid arm (gpt-5.4-mini / gemini-3-flash / claude-haiku-4.5, effort medium), generation 20. Proposed by gpt-5.4-mini.",
+    body: `<p>The weakest result on this page, and the most informative failure. Score <b>0.273</b>,
+      test accuracy 86.7% — barely above the seed's 86.7% — with a <b>0.062 train-test gap</b>, nearly
+      the seed's 0.071.</p>
+      <p>The structure shows why. Instead of tying angles across an orbit, it splits the 8 wires into
+      <b>four groups of two</b> (<span class="mono">ry_g0..g3</span>, <span class="mono">rz_g0..g3</span>)
+      and adds four <em>singleton</em> controlled rotations —
+      <span class="mono">crx_a</span>, <span class="mono">cry_a</span>, <span class="mono">crz_a</span>,
+      <span class="mono">cry_b</span>, each driving exactly one gate. That is <b>12 angles per block,
+      74 parameters</b>: the highest count of any evolved circuit here, and the least symmetric.</p>
+      <p>It went the wrong way down the one axis that matters, and no amount of further search
+      recovered: this was still the arm's best at generation 49.</p>`
+  },
+  "frontier-gen0": {
+    origin: "Generation 0 of the OpenRouter frontier arm: the unmodified seed.",
+    body: `<p>Identical to the seed circuit at the top of this page. 24 free angles per block,
+      146 parameters, score 0.000.</p>`
+  },
+  "frontier-gen5": {
+    origin: "OpenRouter frontier arm, generation 5. Proposed by gpt-5.6-sol at xhigh reasoning.",
+    jump: "+0.784",
+    body: `<p><b>An independent replication of the Azure run's discovery.</b> This scored
+      <span class="mono">0.7840443598490842</span> — identical to all 16 digits to
+      <span class="mono">az-frontier-gen5</span>, at the same generation, from the same model, in a run
+      with a completely different pool (opus-4.6 + gemini-3.1-pro instead of DeepSeek + Mistral).</p>
+      <p>Structurally the two are the same circuit: 3 tied families of 8
+      (<span class="mono">RY</span>, <span class="mono">RZ</span>, <span class="mono">RX</span>), a fixed
+      <span class="mono">CZ</span> on all 28 pairs, 20 parameters. Only the parameter <em>names</em>
+      differ — <span class="mono">collective_ry/rz/rx</span> here versus
+      <span class="mono">mix_y/phase_z/readout_x</span> there — and the patch names differ too
+      (<span class="mono">symmetric_graph_mixer</span> vs
+      <span class="mono">permutation_equivariant_mixer</span>).</p>
+      <p>The proposer's stated reasoning: a "permutation-equivariant, QAOA-inspired graph mixer", with
+      every angle shared across all eight qubits and a commuting complete-graph
+      <span class="mono">CZ</span> layer. It was never told the data is graphs.</p>`
+  },
+  "frontier-gen10": {
+    origin: "OpenRouter frontier arm, generation 10. Proposed by gpt-5.6-sol.",
+    jump: "+0.000",
+    body: `<p>A deliberate no-op, and the model knew it. The patch reorders the 28-gate complete-graph
+      <span class="mono">CZ</span> layer into <b>seven disjoint perfect matchings</b>. Because all
+      <span class="mono">CZ</span> gates commute, this leaves the unitary, the parameter count and the
+      score exactly unchanged — 0.7840443598490842 again.</p>
+      <p>The stated purpose was to cut circuit depth while preserving the model. It is a refactor, not
+      a search step, and it is what makes the next two jumps possible: once the entangler is a sequence
+      of matchings you can insert a mixer <em>between</em> them, which is precisely what generation 28
+      does.</p>`
+  },
+  "frontier-gen28": {
+    origin: "OpenRouter frontier arm, generation 28. Proposed by gpt-5.6-sol.",
+    jump: "+0.285",
+    body: `<p>The big jump, and it exploits the refactor. A trainable collective
+      <span class="mono">RY</span>/<span class="mono">RX</span> mixer is inserted <b>after the fourth
+      perfect matching</b>, i.e. in the middle of what used to be one monolithic diagonal layer. Since
+      the CZ gates all commute, splitting them and interleaving a non-commuting rotation changes the
+      reachable states without touching the symmetry.</p>
+      <p>6 tied families, 38 parameters, 97.0% test accuracy at a 0.006 gap. Every family is still tied
+      across all 8 wires, so full <span class="mono">S<sub>8</sub></span>-equivariance is preserved
+      while the parameter count nearly doubles.</p>`
+  },
+  "frontier-gen39": {
+    origin: "OpenRouter frontier arm, generation 39 — the best circuit this run found. A crossover patch by gpt-5.6-sol.",
+    jump: "+0.032",
+    body: `<p>The winner at <b>1.100</b>, and like the Azure run's winner it improves by giving a
+      parameter back. The two independent midpoint families from generation 28 are merged into
+      <b>one shared angle driving both an <span class="mono">RY</span> and an
+      <span class="mono">RX</span></b> (16 gates, one parameter): 5 families, <b>32 parameters</b>,
+      down from 38.</p>
+      <p>98.5% test accuracy, a 0.003 gap. The same "tie two families into one" move that took the
+      Azure run from 0.970 to 1.200 — found independently, from a different intermediate structure.</p>
+      <p>It does not beat the Azure run's 1.200, but that run had 199 generations against this one's 50.</p>`
+  },
+  "az-weak-gen177": {
+    origin: "Best program of the weak-tier ensemble run (gpt-5-mini / grok-code-fast-1 / Phi-4), found at generation 177 of 198.",
+    body: `<p>The weak ensemble converged on the same <b>20-parameter budget</b> as the hand baseline, but
+      it took until generation 177 to get there and it arrived at a different structure: two tied
+      single-qubit families (<span class="mono">RY</span> and <span class="mono">RX</span>, 8 gates each)
+      plus a single tied <span class="mono">CRZ</span> family on only 10 pairs — a ring with a few bridge
+      chords rather than the complete graph.</p>
+      <p>That sparse coupling set is <em>not</em> closed under <span class="mono">S<sub>8</sub></span>, so
+      unlike the hand baseline this circuit is only approximately equivariant. It still beats the baseline
+      (0.937 vs 0.920 test accuracy, score 0.750 vs 0.675), which is the first hint that exact equivariance
+      is not the whole story.</p>`
+  },
+  "az-mid-gen52": {
+    origin: "Best program of the mid-tier ensemble run (gpt-5.4 / Mistral-Large-3 / DeepSeek-V4-Pro), found at generation 52.",
+    body: `<p>Same 20-parameter budget again, reached far faster than the weak tier. The structure is a
+      palindrome: a tied <span class="mono">RY</span> family used <b>twice</b> (16 gates on one angle,
+      opening and closing the block), a tied <span class="mono">RX</span> family in the middle, and a tied
+      <span class="mono">CRZ</span> family on 8 pairs, mirrored around the centre and padded with fixed
+      unparametrised <span class="mono">CZ</span> gates.</p>
+      <p>0.930 test accuracy at a 0.008 gap and, notably, convergence in <b>60 optimizer steps</b> — the
+      mirrored layout is much easier to train than the weak tier's 150 or the hand baseline's 270.</p>`
+  },
+  "az-frontier-gen0": {
+    origin: "Generation 0 of the frontier run: the unmodified seed.",
+    body: `<p>Where the frontier-ensemble lineage starts — identical to the seed circuit above.
+      24 free angles per block, 146 parameters, score 0.000.</p>`
+  },
+  "az-frontier-gen5": {
+    origin: "Frontier run, generation 5. Proposed by gpt-5.6-sol.",
+    jump: "+0.784",
+    body: `<p>The whole symmetry discovery happens in one step, five generations in, from a model that was
+      never told what the data is. The patch collapses all 24 free angles into <b>3 tied families</b> —
+      one <span class="mono">RY</span>, one <span class="mono">RZ</span>, one <span class="mono">RX</span>,
+      each shared across all 8 wires — and replaces the 7-gate <span class="mono">CZ</span> chain with a
+      fixed <span class="mono">CZ</span> on <b>all 28 pairs</b>, the complete graph, which is itself the
+      only permutation-symmetric choice of connectivity.</p>
+      <p>146 parameters to 20, and the score goes 0.000 to 0.784 in a single patch. Everything afterwards
+      is refinement of this idea.</p>`
+  },
+  "az-frontier-gen21": {
+    origin: "Frontier run, generation 21. Proposed by DeepSeek-V4-Pro.",
+    jump: "+0.000",
+    body: `<p>A plateau worth including: a different model in the pool tried to push the sharing further
+      (its own patch name is <span class="mono">aggressive_parameter_sharing_nunique1</span>) and landed on
+      a block whose spec is <b>byte-identical</b> to generation 5's — same families, same gates, same wires,
+      and therefore the same score to every decimal place.</p>
+      <p>Sixteen generations of search bought nothing. The tied-family idea from generation 5 was already
+      at a local optimum, and getting off it needed a change of gate <em>type</em>, not more sharing.</p>`
+  },
+  "az-frontier-gen35": {
+    origin: "Frontier run, generation 35. Proposed by gpt-5.6-sol.",
+    jump: "+0.186",
+    body: `<p>The escape from the plateau, and it comes from non-commutativity rather than symmetry. The
+      pre-entangler <span class="mono">RZ</span> family is replaced by <span class="mono">RX</span>, and the
+      post-entangler mixer is expanded to an <span class="mono">RY</span> followed by an
+      <span class="mono">RZ</span>. The proposer's reasoning: the feature map and the
+      <span class="mono">CZ</span> network are both diagonal, so a diagonal rotation before them does nothing
+      — you need complementary non-commuting axes to turn encoded ZZ phases into measurable populations.</p>
+      <p>This spends a fourth parameter family (26 parameters) to buy 0.965 test accuracy, score 0.970.
+      It is the only point on the lineage that goes <em>above</em> the 20-parameter budget.</p>`
+  },
+  "az-frontier-gen77": {
+    origin: "Frontier run, generation 77 — the best circuit found anywhere on this task.",
+    jump: "+0.230",
+    body: `<p>The winner, and it wins by giving the fourth parameter back. The two post-entangler families
+      from generation 35 are tied to <b>one shared angle driving both an <span class="mono">RY</span> and
+      an <span class="mono">RZ</span></b> (16 gates, one parameter), keeping the non-commuting Euler
+      sandwich that made generation 35 work while returning to the 20-parameter budget the entire field
+      converged on.</p>
+      <p>There are <b>no parametrised two-qubit gates at all</b>: all entanglement comes from fixed
+      <span class="mono">CZ</span>/<span class="mono">CNOT</span> structure. 98.0% test accuracy, a 0.002
+      gap, convergence in 180 steps, rescaled score <b>1.200</b> — well past both the previous best evolved
+      program (0.948) and the hand-designed baseline (0.675).</p>
+      <p>That gap is the point of the whole comparison. Knowing the symmetry gets you to 0.675 for free.
+      The remaining gain is not about respecting <span class="mono">S<sub>8</sub></span> — every circuit
+      here does that — it is about <em>which</em> single-qubit family to tie and how to lay out the fixed
+      entanglement, a second-order choice a human given only "it's S<sub>8</sub>-symmetric" would not
+      obviously get right.</p>`
+  }
+};
+
+const GROUPS = [
+  { label: "Reference circuits", keys: ["seed", "baseline"] },
+  { label: "Best of each OpenRouter arm", keys: ["weak-gen38", "mid-gen20", "frontier-gen39"] },
+  { label: "OpenRouter frontier — how it got there", keys: ["frontier-gen0", "frontier-gen5", "frontier-gen10", "frontier-gen28", "frontier-gen39"] },
+  { label: "Best of each Azure ensemble run", keys: ["az-weak-gen177", "az-mid-gen52", "az-frontier-gen77"] },
+  { label: "Azure frontier run — how it got there", keys: ["az-frontier-gen0", "az-frontier-gen5", "az-frontier-gen21", "az-frontier-gen35", "az-frontier-gen77"] }
+];
+
+const NAV_LABEL = {
+  "seed": ["Seed ansatz", "24 angles/block · 146 params"],
+  "baseline": ["Hand-designed baseline", "S₈-equivariant · 20 params"],
+  "weak-gen38": ["Weak ensemble", "gen 38 · score 0.834"],
+  "mid-gen20": ["Mid ensemble", "gen 20 · score 0.273"],
+  "frontier-gen39": ["Frontier ensemble", "gen 39 · score 1.100"],
+  "frontier-gen0": ["gen 0 — seed", "score 0.000"],
+  "frontier-gen5": ["gen 5 — symmetry found", "score 0.784 (+0.784)"],
+  "frontier-gen10": ["gen 10 — commuting refactor", "score 0.784 (+0.000)"],
+  "frontier-gen28": ["gen 28 — midpoint mixer", "score 1.069 (+0.285)"],
+  "az-weak-gen177": ["Weak ensemble", "gen 177 · score 0.750"],
+  "az-mid-gen52": ["Mid ensemble", "gen 52 · score 0.796"],
+  "az-frontier-gen77": ["Frontier ensemble", "gen 77 · score 1.200"],
+  "az-frontier-gen0": ["gen 0 — seed", "score 0.000"],
+  "az-frontier-gen5": ["gen 5 — symmetry found", "score 0.784 (+0.784)"],
+  "az-frontier-gen21": ["gen 21 — plateau", "score 0.784 (+0.000)"],
+  "az-frontier-gen35": ["gen 35 — non-commuting axes", "score 0.970 (+0.186)"],
+};
+NAV_LABEL["frontier-gen77-lineage"] = ["gen 77 — winner", "score 1.200 (+0.230)"];
+
+const TITLES = {
+  "seed": "Seed ansatz",
+  "baseline": "Hand-designed S₈-equivariant baseline",
+  "weak-gen38": "OpenRouter weak ensemble — best (generation 38)",
+  "mid-gen20": "OpenRouter mid ensemble — best (generation 20)",
+  "frontier-gen0": "OpenRouter frontier lineage — generation 0",
+  "frontier-gen5": "OpenRouter frontier lineage — generation 5",
+  "frontier-gen10": "OpenRouter frontier lineage — generation 10",
+  "frontier-gen28": "OpenRouter frontier lineage — generation 28",
+  "frontier-gen39": "OpenRouter frontier ensemble — best (generation 39)",
+  "az-weak-gen177": "Weak ensemble — best (generation 177)",
+  "az-mid-gen52": "Mid ensemble — best (generation 52)",
+  "az-frontier-gen0": "Frontier lineage — generation 0",
+  "az-frontier-gen5": "Frontier lineage — generation 5",
+  "az-frontier-gen21": "Frontier lineage — generation 21",
+  "az-frontier-gen35": "Frontier lineage — generation 35",
+  "az-frontier-gen77": "Frontier ensemble — best (generation 77)"
+};
+
+// Colorblind-safe family palette; index = order of first appearance.
+const FAMILY_COLORS = ["#4c8dff", "#e8833a", "#3fb27f", "#c86ac8", "#d9b03c", "#4fb6c9", "#e06666", "#8f8fd6"];
+const FIXED_COLOR = "#5b6675";
+
+const BY_KEY = Object.fromEntries(window.CIRCUITS.map(c => [c.key, c]));
+
+// ------------------------------------------------------------------ layout
+// Greedy slot packing: each gate takes the earliest column in which every wire
+// it spans (including wires it passes over, for two-qubit gates) is free.
+function packColumns(gates) {
+  const busy = [];   // busy[col] = Set of occupied wires
+  const placed = [];
+  for (const g of gates) {
+    const lo = Math.min(...g.wires), hi = Math.max(...g.wires);
+    let col = 0;
+    for (;; col++) {
+      if (!busy[col]) busy[col] = new Set();
+      let free = true;
+      for (let w = lo; w <= hi; w++) if (busy[col].has(w)) { free = false; break; }
+      if (free) break;
+    }
+    for (let w = lo; w <= hi; w++) busy[col].add(w);
+    placed.push({ ...g, col });
+  }
+  return { placed, nCols: busy.length };
+}
+
+function familyColors(circuit) {
+  const map = {};
+  let i = 0;
+  for (const g of circuit.gates) {
+    if (g.param && !(g.param in map)) map[g.param] = FAMILY_COLORS[i++ % FAMILY_COLORS.length];
+  }
+  return map;
+}
+
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, text) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (text != null) n.textContent = text;
+  return n;
+}
+
+function drawCircuit(circuit) {
+  const N_WIRES = 8;
+  const COL_W = 40, ROW_H = 40, PAD_L = 46, PAD_T = 26, PAD_B = 16, PAD_R = 20;
+  const { placed, nCols } = packColumns(circuit.gates);
+  const colors = familyColors(circuit);
+
+  const W = PAD_L + nCols * COL_W + PAD_R;
+  const H = PAD_T + N_WIRES * ROW_H + PAD_B;
+  const svg = document.getElementById("svg");
+  svg.textContent = "";
+  svg.setAttribute("width", W);
+  svg.setAttribute("height", H);
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+  const y = w => PAD_T + w * ROW_H + ROW_H / 2;
+  const x = c => PAD_L + c * COL_W + COL_W / 2;
+
+  // wires + labels
+  for (let w = 0; w < N_WIRES; w++) {
+    svg.appendChild(el("line", { x1: PAD_L - 14, y1: y(w), x2: W - PAD_R + 6, y2: y(w), stroke: "var(--wire)", "stroke-width": 1.4 }));
+    const t = el("text", { x: PAD_L - 22, y: y(w) + 4, fill: "var(--muted)", "font-size": 12, "text-anchor": "end", "font-family": "ui-monospace, monospace" }, "q" + w);
+    svg.appendChild(t);
+  }
+
+  for (const g of placed) {
+    const col = colors[g.param] || FIXED_COLOR;
+    const cx = x(g.col);
+    // Each gate is one <g>, so hovering anywhere on the glyph shows its tooltip.
+    const grp = el("g", {});
+    const box = (wire, label) => {
+      grp.appendChild(el("rect", { x: cx - 15, y: y(wire) - 12, width: 30, height: 24, rx: 5, fill: col, opacity: .9 }));
+      grp.appendChild(el("text", { x: cx, y: y(wire) + 4.5, fill: "#0e1116", "font-size": 11, "font-weight": 700, "text-anchor": "middle", "font-family": "ui-monospace, monospace" }, label));
+    };
+
+    if (g.wires.length === 2) {
+      const [a, b] = g.wires;
+      grp.appendChild(el("line", { x1: cx, y1: y(a), x2: cx, y2: y(b), stroke: col, "stroke-width": 2 }));
+      grp.appendChild(el("circle", { cx, cy: y(a), r: 4.5, fill: col }));
+
+      if (g.gate === "CZ") {
+        grp.appendChild(el("circle", { cx, cy: y(b), r: 4.5, fill: col }));
+      } else if (g.gate === "CNOT") {
+        grp.appendChild(el("circle", { cx, cy: y(b), r: 8, fill: "var(--surface)", stroke: col, "stroke-width": 2 }));
+        grp.appendChild(el("line", { x1: cx - 8, y1: y(b), x2: cx + 8, y2: y(b), stroke: col, "stroke-width": 2 }));
+        grp.appendChild(el("line", { x1: cx, y1: y(b) - 8, x2: cx, y2: y(b) + 8, stroke: col, "stroke-width": 2 }));
+      } else {
+        box(b, g.gate.slice(1));  // CRX / CRY / CRZ: control dot + labelled target box
+      }
+    } else {
+      box(g.wires[0], g.gate);
+    }
+
+    grp.appendChild(el("title", {}, g.param
+      ? `${g.gate} on q${g.wires.join(", q")} — parameter "${g.param}"`
+      : `${g.gate} on q${g.wires.join(", q")} — fixed, no parameter`));
+    svg.appendChild(grp);
+  }
+
+  // legend
+  const legend = document.getElementById("legend");
+  legend.textContent = "";
+  for (const f of circuit.stats.families) {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.innerHTML = `<span class="dot" style="background:${colors[f.param]}"></span>
+      <span class="mono">${f.param}</span>
+      <span class="n">${f.gates.join("+")} × ${f.count}</span>`;
+    legend.appendChild(chip);
+  }
+  const nFixed = circuit.gates.filter(g => !g.param).length;
+  if (nFixed) {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.innerHTML = `<span class="dot" style="background:${FIXED_COLOR}"></span>
+      <span>fixed entanglers</span> <span class="n">× ${nFixed}</span>`;
+    legend.appendChild(chip);
+  }
+}
+
+// ------------------------------------------------------------------ panels
+const fmt = (v, d = 3) => v == null ? "—" : Number(v).toFixed(d);
+
+function render(key) {
+  const c = BY_KEY[key];
+  const note = NOTES[key] || {};
+
+  document.getElementById("title").textContent = TITLES[key] || c.title;
+
+  const bits = [];
+  if (c.program_id) bits.push(`<span class="mono">${c.program_id.slice(0, 8)}</span>`);
+  bits.push(`<span class="mono">${c.source}</span>`);
+  if (c.model_name) bits.push(`proposed by <span class="mono">${c.model_name}</span>`);
+  document.getElementById("subtitle").innerHTML = bits.join(" &middot; ");
+
+  const s = c.stats, m = c.metrics || {};
+  const stats = [
+    ["params", s.n_params, 0],
+    ["angles / block", s.n_params_per_block, 0],
+    ["gates / block", s.n_gates, 0],
+  ];
+  if (c.score != null) stats.push(["score", c.score, 3]);
+  if (m.test_accuracy_mean != null) stats.push(["test acc.", m.test_accuracy_mean, 3]);
+  if (m.generalization_gap_mean != null) stats.push(["train-test gap", m.generalization_gap_mean, 3]);
+  if (m.convergence_step_mean != null) stats.push(["converged @", m.convergence_step_mean, 0]);
+  document.getElementById("stats").innerHTML = stats
+    .map(([k, v, d]) => `<div class="stat"><div class="v">${Number(v).toFixed(d)}</div><div class="k">${k}</div></div>`)
+    .join("");
+
+  let html = "";
+  html += `<div class="card"><h3>What this circuit is</h3>`;
+  if (note.jump) html += `<p><span class="tag jump">score jump ${note.jump}</span></p>`;
+  html += `<p><b>${note.origin || ""}</b></p>${note.body || ""}</div>`;
+
+  if (c.patch_name && c.patch_type !== "initial") {
+    html += `<div class="card"><h3>The proposer's own patch note</h3>
+      <p><b class="mono">${c.patch_name}</b></p>
+      <p style="color:var(--muted)">${c.patch_description || ""}</p></div>`;
+  }
+
+  if (Object.keys(m).length) {
+    html += `<div class="card"><h3>Evaluated metrics</h3><table>
+      <tr><td>test accuracy</td><td>${fmt(m.test_accuracy_mean)}</td></tr>
+      <tr><td>validation accuracy</td><td>${fmt(m.validation_accuracy_mean)}</td></tr>
+      <tr><td>train–test gap</td><td>${fmt(m.generalization_gap_mean)}</td></tr>
+      <tr><td>validation loss</td><td>${fmt(m.validation_loss_mean)}</td></tr>
+      <tr><td>circuit depth</td><td>${fmt(m.depth_mean, 0)}</td></tr>
+      <tr><td>total gates (full circuit)</td><td>${fmt(m.gate_count_mean, 0)}</td></tr>
+      <tr><td>converged at step</td><td>${fmt(m.convergence_step_mean, 0)}</td></tr>
+      </table></div>`;
+  }
+
+  html += `<div class="card"><h3>Parameter families</h3>
+    <p style="color:var(--muted)">Gates sharing one entry share one trainable angle. Tying a family
+    across all 8 wires (or all 28 pairs) is what makes a block permutation-equivariant.</p>
+    <table>${c.stats.families.map(f =>
+      `<tr><td class="mono">${f.param}</td><td>${f.gates.join(" + ")} on ${f.count} gate${f.count > 1 ? "s" : ""}</td></tr>`).join("")}
+    </table></div>`;
+
+  html += `<div class="card"><h3>How the block is used</h3>
+    <p>The fixed architecture encodes each of the 28 features as an <span class="mono">IsingZZ</span>
+    phase coupling on its qubit pair, then applies this block. That upload-plus-block pattern repeats
+    <b>3 uploads × 2 repeats = 6 times</b>, with a fresh copy of the angles each time, plus 2 readout
+    calibration parameters — hence ${s.n_params_per_block} × 6 + 2 = ${s.n_params} parameters.
+    Only the block above is under evolutionary control; everything else is held fixed so candidates are
+    compared on the same task.</p></div>`;
+
+  document.getElementById("panel").innerHTML = html;
+  drawCircuit(c);
+
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.key === key));
+  location.hash = key;
+}
+
+// -------------------------------------------------------------------- init
+const nav = document.getElementById("nav");
+for (const grp of GROUPS) {
+  const h = document.createElement("div");
+  h.className = "group";
+  h.textContent = grp.label;
+  nav.appendChild(h);
+  for (const key of grp.keys) {
+    if (!BY_KEY[key]) continue;
+    const [label, sub] = NAV_LABEL[key] || [key, ""];
+    const b = document.createElement("button");
+    b.dataset.key = key;
+    b.innerHTML = `${label}<span class="sub">${sub}</span>`;
+    b.onclick = () => render(key);
+    nav.appendChild(b);
+  }
+}
+
+render(BY_KEY[location.hash.slice(1)] ? location.hash.slice(1) : "seed");
+</script>
+</body>
+</html>

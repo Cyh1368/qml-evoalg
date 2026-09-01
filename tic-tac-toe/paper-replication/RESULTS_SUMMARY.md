@@ -193,10 +193,39 @@ instance should not be over-interpreted as physically meaningful.
 
 ---
 
+## 07-03 meeting follow-up (cemoid track)
+
+Four subtasks from `../meeting-notes-07-03.md`, all run on Bouchet (720 tasks, 0 failures).
+Together they **revise Experiment 2's reading**: the inserted-gate drift reported above is
+an artifact of continued training along a degenerate flat direction, not evidence that
+added gates capture unexploited capacity.
+
+| Subtask | Report | Headline |
+|---|---|---|
+| Rotation-angle magnitude baseline | `ANGLE_MAGNITUDE_REPORT.md` | Original angles are O(1 rad) (mean 0.824); inserted gates sit at 0.039 rad, median exactly 0 — **21× smaller**. |
+| Joint no-gate control | `JOINT_NOGATE_BASELINE_REPORT.md` | Extra training with **no gates** drifts 0.0202 rad vs joint's 0.0380 — **indistinguishable (p = 0.20)**. Drift is not gate-caused. |
+| Perturbation stability | `PERTURBATION_STABILITY_REPORT.md` | Optimizer pulls injected noise onto an **absolute floor** (~0.05–0.09 rad) for any r ≤ 1.0; ε-ball boundary at **r ≈ 0.5–1.0 rad**. |
+| Degeneracy / latent-space PCA | `DEGENERACY_PCA_REPORT.md` | Median effective dimensionality **1.15 of 54**. The ansatz is over-parameterised ~47×. |
+
+**Superseded claim.** Row 4 of *Key Findings* above ("Is the trained solution uniquely
+optimal? **No** — gates drift to non-zero values") reached the right conclusion for the
+wrong reason. The correct statement is: the solution is **not unique because the loss
+landscape is degenerate along ~1 flat direction**, and the observed gate drift is a
+symptom of that degeneracy plus continued training — not an independent measurement of it.
+Under the frozen protocol, gates initialised at 0 stay at 0 (median |θ| = 0.000) and buy
+no accuracy.
+
+---
+
 ## Reproducibility
 
 | Item | Path |
 |---|---|
+| 07-03 follow-up: status / fetch | `bash cluster/deploy_and_run.sh meeting-{status,fetch}` |
+| Joint no-gate raw results | `joint_nogate_results/base_{00-09}.json` |
+| Perturbation raw results | `perturbation_results/{random_gate,nearzero_gate,delta_weight}/r*_base*.json` |
+| Degeneracy raw results | `degeneracy_results/**/*.json` (500) |
+| Base optima (shared starting points) | `base_optima/seed_{00-09}.json` |
 | L/P sweep raw histories | `histories/history_l{1-7}_p{1-7}.json` |
 | L/P sweep script | `sweep.py` |
 | 50-seed raw histories | `robustness_histories/seed_000.json … seed_049.json` |

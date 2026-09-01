@@ -79,7 +79,7 @@
   a.silent { color: inherit; }
 
   /* ---------- layout shell ---------- */
-  .app { max-width: 1360px; margin: 0 auto; padding: 16px 20px 48px; }
+  .app { max-width: 1720px; margin: 0 auto; padding: 16px 20px 48px; }
 
   .topbar {
     display: flex;
@@ -165,8 +165,25 @@
   /* ---------- score chart ---------- */
   .score-chart-wrap { width: 100%; }
   .score-svg { display: block; width: 100%; height: 160px; }
-  .chart-legend-inline { display: flex; gap: 14px; font-size: 12px; color: var(--ink-secondary); align-items: center; }
+  .chart-legend-inline { display: flex; gap: 14px; font-size: 12px; color: var(--ink-secondary); align-items: center; flex-wrap: wrap; }
   .chart-legend-inline .swatch-line { display: inline-block; width: 16px; height: 2px; background: var(--accent); vertical-align: middle; margin-right: 5px; }
+  .chart-clip-note { font-size: 11.5px; margin-top: 4px; }
+
+  .y-range { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-secondary); }
+  .y-range input {
+    font: inherit;
+    font-size: 12px;
+    width: 78px;
+    padding: 4px 6px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--page);
+    color: var(--ink-primary);
+    font-variant-numeric: tabular-nums;
+  }
+  .y-range input:focus { outline: none; border-color: var(--accent); }
+  .y-range input.invalid { border-color: var(--bad); }
+  .y-range .btn { padding: 4px 9px; font-size: 12px; }
 
   .axis-line { stroke: var(--baseline); stroke-width: 1; }
   .grid-line { stroke: var(--gridline); stroke-width: 1; }
@@ -177,9 +194,6 @@
   .score-dot.selected { stroke: var(--lineage-accent); stroke-width: 2.5; }
 
   /* ---------- tree ---------- */
-  .tree-section { display: grid; grid-template-columns: 1fr 300px; gap: 14px; align-items: start; }
-  @media (max-width: 900px) { .tree-section { grid-template-columns: 1fr; } }
-
   .tree-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .tree-controls .hint { font-size: 11px; color: var(--ink-muted); }
 
@@ -191,11 +205,15 @@
   .legend-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
   .legend-dot.dashed { border: 2px dashed var(--ink-muted); background: transparent; }
   .legend-dot.solid { background: var(--accent); }
+  .legend-dash { display: inline-block; width: 22px; border-top: 2px dashed; vertical-align: middle; }
 
   .tree-wrap {
     position: relative;
     width: 100%;
-    height: 440px;
+    /* fills whatever height the workspace row gives it (the tree card is a flex
+       column); the min-height is the floor for the stacked narrow layout */
+    flex: 1 1 auto;
+    min-height: 320px;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--page);
@@ -207,6 +225,9 @@
 
   .edge { fill: none; stroke: var(--baseline); stroke-width: 1.5; opacity: 0.7; }
   .edge.lineage { stroke: var(--lineage-accent); stroke-width: 2.5; opacity: 1; }
+  /* inspiration links are drawn only for the selected node — all of them at once
+     would be a hairball, and the question they answer is "what fed into this one" */
+  .insp-edge { fill: none; stroke-width: 2; stroke-dasharray: 6,4; opacity: 0.95; }
 
   .node { cursor: pointer; }
   .node-halo { opacity: 0; transition: opacity .12s ease; }
@@ -216,8 +237,13 @@
   .node:hover .node-core { filter: brightness(1.08); }
   .node.incorrect .node-core { }
 
-  .tick-label { fill: var(--ink-muted); font-size: 10px; }
+  .tick-label { fill: var(--ink-secondary); font-size: 10px; }
+  .tick-sublabel { fill: var(--ink-muted); font-size: 9px; }
   .tick-mark { stroke: var(--gridline); stroke-width: 1; }
+  /* the depth axis is drawn in screen space, pinned to the top of the viewport,
+     so it stays legible at any zoom instead of shrinking with the tree */
+  .axis-band { fill: var(--page); }
+  .axis-band-edge { stroke: var(--border); stroke-width: 1; }
 
   .empty-state, .error-state {
     position: absolute; inset: 0;
@@ -228,7 +254,7 @@
   .error-state { color: var(--bad); }
 
   /* ---------- lineage panel ---------- */
-  .lineage-body { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
+  .lineage-body { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
   .lineage-card {
     text-align: left;
     border: 1px solid var(--border);
@@ -250,6 +276,8 @@
   .lineage-card .lc-delta { font-variant-numeric: tabular-nums; }
   .lineage-card .lc-delta.up { color: var(--good); }
   .lineage-card .lc-delta.down { color: var(--bad); }
+  .lineage-card .lc-type { display: inline-flex; align-items: center; gap: 4px; }
+  .lineage-card .lc-type .ring-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
   .lineage-arrow { text-align: center; color: var(--ink-muted); font-size: 11px; margin: -3px 0; }
 
   /* ---------- patch panel ---------- */
@@ -273,6 +301,36 @@
   .patch-body h3 { font-size: 20px; margin-bottom: 4px; }
   .patch-sub { font-size: 12px; color: var(--ink-muted); margin-bottom: 10px; display: flex; gap: 12px; flex-wrap: wrap; }
   .patch-desc { font-size: 14.5px; white-space: pre-wrap; margin-bottom: 14px; max-width: 90ch; }
+
+  /* ---------- provenance: what this patch was built from ---------- */
+  .sources {
+    display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: flex-start;
+    padding: 10px 12px; margin-bottom: 12px;
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+  }
+  .src-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .src-role {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--ink-muted); white-space: nowrap;
+  }
+  .src-chip {
+    display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px;
+    text-align: left; font: inherit; font-size: 12.5px; cursor: pointer;
+    border: 1px solid var(--border); border-left-width: 3px; border-radius: 7px;
+    padding: 4px 10px; background: var(--surface-1); color: var(--ink-primary);
+  }
+  .src-chip:hover { border-color: var(--accent); }
+  .src-chip .sc-name { font-weight: 600; }
+  .src-chip .sc-meta { font-size: 11px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
+  .src-none { font-size: 12.5px; color: var(--ink-muted); }
+  .sources-note { font-size: 11.5px; color: var(--ink-muted); flex-basis: 100%; margin: 0; }
+
+  .diff-source { font-size: 12.5px; color: var(--ink-secondary); margin-bottom: 8px; }
+  .diff-source .ds-target { color: var(--ink-primary); font-weight: 600; }
+  .diff-source button.silent-link {
+    font: inherit; background: none; border: none; padding: 0;
+    color: var(--accent); cursor: pointer; text-decoration: underline;
+  }
   .feedback-block { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 4px; }
   .feedback-block h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-secondary); margin-bottom: 6px; }
   .feedback-text { white-space: pre-wrap; font-size: 13.5px; color: var(--ink-primary); max-width: 90ch; }
@@ -293,20 +351,122 @@
   .report-map a[data-run]:hover { text-decoration: underline; }
   .report-map a[data-run].active-run { font-weight: 700; text-decoration: underline; }
 
-  /* ---------- detail grid ---------- */
-  .detail-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 14px; align-items: start; }
-  @media (max-width: 900px) { .detail-grid { grid-template-columns: minmax(0, 1fr); } }
-  .detail-grid > * { min-width: 0; }
+  /* ---------- workspace: inspector column · evolutionary tree ---------- */
+  /* Everything except the code diff and the report map is meant to sit on one
+     screen, so this row is sized off the viewport and each panel scrolls
+     internally instead of growing the page. */
+  .workspace {
+    /* static fallback; sizeWorkspace() replaces this with a measured height */
+    --work-h: clamp(300px, calc(100vh - 340px), 980px);
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.3fr);
+    /* explicit row: an auto row would be sized by the tree SVG's default
+       intrinsic height and grow past the viewport on short screens */
+    grid-template-rows: var(--work-h);
+    gap: 14px;
+    align-items: stretch;
+  }
+  .workspace > * { min-width: 0; }
 
-  .circuit-body { overflow: auto; max-width: 100%; }
-  .circuit-svg-wrap { overflow: auto; max-width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px; background: var(--page); }
-  /* scale the circuit down to the card width; wrap still scrolls if a
-     drawing is too dense to stay legible when shrunk */
-  .circuit-svg-wrap svg { display: block; max-width: 100%; height: auto; min-width: 420px; }
-  .circuit-svg-wrap { cursor: zoom-in; }
-  .circuit-svg-wrap.natural { cursor: zoom-out; }
-  .circuit-svg-wrap.natural svg { max-width: none; }
-  .circuit-hint { font-size: 12px; margin-top: 6px; }
+  /* left stack: circuit on top, then the two narrow panels side by side, then
+     patch notes. The circuit gets the largest row: it is a wide drawing (~3:1)
+     scaled to fit its box, so column width is what it can actually use. */
+  .workspace-left {
+    display: grid;
+    /* explicit column: an auto column would size to the circuit's max-content
+       when it is switched to actual size, and blow the column out sideways */
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1.35fr) minmax(0, 0.9fr) minmax(0, 1.25fr);
+    gap: 14px;
+    height: var(--work-h);
+    min-width: 0;
+  }
+  .inspector-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+    min-height: 0;
+  }
+  .inspector-row > * { min-width: 0; }
+
+  /* every workspace panel is a fixed header plus a body that takes the slack */
+  .workspace .card,
+  .workspace .patch-panel,
+  .workspace .lineage-panel,
+  .workspace .tree-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+  }
+  .workspace .card-head, .workspace .tree-legend { flex: none; }
+  /* the tree takes the height the row has left; its own floor would otherwise
+     set the row height on short viewports and push the workspace off-screen */
+  .workspace .tree-wrap { min-height: 0; }
+  .workspace .metrics-body,
+  .workspace .lineage-body,
+  .workspace .patch-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  /* narrow viewports: unwind the grid and go back to a plain vertical stack */
+  @media (max-width: 1180px) {
+    .workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+    .workspace-left { height: auto; grid-template-rows: none; }
+    .workspace .metrics-body,
+    .workspace .lineage-body,
+    .workspace .patch-body { max-height: 420px; }
+    /* a definite height, not a max: the circuit scales to fill it (see below),
+       and a percentage max-height needs a definite box to resolve against */
+    .circuit-body { height: 420px; }
+    .tree-wrap { height: 560px; }
+  }
+  @media (max-width: 760px) { .inspector-row { grid-template-columns: minmax(0, 1fr); } }
+
+  /* The circuit is scaled down to whatever box the card has — both axes — so it
+     never scrolls: a drawing too dense to read when shrunk is meant to be
+     clicked to actual size, which is the only state where the wrap scrolls. */
+  .circuit-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .circuit-svg-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    overflow: hidden;
+    max-width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    background: var(--page);
+    cursor: zoom-in;
+  }
+  /* margin:auto centres on both axes and stops the flex line from stretching
+     the drawing; max-width/max-height fit it inside while keeping the ratio */
+  .circuit-svg-wrap svg {
+    display: block;
+    margin: auto;
+    flex: 0 1 auto;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+  }
+  .circuit-svg-wrap.natural { overflow: auto; cursor: zoom-out; }
+  /* align-self matters: without it the flex line stretches the drawing back to
+     the height of the wrap, which silently undoes "actual size" */
+  .circuit-svg-wrap.natural svg { margin: 0; align-self: flex-start; flex: none; max-width: none; max-height: none; }
+  .circuit-hint { font-size: 11.5px; }
+  .circuit-body > .circuit-pre { flex: 1 1 auto; min-height: 0; }
   .circuit-pre {
     font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     background: var(--page);
@@ -368,6 +528,64 @@
   .tooltip .tt-row b { color: var(--ink-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
 
   footer.app-footer { margin-top: 18px; font-size: 11px; color: var(--ink-muted); text-align: center; }
+
+  /* ---------- circuit modal ---------- */
+  .circuit-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  .circuit-modal-overlay.hidden { display: none !important; }
+  .circuit-modal {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    max-width: min(94vw, 1400px);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .circuit-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    flex: none;
+  }
+  .circuit-modal-head h3 { margin: 0; font-size: 14px; }
+  .circuit-modal-close {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--ink-primary);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 6px 10px;
+  }
+  .circuit-modal-close:hover { background: var(--surface-2, var(--page)); }
+  .circuit-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px;
+    display: flex;
+  }
+  .circuit-modal-body svg {
+    margin: auto;
+    display: block;
+    max-width: none;
+  }
+  .circuit-modal-body .circuit-pre { margin: 0; width: 100%; }
 </style>
 </head>
 <body>
@@ -387,6 +605,80 @@
   <div id="load-banner" class="banner hidden" role="status"></div>
 
   <main class="content">
+
+    <section class="chart-card">
+      <div class="card-head">
+        <h2>Score vs. generation</h2>
+        <div class="chart-legend-inline">
+          <span><span class="swatch-line"></span>best-so-far</span>
+          <span class="y-range">
+            <label for="y-min">y range</label>
+            <input id="y-min" type="number" step="any" inputmode="decimal" aria-label="y axis minimum">
+            <span>→</span>
+            <input id="y-max" type="number" step="any" inputmode="decimal" aria-label="y axis maximum">
+            <button id="y-auto-btn" class="btn btn-ghost" type="button">Auto</button>
+          </span>
+        </div>
+      </div>
+      <div id="score-chart-wrap" class="score-chart-wrap"></div>
+    </section>
+
+    <section class="workspace">
+      <div class="workspace-left">
+        <div class="card circuit-card">
+          <div class="card-head">
+            <h2>Circuit</h2>
+            <span id="circuit-hint" class="muted circuit-hint"></span>
+          </div>
+          <div id="circuit-body" class="circuit-body"><p class="muted">No program selected.</p></div>
+        </div>
+
+        <div class="inspector-row">
+          <div class="card metrics-card">
+            <div class="card-head"><h2>Metrics</h2></div>
+            <div id="metrics-body" class="metrics-body"><p class="muted">No program selected.</p></div>
+          </div>
+          <aside class="lineage-panel" id="lineage-panel">
+            <div class="card-head"><h2>Lineage trace</h2></div>
+            <div id="lineage-body" class="lineage-body">
+              <p class="muted">Select a node, then use "Trace lineage" in the patch panel (or "Trace best" in the evolutionary tree) to see the ancestor chain that led to it, root first.</p>
+            </div>
+          </aside>
+        </div>
+
+        <section class="patch-panel" id="patch-panel">
+          <div class="card-head">
+            <h2>Patch notes</h2>
+            <div id="patch-badges" class="badges"></div>
+          </div>
+          <div id="patch-body" class="patch-body">
+            <p class="muted">Click a node in the tree (or a dot in the chart above) to inspect its patch.</p>
+          </div>
+        </section>
+      </div>
+
+      <section class="tree-card">
+        <div class="card-head">
+          <h2>Evolutionary tree</h2>
+          <div class="tree-controls">
+            <button id="trace-best-btn" class="btn btn-ghost" type="button" disabled>Trace best</button>
+            <button id="clear-trace-btn" class="btn btn-ghost hidden" type="button">Clear trace</button>
+            <button id="reset-view-btn" class="btn btn-ghost" type="button">Reset view</button>
+            <button id="enlarge-circuit-btn" class="btn btn-ghost" type="button" disabled>Enlarge circuit</button>
+            <span class="hint">drag to pan · scroll to zoom</span>
+          </div>
+        </div>
+        <div id="tree-legend" class="tree-legend"></div>
+        <div id="tree-wrap" class="tree-wrap">
+          <div class="empty-state">Loading manifest…</div>
+        </div>
+      </section>
+    </section>
+
+    <section class="card diff-card">
+      <div class="card-head"><h2>Code diff</h2></div>
+      <div id="diff-body" class="diff-body"><p class="muted">No program selected.</p></div>
+    </section>
 
     <details class="card report-map">
       <summary>Report map — which runs matter</summary>
@@ -409,6 +701,54 @@
                   <a data-run="sn-zc-haiku">sn-zc-haiku</a>,
                   <a data-run="sn-zc-sonnet">sn-zc-sonnet</a>
                   (0 equivariant circuits in 80 gens)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>frw3 crossover — can a weaker ensemble carry a frontier discovery forward?</h3>
+      <p class="muted report-map-note">30 runs (2026-08-22) that rewind
+      <a data-run="sn-transfer-or_frontier_r1">sn-transfer-or_frontier_r1</a> to generation 3,
+      the point where gpt-5.6-sol proposed <code>shared_cube_mixer</code> (score 0.4478, 12 of
+      the 28 K8 edges), and continue it under a different ensemble. Readout: does the run
+      complete the K8 entangler? Weak 0/40, mid 0/40, frontier 6/16 in 4 of 5 runs. Both
+      frontier arms were truncated when OpenRouter credits ran out, and the minus-sol
+      ablation (<code>frontabl</code>) has only 8 proposals, so it needs a rerun.</p>
+      <table class="report-map-table">
+        <thead><tr><th>Arm</th><th>Viewer runs</th></tr></thead>
+        <tbody>
+          <tr><td>weak (gpt-5.4-nano + gemini-3.1-flash-lite + qwen3-coder)</td>
+              <td><a data-run="sn-transfer-frw3_weak_r1">r1</a>,
+                  <a data-run="sn-transfer-frw3_weak_r2">r2</a>,
+                  <a data-run="sn-transfer-frw3_weak_r3">r3</a>,
+                  <a data-run="sn-transfer-frw3_weak_r4">r4</a>,
+                  <a data-run="sn-transfer-frw3_weak_r5">r5</a>,
+                  <a data-run="sn-transfer-frw3_weak_r6">r6</a>,
+                  <a data-run="sn-transfer-frw3_weak_r7">r7</a>,
+                  <a data-run="sn-transfer-frw3_weak_r8">r8</a>,
+                  <a data-run="sn-transfer-frw3_weak_r9">r9</a>,
+                  <a data-run="sn-transfer-frw3_weak_r10">r10</a></td></tr>
+          <tr><td>mid (gpt-5.4-mini + gemini-3-flash + claude-haiku-4.5)</td>
+              <td><a data-run="sn-transfer-frw3_mid_r1">r1</a>,
+                  <a data-run="sn-transfer-frw3_mid_r2">r2</a>,
+                  <a data-run="sn-transfer-frw3_mid_r3">r3</a>,
+                  <a data-run="sn-transfer-frw3_mid_r4">r4</a>,
+                  <a data-run="sn-transfer-frw3_mid_r5">r5</a>,
+                  <a data-run="sn-transfer-frw3_mid_r6">r6</a>,
+                  <a data-run="sn-transfer-frw3_mid_r7">r7</a>,
+                  <a data-run="sn-transfer-frw3_mid_r8">r8</a>,
+                  <a data-run="sn-transfer-frw3_mid_r9">r9</a>,
+                  <a data-run="sn-transfer-frw3_mid_r10">r10</a></td></tr>
+          <tr><td>frontier control (gpt-5.6-sol + claude-opus-4.6 + gemini-3.1-pro)</td>
+              <td><a data-run="sn-transfer-frw3_frontier_r1">r1</a>,
+                  <a data-run="sn-transfer-frw3_frontier_r2">r2</a>,
+                  <a data-run="sn-transfer-frw3_frontier_r3">r3</a>,
+                  <a data-run="sn-transfer-frw3_frontier_r4">r4</a>,
+                  <a data-run="sn-transfer-frw3_frontier_r5">r5</a></td></tr>
+          <tr><td>frontier minus sol (claude-opus-4.6 + gemini-3.1-pro)</td>
+              <td><a data-run="sn-transfer-frw3_frontabl_r1">r1</a>,
+                  <a data-run="sn-transfer-frw3_frontabl_r2">r2</a>,
+                  <a data-run="sn-transfer-frw3_frontabl_r3">r3</a>,
+                  <a data-run="sn-transfer-frw3_frontabl_r4">r4</a>,
+                  <a data-run="sn-transfer-frw3_frontabl_r5">r5</a></td></tr>
         </tbody>
       </table>
 
@@ -455,71 +795,22 @@
       </table>
     </details>
 
-    <section class="chart-card">
-      <div class="card-head">
-        <h2>Score vs. generation</h2>
-        <div class="chart-legend-inline"><span class="swatch-line"></span>best-so-far</div>
-      </div>
-      <div id="score-chart-wrap" class="score-chart-wrap"></div>
-    </section>
-
-    <section class="tree-section">
-      <div class="tree-card">
-        <div class="card-head">
-          <h2>Evolutionary tree</h2>
-          <div class="tree-controls">
-            <button id="trace-best-btn" class="btn btn-ghost" type="button" disabled>Trace best</button>
-            <button id="clear-trace-btn" class="btn btn-ghost hidden" type="button">Clear trace</button>
-            <button id="reset-view-btn" class="btn btn-ghost" type="button">Reset view</button>
-            <span class="hint">drag to pan · scroll to zoom</span>
-          </div>
-        </div>
-        <div id="tree-legend" class="tree-legend"></div>
-        <div id="tree-wrap" class="tree-wrap">
-          <div class="empty-state">Loading manifest…</div>
-        </div>
-      </div>
-
-      <aside class="lineage-panel" id="lineage-panel">
-        <div class="card-head"><h2>Lineage trace</h2></div>
-        <div id="lineage-body" class="lineage-body">
-          <p class="muted">Select a node, then use "Trace lineage" in the patch panel (or "Trace best" above) to see the ancestor chain that led to it, root first.</p>
-        </div>
-      </aside>
-    </section>
-
-    <section class="patch-panel" id="patch-panel">
-      <div class="card-head">
-        <h2>Patch notes</h2>
-        <div id="patch-badges" class="badges"></div>
-      </div>
-      <div id="patch-body" class="patch-body">
-        <p class="muted">Click a node in the tree (or a dot in the chart above) to inspect its patch.</p>
-      </div>
-    </section>
-
-    <section class="detail-grid">
-      <div class="card circuit-card">
-        <div class="card-head"><h2>Circuit</h2></div>
-        <div id="circuit-body" class="circuit-body"><p class="muted">No program selected.</p></div>
-      </div>
-      <div class="card metrics-card">
-        <div class="card-head"><h2>Metrics</h2></div>
-        <div id="metrics-body" class="metrics-body"><p class="muted">No program selected.</p></div>
-      </div>
-    </section>
-
-    <section class="card diff-card">
-      <div class="card-head"><h2>Code diff</h2></div>
-      <div id="diff-body" class="diff-body"><p class="muted">No program selected.</p></div>
-    </section>
-
   </main>
 
   <footer class="app-footer" id="app-footer"></footer>
 </div>
 
 <div id="tooltip" class="tooltip hidden" role="tooltip" aria-hidden="true"></div>
+
+<div id="circuit-modal-overlay" class="circuit-modal-overlay hidden">
+  <div class="circuit-modal" role="dialog" aria-modal="true" aria-labelledby="circuit-modal-title">
+    <div class="circuit-modal-head">
+      <h3 id="circuit-modal-title">Circuit</h3>
+      <button id="circuit-modal-close" class="circuit-modal-close" type="button" aria-label="Close">&times;</button>
+    </div>
+    <div id="circuit-modal-body" class="circuit-modal-body"></div>
+  </div>
+</div>
 
 <script>
 (function () {
@@ -539,9 +830,9 @@
   // `style`) is not reliably supported across browsers, so those colors are resolved
   // to hex here and mirrored against the CSS variables of the same name above.
   var THEME_COLORS = {
-    light: { surface1: "#fcfcfb", lineage: "#e34948", ringOther: "#898781",
+    light: { surface1: "#fcfcfb", lineage: "#e34948", ringOther: "#898781", insp: "#7a52d1",
       rings: ["#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7"] },
-    dark: { surface1: "#1a1a19", lineage: "#e66767", ringOther: "#898781",
+    dark: { surface1: "#1a1a19", lineage: "#e66767", ringOther: "#898781", insp: "#a98cf0",
       rings: ["#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9"] }
   };
   var darkModeQuery = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
@@ -590,14 +881,18 @@
     tracedId: null,
     traceChain: null,
     scoreDomain: [0, 1],
+    yRange: null,        // user-set [min, max] for the score chart; null = auto-fit
+    autoYRange: [0, 1],  // the auto-fit range of the current run, for the Auto button / placeholders
     patchTypeColorMap: new Map(),
     layout: null,
     viewState: { x: 0, y: 0, k: 1 }
   };
 
   var NODE_R = 8;
-  var X_STEP = 110;
-  var Y_STEP = 42;
+  var X_STEP_MIN = 110;   // column width is chosen per run, see chooseXStep()
+  var X_STEP_MAX = 360;
+  var Y_STEP = 30;
+  var AXIS_BAND_H = 32;   // screen-space strip at the top of the tree card for the depth axis
 
   /* ============================== utils ============================== */
   function $(id) { return document.getElementById(id); }
@@ -772,6 +1067,20 @@
     wrap.appendChild(box);
   }
 
+  /* The workspace row is meant to end at the bottom of the viewport, so nothing
+     above the code diff ever needs scrolling. The CSS clamp is a static guess at
+     the height of what sits above it; this measures the real thing, which moves
+     when the run-meta chips wrap or the window is resized. */
+  function sizeWorkspace() {
+    var ws = document.querySelector(".workspace");
+    if (!ws) return;
+    if (window.innerWidth <= 1180) { ws.style.removeProperty("--work-h"); return; }
+    // offset from the top of the document, so a scrolled page measures the same
+    var top = ws.getBoundingClientRect().top + (window.scrollY || 0);
+    var h = window.innerHeight - top - 16;
+    ws.style.setProperty("--work-h", clamp(Math.round(h), 300, 980) + "px");
+  }
+
   function showScoreChartMessage(msg) {
     var wrap = $("score-chart-wrap");
     clearEl(wrap);
@@ -788,13 +1097,15 @@
     pb.appendChild(el("p", "muted", "Click a node in the tree (or a dot in the chart above) to inspect its patch."));
     var cb = $("circuit-body"); clearEl(cb);
     cb.appendChild(el("p", "muted", "No program selected."));
+    $("circuit-hint").textContent = "";
+    $("enlarge-circuit-btn").disabled = true;
     var mb = $("metrics-body"); clearEl(mb);
     mb.appendChild(el("p", "muted", "No program selected."));
     var db = $("diff-body"); clearEl(db);
     db.appendChild(el("p", "muted", "No program selected."));
     var lb = $("lineage-body"); clearEl(lb);
     lb.appendChild(el("p", "muted",
-      "Select a node, then use \u201cTrace lineage\u201d in the patch panel (or \u201cTrace best\u201d above) to see the ancestor chain that led to it, root first."));
+      "Select a node, then use \u201cTrace lineage\u201d in the patch panel (or \u201cTrace best\u201d in the evolutionary tree) to see the ancestor chain that led to it, root first."));
   }
 
   function loadRun(id) {
@@ -825,7 +1136,13 @@
         .filter(function (v) { return typeof v === "number" && !isNaN(v); });
       state.scoreDomain = scores.length ? [Math.min.apply(null, scores), Math.max.apply(null, scores)] : [0, 1];
 
+      // a manual y range is per-run — switching runs starts from auto again
+      state.autoYRange = autoYRangeFor(runData.programs);
+      state.yRange = null;
+      syncYRangeInputs();
+
       renderScoreChart(runData.programs);
+      sizeWorkspace();            // before the tree: it measures its own wrap
       renderTree(runData.programs);
 
       var bestId = meta && meta.best_program_id;
@@ -866,6 +1183,12 @@
   }
 
   /* ============================== tree layout ============================== */
+  // x is the node's *depth* in the parent chain, not its generation. Generation
+  // numbers are sparse and skip ahead (a gen-33 child of a gen-12 parent is
+  // common), which stretched edges across many empty columns. Depth puts every
+  // edge between two adjacent columns, so the tree reads as a tree. The
+  // generation range spanned by each depth column is still labelled on the axis,
+  // and generation stays on the tooltip / patch panel / score chart.
   function computeTreeLayout(programs) {
     var byId = new Map();
     programs.forEach(function (p) { byId.set(p.id, p); });
@@ -886,29 +1209,34 @@
     var islands = Array.from(new Set(programs.map(function (p) { return p.island_idx; }))).sort(function (a, b) { return a - b; });
     var rowCursor = 0;
     var rows = new Map();
+    var depths = new Map();
+    var visited = new Set();
 
-    function layoutNode(p) {
+    function layoutNode(p, depth) {
+      if (visited.has(p.id)) return; // parent cycles would otherwise recurse forever
+      visited.add(p.id);
+      depths.set(p.id, depth);
       var kids = childrenMap.get(p.id) || [];
-      if (kids.length === 0) {
+      kids.forEach(function (k) { layoutNode(k, depth + 1); });
+      var ys = kids
+        .map(function (k) { return rows.get(k.id); })
+        .filter(function (v) { return typeof v === "number"; });
+      if (ys.length) {
+        rows.set(p.id, (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2);
+      } else {
         rows.set(p.id, rowCursor);
         rowCursor += 1;
-      } else {
-        kids.forEach(layoutNode);
-        var ys = kids.map(function (k) { return rows.get(k.id); });
-        rows.set(p.id, (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2);
       }
     }
 
     islands.forEach(function (isl) {
       var rootsForIsland = childrenMap.get("__root__" + isl) || [];
-      rootsForIsland.forEach(layoutNode);
+      rootsForIsland.forEach(function (r) { layoutNode(r, 0); });
       rowCursor += 1.4;
     });
 
-    var positions = new Map();
-    programs.forEach(function (p) {
-      positions.set(p.id, { x: p.generation * X_STEP, y: (rows.get(p.id) || 0) * Y_STEP });
-    });
+    var maxRow = 0;
+    rows.forEach(function (r) { if (r > maxRow) maxRow = r; });
 
     var edges = [];
     programs.forEach(function (p) {
@@ -917,9 +1245,48 @@
       }
     });
 
-    var gens = Array.from(new Set(programs.map(function (p) { return p.generation; }))).sort(function (a, b) { return a - b; });
+    // one axis column per depth, annotated with the generations that landed there
+    var gensByDepth = new Map();
+    programs.forEach(function (p) {
+      var d = depths.get(p.id) || 0;
+      if (typeof p.generation !== "number" || isNaN(p.generation)) return;
+      var cur = gensByDepth.get(d);
+      if (!cur) gensByDepth.set(d, { min: p.generation, max: p.generation });
+      else { cur.min = Math.min(cur.min, p.generation); cur.max = Math.max(cur.max, p.generation); }
+    });
+    var depthList = Array.from(new Set(programs.map(function (p) { return depths.get(p.id) || 0; })))
+      .sort(function (a, b) { return a - b; });
 
-    return { byId: byId, positions: positions, edges: edges, gens: gens };
+    return {
+      byId: byId, edges: edges, depths: depthList, gensByDepth: gensByDepth,
+      depthOf: depths, rowOf: rows, maxRow: maxRow,
+      positions: new Map(), xStep: X_STEP_MIN
+    };
+  }
+
+  // A depth-based tree is narrow and deep: at X_STEP_MIN the fitted view is
+  // height-limited and leaves most of the card empty on both sides. Widening the
+  // columns until the width-limited and height-limited zooms agree fills the card
+  // in both directions at the largest zoom the height allows — no distortion,
+  // since x is still (depth × a constant).
+  function chooseXStep(layout, w, h) {
+    var nSpans = layout.depths.length - 1;
+    if (nSpans < 1) return X_STEP_MIN;
+    var contentH = layout.maxRow * Y_STEP + 48;   // the padding fitTreeView adds
+    var hFit = Math.max(1, h - AXIS_BAND_H);
+    var ideal = ((w * contentH) / hFit - 68) / nSpans;
+    return clamp(ideal, X_STEP_MIN, X_STEP_MAX);
+  }
+
+  function assignPositions(layout, programs, xStep) {
+    layout.xStep = xStep;
+    layout.positions = new Map();
+    programs.forEach(function (p) {
+      layout.positions.set(p.id, {
+        x: (layout.depthOf.get(p.id) || 0) * xStep,
+        y: (layout.rowOf.get(p.id) || 0) * Y_STEP
+      });
+    });
   }
 
   /* ============================== tree render ============================== */
@@ -931,6 +1298,8 @@
       return;
     }
     var layout = computeTreeLayout(programs);
+    var wrapRect = wrap.getBoundingClientRect();
+    assignPositions(layout, programs, chooseXStep(layout, wrapRect.width || 900, wrapRect.height || 620));
     state.layout = layout;
 
     var svg = svgEl("svg", { "class": "tree-svg" });
@@ -940,26 +1309,55 @@
     var viewport = svgEl("g", { "class": "viewport" });
     var axisG = svgEl("g", { "class": "axis" });
     var edgesG = svgEl("g", { "class": "edges" });
+    var inspG = svgEl("g", { "class": "insp-edges" });
     var nodesG = svgEl("g", { "class": "nodes" });
     viewport.appendChild(axisG);
     viewport.appendChild(edgesG);
+    viewport.appendChild(inspG);
     viewport.appendChild(nodesG);
     svg.appendChild(viewport);
 
-    // generation axis ticks along the top of the content
+    var defs = svgEl("defs");
+    var marker = svgEl("marker", {
+      id: "insp-arrow", viewBox: "0 0 10 10", refX: "9", refY: "5",
+      markerWidth: "5", markerHeight: "5", orient: "auto"
+    });
+    marker.appendChild(svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: themeColors().insp }));
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+
     var minY = Infinity, maxY = -Infinity, minX = Infinity, maxX = -Infinity;
     layout.positions.forEach(function (pos) {
       minY = Math.min(minY, pos.y); maxY = Math.max(maxY, pos.y);
       minX = Math.min(minX, pos.x); maxX = Math.max(maxX, pos.x);
     });
-    var axisY = minY - 26;
-    layout.gens.forEach(function (g) {
-      var x = g * X_STEP;
-      axisG.appendChild(svgEl("line", { "class": "tick-mark", x1: x, x2: x, y1: axisY + 8, y2: maxY + 20 }));
-      var t = svgEl("text", { "class": "tick-label", x: x, y: axisY, "text-anchor": "middle" });
-      t.textContent = "gen " + g;
-      axisG.appendChild(t);
+
+    // Column rules pan and zoom with the tree; their labels do not (see below).
+    layout.depths.forEach(function (d) {
+      var x = d * layout.xStep;
+      axisG.appendChild(svgEl("line", { "class": "tick-mark", x1: x, x2: x, y1: minY - 20, y2: maxY + 20 }));
     });
+
+    // Depth axis, drawn outside the zoom viewport and repositioned on every
+    // transform, so the labels keep a constant size at the top of the card.
+    var axisLabelsG = svgEl("g", { "class": "axis-labels" });
+    axisLabelsG.appendChild(svgEl("rect", { "class": "axis-band", x: "0", y: "0", width: "100%", height: AXIS_BAND_H }));
+    axisLabelsG.appendChild(svgEl("line", { "class": "axis-band-edge", x1: "0", x2: "100%", y1: AXIS_BAND_H, y2: AXIS_BAND_H }));
+    layout.depths.forEach(function (d) {
+      var col = svgEl("g", { "class": "axis-label-col" });
+      col.dataset.wx = d * layout.xStep;
+      var span = layout.gensByDepth.get(d);
+      if (span) {
+        var s = svgEl("text", { "class": "tick-sublabel", x: 0, y: 13, "text-anchor": "middle" });
+        s.textContent = span.min === span.max ? ("gen " + span.min) : ("gen " + span.min + "–" + span.max);
+        col.appendChild(s);
+      }
+      var t = svgEl("text", { "class": "tick-label", x: 0, y: 25, "text-anchor": "middle" });
+      t.textContent = "depth " + d;
+      col.appendChild(t);
+      axisLabelsG.appendChild(col);
+    });
+    svg.appendChild(axisLabelsG);
 
     // edges
     layout.edges.forEach(function (e) {
@@ -1020,6 +1418,7 @@
     fitTreeView(svg, layout);
     applyTraceHighlight();
     highlightSelection();
+    if (state.selectedId) drawInspirationEdges(state.programsById.get(state.selectedId));
     renderTreeLegend(scoreMin, scoreMax, programs);
   }
 
@@ -1031,14 +1430,15 @@
       minX = Math.min(minX, pos.x); maxX = Math.max(maxX, pos.x);
       minY = Math.min(minY, pos.y); maxY = Math.max(maxY, pos.y);
     });
-    minY -= 40; minX -= 30; maxX += 30; maxY += 30;
+    minY -= 24; minX -= 34; maxX += 34; maxY += 24;
     var contentW = Math.max(1, maxX - minX);
     var contentH = Math.max(1, maxY - minY);
-    var k = Math.min(w / contentW, h / contentH, 1.3);
+    var hFit = Math.max(1, h - AXIS_BAND_H); // the axis band sits over the top of the card
+    var k = Math.min(w / contentW, hFit / contentH, 1.3);
     k = Math.max(k, 0.12);
     state.viewState.k = k;
     state.viewState.x = (w - contentW * k) / 2 - minX * k;
-    state.viewState.y = (h - contentH * k) / 2 - minY * k;
+    state.viewState.y = AXIS_BAND_H + (hFit - contentH * k) / 2 - minY * k;
     applyTreeTransform();
   }
 
@@ -1047,6 +1447,21 @@
     if (!vp) return;
     var v = state.viewState;
     vp.setAttribute("transform", "translate(" + v.x + "," + v.y + ") scale(" + v.k + ")");
+    updateAxisLabels();
+  }
+
+  // Keep each depth label over its column as the view pans/zooms, and drop the
+  // ones that have moved off-card so they don't pile up at the edges.
+  function updateAxisLabels() {
+    var svg = document.querySelector("#tree-wrap .tree-svg");
+    if (!svg) return;
+    var w = svg.getBoundingClientRect().width || 900;
+    var v = state.viewState;
+    svg.querySelectorAll(".axis-label-col").forEach(function (col) {
+      var sx = v.x + parseFloat(col.dataset.wx) * v.k;
+      col.setAttribute("transform", "translate(" + sx + ",0)");
+      col.style.display = (sx < 2 || sx > w - 2) ? "none" : "";
+    });
   }
 
   function wireTreePanZoom(svg, bgRect, viewport) {
@@ -1118,9 +1533,33 @@
     corrGroup.appendChild(okChip);
     corrGroup.appendChild(badChip);
     wrap.appendChild(corrGroup);
+
+    var inspGroup = el("div", "legend-group");
+    var dash = el("span", "legend-dash");
+    dash.style.borderTopColor = themeColors().insp;
+    inspGroup.appendChild(dash);
+    inspGroup.appendChild(el("span", null, "inspiration source of the selected node (merge partners for a “cross” patch)"));
+    wrap.appendChild(inspGroup);
+
+    var axisGroup = el("div", "legend-group");
+    axisGroup.appendChild(el("span", "muted", "x = depth in lineage (generation range labelled per column)"));
+    wrap.appendChild(axisGroup);
   }
 
   /* ============================== score chart ============================== */
+  // The auto range: data extent plus 10% padding. Kept separate from rendering so
+  // the y-range inputs can show it as their placeholder and restore it on "Auto".
+  function autoYRangeFor(programs) {
+    var rawScores = programs
+      .map(function (p) { return p.combined_score; })
+      .filter(function (v) { return typeof v === "number" && !isNaN(v); });
+    var lo = rawScores.length ? Math.min.apply(null, rawScores) : 0;
+    var hi = rawScores.length ? Math.max.apply(null, rawScores) : 1;
+    if (lo === hi) { lo -= 0.05; hi += 0.05; }
+    var pad = (hi - lo) * 0.1;
+    return [lo - pad, hi + pad];
+  }
+
   function renderScoreChart(programs) {
     var wrap = $("score-chart-wrap");
     clearEl(wrap);
@@ -1129,12 +1568,8 @@
     var width = wrap.clientWidth || 900, height = 160;
     var margin = { top: 12, right: 16, bottom: 26, left: 46 };
     var maxGen = Math.max.apply(null, programs.map(function (p) { return p.generation; }));
-    var rawScores = programs.map(function (p) { return p.combined_score; }).filter(function (v) { return typeof v === "number" && !isNaN(v); });
-    var yMin = rawScores.length ? Math.min.apply(null, rawScores) : 0;
-    var yMax = rawScores.length ? Math.max.apply(null, rawScores) : 1;
-    if (yMin === yMax) { yMin -= 0.05; yMax += 0.05; }
-    var pad = (yMax - yMin) * 0.1;
-    yMin -= pad; yMax += pad;
+    var range = state.yRange || state.autoYRange;
+    var yMin = range[0], yMax = range[1];
 
     var innerW = width - margin.left - margin.right;
     var innerH = height - margin.top - margin.bottom;
@@ -1142,6 +1577,18 @@
     function yScale(s) { return margin.top + (1 - (s - yMin) / (yMax - yMin)) * innerH; }
 
     var svg = svgEl("svg", { "class": "score-svg", viewBox: "0 0 " + width + " " + height, preserveAspectRatio: "none" });
+
+    // A manual y range can put marks outside the plot box; clip them to it so
+    // they never draw over the axes or escape the card.
+    var clipId = "score-plot-clip";
+    var defs = svgEl("defs");
+    var clip = svgEl("clipPath", { id: clipId, clipPathUnits: "userSpaceOnUse" });
+    clip.appendChild(svgEl("rect", {
+      x: margin.left, y: margin.top,
+      width: Math.max(0, innerW), height: Math.max(0, innerH)
+    }));
+    defs.appendChild(clip);
+    svg.appendChild(defs);
 
     // y gridlines + labels (4 ticks)
     var ticks = 4;
@@ -1183,25 +1630,76 @@
         d += " L " + x + "," + prevY + " L " + x + "," + y;
       }
     });
-    if (d) svg.appendChild(svgEl("path", { "class": "best-line", d: d }));
+    var plot = svgEl("g", { "clip-path": "url(#" + clipId + ")" });
+    svg.appendChild(plot);
+    if (d) plot.appendChild(svgEl("path", { "class": "best-line", d: d }));
 
     // dots
+    var hidden = 0;
     programs.forEach(function (p) {
       if (typeof p.generation !== "number" || typeof p.combined_score !== "number" || isNaN(p.combined_score)) return;
+      if (p.combined_score < yMin || p.combined_score > yMax) hidden++;
       var c = svgEl("circle", {
         cx: xScale(p.generation), cy: yScale(p.combined_score), r: 4,
         "class": "score-dot" + (p.correct ? "" : " incorrect") + (p.id === state.selectedId ? " selected" : ""),
         fill: scoreColor(p.combined_score, state.scoreDomain[0], state.scoreDomain[1])
       });
       c.dataset.id = p.id;
-      c.addEventListener("click", function () { selectNode(p.id); });
+      // clicking a dot selects it and immediately traces its ancestor chain
+      c.addEventListener("click", function () { selectNode(p.id); traceLineage(p.id); });
       c.addEventListener("pointerenter", function (ev) { showTooltip(ev, p); });
       c.addEventListener("pointermove", function (ev) { moveTooltip(ev); });
       c.addEventListener("pointerleave", hideTooltip);
-      svg.appendChild(c);
+      plot.appendChild(c);
     });
 
     wrap.appendChild(svg);
+
+    if (hidden) {
+      wrap.appendChild(el("div", "muted chart-clip-note",
+        hidden + (hidden === 1 ? " point is" : " points are") + " outside the y range shown"));
+    }
+  }
+
+  /* ---- y-range controls ---- */
+  function syncYRangeInputs() {
+    var lo = $("y-min"), hi = $("y-max");
+    lo.placeholder = state.autoYRange[0].toFixed(4);
+    hi.placeholder = state.autoYRange[1].toFixed(4);
+    if (state.yRange) {
+      lo.value = String(state.yRange[0]);
+      hi.value = String(state.yRange[1]);
+    } else {
+      lo.value = "";
+      hi.value = "";
+    }
+    lo.classList.remove("invalid");
+    hi.classList.remove("invalid");
+    $("y-auto-btn").disabled = !state.yRange;
+  }
+
+  // Both fields blank => auto. Otherwise a blank field falls back to that end of
+  // the auto range, so setting just a floor or just a ceiling works.
+  function applyYRangeFromInputs() {
+    var lo = $("y-min"), hi = $("y-max");
+    var rawLo = lo.value.trim(), rawHi = hi.value.trim();
+    lo.classList.remove("invalid");
+    hi.classList.remove("invalid");
+
+    if (rawLo === "" && rawHi === "") {
+      state.yRange = null;
+    } else {
+      var vLo = rawLo === "" ? state.autoYRange[0] : Number(rawLo);
+      var vHi = rawHi === "" ? state.autoYRange[1] : Number(rawHi);
+      if (!isFinite(vLo) || !isFinite(vHi) || vLo >= vHi) {
+        if (!isFinite(vLo) || vLo >= vHi) lo.classList.add("invalid");
+        if (!isFinite(vHi) || vLo >= vHi) hi.classList.add("invalid");
+        return; // keep the last good range on screen rather than drawing nonsense
+      }
+      state.yRange = [vLo, vHi];
+    }
+    $("y-auto-btn").disabled = !state.yRange;
+    if (state.programsList.length) renderScoreChart(state.programsList);
   }
 
   /* ============================== tooltip ============================== */
@@ -1267,7 +1765,41 @@
     if (!p) return;
     state.selectedId = id;
     highlightSelection();
+    drawInspirationEdges(p);
     renderDetail(p);
+  }
+
+  // Dashed arrows from each inspiration source into the selected node. Redrawn on
+  // every selection; cleared when nothing is selected.
+  function drawInspirationEdges(p) {
+    var g = document.querySelector("#tree-wrap .insp-edges");
+    if (!g) return;
+    clearEl(g);
+    if (!p || !state.layout) return;
+    var to = state.layout.positions.get(p.id);
+    if (!to) return;
+    var color = themeColors().insp;
+    inspirationsOf(p).forEach(function (s) {
+      var from = state.layout.positions.get(s.id);
+      if (!from) return;
+      // stop short of both node circles so the arrowhead is not hidden under one
+      var gap = NODE_R + 6;
+      var sx = from.x, sy = from.y, ex = to.x, ey = to.y;
+      if (to.x > from.x)      { sx += NODE_R; ex -= gap; }
+      else if (to.x < from.x) { sx -= NODE_R; ex += gap; }
+      else                    { sy += (to.y > from.y ? NODE_R : -NODE_R);
+                                ey += (to.y > from.y ? -gap : gap); }
+      var midX = (sx + ex) / 2;
+      var path = svgEl("path", {
+        "class": "insp-edge",
+        stroke: color,
+        "marker-end": "url(#insp-arrow)",
+        d: "M " + sx + "," + sy + " C " + midX + "," + sy + " " + midX + "," + ey + " " + ex + "," + ey
+      });
+      path.dataset.from = s.id;
+      path.dataset.to = p.id;
+      g.appendChild(path);
+    });
   }
 
   function renderDetail(p) {
@@ -1281,6 +1813,69 @@
     var b = el("span", "badge " + (correct ? "status-good" : "status-bad"));
     b.appendChild(document.createTextNode((correct ? "\u2713 correct" : "\u2717 correct = 0")));
     return b;
+  }
+
+  /* ---- provenance ----
+     parent_id is the program the code_diff is applied to. The inspiration ids are
+     the other programs the model was shown while writing the patch; for a "cross"
+     patch those are the merge partners, which is otherwise invisible because the
+     diff only ever references the parent. */
+  function inspirationsOf(p) {
+    var out = [];
+    (p.archive_inspiration_ids || []).forEach(function (id) { out.push({ id: id, from: "archive" }); });
+    (p.top_k_inspiration_ids || []).forEach(function (id) { out.push({ id: id, from: "top-k" }); });
+    return out;
+  }
+  function hasProvenance(p) {
+    return !!(p.parent_id || inspirationsOf(p).length);
+  }
+
+  function sourceChip(id, note) {
+    var src = state.programsById.get(id);
+    var chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "src-chip";
+    if (!src) {
+      chip.disabled = true;
+      chip.style.cursor = "default";
+      chip.appendChild(el("span", "sc-name", shortId(id)));
+      chip.appendChild(el("span", "sc-meta", "not in this run's data"));
+      return chip;
+    }
+    chip.style.borderLeftColor = patchTypeColor(src.patch_type);
+    chip.appendChild(el("span", "sc-name", src.patch_name || "(untitled)"));
+    var meta = "gen " + src.generation + " · " + fmtScore(src.combined_score) +
+      " · " + (src.patch_type || "no type") + (note ? " · " + note : "");
+    chip.appendChild(el("span", "sc-meta", meta));
+    chip.title = "Open " + (src.patch_name || src.id);
+    chip.addEventListener("click", function () { selectNode(src.id); });
+    return chip;
+  }
+
+  function renderSources(p) {
+    var box = el("div", "sources");
+    var insp = inspirationsOf(p);
+
+    var baseGroup = el("div", "src-group");
+    baseGroup.appendChild(el("span", "src-role", "diff base"));
+    if (p.parent_id) {
+      baseGroup.appendChild(sourceChip(p.parent_id));
+    } else {
+      baseGroup.appendChild(el("span", "src-none", "none — this is a root / seed program"));
+    }
+    box.appendChild(baseGroup);
+
+    if (insp.length) {
+      var isCross = (p.patch_type || "").toLowerCase() === "cross";
+      var group = el("div", "src-group");
+      group.appendChild(el("span", "src-role", isCross ? "merged with" : "also in context"));
+      insp.forEach(function (s) { group.appendChild(sourceChip(s.id, s.from)); });
+      box.appendChild(group);
+      box.appendChild(el("p", "sources-note", isCross
+        ? "A “cross” patch merges the diff base with the programs above; the code diff below is against the diff base only."
+        : "These were shown to the model alongside the diff base when it wrote this patch."));
+    }
+    return box;
   }
 
   function renderPatchPanel(p) {
@@ -1307,6 +1902,8 @@
     sub.appendChild(el("span", null, "score " + fmtScore(p.combined_score)));
     sub.appendChild(el("span", null, "complexity " + (p.complexity != null ? p.complexity : "\u2014")));
     body.appendChild(sub);
+
+    body.appendChild(renderSources(p));
 
     body.appendChild(el("div", "patch-desc", p.patch_description || "(no patch description provided)"));
 
@@ -1339,22 +1936,57 @@
 
   function renderCircuitPanel(p) {
     var body = $("circuit-body");
+    var hint = $("circuit-hint");
     clearEl(body);
+    hint.textContent = "";
+    $("enlarge-circuit-btn").disabled = !(p && (p.circuit_svg || p.circuit_text));
     if (p.circuit_svg && looksLikeSvg(p.circuit_svg)) {
       var wrap = el("div", "circuit-svg-wrap");
       wrap.innerHTML = p.circuit_svg; // contract: trusted inline <svg> markup, guarded by looksLikeSvg()
-      wrap.title = "Click to toggle fit / actual size";
-      wrap.addEventListener("click", function () { wrap.classList.toggle("natural"); });
+      wrap.title = "Click to view large";
+      wrap.addEventListener("click", function () { openCircuitModal(p); });
       body.appendChild(wrap);
-      body.appendChild(el("p", "muted circuit-hint", "Gate boxes show parameter names; repeated names = shared parameters. Click the circuit to toggle fit ↔ actual size."));
+      // lives in the card head, not the body: the body height is all the drawing
+      // gets, and the drawing is scaled down to fit whatever is left of it
+      hint.textContent = "repeated gate labels = shared parameters · click to view large";
     } else if (p.circuit_text) {
       var pre = document.createElement("pre");
       pre.className = "circuit-pre";
       pre.textContent = p.circuit_text;
+      pre.title = "Click to view large";
+      pre.style.cursor = "zoom-in";
+      pre.addEventListener("click", function () { openCircuitModal(p); });
       body.appendChild(pre);
     } else {
       body.appendChild(el("p", "muted", "No circuit rendered for this program."));
     }
+  }
+
+  // Centered popup showing the currently inspected circuit at full size. Reused
+  // by both the click-to-enlarge drawing and the tree card's "Enlarge circuit"
+  // button, which targets whatever node is currently selected (if any) without
+  // touching the tree's own node-click / trace-parent behavior.
+  function openCircuitModal(p) {
+    if (!p || (!p.circuit_svg && !p.circuit_text)) return;
+    var modalBody = $("circuit-modal-body");
+    clearEl(modalBody);
+    $("circuit-modal-title").textContent = "Circuit — " + p.id;
+    if (p.circuit_svg && looksLikeSvg(p.circuit_svg)) {
+      var wrap = document.createElement("div");
+      wrap.innerHTML = p.circuit_svg; // contract: trusted inline <svg> markup, guarded by looksLikeSvg()
+      modalBody.appendChild(wrap);
+    } else {
+      var pre = document.createElement("pre");
+      pre.className = "circuit-pre";
+      pre.textContent = p.circuit_text;
+      modalBody.appendChild(pre);
+    }
+    $("circuit-modal-overlay").classList.remove("hidden");
+  }
+
+  function closeCircuitModal() {
+    $("circuit-modal-overlay").classList.add("hidden");
+    clearEl($("circuit-modal-body"));
   }
 
   function renderMetricsPanel(p) {
@@ -1383,6 +2015,33 @@
   function renderDiffPanel(p) {
     var body = $("diff-body");
     clearEl(body);
+
+    // "--- a/original.py" says nothing about which program a/ is; spell it out
+    if (p.code_diff) {
+      var src = el("p", "diff-source");
+      var parent = p.parent_id ? state.programsById.get(p.parent_id) : null;
+      src.appendChild(document.createTextNode("Diff of "));
+      src.appendChild(el("span", "ds-target", p.patch_name || shortId(p.id)));
+      src.appendChild(document.createTextNode(" against its diff base "));
+      if (parent) {
+        var link = el("button", "silent-link", parent.patch_name || shortId(parent.id));
+        link.type = "button";
+        link.addEventListener("click", function () { selectNode(parent.id); });
+        src.appendChild(link);
+        src.appendChild(document.createTextNode(" (gen " + parent.generation + ", score " + fmtScore(parent.combined_score) + ")."));
+      } else {
+        src.appendChild(document.createTextNode(p.parent_id ? shortId(p.parent_id) + " (not in this run's data)." : "— none recorded."));
+      }
+      var insp = inspirationsOf(p);
+      if (insp.length) {
+        src.appendChild(document.createTextNode(
+          (p.patch_type || "").toLowerCase() === "cross"
+            ? " Merge partners are listed under Patch notes — they do not appear in this diff."
+            : " Other programs were in context; see Patch notes."));
+      }
+      body.appendChild(src);
+    }
+
     if (p.code_diff) {
       var pre = document.createElement("pre");
       pre.className = "diff-pre";
@@ -1439,7 +2098,7 @@
     var lb = $("lineage-body");
     clearEl(lb);
     lb.appendChild(el("p", "muted",
-      "Select a node, then use \u201cTrace lineage\u201d in the patch panel (or \u201cTrace best\u201d above) to see the ancestor chain that led to it, root first."));
+      "Select a node, then use \u201cTrace lineage\u201d in the patch panel (or \u201cTrace best\u201d in the evolutionary tree) to see the ancestor chain that led to it, root first."));
     $("clear-trace-btn").className = "btn btn-ghost hidden";
   }
 
@@ -1474,6 +2133,13 @@
       card.appendChild(top);
 
       var meta = el("div", "lc-meta");
+      // patch type on every step, so merges are visible along the chain itself
+      var typeTag = el("span", "lc-type");
+      var tdot = el("span", "ring-dot");
+      tdot.style.background = patchTypeColor(p.patch_type);
+      typeTag.appendChild(tdot);
+      typeTag.appendChild(document.createTextNode(p.patch_type || "no type"));
+      meta.appendChild(typeTag);
       meta.appendChild(el("span", null, "score " + fmtScore(p.combined_score)));
       if (i > 0) {
         var prevScore = chain[i - 1].combined_score;
@@ -1509,12 +2175,38 @@
     traceLineage(bestId);
   });
   $("clear-trace-btn").addEventListener("click", clearTrace);
+  $("enlarge-circuit-btn").addEventListener("click", function () {
+    if (!state.selectedId) return;
+    var p = state.programsById.get(state.selectedId);
+    if (p) openCircuitModal(p);
+  });
+  $("circuit-modal-close").addEventListener("click", closeCircuitModal);
+  $("circuit-modal-overlay").addEventListener("click", function (ev) {
+    if (ev.target === this) closeCircuitModal();
+  });
+  window.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && !$("circuit-modal-overlay").classList.contains("hidden")) closeCircuitModal();
+  });
+  ["y-min", "y-max"].forEach(function (id) {
+    var input = $(id);
+    input.addEventListener("change", applyYRangeFromInputs);
+    input.addEventListener("input", debounce(applyYRangeFromInputs, 350));
+    input.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") { ev.preventDefault(); applyYRangeFromInputs(); }
+    });
+  });
+  $("y-auto-btn").addEventListener("click", function () {
+    state.yRange = null;
+    syncYRangeInputs();
+    if (state.programsList.length) renderScoreChart(state.programsList);
+  });
   $("reset-view-btn").addEventListener("click", function () {
     var svg = document.querySelector("#tree-wrap .tree-svg");
     if (svg && state.layout) fitTreeView(svg, state.layout);
   });
 
   window.addEventListener("resize", debounce(function () {
+    sizeWorkspace();
     if (state.programsList.length) renderScoreChart(state.programsList);
   }, 150));
 

@@ -1,0 +1,66 @@
+<NAME>
+crz_pairwise_entanglement
+</NAME>
+
+<DESCRIPTION>
+This modification enhances the ansatz by implementing a more structured entanglement pattern using CRZ gates. Instead of the previous CRX ring configuration, we use a pairwise entanglement strategy that creates stronger correlations between qubits. The design uses a pre- and post-RZ layer to maximize the effectiveness of the CRZ entanglement, and reduces the overall parameter count compared to the baseline while maintaining high performance.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_12"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_34"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_56"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial single-qubit rotations
+    {"gate": "RY", "wire": i, "param": f"ry_{i}"} for i in range(8)
+] + [
+    # Pre-entanglement RZ layer
+    {"gate": "RZ", "wire": i, "param": f"rz_pre_{i}"} for i in range(8)
+] + [
+    # Entanglement via CRZ gates in a structured pattern
+    {"gate": "CRZ", "wires": [i, (i+1) % 8], "param": f"crz_{i}_{(i+1) % 8}"} for i in range(0, 8, 2)
+] + [
+    {"gate": "CRZ", "wires": [i, (i+1) % 8], "param": f"crz_{i}_{(i+1) % 8}"} for i in range(1, 8, 2)
+] + [
+    # Post-entanglement RZ layer
+    {"gate": "RZ", "wire": i, "param": f"rz_post_{i}"} for i in range(8)
+]
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+
+</DIFF>

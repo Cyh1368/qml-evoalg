@@ -1,0 +1,92 @@
+<NAME>parametrized_expressive_ansatz</NAME>
+
+<DESCRIPTION>
+The proposed ansatz evolves the architecture to use a more expressive and efficient structure inspired by hardware-efficient designs with learnable entanglement.
+
+1.  **Learnable Entanglement**: Instead of fixed CZ or CNOT gates, we use `CRY` gates. This allows the model to learn the optimal entanglement strength for processing the feature-encoded Ising couplings.
+2.  **Circular Connectivity**: We use a circular ladder pattern for the `CRY` gates to ensure global information flow across all 8 qubits, which is crucial given that features are encoded as qubit pairs.
+3.  **Refined Parameter Sharing**: We use a symmetric parameter sharing scheme where qubits $i$ and $i+4$ share rotation and entanglement parameters. This strikes a balance between expressivity and parameter efficiency ($N_{params}=74$), which helps reduce the generalization gap and improve the combined score.
+4.  **Optimized Depth**: The block structure consists of one RY layer, one CRY layer (split into two stages for circular connectivity), and one RZ layer, significantly reducing circuit depth compared to the current implementation.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_pre_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_pre_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_pre_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_pre_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_pre_c"},
+    {"gate": "RY", "wire": 6, "param": "ry_pre_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_pre_d"},
+    {"gate": "RY", "wire": 7, "param": "ry_pre_d"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_c"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_c"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_d"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_d"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CNOT", "wires": [0, 4]},
+    {"gate": "CNOT", "wires": [1, 5]},
+    {"gate": "CNOT", "wires": [2, 6]},
+    {"gate": "CNOT", "wires": [3, 7]},
+    {"gate": "RX", "wire": 0, "param": "rx_post_a"},
+    {"gate": "RX", "wire": 1, "param": "rx_post_b"},
+    {"gate": "RX", "wire": 2, "param": "rx_post_c"},
+    {"gate": "RX", "wire": 3, "param": "rx_post_d"},
+    {"gate": "RX", "wire": 4, "param": "rx_post_a"},
+    {"gate": "RX", "wire": 5, "param": "rx_post_b"},
+    {"gate": "RX", "wire": 6, "param": "rx_post_c"},
+    {"gate": "RX", "wire": 7, "param": "rx_post_d"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_c"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_d"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_c"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_d"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: RY rotations with symmetric sharing
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_c"},
+    {"gate": "RY", "wire": 6, "param": "ry_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_d"},
+    {"gate": "RY", "wire": 7, "param": "ry_d"},
+    # Layer 2: Parametrized CRY Entanglement (Even Pairs)
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_even_a"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_even_a"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_even_b"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_even_b"},
+    # Layer 3: Parametrized CRY Entanglement (Odd/Circular Pairs)
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_odd_a"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_odd_a"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_odd_b"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_odd_b"},
+    # Layer 4: RZ rotations with symmetric sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_c"},
+    {"gate": "RZ", "wire": 6, "param": "rz_c"},
+    {"gate": "RZ", "wire": 3, "param": "rz_d"},
+    {"gate": "RZ", "wire": 7, "param": "rz_d"},
+]
+>>>>>>> REPLACE
+</DIFF>

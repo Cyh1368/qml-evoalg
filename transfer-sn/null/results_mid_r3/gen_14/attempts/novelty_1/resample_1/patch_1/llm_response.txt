@@ -1,0 +1,58 @@
+<NAME>
+expressive_circular_star
+</NAME>
+
+<DESCRIPTION>
+This ansatz combines high-expressivity single-qubit layers with a multi-topology entangling strategy to maximize information flow and convergence speed. It employs independent RY and RZ rotations on all 8 qubits to ensure a high-dimensional search space within each block. To ensure efficient communication across the 8-qubit register, the entanglement layer uses a circular CZ chain for nearest-neighbor connectivity, complemented by long-range CRX gates that bridge qubits with a stride of 4 (e.g., 0-4, 1-5). By sharing the CRX parameters in two distinct groups, the model achieves a strong trade-off between expressive power and parameter efficiency, aiming to match the fast convergence of heavy models while maintaining a leaner total parameter count of 110.
+</DESCRIPTION>
+
+<CODE>
+```python
+# Problem constants
+N_QUBITS = 8
+N_UPLOADS = 3
+N_REPEATS = 2
+FEATURE_SCALE = np.pi / 2
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Layer 1: Independent RY rotations for initial state preparation
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    
+    # Layer 2: Independent RZ rotations for phase expressivity
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+
+    # Layer 3: Fixed Circular CZ chain for nearest-neighbor entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Layer 4: Parametrized Long-Range CRX connectivity (Stride 4)
+    # Using two shared parameters to bridge the two halves of the register.
+    {"gate": "CRX", "wires": [0, 4], "param": "crx_even"},
+    {"gate": "CRX", "wires": [2, 6], "param": "crx_even"},
+    {"gate": "CRX", "wires": [1, 5], "param": "crx_odd"},
+    {"gate": "CRX", "wires": [3, 7], "param": "crx_odd"},
+]
+# EVOLVE-BLOCK-END
+```
+</CODE>

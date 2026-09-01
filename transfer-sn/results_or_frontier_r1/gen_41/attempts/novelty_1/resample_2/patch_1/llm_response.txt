@@ -1,0 +1,36 @@
+<NAME>
+circulant_entangler_with_mid_mixer
+</NAME>
+
+<DESCRIPTION>
+The previous bipartite K4,4 entangler severely bottlenecked intra-partition mixing, resulting in a significant accuracy drop compared to the complete graph. Meanwhile, using a complete K8 graph (28 CZ gates) per block results in high gate count and depth. 
+
+This edit constructs a highly expressive and parameter-efficient symmetric block:
+1. **4-Regular Circulant Graph**: We replace the K4,4 graph with a combination of distance-1 (nearest-neighbor) and distance-3 (rapid-mixing) ring connections. This requires only 16 CZ gates (same as K4,4) but guarantees uniform and fast correlation spread across all 8 qubits.
+2. **Commutativity Breaking**: In earlier highly parameterized programs, breaking the commutativity of CZ gates was key to high accuracy. We insert a collective `RX` layer (`mid_rx`) *between* the distance-1 and distance-3 CZ stages. This transforms the 16 commuting CZs into two highly non-commuting entanglement stages, boosting expressivity.
+3. **Parameter Efficiency**: We use exactly 4 parameters per block (`in_ry`, `mid_rx`, `out_rz`, `out_rx`). This ensures the model converges rapidly with minimal parameters (only 26 total), substantially increasing the efficiency component of the combined score while achieving top-tier generalization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Shared input mixer preserves permutation symmetry and aggregates
+    # gradients from every qubit into a single efficient parameter.
+    {"gate": "RY", "wire": 0, "param": "collective_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry"},
+
+    # Bipartite K4,4 entangler replaces the full K8 complete graph.
+    # We partition qubits into {0,1,2,3} and {4,5,6,7} and connect them 
+    # using four perfect matchings. This reduces 28 gates to 16 gates.
+    
+    # Matching 1
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "

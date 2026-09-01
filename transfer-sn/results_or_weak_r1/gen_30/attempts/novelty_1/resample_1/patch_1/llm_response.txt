@@ -1,0 +1,296 @@
+<NAME>
+introduce_feature_scale_factors
+</NAME>
+
+<DESCRIPTION>
+Introduce trainable feature-scale factors per upload to allow the circuit to adapt its fixed data embedding strength. This adds only 3 extra weights (one per upload) to probe whether flexible encoding enhances expressivity. The feature_map function is modified to multiply FEATURE_SCALE by a trainable factor before each upload.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Problem constants
+N_QUBITS = 8
+N_UPLOADS = 3
+N_REPEATS = 2
+FEATURE_SCALE = np.pi / 2
+
+_DATA_PATH = os.environ.get("TASK_DATA", str(Path(__file__).resolve().parent / "dataset.npz"))
+_DATA = np.load(_DATA_PATH)
+FEATURE_PAIRS = [tuple(int(w) for w in row) for row in _DATA["feature_pairs"]]
+N_FEATURES = len(FEATURE_PAIRS)
+=======
+# Problem constants
+N_QUBITS = 8
+N_UPLOADS = 3
+N_REPEATS = 2
+FEATURE_SCALE = np.pi / 2
+
+_DATA_PATH = os.environ.get("TASK_DATA", str(Path(__file__).resolve().parent / "dataset.npz"))
+_DATA = np.load(_DATA_PATH)
+FEATURE_PAIRS = [tuple(int(w) for w in row) for row in _DATA["feature_pairs"]]
+N_FEATURES = len(FEATURE_PAIRS)
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Shared initial RX across all qubits
+    {"gate": "RX", "wire": 0, "param": "rx_shared"},
+    {"gate": "RX", "wire": 1, "param": "rx_shared"},
+    {"gate": "RX", "wire": 2, "param": "rx_shared"},
+    {"gate": "RX", "wire": 3, "param": "rx_shared"},
+    {"gate": "RX", "wire": 4, "param": "rx_shared"},
+    {"gate": "RX", "wire": 5, "param": "rx_shared"},
+    {"gate": "RX", "wire": 6, "param": "rx_shared"},
+    {"gate": "RX", "wire": 7, "param": "rx_shared"},
+
+    # Shared initial RY across paired qubits: (0,1),(2,3),(4,5),(6,7)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_3"},
+
+    # Shared pre-RZ across the same paired structure
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_3"},
+
+    # CZ entanglement: two interleaved rings (same spirit as the best crossover)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Additional fixed chords (no extra parameters) to improve expressivity
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Shared post-RZ across the same paired structure
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_3"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+# Add trainable feature scale parameters for each upload
+PARAMETER_KEYS_PER_BLOCK.extend(["fs_u0", "fs_u1", "fs_u2"])
+
+ANSATZ_SPEC = [
+    # Shared initial RX across all qubits
+    {"gate": "RX", "wire": 0, "param": "rx_shared"},
+    {"gate": "RX", "wire": 1, "param": "rx_shared"},
+    {"gate": "RX", "wire": 2, "param": "rx_shared"},
+    {"gate": "RX", "wire": 3, "param": "rx_shared"},
+    {"gate": "RX", "wire": 4, "param": "rx_shared"},
+    {"gate": "RX", "wire": 5, "param": "rx_shared"},
+    {"gate": "RX", "wire": 6, "param": "rx_shared"},
+    {"gate": "RX", "wire": 7, "param": "rx_shared"},
+
+    # Shared initial RY across paired qubits: (0,1),(2,3),(4,5),(6,7)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_3"},
+
+    # Shared pre-RZ across the same paired structure
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_3"},
+
+    # CZ entanglement: two interleaved rings (same spirit as the best crossover)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Additional fixed chords (no extra parameters) to improve expressivity
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Shared post-RZ across the same paired structure
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_3"},
+]
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def feature_map(records) -> None:
+    """Encode each feature as a fixed two-qubit phase coupling.
+
+    Accepts a batch of records (shape (B, N_FEATURES)); records[..., k]
+    broadcasts over the leading batch dimension.
+    """
+    for k, (a, b) in enumerate(FEATURE_PAIRS):
+        qml.IsingZZ(FEATURE_SCALE * records[..., k], wires=[a, b])
+
+
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+
+
+_DEVICE = qml.device("default.qubit", wires=N_QUBITS, shots=None)
+
+
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(records)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(circuit_params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+=======
+def feature_map(records, upload_index: int = 0, params: np.ndarray = None) -> None:
+    """Encode each feature as a fixed two-qubit phase coupling.
+
+    Accepts a batch of records (shape (B, N_FEATURES)); records[..., k]
+    broadcasts over the leading batch dimension.
+    """
+    # Get the feature scale factor for this upload
+    if params is not None and upload_index < N_UPLOADS:
+        # Map upload index to parameter index for feature scales
+        fs_index = N_PARAMS_PER_BLOCK - N_UPLOADS + upload_index
+        if fs_index < len(params):
+            scale_factor = params[fs_index]
+        else:
+            scale_factor = 1.0
+    else:
+        scale_factor = 1.0
+    
+    for k, (a, b) in enumerate(FEATURE_PAIRS):
+        qml.IsingZZ(scale_factor * FEATURE_SCALE * records[..., k], wires=[a, b])
+
+
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+
+
+_DEVICE = qml.device("default.qubit", wires=N_QUBITS, shots=None)
+
+
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(records, upload_index, circuit_params)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(circuit_params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+>>>>>>> REPLACE
+
+</DIFF>
