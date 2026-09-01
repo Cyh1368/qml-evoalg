@@ -2,11 +2,15 @@
 
 ## Abstract
 
-(in progress)
+Quantum machine learning problems often exhibit symmetry that enables efficient ansatz designs. We investigate how LLMs with the ShinkaEvolve evolutionary search harness could identify symmetries when the key context of the problem is redacted. We ran three LLM ensembles across varying capabilities on an 8-qubit graph connectedness problem, which exhibits permutation invariant symmetry. We find that only the strongest ensemble is able to identify the correct symmetry. Starting the evolution with weaker ensembles after a few generations by the strongest ensemble did not enhance results significantly. Although stronger models describe the correct symmetry more often in the patch notes, they do not always build the correct ansatz more often. In addition, we realize that a strong model in an ensemble will be even more dominant in the evolutionary search by the design of ShinkaEvolve. 
 
 ## Introduction
 
-(in progress)
+Symmetry in quantum machine learning had been extensively studied. For instance, the tic-tac-toe problem is invariant under flips and $n\pi/2$ rotations ($n=1, 2, 3$) of the board. Thus, given the quantum mahcine learning problem of classifying the state of a tic-tac-toe board, the optimal solution should be the one that embeds the symmetry conditions in the design of the ansatz [1]. A direct follow-up of the work showed that although symmetry alone can inspire an ansatz, task-informed context is also necessary [2].
+
+In nature, evolution happens through natural selection, where species which do not adapt to the environment well gradually fade out, while those which adapt well increases in number. Evolutionary Algorithms (EAs) find the optimal solution through a similar process [3]. EA is population-based: it first generates an initial population of solutions, and evaluates each of them with the fitness function. If any solution satisfy the goal, the algorithm is terminated. Else, solutions with lower fitness are removed. Those with higher fitness are mutated and crossed over to generate offspring solutions, which are passed through the fitness function again, and the cycle continues. ShinkaEvolve is an open source EA framework built upon LLMs [4]. It has improved parent sampling methods, rejection techniques, and LLM selection schemes compared to existing EAs. 
+
+In this work, we investigate whether LLMs under the ShinkaEvolve harness are able to identify symmetries in a QML problem when faced with limited context about the problem itself. 
 
 ## Methodology
 
@@ -33,9 +37,9 @@ The feature map is the first section of the QML circuit, where we encode whether
 
 ![The task and its encoding](figures/fig1-task-and-encoding.png)
 
-A sequence of data re-uploading and ansatze repetitions follow the feature map. Before each ansatz block is applied $p = 2$ times, the feature map is applied once, and the pattern repeats $l=3$ times. This design enhances the original feature signals after the ansatz blocks. Owing to this repetition, if the ansatz block contains $m$ trainable parameters, the circuit as a whole will contain $6m$ trainable parameters. Finally, a readout layer collapses the quantum states into a single value. The mean of the expected Z value of each qubit is passed through a trainable linear function to generate the binary classification. If the 8-node graph is fully connected, the final output is $+1$, and $-1$ if the graph is not fully connected.
+A sequence of data re-uploading and ansatze repetitions follow the feature map. Before each ansatz block is applied $p = 2$ times, the feature map is applied once, and the pattern repeats $l=3$ times. This design enhances the original feature signals after the ansatz blocks. Owing to this repetition, if the ansatz block contains $m$ trainable parameters, the circuit as a whole will contain $6m$ trainable parameters. The re-uploading structure follows Pérez-Salinas et al. [5]. Finally, a readout layer collapses the quantum states into a single value. The mean of the expected Z value of each qubit is passed through a trainable linear function to generate the binary classification. If the 8-node graph is fully connected, the final output is $+1$, and $-1$ if the graph is not fully connected.
 
-We use the Adam optimizer at learning rate 0.03, batch size 15, up to 1000 epochs with validation-loss early stopping of patience 75 and best-weight restore, on 450 training, 300 validation and 600 test records with balanced classes. We use MSE as the loss function.
+We use the Adam optimizer at learning rate 0.03, batch size 15, up to 1000 epochs with validation-loss early stopping of patience 75 and best-weight restore, on 450 training, 300 validation and 600 test records with balanced classes. We use MSE as the loss function. Circuits are simulated and trained in PennyLane [6].
 
 ![The fixed pipeline](figures/fig2-pipeline.png)
 
@@ -83,7 +87,7 @@ We analyze the two aspects of each generation: circuit structure and patch notes
 | `cyclic` | the layer is unchanged by the rotation $i \mapsto i + 1 \bmod 8$, and is not a `ring` | 4 CZ gates on $(0,4), (1,5), (2,6), (3,7)$ | 180 | 165 (29.3%) | 47 |
 | `none` | none of the above | 4 RY gates on wires 0-3 only | 1123 | 196 (34.8%) | 46 |
 
-We analyze the patch notes independently to identify whether the models' reasoning involved symmetry. We design the following regex search to check this deterministically .
+The definitions for these labels are not mutually exclusive. For example, an `all-singular` layer is automatically `mirror`. For the `all-double` layer, we acknowledge that the ordering of the 28 operations could affect the final quantum state. However, for simplicity of categorization, we neglect such novelty and accept any ordering of the 28 gates. As will be shown later, the definitions above lead to clear differences in scores; thus, the labels are able to separate programs which perform well from those that scores low. We analyze the patch notes independently to identify whether the models' reasoning involved symmetry. We design the following regex search to check this deterministically .
 
 | flag | pattern (abbreviated) | notes matched out of 563 | runs out of 55 |
 |---|---|---:|---:|
@@ -96,9 +100,6 @@ We analyze the patch notes independently to identify whether the models' reasoni
 | `none` | no pattern above fires | 301 (53.5%) | 39 |
 
 ## Results
-
-
-*Every from-scratch run is truncated to its first 20 generations, so that the 50-generation and 20-generation protocols are compared on an equal budget. Continued runs are unaffected. The figure at the end of this section shows what the truncation discards.*
 
 The table below shows the results of the ensembles under each setting.
 
@@ -163,60 +164,31 @@ A plot of the score versus generation of the 50th generation runs shows that alt
 
 ![Score against generation](figures/fig9-trajectories.png)
 
-## Conclusion
+Looking at which model proposed each solution that achieved the running maximum score, we discovered that, in the frontier run, `GPT-5.6 Sol` is responsible for the overwhelming majority of best so far discoveries. We believe that in the frontier ensemble, GPT is overwhelmingly strong. Because ShinkaEvolve samples models based on their past performance, GPT may be sampled more frequently after it has generated a few excellent solutions. This enhances its dominance in the evolutionary run since it is more powerful than the other models and has more opportunities to propose solutions. Therefore, an ensemble which consists of models with significantly different capabilities could be harmful.
 
-We run a LLM guided evolutionary search on a quantum machine learning problem with an inherent $S_8$ invariant symmetry. Of the three ensembles categorized by model capabilities, only the frontier ensemble is able to consistently identify the symmetrt and build an ansatz that safisfies it. Starting the evolution with a few generations produced by the frontier models, the weak and mid-tier ensembles were still unable to craft a circuit which satisfy the pairing symmetry.
+![Who set each best-so-far record](figures/fig10-who-found-it.png)
+
+Across the eight runs that use all three frontier models, `GPT-5.6 Sol` set 13 of the 17 best-so-far records while making 44 of the 100 proposals; `Claude Opus 4.6` and `Gemini 3.1 Pro` set 2 records each from 26 and 30 proposals. In the two continued runs without GPT that improved at all, the record was set once by Opus and once by Gemini, and neither reached the score of the runs containing GPT.
+
+![Best-so-far records per frontier model](figures/fig11-record-counts.png)
+
+## Conclusion and Remarks
+
+### Conclusion
+
+We run a LLM guided evolutionary search on a quantum machine learning problem with an inherent $S_8$ invariant symmetry. Of the three ensembles categorized by model capabilities, only the frontier ensemble is able to consistently identify the symmetry and build an ansatz that safisfies it. Starting the evolution with a few generations produced by the frontier models, the weak and mid-tier ensembles were still unable to craft a circuit which satisfy the pairing symmetry.
 
 Nevertheless, we found a monotone relationship when looking at the reasoning traces of the ensembles. LLMs were able to identify the symmetries but unable to implement them in the proposed ansatz. Our work demonstrates that while LLMs can be helpful tools in guiding evolutionary research, their solutions must be taken with caution.
 
+### Remarks and Future Directions
+
+The definitions for the patch note labels and the circuit labels are tailored to this specific QML problem and are designed manually through trial and error. Although this gives interpretable results, the methodology is not replicable nor easily transferrable to other QML problems. In addition, pattern matching for the structure of the quantum circuit is often insufficient in identifying layer symmetries when, for example, a single-qubit layer is embedded in the middle of an `all-double` layer. The method for identifying symmetries in the patch note descriptions as well as the circuit structure should be redesigned to be more reproducible and deterministic. Nevertheless, this report serves as an exploratory result into how LLMs may guide evolutionary search in problems that exhibit symmetry.
+
 ## References
 
-1. Lange, R. T. et al. *ShinkaEvolve: Towards Open-Ended and Sample-Efficient Program Evolution.* arXiv:2509.19349, 2025.
-2. Bergholm, V. et al. *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* arXiv:1811.04968.
-3. Meyer, J. J. et al. *Exploiting Symmetry in Variational Quantum Machine Learning.* PRX Quantum 4, 010328, 2023.
-4. Pérez-Salinas, A., Cervera-Lierta, A., Gil-Fuster, E., Latorre, J. I. *Data re-uploading for a universal quantum classifier.* Quantum 4, 226, 2020.
-
-## Appendix
-
-### A. Contents of this folder
-
-| path | what it is |
-|---|---|
-| `readme.md` | this report |
-| `figures/` | every figure, as PNG |
-| `make_figures.py` | regenerates `figures/` from `data/` |
-| `compute_stats.py` | recomputes every number quoted above |
-| `stats_output.txt` | the output of `compute_stats.py`, as run for this report |
-| `data/labels.json` | per-proposal circuit structure labels, 854 programs |
-| `data/note_labels.json` | per-proposal patch-note labels, same programs |
-| `data/dataset.npz` | the task dataset, including the feature-to-qubit-pair table |
-
-*Both scripts need `numpy`, `matplotlib` and `scipy`. In this repository they run under `../viz/.venv_render/bin/python`.*
-
-### B. Run inventory
-
-| setting | ensemble | runs | generations per run | total cost |
-|---|---|---:|---:|---:|
-| from scratch | weak | 15 | 20 or 50 | $3.35 |
-| from scratch | mid | 8 | 20 or 50 | $8.01 |
-| from scratch | frontier | 3 | 20 or 50 | $30.82 |
-| continued | weak | 10 | 4 | $9.59 |
-| continued | mid | 10 | 4 | $10.86 |
-| continued | frontier | 5 | up to 4, truncated | $9.24 |
-| continued | frontier without GPT | 5 (4 usable) | up to 4, truncated | $7.20 |
-
-*Total spend $79.08. From-scratch runs are 20 generations with the bandit seed fixed at 1, or 50 generations with the seed varying; the seed feeds only the UCB1 random number generator and has no measurable effect on the spread (Brown-Forsythe $W = 0.089$, df 1,13).*
-
-### C. Layer labels used
-
-| label | test on one layer |
-|---|---|
-| `all-singular` | the same single-qubit gate on all 8 wires |
-| `all-singular-tied` | `all-singular`, and all 8 gates share one parameter |
-| `all-double` | the same two-qubit gate on all 28 qubit pairs |
-| `all-double-exact` | `all-double` with each pair appearing exactly once |
-| `mirror` | pairings of the form $\{i, 7-i\}$ |
-| `ring`, `cyclic`, `linear-chain` | nearest-neighbour topologies on a fixed qubit ordering |
-| `none` | none of the above |
-
-*Only `all-singular-tied` and `all-double` correspond to halves of the task's symmetry. `mirror`, `ring`, `cyclic` and `linear-chain` all depend on the qubit ordering, which the scrambled feature table makes arbitrary, so they are structures the search invented rather than structures the task has.*
+1. Meyer, J. J. et al. *Exploiting Symmetry in Variational Quantum Machine Learning.* PRX Quantum 4, 010328, 2023. arXiv:2205.06217.
+2. Baumann, M., Linnhoff-Popien, C. *Exploiting More Than Symmetry in Variational Quantum Machine Learning.* arXiv:2606.20316, 2026.
+3. Eiben, A. E., Smith, J. E. *Introduction to Evolutionary Computing.* 2nd edition, Springer, 2015.
+4. Lange, R. T. et al. *ShinkaEvolve: Towards Open-Ended and Sample-Efficient Program Evolution.* arXiv:2509.19349, 2025.
+5. Pérez-Salinas, A., Cervera-Lierta, A., Gil-Fuster, E., Latorre, J. I. *Data re-uploading for a universal quantum classifier.* Quantum 4, 226, 2020.
+6. Bergholm, V. et al. *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* arXiv:1811.04968.
