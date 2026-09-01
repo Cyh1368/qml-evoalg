@@ -1,5 +1,8 @@
 # Identifying Symmetries in Quantum Machine Learning with LLM-Guided Evolutionary Search
 
+Cheng-You Ho
+Aug 31, 2026
+
 ## Abstract
 
 Quantum machine learning problems often exhibit symmetry that enables efficient ansatz designs. We investigate how LLMs with the ShinkaEvolve evolutionary search harness could identify symmetries when the key context of the problem is redacted. We ran three LLM ensembles across varying capabilities on an 8-qubit graph connectedness problem, which exhibits permutation invariant symmetry. We find that only the strongest ensemble is able to identify the correct symmetry. Starting the evolution with weaker ensembles after a few generations by the strongest ensemble did not enhance results significantly. Although stronger models describe the correct symmetry more often in the patch notes, they do not always build the correct ansatz more often. In addition, we realize that a strong model in an ensemble will be even more dominant in the evolutionary search by the design of ShinkaEvolve. 
