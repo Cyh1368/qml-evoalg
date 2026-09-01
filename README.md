@@ -1,8 +1,6 @@
 # Identifying Symmetries in Quantum Machine Learning with LLM-Guided Evolutionary Search
 
-Cheng-You Ho
-
-Aug 31, 2026
+Cheng-You Ho, Aug 31, 2026
 
 ## Abstract
 
