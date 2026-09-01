@@ -1,0 +1,20 @@
+<NAME>
+share_repeat_block_params
+
+<DESCRIPTION>
+The current ansatz applies N_REPEATS=2 independent copies of the block per upload, doubling circuit-body parameters (18 unique params/block × 3 uploads × 2 repeats = 108 circuit params + 2 readout = 110 total). This gives high train accuracy (0.93) but a train-test gap of 0.07, suggesting overfitting from excess capacity relative to the training set size.
+
+Following the recommendation, I tie parameters across the two repeats within each upload by changing the block-parameter offset computation from `block_index * N_PARAMS_PER_BLOCK` to `(block_index // N_REPEATS) * N_PARAMS_PER_BLOCK`. This keeps the circuit structure (same gates, same depth, same connectivity, same repeats) but halves the number of unique circuit parameters (54 instead of 108), since both repeats in an upload now reuse the same parameter vector. This is a strong regularizing move: it reduces effective capacity while preserving expressivity from repeated entangling structure, which should shrink the generalization gap and may also converge faster since there are fewer parameters to fit. This directly tests the given recommendation on top of the current best ansatz structure (ring CRZ/CZ with shared adjacent-pair RY/RZ).
+
+<DIFF>
+<<<<<<< SEARCH
+    offset = block_index * N_PARAMS_PER_BLOCK
+=======
+    offset = (block_index // N_REPEATS) * N_PARAMS_PER_BLOCK
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS
+=======
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS
+>>>>>>> REPLACE

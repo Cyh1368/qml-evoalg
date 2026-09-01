@@ -1,0 +1,53 @@
+Looking at the performance metrics across the three programs:
+
+1. **First program (68 params, score 0.90)**: Complex multi-layer design with separate forward/backward entanglement, cross-talk bridges, and multiple single-qubit rotations. High parameter count but achieves good accuracy.
+
+2. **Second program (50 params, score 0.91)**: Simplified to core components with split CRZ parameters (crz_rev_a, crz_rev_b). Better score with fewer parameters—the parameter splitting strategy works!
+
+3. **Current program (44 params, score 0.90)**: Further simplified by replacing CRZ chain with unified CRY chain. Lowest parameter count but score dropped to 0.90.
+
+**Key observation**: The second program's strategy of splitting reverse-chain parameters (odd vs even links) achieved the best score (0.91) because it provides richer expressivity while maintaining efficiency. The current program over-simplified by using a single parameter for all reverse links.
+
+**Proposed improvement**: Split the current reverse CRY chain into two parameters—one for odd-indexed links and one for even-indexed links. This restores the beneficial asymmetry from the second program while keeping the reverse-chain gate type as CRY (which may have different learning dynamics than CRZ).
+
+This addresses:
+- **Generalization gap**: The split parameters allow each link type to learn different patterns, potentially reducing overfitting
+- **Parameter efficiency**: Adding just 1 parameter (44→45) is minimal but provides meaningful expressivity gain
+- **Convergence**: The selective parameter sharing maintains fast convergence while improving model capacity
+
+<NAME>
+split_cry_reverse_chain
+</NAME>
+
+<DESCRIPTION>
+The second program achieved the best score (0.91) with 50 parameters by splitting the reverse chain into odd and even parameter variants (crz_rev_a and crz_rev_b). The current program simplified this to a single cry_rev parameter, which reduced the score to 0.90.
+
+This edit restores the beneficial parameter-splitting strategy while keeping CRY gates (instead of reverting to CRZ). The key insight is that odd-indexed and even-indexed reverse links ([7→6], [5→4], [3→2], [1→0] vs [6→5], [4→3], [2→1]) may benefit from different learned parameters.
+
+By using two parameters instead of one, we provide the model with richer expressivity while maintaining parameter efficiency (only adding 1 parameter). This should tighten the generalization gap and improve validation/test accuracy without significantly increasing training time or depth.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Reverse chain with shared CRY gate for amplitude-based entanglement
+    # All reverse connections use one trainable parameter
+    {"gate": "CRY", "wires": [7, 6], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [6, 5], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [5, 4], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [4, 3], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [3, 2], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [2, 1], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [1, 0], "param": "cry_rev"},
+=======
+    # Reverse chain with split CRY parameters for enhanced expressivity
+    # Odd-indexed reverse links use cry_rev_a, even-indexed use cry_rev_b
+    {"gate": "CRY", "wires": [7, 6], "param": "cry_rev_a"},
+    {"gate": "CRY", "wires": [6, 5], "param": "cry_rev_b"},
+    {"gate": "CRY", "wires": [5, 4], "param": "cry_rev_a"},
+    {"gate": "CRY", "wires": [4, 3], "param": "cry_rev_b"},
+    {"gate": "CRY", "wires": [3, 2], "param": "cry_rev_a"},
+    {"gate": "CRY", "wires": [2, 1], "param": "cry_rev_b"},
+    {"gate": "CRY", "wires": [1, 0], "param": "cry_rev_a"},
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,114 @@
+Looking at the current program and metrics, I need to analyze what's happening:
+
+**Current State:**
+- Performance: Combined score = 0.61
+- Accuracy: Perfect (1.00 on train/val/test)
+- Parameters: 146 (very high for perfect accuracy)
+- Parameter efficiency: 0.01 (very low)
+- Depth: 35, Gate count: 186
+
+**Key Observation:**
+The circuit already achieves perfect accuracy but uses 146 parameters! This is severely penalizing the parameter efficiency metric. The goal is to maintain accuracy while dramatically reducing parameters.
+
+**Strategy:**
+The current circuit has:
+- 8 RY gates (one per qubit)
+- 16 RZ gates (pre and post per qubit) 
+- 7 CZ gates in a chain
+
+This is 32 parametrized gates total. For 146 parameters across multiple ansatz blocks, that's about 4.5 repetitions.
+
+To improve, I should:
+1. **Reduce parameter count via sharing**: Use the same parameter names across qubits to dramatically reduce the number of unique parameters while maintaining expressivity
+2. **Simplify the structure**: Remove some redundant rotations or use fewer gates
+3. **Use two-qubit parametrized gates**: These can encode more information per parameter
+
+Let me propose using **parameter sharing** across qubits in a structured way, plus introduce some **XX/YY/ZZ two-qubit interactions** that use shared parameters to replace pure CZ gates with more expressive, parameter-efficient gates.
+
+<NAME>
+aggressive_parameter_sharing_ising_gates
+</NAME>
+
+<DESCRIPTION>
+The current circuit achieves perfect accuracy but uses 146 parameters with very poor parameter efficiency (0.01). The bottleneck is over-parameterization with one unique parameter per qubit per rotation layer.
+
+Key improvements:
+1. **Replace redundant pre/post RZ with shared parameters**: Use only 3 unique parameters for RZ rotations (one per layer: pre, ising-layer, post), applied to all qubits. This reduces RZ parameters from 16 to 3.
+2. **Replace fixed CZ gates with parametrized XX/YY/ZZ gates**: Use Ising interactions with 2 shared parameters (xx_param and yy_param) applied to the chain. This makes the two-qubit interactions learnable and more expressive, reducing total parameter count while potentially improving generalization.
+3. **Reduce RY uniqueness**: Use only 2 unique RY parameters applied in a pattern, rather than 8 unique ones.
+
+This should reduce parameters from 146 to roughly 30-40 while maintaining the ability to fit the perfect accuracy training set. The shared parameters force the model to learn more general, transferable patterns, which should reduce overfitting and improve the test accuracy stability.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_inter"},
+    {"gate": "YY", "wires": [1, 2], "param": "yy_inter"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_inter"},
+    {"gate": "YY", "wires": [3, 4], "param": "yy_inter"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_inter"},
+    {"gate": "YY", "wires": [5, 6], "param": "yy_inter"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_inter"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

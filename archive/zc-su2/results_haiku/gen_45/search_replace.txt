@@ -1,0 +1,149 @@
+# Analysis
+
+Looking at the performance metrics:
+
+1. **Prior programs** (both single-block and two-block): Score 0.72, n_params=14
+   - Single-block: 35 depth, 186 gate count
+   - Two-block: 65 depth, 372 gate count
+   - Both achieved perfect accuracy with maximal parameter efficiency (0.07)
+
+2. **Current program**: Score 0.68, n_params=20
+   - 35 depth, 186 gate count (same as single-block)
+   - Parametrized CRZ chain instead of fixed CZ chain
+   - Worse parameter efficiency (0.05 vs 0.07) and lower combined score despite perfect accuracy
+
+The problem is clear: **the current program uses 20 parameters while prior work achieved perfect results with only 14 parameters**. The CRZ parametrization adds 7 extra parameters (one per gate in the chain) without improving accuracy, directly reducing parameter efficiency.
+
+The recommendation suggests block-specific shared parameters while maintaining the CZ-chain structure. The most promising approach is to **return to the high-efficiency single-block design** (which scored 0.72) but **add block-level specialization** by using independent RY/RZ pairs per block, then add a second block. This maintains:
+- Low parameter count (by using shared parameters within each block)
+- The proven CZ-chain structure
+- Block specialization for increased expressivity
+
+**Strategy**: Revert to the two-block architecture but use block-specific shared parameters:
+- Block 1: ry_1, rz_1
+- Block 2: ry_2, rz_2
+- Total: 4 parameters (much better than current 20)
+- Each block retains CZ-chain and internal structure
+- Should recover score ≥0.72 while allowing better specialization than single-block
+
+<NAME>
+block_specific_shared_params
+</NAME>
+
+<DESCRIPTION>
+Revert to the two-block architecture from the prior high-scoring program (0.72 score) but introduce block-specific shared parameters instead of global parameter sharing. This allows each block to specialize while maintaining maximal parameter economy.
+
+The current program uses 20 parameters (CRZ chain adds unnecessary parameters) and scores 0.68. The prior single-block program used 14 parameters and scored 0.72. By using independent ry_1/rz_1 for block 1 and ry_2/rz_2 for block 2, we:
+1. Keep only 4 trainable parameters total
+2. Restore the proven CZ-chain structure (fixed, not parametrized)
+3. Enable each block to learn distinct transformations
+4. Maintain exceptional parameter efficiency while allowing deeper feature extraction
+
+This aligns with the recommendation to introduce block-specific shared pairs for specialization while preserving high parameter economy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    # First block: block-specific shared parameters ry_1 and rz_1
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "RZ", "wire": 0, "param": "rz_1"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_1"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_1"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_1"},
+    # Second block: block-specific shared parameters ry_2 and rz_2
+    {"gate": "RY", "wire": 0, "param": "ry_2"},
+    {"gate": "RY", "wire": 1, "param": "ry_2"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_2"},
+    {"gate": "RY", "wire": 4, "param": "ry_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_2"},
+    {"gate": "RY", "wire": 7, "param": "ry_2"},
+    {"gate": "RZ", "wire": 0, "param": "rz_2"},
+    {"gate": "RZ", "wire": 1, "param": "rz_2"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_2"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_2"},
+    {"gate": "RZ", "wire": 1, "param": "rz_2"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_2"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

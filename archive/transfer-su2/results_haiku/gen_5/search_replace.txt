@@ -1,0 +1,135 @@
+# Analysis
+
+Looking at the current performance metrics:
+- **Combined score: 0.81** (good, but room for improvement)
+- **Test accuracy: 1.00** (perfect, so accuracy is not the bottleneck)
+- **n_params: 146** (relatively high)
+- **depth_mean: 35.00** (moderate)
+- **gate_count_mean: 186.00** (high)
+- **parameter_efficiency_mean: 0.01** (very low - this is a major issue!)
+- **convergence_step_mean: 30.00** (very fast convergence)
+
+## Key Observations
+
+1. **Parameter efficiency is extremely low (0.01)**: This is calculated as `test_accuracy / n_params = 1.00 / 146 ≈ 0.0068`. The scoring heavily rewards parameter economy.
+
+2. **Current architecture is over-parameterized**: With 146 parameters and perfect accuracy, we're using far more parameters than necessary. The task explicitly states "strongly rewards PARAMETER ECONOMY."
+
+3. **Fast convergence (30 steps)** suggests the model learns quickly, indicating we may not need the full complexity.
+
+4. **Current design**:
+   - 8 independent RY gates (8 params)
+   - 8 independent RZ gates pre-entanglement (8 params)
+   - 7 fixed CZ gates (0 params)
+   - 8 independent RZ gates post-entanglement (8 params)
+   - **Total per block: 24 params × 6 repeats = 144 circuit params + 2 readout = 146 total**
+
+## Strategy for Improvement
+
+To maximize the combined score, I should:
+1. **Reduce parameter count significantly** while maintaining accuracy
+2. **Use parameter sharing** more aggressively within each block
+3. **Simplify the entanglement pattern** or use more efficient two-qubit interactions
+4. **Keep the fast convergence** (30 steps is excellent)
+
+### Proposed Changes
+
+**Idea: Reduce to a minimal but effective ansatz using parameter sharing and selective entanglement**
+
+Instead of independent parameters for every qubit, I'll:
+- Use **shared parameters** across qubits in the same layer
+- Replace the linear CZ chain with a **more efficient two-qubit interaction pattern** (use parametrized XX/YY/ZZ gates instead of fixed CZ)
+- Reduce the number of single-qubit rotations
+
+This should:
+- Cut parameters from 146 to ~50-60 (keeping good expressivity)
+- Improve parameter_efficiency from 0.01 to ~0.017-0.02
+- Maintain or improve accuracy through better parameter utilization
+- Potentially improve the combined score
+
+<NAME>
+minimal_shared_param_ansatz
+</NAME>
+
+<DESCRIPTION>
+Replace the over-parameterized baseline with a minimal ansatz using aggressive parameter sharing and efficient two-qubit interactions. The key insight is that with perfect test accuracy already achieved, we're over-parameterized. By:
+
+1. Using only 2 shared RY parameters (one per qubit pair) instead of 8 independent ones
+2. Using only 2 shared RZ parameters instead of 8 independent ones
+3. Replacing the 7 fixed CZ gates with 4 parametrized XX gates on alternating pairs (more expressive than fixed gates)
+4. Removing the post-entanglement RZ layer (redundant with pre-entanglement)
+
+This reduces parameters from 24 per block to 8 per block (48 total circuit params + 2 readout = 50 total), improving parameter efficiency from 0.0068 to 0.02 while maintaining expressivity through parameter sharing and parametrized two-qubit gates.
+
+The shared parameters allow each qubit to participate in the same rotation, creating a more symmetric and efficient encoding. The XX gates are more expressive than fixed CZ gates and allow the optimizer to learn better entanglement patterns.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_0"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_1"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_2"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_3"},
+]
+>>>>>>> REPLACE
+
+</DIFF>
+
+This change:
+- **Reduces parameters from 24 to 8 per block** (48 circuit params + 2 readout = 50 total, down from 146)
+- **Uses parameter sharing**: ry_a and ry_b are shared across alternating qubits, similarly for rz_a and rz_b
+- **Replaces fixed CZ gates with parametrized XX gates** on 4 pairs, which are more expressive and allow the optimizer to learn optimal entanglement strengths
+- **Improves parameter efficiency** from 0.0068 to ~0.02 (3x improvement)
+- **Maintains expressivity** through the shared-parameter symmetry and parametrized two-qubit interactions
+- **Should maintain or improve accuracy** since we're using more expressive two-qubit gates and the model already converges very fast

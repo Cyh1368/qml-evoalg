@@ -1,0 +1,91 @@
+<NAME>
+expressive_collective_rotations
+</NAME>
+
+<DESCRIPTION>
+The previous best-performing program (score 0.98) utilized an expressive combination of permutation-equivariant input (RY, RX) and output (RZ, RX) rotation layers, achieving a test accuracy of 0.96. The current program replaced the naive 28-depth CZ sequence with an optimal 7-depth one-factorization schedule, but dropped the extra rotation layers, resulting in lower test accuracy (0.95) and score (0.78). 
+
+Since all CZ gates commute, changing their application order does not alter the mathematical unitary of the ansatz block. By combining the optimal 7-depth CZ scheduling of the current program with the expressive two-axis input and output rotation layers of the best previous program, we will mathematically recreate the exact same training trajectory and high accuracy (0.96) of the 0.98-scoring program, but with a more hardware-efficient circuit depth.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # A shared population mixer keeps the circuit equivariant under qubit
+    # relabelings and aggregates gradients from all eight measured qubits.
+    {"gate": "RY", "wire": 0, "param": "collective_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry"},
+
+    # Complete-graph entanglement is scheduled as a one-factorization of K8.
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # A shared population mixer keeps the circuit equivariant under qubit
+    # relabelings and aggregates gradients from all eight measured qubits.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_in"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_in"},
+
+    # Complete-graph entanglement is scheduled as a one-factorization of K8.
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    # A noncommuting collective output mixer converts the accumulated
+    # feature-map and CZ phases directly into mean-Z population differences.
+    {"gate": "RX", "wire": 0, "param": "collective_rx"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx"},
+]
+# EVOLVE-BLOCK-END
+=======
+    # A noncommuting collective output mixer converts the accumulated
+    # feature-map and CZ phases directly into mean-Z population differences.
+    {"gate": "RZ", "wire": 0, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz_out"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz_out"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+]
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+</DIFF>

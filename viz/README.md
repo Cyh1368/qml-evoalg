@@ -4,6 +4,10 @@ Static web page for analyzing ShinkaEvolve runs across all three tasks
 (T1 tic-tac-toe, T2 S_n graph, T3 SU(2) Hamiltonian): the evolutionary tree,
 per-node patch notes, circuit structure, metrics, and code diffs.
 
+Only the T2 S_n runs are part of the report; their databases live under
+`experiments/`. The T1 and T3 databases are under `archive/`, so a rebuild that
+scans only `experiments/` drops those runs from `viz/data/`.
+
 ## View the results (no install needed)
 
 ```bash
@@ -38,12 +42,14 @@ Usage:
 
 ## Rebuild the data
 
-`viz/data/` is generated from every non-empty `programs.sqlite` in the repo
-(paths, tasks, and models are derived from directory names; byte-identical
-duplicate databases are skipped):
+`viz/data/` is generated from every non-empty `programs.sqlite` under
+`--scan-root` (paths, tasks, and models are derived from directory names
+relative to it; byte-identical duplicate databases are skipped). Pass
+`--scan-root experiments` so that `experiments/transfer-sn/results_*` keeps the
+run slugs it had when `transfer-sn/` sat at the repo root:
 
 ```bash
-python3 viz/build_data.py --repo-root . --out viz/data
+python3 viz/build_data.py --repo-root . --scan-root experiments --out viz/data
 ```
 
 To add newly-extracted scalar fields to an existing `viz/data/` without paying
@@ -57,7 +63,7 @@ python3 viz/backfill_inspirations.py --repo-root . --data viz/data
 
 Circuit SVGs are rendered at build time with PennyLane. The script looks for
 an interpreter that can `import pennylane` (`viz/.venv_render`,
-`tic-tac-toe/.venv-shinka-ttt`, then the running Python); to create one:
+`archive/tic-tac-toe/.venv-shinka-ttt`, then the running Python); to create one:
 
 ```bash
 python3 -m venv viz/.venv_render
@@ -68,9 +74,9 @@ Without PennyLane the build still works; circuits are just omitted.
 Known gap: 16 programs in `su2-transfer-v3-gpt56sol` reference a
 dataset-derived `READOUT_PAIRS` constant and cannot be rendered statically.
 
-## Null-control runs (`transfer-sn/null/`, variant `transfer-null`)
+## Null-control runs (`experiments/transfer-sn/null/`, variant `transfer-null`)
 
-Runs under `transfer-sn/null/` are a **null control** trained on
+Runs under `experiments/transfer-sn/null/` are a **null control** trained on
 `transfer_sn_null/dataset.npz`, a different dataset from the main S_n transfer
 task. Sync them with `viz/sync_null_runs.sh` (it refuses to copy a run whose
 orchestrator is still on the cluster, and WAL-checkpoints the sqlite first).

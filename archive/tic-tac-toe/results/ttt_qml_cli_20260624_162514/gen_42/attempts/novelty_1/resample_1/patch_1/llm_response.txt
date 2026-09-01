@@ -1,0 +1,138 @@
+<NAME>
+add_init_rz_and_param_hub_crz
+</NAME>
+
+<DESCRIPTION>
+Introduce a small initial Z-phase layer (shared periphery vs center) before the first RY rotations to break early parity symmetries and help optimization, and make the center coupling tunable by replacing two fixed hub CZs with a shared CRZ parameter ("crz_hub"). This is the lightweight recommendation from the notes: tiny initial Z phases are low-cost but often improve expressivity and training, and a single shared param for the hub links allows the model to adapt center-periphery coupling without exploding parameter count.
+
+Changes:
+- Add RZ "rz_init_periphery" on qubits 0–7 and "rz_init_center" on qubit 8 at the top of the block (applied before RY).
+- Replace CZ on [1,8] and [5,8] with parametrized CRZ gates sharing "crz_hub".
+- Keep the rest of the compact, symmetry-aware sharing motif to remain parameter-efficient.
+
+These modifications keep two-qubit gates on allowed edges, use only supported gates, and add only a small number of parameters while aiming to improve validation/generalization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Compact periphery-vs-center initial RY (shared to reduce params)
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Small shared Z-phase to break parity (corner vs edge vs center)
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Reduced fixed entangling pattern (CZ) to lower depth while keeping center links
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+
+    # Shared RX mixing (corner vs edge vs center) to increase expressive but compactly
+    {"gate": "RX", "wire": 0, "param": "rx_corner"},
+    {"gate": "RX", "wire": 2, "param": "rx_corner"},
+    {"gate": "RX", "wire": 4, "param": "rx_corner"},
+    {"gate": "RX", "wire": 6, "param": "rx_corner"},
+    {"gate": "RX", "wire": 1, "param": "rx_edge"},
+    {"gate": "RX", "wire": 3, "param": "rx_edge"},
+    {"gate": "RX", "wire": 5, "param": "rx_edge"},
+    {"gate": "RX", "wire": 7, "param": "rx_edge"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Small final RY output sharpening (corner vs edge vs center)
+    {"gate": "RY", "wire": 0, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+]
+=======
+ANSATZ_SPEC = [
+    # Tiny initial Z-phase to break parity early (shared periphery vs center)
+    {"gate": "RZ", "wire": 0, "param": "rz_init_periphery"},
+    {"gate": "RZ", "wire": 1, "param": "rz_init_periphery"},
+    {"gate": "RZ", "wire": 2, "param": "rz_init_periphery"},
+    {"gate": "RZ", "wire": 3, "param": "rz_init_periphery"},
+    {"gate": "RZ", "wire": 4, "param": "rz_init_periphery"},
+    {"gate": "RZ", "wire": 5, "param": "rz_init_periphery"},
+    {"gate": "RZ", "wire": 6, "param": "rz_init_periphery"},
+    {"gate": "RZ", "wire": 7, "param": "rz_init_periphery"},
+    {"gate": "RZ", "wire": 8, "param": "rz_init_center"},
+
+    # Compact periphery-vs-center initial RY (shared to reduce params)
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Small shared Z-phase to break parity (corner vs edge vs center)
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Reduced fixed entangling pattern (CZ) to lower depth while keeping center links.
+    # Make the hub links tunable with a shared CRZ parameter to adapt center coupling.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_hub"},
+
+    # Shared RX mixing (corner vs edge vs center) to increase expressive but compactly
+    {"gate": "RX", "wire": 0, "param": "rx_corner"},
+    {"gate": "RX", "wire": 2, "param": "rx_corner"},
+    {"gate": "RX", "wire": 4, "param": "rx_corner"},
+    {"gate": "RX", "wire": 6, "param": "rx_corner"},
+    {"gate": "RX", "wire": 1, "param": "rx_edge"},
+    {"gate": "RX", "wire": 3, "param": "rx_edge"},
+    {"gate": "RX", "wire": 5, "param": "rx_edge"},
+    {"gate": "RX", "wire": 7, "param": "rx_edge"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Small final RY output sharpening (corner vs edge vs center)
+    {"gate": "RY", "wire": 0, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+]
+>>>>>>> REPLACE
+</DIFF>

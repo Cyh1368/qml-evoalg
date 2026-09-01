@@ -1,0 +1,14 @@
+{
+  "generation": 13,
+  "novelty_attempt": 2,
+  "resample_attempt": 1,
+  "patch_attempt": 2,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "full_block_recycling_via_ansatz_spec",
+  "patch_description": "The recommendation implements **full block parameter recycling** by designing the ANSATZ_SPEC to use a single, unified set of parameter names across all block instances. Since the fixed training loop calls `apply_ansatz_block()` six times (3 uploads \u00d7 2 repeats), and each call uses the same ANSATZ_SPEC with the same parameter names, all six block instances will automatically share the same parameters.\n\n**Motivation:**\n1. The prior programs demonstrate that parameter sharing dramatically improves efficiency: the second program achieved 0.85 test accuracy with only 68 params (vs. 146 in the seed), proving that sharing reduces overfitting.\n2. The current program uses 110 circuit parameters spread across 6 block instances. By reusing a single parameter set, we reduce N_CIRCUIT_PARAMS from 108 to ~16, keeping only the block's unique parameters.\n3. The fixed IsingZZ feature map is re-applied at each upload, providing strong signal injection. The ansatz block's role is to process this signal; reusing parameters means the block learns more general transformations that are reinforced 6 times.\n4. Benefits: (a) simpler optimization landscape, (b) each parameter receives gradient updates 6 times per epoch (amplified learning signal), (c) parameter sharing acts as regularization, reducing overfitting and generalization gap.\n\n**Implementation:**\nSimplify ANSATZ_SPEC to use only 16 unique parameter names (no per-block or per-upload suffixes). The existing `apply_ansatz_block()` function will automatically reuse these parameters for all 6 block instances because it always looks up parameters by name in PARAMETER_KEYS_PER_BLOCK, which is derived from the ANSATZ_SPEC.\n\n**Expected outcome:**\n- N_CIRCUIT_PARAMS reduced from 108 to 16 (single block's parameters).\n- N_PARAMS reduced from 110 to 18 (16 circuit + 2 readout).\n- Improved parameter efficiency (test_accuracy / n_params).\n- Faster convergence due to amplified gradient signal.\n- Reduced generalization gap through regularization.\n- Maintained circuit depth and expressivity (still 6 block applications).",
+  "error_msg": null,
+  "timestamp": "2026-07-24T09:41:47.866614",
+  "llm_cost": 0.034270999999999996,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

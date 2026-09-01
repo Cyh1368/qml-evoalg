@@ -1,0 +1,92 @@
+<NAME>
+sparse_multiscale_decoder
+</NAME>
+
+<DESCRIPTION>
+Replace the 24 independent parameters per block with five shared parameters, reducing the full model from 146 to 32 parameters. Two shared wire channels retain useful heterogeneity while regularizing against the observed train-validation gap. The nearest-neighbor CZ line is ordered as two disjoint matchings for lower depth, and sparse long-range CZ links [0,4] and [3,7] add global correlation paths without a dense entangler. RX mixing and decoding layers convert the phase information from IsingZZ uploads into measurable Z populations; eliminating terminal RZ rotations avoids spending parameters on operations that cannot directly affect the final Z readout. This should improve parameter efficiency, convergence speed, and generalization while retaining enough nonlinear capacity to lower validation loss.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Two shared preparation channels regularize the model while allowing
+    # distinct responses on complementary subsets of the register.
+    {"gate": "RY", "wire": 0, "param": "prepare_a"},
+    {"gate": "RY", "wire": 3, "param": "prepare_a"},
+    {"gate": "RY", "wire": 5, "param": "prepare_a"},
+    {"gate": "RY", "wire": 6, "param": "prepare_a"},
+    {"gate": "RY", "wire": 1, "param": "prepare_b"},
+    {"gate": "RY", "wire": 2, "param": "prepare_b"},
+    {"gate": "RY", "wire": 4, "param": "prepare_b"},
+    {"gate": "RY", "wire": 7, "param": "prepare_b"},
+
+    # A connected nearest-neighbor backbone, ordered as two parallel
+    # matchings to keep the circuit depth low.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+
+    # Convert uploaded and entangler-generated phases into populations.
+    {"gate": "RX", "wire": 0, "param": "mix_a"},
+    {"gate": "RX", "wire": 3, "param": "mix_a"},
+    {"gate": "RX", "wire": 5, "param": "mix_a"},
+    {"gate": "RX", "wire": 6, "param": "mix_a"},
+    {"gate": "RX", "wire": 1, "param": "mix_b"},
+    {"gate": "RX", "wire": 2, "param": "mix_b"},
+    {"gate": "RX", "wire": 4, "param": "mix_b"},
+    {"gate": "RX", "wire": 7, "param": "mix_b"},
+
+    # Sparse long-range links provide multiscale correlation transport.
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # A shared population-sensitive decoder directly affects the Z readout.
+    {"gate": "RX", "wire": 0, "param": "decode"},
+    {"gate": "RX", "wire": 1, "param": "decode"},
+    {"gate": "RX", "wire": 2, "param": "decode"},
+    {"gate": "RX", "wire": 3, "param": "decode"},
+    {"gate": "RX", "wire": 4, "param": "decode"},
+    {"gate": "RX", "wire": 5, "param": "decode"},
+    {"gate": "RX", "wire": 6, "param": "decode"},
+    {"gate": "RX", "wire": 7, "param": "decode"},
+]
+>>>>>>> REPLACE
+</DIFF>

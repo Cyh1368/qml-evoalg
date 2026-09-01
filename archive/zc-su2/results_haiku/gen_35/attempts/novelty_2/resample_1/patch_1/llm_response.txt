@@ -1,0 +1,96 @@
+<NAME>
+alternating_crz_architecture
+</NAME>
+
+<DESCRIPTION>
+The current program achieves perfect accuracy (1.0) but uses 14 parameters with high depth and gate count. The recommendation suggests replacing fixed CZ gates with parametrized CRZ gates to give the optimizer direct control over entanglement angles.
+
+This fundamentally different approach replaces the entire linear chain architecture with a more compact **alternating CRZ ladder** that:
+1. Uses parametrized CRZ gates instead of fixed CZ gates, reducing effective parameter count through selective control
+2. Employs alternating qubit pairs (0-1, 2-3, 4-5, 6-7 in one layer, then 1-2, 3-4, 5-6 in the next) for better entanglement coverage
+3. Minimizes single-qubit rotations by using only strategic RY rotations on even qubits
+4. Drastically reduces circuit depth and gate count while maintaining accuracy
+
+The alternating pattern allows fuller connectivity with fewer gates, enabling faster convergence and better parameter efficiency. By making entanglement parametrized rather than fixed, the optimizer gains the flexibility needed for small datasets.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Layer 1: Single-qubit preparation on all qubits
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_2"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_2"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_2"},
+    
+    # Layer 2a: Even-pair CRZ entanglement (0-1, 2-3, 4-5, 6-7)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_even"},
+    
+    # Layer 2b: Odd-pair CRZ entanglement (1-2, 3-4, 5-6)
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_odd"},
+    
+    # Layer 3: Single-qubit rotation
+    {"gate": "RZ", "wire": 0, "param": "rz_1"},
+    {"gate": "RZ", "wire": 1, "param": "rz_2"},
+    {"gate": "RZ", "wire": 2, "param": "rz_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_2"},
+    
+    # Layer 4a: Even-pair CRZ entanglement (0-1, 2-3, 4-5, 6-7)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_even"},
+    
+    # Layer 4b: Odd-pair CRZ entanglement (1-2, 3-4, 5-6)
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_odd"},
+    
+    # Layer 5: Final single-qubit rotation
+    {"gate": "RY", "wire": 0, "param": "ry_3"},
+    {"gate": "RY", "wire": 1, "param": "ry_4"},
+    {"gate": "RY", "wire": 2, "param": "ry_3"},
+    {"gate": "RY", "wire": 3, "param": "ry_4"},
+    {"gate": "RY", "wire": 4, "param": "ry_3"},
+    {"gate": "RY", "wire": 5, "param": "ry_4"},
+    {"gate": "RY", "wire": 6, "param": "ry_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_4"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

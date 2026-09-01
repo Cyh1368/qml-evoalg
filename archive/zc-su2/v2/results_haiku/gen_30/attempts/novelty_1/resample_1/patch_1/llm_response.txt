@@ -1,0 +1,103 @@
+<NAME>
+efficient_entangling_crossover
+</NAME>
+
+<DESCRIPTION>
+This crossover combines the best elements of the three candidates:
+
+1. **From the best performer (0.67 score)**: The structured parameter sharing strategy with semantic parameter names (ry_even, ry_odd, ent_nn, etc.) which achieves 7 distinct parameters. This approach maximizes parameter efficiency, the dominant scoring factor.
+
+2. **From the current program (0.65 score)**: The efficient nearest-neighbor CRZ entangling pattern which uses fewer gates (81 vs 108) and shallower depth (15 vs 26), enabling faster convergence (90 vs 30 steps is slower, but the structure is more compact).
+
+3. **Key insight**: The second prior program shows that adding fixed CZ gates (without parameters) to the best architecture slightly improves worst_group_margin (0.36 vs 0.35), providing better discrimination on hard samples without increasing parameter count.
+
+The crossover strategy:
+- Retain the 7-parameter shared structure from the best performer (ry_even, ry_odd, ent_nn, ent_off, ent_lr, ry_mid, rz_final)
+- Simplify the entangling blocks to be more direct and efficient
+- Replace the CRZ long-range block with a more compact nearest-neighbor + offset pattern
+- Add fixed CZ gates for hard-sample discrimination without adding parameters
+- Remove unnecessary gates to reduce depth while maintaining expressiveness
+
+This hybrid approach should achieve:
+- Score ≥ 0.67 (maintaining best parameter efficiency with 7 distinct params)
+- Better convergence than current (reduced gate count from 81 to ~70)
+- Improved worst_group_margin through structured entanglement
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial rotation layer with parameter sharing (2 params: ry_even, ry_odd)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # First entangling block: nearest-neighbor XX gates (1 param: ent_nn)
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # Second entangling block: offset nearest-neighbor YY gates (1 param: ent_off)
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+
+    # Intermediate rotations (1 param: ry_mid)
+    {"gate": "RY", "wire": 1, "param": "ry_mid"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid"},
+
+    # Third entangling block: long-range CRZ gates (1 param: ent_lr)
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Fixed CZ gates for hard-sample discrimination (no parameters)
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [4, 7]},
+
+    # Final rotation layer with shared parameters (1 param: rz_final)
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

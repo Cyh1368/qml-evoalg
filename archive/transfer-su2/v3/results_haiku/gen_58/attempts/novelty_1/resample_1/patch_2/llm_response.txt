@@ -1,0 +1,78 @@
+I apologize for the error. I see now that I can only edit within the EVOLVE-BLOCK regions. Let me reconsider the approach.
+
+Looking at the constraints, I can only modify the ANSATZ_SPEC and related layer-building functions within the EVOLVE-BLOCK. The readout calibration parameters and predict_batch function are outside the editable region, so I cannot implement the parity-split readout directly.
+
+However, I can still improve the worst-group margin by modifying the ansatz itself to be more robust to different sample difficulties. Let me propose a different strategy: enhance the entanglement layer to include additional cross-qubit interactions that can better separate hard-to-classify samples by creating more diverse feature correlations.
+
+<NAME>
+enhanced_entanglement_for_worst_group_margin
+</NAME>
+
+<DESCRIPTION>
+The current worst_group_margin_mean of 0.32 suggests that the hardest samples in each difficulty group are not being separated robustly enough. The ansatz needs stronger expressiveness in encoding correlations between distant qubits.
+
+Currently, the entanglement layer has:
+- 4 nearest-neighbor XX gates (all sharing one param)
+- 2 YY gates on specific diagonals (sharing one param)
+- 2 ZZ gates on specific diagonals (sharing one param)
+
+This is too sparse for 8 qubits. By adding more long-range entanglement with additional ZZ and YY interactions across different qubit pairs, we can create richer feature correlations without significantly increasing parameter count (through parameter sharing within each gate type).
+
+The improvement focuses on:
+1. Adding more YY gates between pairs that aren't currently connected
+2. Adding more ZZ gates for long-range interactions
+3. Keeping all gates of the same type sharing parameters for economy
+
+This increases expressiveness while maintaining the same parameter count (7 distinct params), improving the circuit's ability to separate the hardest samples.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_entanglement_layer() -> list[dict]:
+    """Build minimal entanglement: nearest-neighbor XX, cross YY, long-range ZZ.
+    
+    All gates of the same type share parameters to maximize parameter economy
+    while maintaining sufficient expressiveness for robust separation.
+    """
+    return [
+        # Nearest-neighbor XX gates: all share one parameter for economy
+        {"gate": "XX", "wires": [0, 1], "param": "xx_near"},
+        {"gate": "XX", "wires": [2, 3], "param": "xx_near"},
+        {"gate": "XX", "wires": [4, 5], "param": "xx_near"},
+        {"gate": "XX", "wires": [6, 7], "param": "xx_near"},
+        # Cross-layer YY coupling on diagonals: shared parameter
+        {"gate": "YY", "wires": [1, 3], "param": "yy_diag"},
+        {"gate": "YY", "wires": [4, 6], "param": "yy_diag"},
+        # Long-range ZZ coupling: shared parameter
+        {"gate": "ZZ", "wires": [0, 3], "param": "zz_diag"},
+        {"gate": "ZZ", "wires": [4, 7], "param": "zz_diag"},
+    ]
+=======
+def _build_entanglement_layer() -> list[dict]:
+    """Build rich entanglement: nearest-neighbor XX, enhanced YY and ZZ for robustness.
+    
+    All gates of the same type share parameters to maximize parameter economy
+    while maintaining sufficient expressiveness for robust worst-group separation.
+    Additional long-range interactions improve feature correlation complexity.
+    """
+    return [
+        # Nearest-neighbor XX gates: all share one parameter for economy
+        {"gate": "XX", "wires": [0, 1], "param": "xx_near"},
+        {"gate": "XX", "wires": [2, 3], "param": "xx_near"},
+        {"gate": "XX", "wires": [4, 5], "param": "xx_near"},
+        {"gate": "XX", "wires": [6, 7], "param": "xx_near"},
+        # Cross-layer YY coupling on multiple diagonals: shared parameter
+        {"gate": "YY", "wires": [0, 2], "param": "yy_diag"},
+        {"gate": "YY", "wires": [1, 3], "param": "yy_diag"},
+        {"gate": "YY", "wires": [4, 6], "param": "yy_diag"},
+        {"gate": "YY", "wires": [5, 7], "param": "yy_diag"},
+        # Long-range ZZ coupling on multiple qubit pairs: shared parameter
+        {"gate": "ZZ", "wires": [0, 3], "param": "zz_diag"},
+        {"gate": "ZZ", "wires": [1, 4], "param": "zz_diag"},
+        {"gate": "ZZ", "wires": [2, 5], "param": "zz_diag"},
+        {"gate": "ZZ", "wires": [3, 6], "param": "zz_diag"},
+        {"gate": "ZZ", "wires": [4, 7], "param": "zz_diag"},
+    ]
+>>>>>>> REPLACE
+
+</DIFF>

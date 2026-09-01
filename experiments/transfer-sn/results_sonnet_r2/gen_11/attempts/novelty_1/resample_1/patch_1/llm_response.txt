@@ -1,0 +1,50 @@
+<NAME>
+per_qubit_gain_readout
+
+<DESCRIPTION>
+The current readout uses a single scalar gain applied to the mean of all qubit Z expectations, discarding information about which qubits are individually more predictive of the label. Extending this to a per-qubit gain vector (8 extra parameters) allows the model to learn a weighted combination of the qubit measurements before averaging, effectively acting as a linear readout layer. This is a lightweight, gradient-friendly enhancement that keeps the ansatz depth and gate count fixed while giving the classifier more flexibility to combine quantum features, which should reduce validation/test loss and improve accuracy without meaningfully increasing overfitting risk (only 7 extra parameters vs 170 total).
+
+<DIFF>
+<<<<<<< SEARCH
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+=======
+N_READOUT_PARAMS = N_QUBITS + 1  # trainable output calibration: per-qubit gains, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: calibrated mean of qubit Z expectations."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+    z = pnp.stack(circuit_z_expectations(records, circuit_params))  # (N_QUBITS, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+=======
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: calibrated weighted mean of qubit Z expectations."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gains = params[N_CIRCUIT_PARAMS : N_CIRCUIT_PARAMS + N_QUBITS]
+    bias = params[N_CIRCUIT_PARAMS + N_QUBITS]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+    z = pnp.stack(circuit_z_expectations(records, circuit_params))  # (N_QUBITS, B)
+    weighted = pnp.mean(gains[:, pnp.newaxis] * z, axis=0)
+    return weighted - bias
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+=======
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS : N_CIRCUIT_PARAMS + N_QUBITS] = 1.0  # per-qubit gains start at 1
+    init[N_CIRCUIT_PARAMS + N_QUBITS] = 0.0                     # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+>>>>>>> REPLACE

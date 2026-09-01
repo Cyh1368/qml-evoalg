@@ -1,0 +1,142 @@
+<NAME>
+interleaved_complete_graph_ansatz
+</NAME>
+
+<DESCRIPTION>
+This edit radically improves the expressiveness of the ansatz by splitting the complete-graph of 28 CZ gates into two non-commuting halves separated by a layer of parameterized RX rotations. In the prior versions, all 28 CZ gates commuted with each other and with the adjacent RZ layer, limiting the generated entanglement to a single basis.
+
+By grouping the CZ gates into two sets—matchings 1 to 4 and matchings 5 to 7—and interleaving an `RX` rotation between them, we force the subsequent CZ entanglers to act on a fundamentally rotated basis. This creates deeper, more complex correlations.
+
+We use 4 trainable, collective variables per block (`c_ry1`, `c_rx1`, `c_ry2`, `c_rx2`). The final `RY` and `RX` sequence serves to decode the entangled state back into a measurable Z polarization. This preserves parameter efficiency while dramatically increasing representation power.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "collective_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry"},
+    {"gate": "RZ", "wire": 0, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz"},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [7, 1]},
+    {"gate": "CZ", "wires": [2, 0]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [7, 2]},
+    {"gate": "CZ", "wires": [3, 1]},
+    {"gate": "CZ", "wires": [4, 0]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 3]},
+    {"gate": "CZ", "wires": [4, 2]},
+    {"gate": "CZ", "wires": [5, 1]},
+    {"gate": "CZ", "wires": [6, 0]},
+    {"gate": "CZ", "wires": [7, 4]},
+    {"gate": "CZ", "wires": [5, 3]},
+    {"gate": "CZ", "wires": [6, 2]},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [7, 5]},
+    {"gate": "CZ", "wires": [6, 4]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "RX", "wire": 0, "param": "collective_rx"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx"},
+]
+=======
+ANSATZ_SPEC = [
+    # Input basis change
+    {"gate": "RY", "wire": 0, "param": "c_ry1"},
+    {"gate": "RY", "wire": 1, "param": "c_ry1"},
+    {"gate": "RY", "wire": 2, "param": "c_ry1"},
+    {"gate": "RY", "wire": 3, "param": "c_ry1"},
+    {"gate": "RY", "wire": 4, "param": "c_ry1"},
+    {"gate": "RY", "wire": 5, "param": "c_ry1"},
+    {"gate": "RY", "wire": 6, "param": "c_ry1"},
+    {"gate": "RY", "wire": 7, "param": "c_ry1"},
+
+    # First half of perfect matchings
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [7, 1]},
+    {"gate": "CZ", "wires": [2, 0]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [7, 2]},
+    {"gate": "CZ", "wires": [3, 1]},
+    {"gate": "CZ", "wires": [4, 0]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 3]},
+    {"gate": "CZ", "wires": [4, 2]},
+    {"gate": "CZ", "wires": [5, 1]},
+    {"gate": "CZ", "wires": [6, 0]},
+
+    # Mid-layer non-commuting basis change
+    {"gate": "RX", "wire": 0, "param": "c_rx1"},
+    {"gate": "RX", "wire": 1, "param": "c_rx1"},
+    {"gate": "RX", "wire": 2, "param": "c_rx1"},
+    {"gate": "RX", "wire": 3, "param": "c_rx1"},
+    {"gate": "RX", "wire": 4, "param": "c_rx1"},
+    {"gate": "RX", "wire": 5, "param": "c_rx1"},
+    {"gate": "RX", "wire": 6, "param": "c_rx1"},
+    {"gate": "RX", "wire": 7, "param": "c_rx1"},
+
+    # Second half of perfect matchings
+    {"gate": "CZ", "wires": [7, 4]},
+    {"gate": "CZ", "wires": [5, 3]},
+    {"gate": "CZ", "wires": [6, 2]},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [7, 5]},
+    {"gate": "CZ", "wires": [6, 4]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 3]},
+
+    # Final read-out decoding layers
+    {"gate": "RY", "wire": 0, "param": "c_ry2"},
+    {"gate": "RY", "wire": 1, "param": "c_ry2"},
+    {"gate": "RY", "wire": 2, "param": "c_ry2"},
+    {"gate": "RY", "wire": 3, "param": "c_ry2"},
+    {"gate": "RY", "wire": 4, "param": "c_ry2"},
+    {"gate": "RY", "wire": 5, "param": "c_ry2"},
+    {"gate": "RY", "wire": 6, "param": "c_ry2"},
+    {"gate": "RY", "wire": 7, "param": "c_ry2"},
+    {"gate": "RX", "wire": 0, "param": "c_rx2"},
+    {"gate": "RX", "wire": 1, "param": "c_rx2"},
+    {"gate": "RX", "wire": 2, "param": "c_rx2"},
+    {"gate": "RX", "wire": 3, "param": "c_rx2"},
+    {"gate": "RX", "wire": 4, "param": "c_rx2"},
+    {"gate": "RX", "wire": 5, "param": "c_rx2"},
+    {"gate": "RX", "wire": 6, "param": "c_rx2"},
+    {"gate": "RX", "wire": 7, "param": "c_rx2"},
+]
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,26 @@
+<NAME>
+add_distance3_crz_ring
+
+<DESCRIPTION>
+Building on the dual-ring (distance-1 + distance-2 CRZ) ansatz that improved the score from 0.85 to 0.91, I add a third lightweight entanglement ring at graph-distance 3 around the 8-qubit cycle. This introduces longer-range correlations (each qubit now couples to its neighbor 3 steps away) at a minimal cost of only 2 additional shared parameters ("crz_e"/"crz_f"), following the same alternating-parameter-sharing pattern used successfully in the distance-1 and distance-2 rings. Since distance-3 on an 8-cycle produces 4 distinct edges before wrapping (0-3,1-4,2-5,3-6,4-7,5-0,6-1,7-2 — note this is 8 edges, each qubit appearing exactly twice, forming another 8-cycle at higher "stride"), this adds structured non-local entanglement that may help capture higher-order feature interactions not reachable by the shorter-range rings, while keeping the parameter count increase very small (only 2 new params per block, i.e. +12 total given 3 uploads x 2 repeats) relative to the existing 98 params, preserving parameter efficiency while potentially improving accuracy and reducing the train-test gap.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_c"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "crz_d"},
+    # Post-rotation: paired RZ (independent from pre-rotation to realign phases)
+=======
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_c"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "crz_d"},
+    # Distance-3 ring (long-range), shared angles crz_e / crz_f alternating
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_e"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "crz_f"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_e"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "crz_f"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "crz_e"},
+    {"gate": "CRZ", "wires": [5, 0], "param": "crz_f"},
+    {"gate": "CRZ", "wires": [6, 1], "param": "crz_e"},
+    {"gate": "CRZ", "wires": [7, 2], "param": "crz_f"},
+    # Post-rotation: paired RZ (independent from pre-rotation to realign phases)
+>>>>>>> REPLACE
+</DIFF>

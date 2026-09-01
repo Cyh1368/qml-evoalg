@@ -1,0 +1,88 @@
+# Analysis
+
+Looking at the performance metrics across the three programs:
+
+1. **First program (seed)**: Combined score 0.67, worst_group_margin 0.36, 7 distinct params, convergence at step 30
+2. **Second program (with CRX)**: Combined score 0.67, worst_group_margin 0.36, 7 distinct params, convergence at step 30, slightly lower depth
+3. **Current program**: Combined score 0.65, worst_group_margin 0.35, 8 distinct params, convergence at step 60 (slower!)
+
+The current program has **regressed** from the prior best (0.67 → 0.65). The key issues are:
+- Introduced a new parameter `rz_mid` that increased distinct params from 7 to 8
+- This added parameter didn't improve worst_group_margin (actually slightly decreased it: 0.36 → 0.35)
+- Convergence became much slower (30 → 60 steps)
+- Parameter efficiency decreased
+
+The best-performing candidate (second program) achieves the combined score of 0.67 with 7 distinct parameters and uses:
+1. Strong nearest-neighbor entanglement (XX gates)
+2. CRX gates sharing the `ent_nn` parameter for variety
+3. Offset YY gates
+4. Intermediate RY rotations
+5. Long-range CRZ gates covering diagonal patterns
+6. Final shared RZ layer
+
+The recommendation suggests extending the CRZ block with additional gates on wires [3,6] and [5,0] using the existing `ent_lr` parameter. This would deepen diagonal entanglement without adding new parameters—exactly what we need.
+
+Let me improve the current program by:
+1. Removing the new `rz_mid` parameter that hurt performance
+2. Adding the recommended CRZ extensions on opposite corners to boost worst_group_margin
+3. Restoring parameter economy to 7 distinct params
+
+<NAME>
+extend_crz_opposite_corners_remove_rzmid
+</NAME>
+
+<DESCRIPTION>
+The current program regressed compared to the prior best (0.67 → 0.65) primarily due to:
+1. Introduction of `rz_mid` parameter increased distinct params from 7 to 8, reducing parameter efficiency
+2. Worse worst_group_margin (0.36 → 0.35) and slower convergence (60 vs 30 steps)
+
+The fix combines two improvements:
+1. **Remove the `rz_mid` layer** entirely—it added a new parameter without improving robustness on hard samples
+2. **Extend the long-range CRZ block** with two additional gates on opposite corners [3,6] and [5,0] using the existing `ent_lr` parameter
+
+This restores parameter economy (back to 7 distinct params) while deepening diagonal entanglement across the full qubit space. The opposite-corner CRZ gates create richer gradient signals for discriminating the hardest samples without new trainable parameters—exactly matching the recommendation and the best-performing prior candidate's strategy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # Mid-range rotations after first entanglement (reduced to even indices only)
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+
+    # Second entangling block: offset nearest-neighbor YY gates
+=======
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # Second entangling block: offset nearest-neighbor YY gates
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Third entangling block: long-range CRZ gates with tunable phase control
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+=======
+    # Third entangling block: long-range CRZ gates with tunable phase control
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [5, 0], "param": "ent_lr"},
+>>>>>>> REPLACE
+</DIFF>

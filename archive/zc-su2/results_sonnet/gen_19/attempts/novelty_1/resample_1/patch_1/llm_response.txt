@@ -1,0 +1,71 @@
+<NAME>
+global_rot_xx_ring_entangler
+
+<DESCRIPTION>
+Building on the best-performing global-rotation ring ansatz (score 0.72, 14 params), I inject a small amount of tunable two-qubit interaction strength into the entangling layer while keeping the ultra-low parameter count that drove the parameter-economy score. Instead of an all-fixed CZ ring, every second link (0-1, 2-3, 4-5, 6-7) becomes a parametrized XX(θ) gate sharing a single new parameter "xx_ent", while the remaining ring links (1-2, 3-4, 5-6, 7-0) stay as fixed, parameter-free CZ gates. This keeps connectivity, depth and gate count essentially unchanged (just swapping some fixed 2-qubit gates for parametrized ones of the same locality) but adds one extra trainable degree of freedom per block repetition, giving the circuit a tunable entangling strength that can be learned from very few examples rather than being fixed at maximum entanglement. Combined with the two global single-axis rotation parameters (RY before, RZ after entangling), this keeps the total parameter count small (3 unique names per block, ~21 total across repetitions) while allowing the optimizer to modulate both single-qubit phase/amplitude and the strength of two-qubit correlations, which should help match or exceed the 100% train/val/test accuracy of the seed while potentially converging faster and generalizing at least as well, and scoring better on parameter efficiency than schemes with more named parameters.
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Pre-entanglement rotations: ALL 8 qubits share a single global RY
+    # parameter (minimal single-qubit parameter footprint).
+    {"gate": "RY", "wire": 0, "param": "ry_global"},
+    {"gate": "RY", "wire": 1, "param": "ry_global"},
+    {"gate": "RY", "wire": 2, "param": "ry_global"},
+    {"gate": "RY", "wire": 3, "param": "ry_global"},
+    {"gate": "RY", "wire": 4, "param": "ry_global"},
+    {"gate": "RY", "wire": 5, "param": "ry_global"},
+    {"gate": "RY", "wire": 6, "param": "ry_global"},
+    {"gate": "RY", "wire": 7, "param": "ry_global"},
+
+    # Entangling ring: alternate fixed CZ links with parametrized XX links
+    # that all share a single "xx_ent" parameter. This injects a tunable
+    # entangling strength at the cost of just one extra parameter per block,
+    # while keeping the same connectivity, depth and gate count as a plain
+    # CZ ring.
+    {"gate": "XX", "wires": [0, 1], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Post-entanglement rotations: ALL 8 qubits share a single global RZ
+    # parameter, distinct from the RY and xx_ent parameters, so the block
+    # keeps only 3 unique trainable parameters overall.
+    {"gate": "RZ", "wire": 0, "param": "rz_global"},
+    {"gate": "RZ", "wire": 1, "param": "rz_global"},
+    {"gate": "RZ", "wire": 2, "param": "rz_global"},
+    {"gate": "RZ", "wire": 3, "param": "rz_global"},
+    {"gate": "RZ", "wire": 4, "param": "rz_global"},
+    {"gate": "RZ", "wire": 5, "param": "rz_global"},
+    {"gate": "RZ", "wire": 6, "param": "rz_global"},
+    {"gate": "RZ", "wire": 7, "param": "rz_global"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

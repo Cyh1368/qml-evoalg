@@ -1,0 +1,31 @@
+<NAME>backward_cz_ladder</NAME>
+
+<DESCRIPTION>
+Add a fixed (parameter-free) backward CZ ladder (qubit 7→6→…→0) after the existing skip-2 CNOT backbone and before the parametrized CRZ layer. This increases entangling connectivity and mixes phase information across all neighboring qubits in the reverse direction, without adding any new trainable parameters (parameter count stays at 5 distinct params). Phase-type (CZ) entangling gates tend to be less sensitive to bit-flip-like noise than CNOT chains and often improve generalization by providing richer entanglement structure while keeping the model parameter-efficient — directly addressing the dominant "worst group margin" and generalization-gap scoring terms without any parameter cost.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+for _i in [0, 2, 4, 6]:
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [_i, (_i + 2) % N_QUBITS]})
+for _i in [1, 3, 5, 7]:
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [_i, (_i + 2) % N_QUBITS]})
+
+# Parametrized entangling layer along the same chain, split into two shared
+=======
+for _i in [0, 2, 4, 6]:
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [_i, (_i + 2) % N_QUBITS]})
+for _i in [1, 3, 5, 7]:
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [_i, (_i + 2) % N_QUBITS]})
+
+# Fixed (parameter-free) backward CZ ladder to add further entangling
+# connectivity in the reverse direction using phase-type gates, which tend
+# to be more robust to bit-flip noise than CNOT chains. No new trainable
+# parameters are introduced.
+for _i in range(N_QUBITS - 1, 0, -1):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [_i, _i - 1]})
+
+# Parametrized entangling layer along the same chain, split into two shared
+>>>>>>> REPLACE
+
+</DIFF>

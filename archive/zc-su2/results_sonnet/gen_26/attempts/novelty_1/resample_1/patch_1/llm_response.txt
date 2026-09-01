@@ -1,0 +1,70 @@
+<NAME>
+grouped_param_reuse_crz_chain
+
+<DESCRIPTION>
+This design merges the strongest traits of the two lineages:
+
+1. From the "seed 2" line (score 0.72, depth 29): coarse 2-group parameter sharing (`p_g0` for qubits 0-3, `p_g1` for qubits 4-7) applied both pre- and post-entanglement, and a shallow linear nearest-neighbor entangling chain (no extra wrap-around/2-skip links), which achieved perfect accuracy with only 2 unique parameters per block and the lowest circuit depth among the 0.72-scoring variants.
+
+2. From the "current" program's idea of parametrized two-qubit interaction (using `XX`/`CRZ`-type gates instead of fixed `CZ`) to inject tunable entanglement strength — but crucially, instead of introducing a *new* parameter name (which raised the unique-parameter count to 3 and empirically hurt both parameter-efficiency and convergence speed, dropping the score to 0.68), the new entangling layer *reuses* the already-existing `p_g0`/`p_g1` names, alternating between them along the chain.
+
+This gives the circuit a trainable, more expressive entangling layer (as opposed to a completely fixed `CZ` chain) while keeping the total trainable-parameter count at exactly 2 per block — matching the best-known parameter economy. The linear (non-wraparound) topology keeps depth/gate-count low, consistent with the better-depth 0.72 variant rather than the deeper 2-skip-ring variant (which scored identically but at higher depth/gate cost, offering no benefit).
+
+The hypothesis is that reusing existing parameters for the entangling gates increases expressivity/accuracy-robustness on very few training examples without paying any parameter-economy or convergence-speed penalty, potentially improving on the 0.72 baseline.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 1. Coarse-grained RY rotation layer: 8 qubits split into 2 halves,
+#    sharing a single trainable parameter per half (2 unique params total).
+#    This mirrors the best-scoring seed's extreme parameter reduction.
+for wire in range(N_QUBITS):
+    group = wire // 4
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": f"p_g{group}"})
+
+# 2. Parametrized nearest-neighbor entangling chain (no wrap-around),
+#    using CRZ gates instead of fixed CZ gates. Crucially, the entangling
+#    rotation angles REUSE the two existing group parameters (alternating
+#    p_g0 / p_g1 along the chain) instead of introducing new parameter
+#    names. This injects tunable, data-dependent entanglement strength
+#    (an idea borrowed from parametrized two-qubit ansatze) while keeping
+#    the total trainable-parameter count fixed at 2 per block, avoiding
+#    the convergence/efficiency penalty observed when a genuinely new
+#    entangling parameter was added.
+for i in range(N_QUBITS - 1):
+    group = i % 2
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [i, i + 1], "param": f"p_g{group}"})
+
+# 3. Post-entanglement rotation layer reusing the SAME 2 parameters as
+#    step 1, just on a different axis (RZ), giving the circuit extra
+#    expressivity at zero extra parameter cost.
+for wire in range(N_QUBITS):
+    group = wire // 4
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": f"p_g{group}"})
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

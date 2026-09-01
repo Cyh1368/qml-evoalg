@@ -1,0 +1,107 @@
+Looking at the current performance metrics, I notice:
+
+1. **High generalization gap** (0.31): Training accuracy is 0.88 but validation/test are much lower (0.63/0.56)
+2. **Poor worst-group margin** (0.03): The classifier struggles with hard samples
+3. **Many parameters** (24 distinct): Reduce to improve generalization
+4. **Current structure**: Pure local rotations + linear chain interactions; lacks expressiveness for capturing complex patterns
+
+**Analysis of the problem:**
+
+The current ansatz has 24 distinct parameters but shows poor generalization. This suggests:
+- Overfitting to the small training set
+- Insufficient parameter sharing (redundancy)
+- Limited entanglement pattern (only linear chain CZ gates)
+
+**Proposed improvements:**
+
+1. **Reduce parameters through aggressive parameter sharing**: Use the same RY/RZ parameters across multiple qubits to reduce parameter count while maintaining expressiveness through different entanglement patterns.
+
+2. **Add richer entanglement**: Include non-local interactions (XX/YY gates) in addition to the linear chain, which helps capture more complex correlations and may improve robustness to hard samples.
+
+3. **Simplify the structure**: Remove some redundant post-rotation parameters and share pre-rotation parameters more aggressively.
+
+The key insight is that parameter economy is explicitly prioritized ("fewer distinct trainable parameter names ALWAYS scores higher"), and the worst-group margin requires better separation. By sharing parameters and adding diverse entanglement, we reduce overfitting and improve robustness.
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "XX", "wires": [0, 3], "param": "xx_a"},
+    {"gate": "XX", "wires": [1, 4], "param": "xx_a"},
+    {"gate": "XX", "wires": [2, 5], "param": "xx_a"},
+    {"gate": "XX", "wires": [3, 6], "param": "xx_a"},
+    {"gate": "XX", "wires": [4, 7], "param": "xx_a"},
+    {"gate": "YY", "wires": [0, 5], "param": "yy_a"},
+    {"gate": "YY", "wires": [1, 6], "param": "yy_a"},
+    {"gate": "YY", "wires": [2, 7], "param": "yy_a"},
+]
+>>>>>>> REPLACE
+</DIFF>
+
+**Rationale for the changes:**
+
+1. **Parameter sharing in RY gates**: Changed 8 distinct RY parameters to just 2 (ry_a, ry_b) by alternating them. This reduces parameter count while allowing different effective rotations through the entanglement pattern.
+
+2. **Unified RZ pre-rotation**: All pre-rotations now use the same "rz_pre" parameter. This dramatically reduces redundancy (8 → 1 parameter).
+
+3. **Simplified linear interactions**: Changed from 7 consecutive CZ gates to 4 spaced CZ gates (0-1, 2-3, 4-5, 6-7), reducing gate count while maintaining coverage.
+
+4. **Added non-local XX/YY interactions**:
+   - XX gates create 3-qubit distance correlations (0-3, 1-4, 2-5, 3-6, 4-7)
+   - YY gates create longer-range correlations (0-5, 1-6, 2-7)
+   - These diverse entanglement patterns improve expressiveness for capturing hard samples
+
+5. **Total distinct parameters**: Reduced from 24 to just 5 (ry_a, ry_b, rz_pre, xx_a, yy_a), which should significantly improve generalization while maintaining expressiveness through richer entanglement topology.

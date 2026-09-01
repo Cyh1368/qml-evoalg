@@ -1,0 +1,117 @@
+<NAME>
+reduce_parameter_space_and_merge_rz
+</NAME>
+
+<DESCRIPTION>
+I will optimize the circuit by reducing the parameter space from 4 groups to 2, and merging the pre- and post-entanglement RZ rotation parameters. By sharing the RZ parameters between the pre- and post-CZ layers, we reduce the total number of parameters per block from 12 to 4. This promotes better generalization, mirroring the structure of high-performing previous candidates.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Parameter-efficient block:
+# - Shared RY (one param per pair-group)
+# - Shared RZ pre/post (one param per pair-group)
+# - CZ entanglement: two interleaved rings + opposite-qubit chords
+#   (adds expressivity without adding trainable parameters)
+ANSATZ_SPEC = [
+    # Shared RY across paired structure: (0,1),(2,3),(4,5),(6,7)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_3"},
+
+    # Shared pre-RZ: one param per pair-group
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_3"},
+
+    # Two interleaved CZ rings: even ring
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+    # odd ring
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Opposite-chord CZs (long-range mixing, still parameter-free)
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Shared post-RZ: one param per pair-group
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_3"},
+]
+=======
+# Parameter-efficient block:
+# - Coarse-grained RY sharing (0-3 vs 4-7)
+# - Merged pre/post RZ sharing (0-3 vs 4-7)
+# - CZ entanglement (two interleaved rings + opposite-qubit chords)
+ANSATZ_SPEC = [
+    # Coarse-grained RY sharing (0-3 vs 4-7)
+    {"gate": "RY", "wire": 0, "param": "ry_h"},
+    {"gate": "RY", "wire": 1, "param": "ry_h"},
+    {"gate": "RY", "wire": 2, "param": "ry_h"},
+    {"gate": "RY", "wire": 3, "param": "ry_h"},
+    {"gate": "RY", "wire": 4, "param": "ry_h2"},
+    {"gate": "RY", "wire": 5, "param": "ry_h2"},
+    {"gate": "RY", "wire": 6, "param": "ry_h2"},
+    {"gate": "RY", "wire": 7, "param": "ry_h2"},
+
+    # Coarse-grained RZ sharing (0-3 vs 4-7), reused pre/post
+    {"gate": "RZ", "wire": 0, "param": "rz_h"},
+    {"gate": "RZ", "wire": 1, "param": "rz_h"},
+    {"gate": "RZ", "wire": 2, "param": "rz_h"},
+    {"gate": "RZ", "wire": 3, "param": "rz_h"},
+    {"gate": "RZ", "wire": 4, "param": "rz_h2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_h2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_h2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_h2"},
+
+    # Two interleaved CZ rings
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Opposite-chord CZs
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Reuse same RZ params post-entanglement
+    {"gate": "RZ", "wire": 0, "param": "rz_h"},
+    {"gate": "RZ", "wire": 1, "param": "rz_h"},
+    {"gate": "RZ", "wire": 2, "param": "rz_h"},
+    {"gate": "RZ", "wire": 3, "param": "rz_h"},
+    {"gate": "RZ", "wire": 4, "param": "rz_h2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_h2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_h2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_h2"},
+]
+>>>>>>> REPLACE
+</DIFF>

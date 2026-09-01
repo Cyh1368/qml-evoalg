@@ -1,0 +1,103 @@
+Looking at the performance metrics:
+
+**Prior programs (both scoring 0.68):**
+- Parameter count: 20 (highly shared parameters)
+- Convergence: 60 steps
+- Parameter efficiency: 0.05
+
+**Current program (scoring 0.64):**
+- Parameter count: 38 (less sharing with ry_a/ry_b, rz_pre_a/rz_pre_b, rz_post_a/rz_post_b)
+- Convergence: 90 steps (slower)
+- Parameter efficiency: 0.03 (lower)
+
+**Analysis:**
+The current program has increased parameters without improving accuracy (all still 100%). The key insight from the prior programs is that **maximum parameter sharing significantly improves parameter efficiency and convergence speed** while maintaining perfect accuracy. The current program's reduced sharing actually hurts performance.
+
+**Recommendation:**
+Implement the suggestion from the prompt: tie the pre- and post-entanglement RZ layers to a **single shared parameter** (`rz_shared`), and reduce RY to also use a single shared parameter. This creates the most economical yet effective architecture:
+- **2 parameters total** (ry_shared, rz_shared) 
+- Expected convergence in ~60 steps (matching prior programs)
+- Expected parameter efficiency improvement from 0.03 → ~0.10
+
+This maximizes parameter economy while preserving the proven accuracy.
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE
+</DIFF>
+
+**Rationale:**
+- Reduces parameters from 38 to **2** (ry_shared, rz_shared)
+- Unifies pre- and post-entanglement RZ rotations under a single parameter, as suggested
+- Returns to the proven architecture of prior high-scoring programs while keeping the same circuit depth
+- Expected improvements:
+  - **Parameter efficiency**: 0.03 → ~0.10 (5x improvement)
+  - **Convergence speed**: 90 → ~60 steps
+  - **Combined score**: 0.64 → ~0.68 (matching prior programs)

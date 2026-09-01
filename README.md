@@ -194,3 +194,72 @@ The definitions for the patch note labels and the circuit labels are tailored to
 4. Lange, R. T. et al. *ShinkaEvolve: Towards Open-Ended and Sample-Efficient Program Evolution.* arXiv:2509.19349, 2025.
 5. Pérez-Salinas, A., Cervera-Lierta, A., Gil-Fuster, E., Latorre, J. I. *Data re-uploading for a universal quantum classifier.* Quantum 4, 226, 2020.
 6. Bergholm, V. et al. *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* arXiv:1811.04968.
+
+## Appendix
+
+### A. Repository layout
+
+| path | what it is |
+|---|---|
+| `README.md` | this report |
+| `figures/` | every figure embedded above, as PNG |
+| `experiments/` | the S_n runs: task definition, ensemble configs, launch scripts, and one `results_*/programs.sqlite` per run |
+| `analysis/` | the labelling pipeline and the scripts that regenerate every figure and statistic quoted above |
+| `viz/` | two interactive viewers for the runs (see below) |
+| `archive/` | earlier work not used by this report: the tic-tac-toe and SU(2) tasks, the zero-context variants, the Azure-routed arms, and dated notes |
+
+Each of those directories has its own `README.md` with the details.
+
+To reproduce the numbers and figures in this report:
+
+```bash
+python3 analysis/report/compute_stats.py    # every statistic quoted above
+python3 analysis/report/make_figures.py     # regenerates the figures
+```
+
+Both read a frozen copy of the label tables in `analysis/report/data/`, so they
+run without the run databases. They need `numpy`, `matplotlib` and `scipy`.
+
+### B. Launching the visualizers
+
+Two static web pages ship with the repository. Neither needs a build step or an
+internet connection: the data files are committed, so serving the folder is
+enough. Any static file server works; Python's built-in one is used below.
+
+**Run explorer** — the evolutionary tree of any run, with per-node patch notes,
+circuit structure, metrics, code diffs and lineage tracing:
+
+```bash
+cd viz
+python3 -m http.server 8080
+# open http://localhost:8080
+```
+
+Pick a run from the selector at the top left (runs are grouped by task). Click a
+node in the tree to load its patch note and circuit; "Trace best" walks the
+ancestry of the run's best program, which is the intended way to see how a
+breakthrough was assembled.
+
+**Ansatz gallery** — the seed circuit, the hand-designed $S_8$-equivariant
+baseline, and the best circuit of each ensemble arm, drawn gate by gate:
+
+```bash
+cd viz/circuits
+python3 -m http.server 8081
+# open http://localhost:8081
+```
+
+Opening `viz/index.html` or `viz/circuits/index.html` directly as a `file://`
+URL also works if you would rather not run a server.
+
+Rebuilding either viewer from the run databases is only necessary after adding
+new runs, and is documented in `viz/README.md`. The short version:
+
+```bash
+python3 viz/build_data.py --repo-root . --scan-root experiments --out viz/data
+python3 viz/circuits/build_circuits.py --repo-root . --out viz/circuits/circuits_data.js
+```
+
+`--scan-root experiments` matters: run names in the viewer are derived from the
+directory path relative to it, so scanning the repository root instead would
+rename every run.

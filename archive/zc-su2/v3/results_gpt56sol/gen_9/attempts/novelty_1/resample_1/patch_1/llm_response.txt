@@ -1,0 +1,61 @@
+<NAME>
+parity_ring_compact
+</NAME>
+
+<DESCRIPTION>
+This crossover retains the current program’s stronger parity-shared RY layer and closed CZ ring while consolidating the two global RZ layers into one shared layer. Because RZ gates commute with CZ, separate pre/post layers add redundant depth and parameters. The compact design uses only three distinct ansatz parameters, reducing optimization complexity, gate count, and likely overfitting while preserving parity-sensitive mixing and full-ring entanglement.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "RZ", "wire": 0, "param": "rz_global"},
+    {"gate": "RZ", "wire": 1, "param": "rz_global"},
+    {"gate": "RZ", "wire": 2, "param": "rz_global"},
+    {"gate": "RZ", "wire": 3, "param": "rz_global"},
+    {"gate": "RZ", "wire": 4, "param": "rz_global"},
+    {"gate": "RZ", "wire": 5, "param": "rz_global"},
+    {"gate": "RZ", "wire": 6, "param": "rz_global"},
+    {"gate": "RZ", "wire": 7, "param": "rz_global"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

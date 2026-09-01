@@ -1,0 +1,136 @@
+I see the issue. The `N_UPLOADS` and `N_REPEATS` constants are outside the EVOLVE-BLOCK and cannot be modified. I can only change the ANSATZ_SPEC. Let me propose a different strategy that works within the constraints: simplify and optimize the ansatz to reduce parameters while maintaining performance.
+
+<NAME>
+simplified_ansatz_fewer_params
+</NAME>
+
+<DESCRIPTION>
+The current program achieves 0.89 combined score with 38 parameters per block (228 total circuit params). The prior seed achieved 0.91 with only 26 parameters per block (156 total circuit params) using the same N_UPLOADS=3, N_REPEATS=2 structure.
+
+The current ansatz has too many independent parameters:
+- ry_even, ry_odd (2 params)
+- cry_long_a, cry_long_b (2 params)
+- rz_even, rz_odd (2 params)
+Total: 6 unique params × 2 repeats × 3 uploads = 36 circuit params + 2 readout = 38 total
+
+The prior seed used:
+- ry_init, rz_main, cry_nnn, ry_final (4 params)
+Total: 4 unique params × 2 repeats × 3 uploads = 24 circuit params + 2 readout = 26 total
+
+Strategy: Return to the proven 4-parameter architecture (ry_init, rz_main, cry_nnn, ry_final) which achieved 0.93 test accuracy. This reduces parameters by 32%, improves parameter efficiency, and leverages the successful design patterns:
+- Single shared RY initialization for all qubits
+- Fixed nearest-neighbor and cross-ring CZ entanglement
+- Shared parametrized CRY on next-nearest-neighbor pairs
+- Single shared final RY layer
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Tier 1: Pre-entanglement RY with parity-based parameter sharing
+    # Even qubits share ry_even; odd qubits share ry_odd
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # Tier 2: Nearest-neighbor entanglement (fixed, no parameters)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Tier 3: Next-nearest-neighbor entanglement (fixed, no parameters)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Tier 4: Long-range parametrized CRY for global correlations (shared parameters)
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_long_a"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cry_long_a"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry_long_a"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cry_long_a"},
+    {"gate": "CRY", "wires": [0, 7], "param": "cry_long_b"},
+    {"gate": "CRY", "wires": [1, 6], "param": "cry_long_b"},
+
+    # Tier 5: Post-entanglement RZ with parity-based parameter sharing
+    # Even qubits share rz_even; odd qubits share rz_odd
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: Initial RY with full parameter sharing (efficient)
+    {"gate": "RY", "wire": 0, "param": "ry_init"},
+    {"gate": "RY", "wire": 1, "param": "ry_init"},
+    {"gate": "RY", "wire": 2, "param": "ry_init"},
+    {"gate": "RY", "wire": 3, "param": "ry_init"},
+    {"gate": "RY", "wire": 4, "param": "ry_init"},
+    {"gate": "RY", "wire": 5, "param": "ry_init"},
+    {"gate": "RY", "wire": 6, "param": "ry_init"},
+    {"gate": "RY", "wire": 7, "param": "ry_init"},
+
+    # Layer 2: Nearest-neighbor CZ ring (local entanglement)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Layer 3: Cross-ring CZ (long-range entanglement)
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Layer 4: RZ with parameter sharing (efficient)
+    {"gate": "RZ", "wire": 0, "param": "rz_main"},
+    {"gate": "RZ", "wire": 1, "param": "rz_main"},
+    {"gate": "RZ", "wire": 2, "param": "rz_main"},
+    {"gate": "RZ", "wire": 3, "param": "rz_main"},
+    {"gate": "RZ", "wire": 4, "param": "rz_main"},
+    {"gate": "RZ", "wire": 5, "param": "rz_main"},
+    {"gate": "RZ", "wire": 6, "param": "rz_main"},
+    {"gate": "RZ", "wire": 7, "param": "rz_main"},
+
+    # Layer 5: Parametrized next-nearest-neighbor CRY (flexible entanglement)
+    {"gate": "CRY", "wires": [0, 2], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [2, 4], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [4, 6], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [6, 0], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [1, 3], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [3, 5], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [5, 7], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [7, 1], "param": "cry_nnn"},
+
+    # Layer 6: Final RY readout layer with sharing (efficient)
+    {"gate": "RY", "wire": 0, "param": "ry_final"},
+    {"gate": "RY", "wire": 1, "param": "ry_final"},
+    {"gate": "RY", "wire": 2, "param": "ry_final"},
+    {"gate": "RY", "wire": 3, "param": "ry_final"},
+    {"gate": "RY", "wire": 4, "param": "ry_final"},
+    {"gate": "RY", "wire": 5, "param": "ry_final"},
+    {"gate": "RY", "wire": 6, "param": "ry_final"},
+    {"gate": "RY", "wire": 7, "param": "ry_final"},
+]
+>>>>>>> REPLACE
+</DIFF>

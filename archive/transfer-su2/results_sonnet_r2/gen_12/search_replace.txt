@@ -1,0 +1,18 @@
+Looking at the current program's performance (n_params=20, perfect accuracy, fast convergence at step 60), it's already very efficient. Let me try to push parameter economy even further while maintaining the excellent convergence properties.
+
+The current spec uses 3 shared parameters per block (ry_shared, zz_shared, rz_shared) × 6 repeats = 18, plus 2 readout = 20 total. I'll try reducing to 2 shared parameters per block by merging the RZ layer's role into the entangling structure, or alternatively try a slightly different structure that maintains expressivity with fewer unique parameters.
+
+<NAME>
+merge_rz_into_ry_phase_reduction
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses 3 unique parameters per block (ry_shared, zz_shared, rz_shared) totaling 18 circuit params + 2 readout = 20. To push parameter economy further, I merge the local RY and RZ layers into a single combined single-qubit rotation approach: since RY followed by RZ on all qubits with shared angles is somewhat redundant when repeated 6 times (the RZ layer mostly commutes past the CZ ladder for Z-basis correlator readout in the specific pairs measured), I instead replace the trailing RZ layer with a second independent RY parameter, keeping 3 params/block but changing composition to leverage two non-redundant single-qubit generator directions per block (ry_shared, zz_shared, rz_shared -> ry_pre_shared, zz_shared, ry_post_shared) alternating rotation axes for improved expressivity per parameter without adding count. This keeps 20 total params but should reduce loss/improve convergence speed via richer per-parameter Bloch-sphere coverage. Additionally, I add a single shared RX layer before the RY layer at zero extra param growth by reusing the ry_shared name is not possible, so instead I keep the same total 20 params architecture, testing an alternative wiring: move the extra ZZ gate to a different pair (increase entanglement diversity) to break the artificial CZ+ZZ redundancy on the same edge (0,7), improving conditioning without new parameters.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "ZZ", "wires": [0, 7], "param": "zz_shared"},
+=======
+    {"gate": "ZZ", "wires": [2, 5], "param": "zz_shared"},
+>>>>>>> REPLACE
+</DIFF>

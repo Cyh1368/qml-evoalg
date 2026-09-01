@@ -1,0 +1,36 @@
+<NAME>
+add_cz_cross_block_entanglement
+</NAME>
+
+<DESCRIPTION>
+The current program achieves a combined score of 0.87 with 122 parameters and good validation accuracy (0.90). However, analyzing the prior programs reveals:
+
+1. The second program (score 0.86) with 92 parameters achieved better test accuracy (0.87 vs 0.85) despite fewer parameters, suggesting parameter efficiency improvements are valuable.
+2. The current program has many parametrized CRY gates (8 total) which can make the optimization landscape complex.
+3. The current depth (87) is moderate but could benefit from additional non-parametrized entanglement to improve global connectivity without increasing parameter count.
+
+The recommendation suggests adding parameter-free CZ cross-block entanglement on non-adjacent qubit pairs. This approach:
+- Adds global connectivity between distant qubits (e.g., 0-4, 1-5, 2-6, 3-7) with CZ gates that cost no parameters
+- Improves representational power without complicating the optimizer's landscape
+- Increases circuit depth modestly (adds ~4 gates per block, ~24 total across all blocks)
+- Should enhance feature learning by enabling long-range qubit correlations
+
+This is orthogonal to the parameter sharing already in place and complements the existing CRY gates for local interactions.
+
+Implementation: Insert a layer of parameter-free CZ gates on four non-adjacent pairs after the second CRY layer and before the final RZ layer in ANSATZ_SPEC.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_70"},
+    {"gate": "RZ", "wire": 0, "param": "rz_final_0"},
+=======
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_70"},
+    # Parameter-free cross-block entanglement on non-adjacent pairs for global connectivity
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_final_0"},
+>>>>>>> REPLACE
+</DIFF>

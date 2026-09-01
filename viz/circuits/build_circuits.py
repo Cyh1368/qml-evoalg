@@ -21,7 +21,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-TASK_DIR = "transfer-sn"
+TASK_DIR = "experiments/transfer-sn"
 
 # The current ensemble arms: OpenRouter rosters with disjoint, three-vendor
 # pools at xhigh reasoning. The earlier Azure-routed arms (az_*) are gone --
@@ -200,7 +200,7 @@ def main() -> None:
                 "key": key,
                 "kind": kind,
                 "title": title,
-                "source": f"transfer-sn/{fname}",
+                "source": f"experiments/transfer-sn/{fname}",
                 "gates": gates,
                 "stats": spec_stats(gates),
             }
@@ -233,7 +233,7 @@ def main() -> None:
                     "tier": tier,
                     "run": run_dir,
                     "title": f"{tier} ensemble — generation {row['generation']}",
-                    "source": f"transfer-sn/{run_dir}/programs.sqlite",
+                    "source": f"experiments/transfer-sn/{run_dir}/programs.sqlite",
                     "program_id": row["id"],
                     "parent_id": row["parent_id"],
                     "generation": row["generation"],

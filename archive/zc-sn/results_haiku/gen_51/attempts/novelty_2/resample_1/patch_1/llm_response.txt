@@ -1,0 +1,122 @@
+<NAME>
+hybrid_efficient_ansatz
+</NAME>
+
+<DESCRIPTION>
+This crossover combines the best elements from three candidate implementations:
+
+1. **From Current Program (score 0.90)**: The fast convergence (120 steps) and parameter efficiency (56 params) with minimal depth (123), plus the global RX layer which enhances Hilbert-space mixing.
+
+2. **From Prior Program 2 (score 0.91)**: The cleaner 50-parameter architecture without initial RZ seeding, which achieves better parameter efficiency and similar validation accuracy (0.93).
+
+3. **From Prior Program 1 (score 0.91)**: The alternating RZ mid-circuit layers (rz_mid_a/b) that provide enhanced phase flexibility without excessive parameter growth.
+
+**Key Design Choices**:
+- Remove the redundant initial RZ seeding block (rz_init_a/b) that adds 16 gates but doesn't improve performance
+- Keep the minimal 2-parameter sharing scheme for RY and RZ layers (ry_a/b, rz_pre_a/b, rz_post_a/b)
+- Include the mid-circuit RZ sandwich with alternating qubit groups (rz_mid_a/b) for phase flexibility
+- Maintain the standard forward linear chain CZ gates
+- Use the split CRZ reverse chain (crz_rev_a for odd, crz_rev_b for even indices)
+- Remove the global RX layer from current program (adds 8 gates and parameters without clear benefit based on validation metrics)
+
+**Expected Improvements**:
+- Validation accuracy: maintain 0.93 (best from both priors)
+- Parameter count: ~66 (between 50 and 74, with added mid-circuit RZ)
+- Convergence speed: retain fast convergence from current program
+- Generalization gap: improve from 0.04 to ~0.02 by balancing expressivity and parameter sharing
+- Combined score: target 0.91+
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # ========== Initial RY Layer ==========
+    # Minimal sharing: 2 parameters across all 8 qubits
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    # ========== Pre-entanglement RZ Layer ==========
+    # Minimal sharing: 2 parameters across all 8 qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+
+    # ========== Entanglement Layer 1: Linear Chain CZ ==========
+    # Standard forward chain topology
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # ========== Mid-circuit RZ Layer ==========
+    # Enhanced phase flexibility with alternating qubit groups
+    # Two shared parameters on alternating qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_b"},
+
+    # ========== Entanglement Layer 2: Reverse Chain with CRZ ==========
+    # Odd-indexed backward links use crz_rev_a
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+    # Even-indexed backward links use crz_rev_b
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+
+    # ========== Post-entanglement RZ Layer ==========
+    # Minimal sharing: 2 parameters across all 8 qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

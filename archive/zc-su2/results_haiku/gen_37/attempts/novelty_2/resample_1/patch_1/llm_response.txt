@@ -1,0 +1,57 @@
+# Analysis
+
+Looking at the prior programs and current performance:
+
+1. **Prior Program 1** (2 blocks, CZ chain): Score 0.72, n_params=14, convergence_step=90
+2. **Prior Program 2** (1 block, CZ chain): Score 0.72, n_params=14, convergence_step=90
+3. **Current Program** (1 block, CRZ chain): Score 0.68, n_params=20, convergence_step=60
+
+The current program actually performs *worse* than the prior ones despite having:
+- More parameters (20 vs 14) → worse parameter efficiency
+- Lower combined score (0.68 vs 0.72)
+- Better convergence (60 vs 90) but this doesn't offset the other metrics
+
+The key insight is that the **prior 1-block CZ solution with only 2 shared parameters achieves the same perfect accuracy (1.00 across all metrics) with much better parameter economy**. The CRZ parameterized chain introduced too many parameters (20) without improving accuracy.
+
+## Proposed Solution
+
+Return to the simpler, proven architecture from Prior Program 2 (the 1-block version which is cleaner than Prior Program 1). This achieves:
+- Perfect accuracy on all metrics
+- Minimal parameter count (14 params → actually only 2 unique shared parameters)
+- Good convergence (90 steps)
+- Optimal parameter efficiency (0.07)
+- Simpler, more interpretable structure
+
+The recommendation to add a shared RX layer would only increase parameters further. Instead, we should stick with the proven minimal structure that already achieves perfection.
+
+<NAME>
+revert_to_optimal_cz_chain
+</NAME>
+
+<DESCRIPTION>
+The current program uses CRZ gates with a shared parameter, increasing total parameters to 20, which reduces parameter efficiency from 0.07 to 0.05 and lowers the combined score from 0.72 to 0.68. Despite perfect accuracy across all splits, the additional parameters are not justified.
+
+The prior 1-block CZ chain achieves identical perfect accuracy (1.00 train/val/test) with only 14 total parameters (2 unique shared params: ry_shared, rz_shared) and parameter efficiency of 0.07.
+
+This edit reverts to that proven architecture: RY shared layer → RZ shared layer → linear CZ chain → RZ shared layer. This maximizes the score by maintaining perfect accuracy while minimizing parameters, yielding better parameter economy and generalization properties.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_shared"},
+=======
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+>>>>>>> REPLACE
+</DIFF>

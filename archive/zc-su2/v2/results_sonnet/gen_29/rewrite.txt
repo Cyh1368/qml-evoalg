@@ -1,0 +1,97 @@
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # --- RY pre-rotation layer -------------------------------------------
+    # Two symmetric groups (wires 0-3 vs 4-7) sharing one parameter each.
+    # This preserves any asymmetry between the two halves of the register
+    # coming from the fixed data encoding, at a cost of only 2 params.
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    # --- Fixed forward CNOT ladder ----------------------------------------
+    # Zero-parameter entangling mixing that spreads local correlations
+    # across the whole register before the parametrized phase/coupling
+    # layers. Empirically speeds up convergence.
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]},
+
+    # --- Shared RZ phase layer (pre-ring) ---------------------------------
+    # Single fully-shared parameter applied to all qubits, reused again
+    # after the entangling ring below (no extra trainable names).
+    {"gate": "RZ", "wire": 0, "param": "rz"},
+    {"gate": "RZ", "wire": 1, "param": "rz"},
+    {"gate": "RZ", "wire": 2, "param": "rz"},
+    {"gate": "RZ", "wire": 3, "param": "rz"},
+    {"gate": "RZ", "wire": 4, "param": "rz"},
+    {"gate": "RZ", "wire": 5, "param": "rz"},
+    {"gate": "RZ", "wire": 6, "param": "rz"},
+    {"gate": "RZ", "wire": 7, "param": "rz"},
+
+    # --- Closed, fully-shared ZZ entangling ring ---------------------------
+    # Includes the wrap-around edge (7,0) to give every qubit exactly two
+    # entangling neighbors (a closed cycle), which improved the worst-group
+    # margin in earlier experiments relative to an open chain.
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+
+    # --- Fixed backward CNOT ladder -----------------------------------------
+    # Mirrors the forward ladder to further mix qubits after the ring,
+    # again at zero parameter cost.
+    {"gate": "CNOT", "wires": [7, 6]},
+    {"gate": "CNOT", "wires": [6, 5]},
+    {"gate": "CNOT", "wires": [5, 4]},
+    {"gate": "CNOT", "wires": [4, 3]},
+    {"gate": "CNOT", "wires": [3, 2]},
+    {"gate": "CNOT", "wires": [2, 1]},
+    {"gate": "CNOT", "wires": [1, 0]},
+
+    # --- Shared RZ phase layer (post-ring) ----------------------------------
+    # Reuses the same "rz" parameter as before the ring, reinforcing the
+    # encoding without adding a new trainable name.
+    {"gate": "RZ", "wire": 0, "param": "rz"},
+    {"gate": "RZ", "wire": 1, "param": "rz"},
+    {"gate": "RZ", "wire": 2, "param": "rz"},
+    {"gate": "RZ", "wire": 3, "param": "rz"},
+    {"gate": "RZ", "wire": 4, "param": "rz"},
+    {"gate": "RZ", "wire": 5, "param": "rz"},
+    {"gate": "RZ", "wire": 6, "param": "rz"},
+    {"gate": "RZ", "wire": 7, "param": "rz"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

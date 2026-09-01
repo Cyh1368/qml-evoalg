@@ -1,0 +1,74 @@
+<NAME>
+per_upload_readout_calibration
+</NAME>
+
+<DESCRIPTION>
+Replace the single global gain/bias readout calibration with per-upload gain and bias parameters. Instead of collapsing all N_UPLOADS feature-map applications' final qubit-Z means into one shared calibration, we compute the mean Z expectation at the end of each upload segment (by measuring after each block group) — but since the fixed measurement only occurs at the circuit's end, we instead adopt a simpler yet expressive readout enhancement: computing per-qubit-group calibrated contributions using multiple trainable (gain, bias) pairs applied to different qubit subsets of the final Z-expectation vector. This gives the model more readout flexibility while adding only a few extra parameters (from 2 to 4), potentially reducing the train-test gap by allowing the readout to weight different qubits' information differently, without changing the fixed circuit architecture, l, p, or feature map. This is implemented by splitting the 8 qubits into two halves (0-3, 4-7), each with its own gain and bias, then averaging the two calibrated group means for the final prediction.
+
+Rationale: The recommendation about per-upload calibration cannot be directly applied since the circuit only measures at the end (fixed measurement), but the spirit of using multiple independent calibration parameters to better fit the readout mapping without touching the fixed circuit is preserved via per-qubit-group calibration, which is a legal, minimal change confined to `predict_batch` and the parameter count bookkeeping in the EVOLVE-BLOCK region.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE_ME
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+=======
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS
+N_READOUT_PARAMS = 4  # trainable output calibration: gain_lo, bias_lo, gain_hi, bias_hi
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+>>>>>>> REPLACE_ME
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: calibrated mean of qubit Z expectations."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+    z = pnp.stack(circuit_z_expectations(records, circuit_params))  # (N_QUBITS, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+=======
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: calibrated mean of two qubit-group Z expectations."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain_lo = params[N_CIRCUIT_PARAMS]
+    bias_lo = params[N_CIRCUIT_PARAMS + 1]
+    gain_hi = params[N_CIRCUIT_PARAMS + 2]
+    bias_hi = params[N_CIRCUIT_PARAMS + 3]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+    z = pnp.stack(circuit_z_expectations(records, circuit_params))  # (N_QUBITS, B)
+    raw_lo = pnp.mean(z[:4], axis=0)
+    raw_hi = pnp.mean(z[4:], axis=0)
+    pred_lo = gain_lo * (raw_lo - bias_lo)
+    pred_hi = gain_hi * (raw_hi - bias_hi)
+    return 0.5 * (pred_lo + pred_hi)
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+=======
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain_lo starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias_lo starts at 0
+    init[N_CIRCUIT_PARAMS + 2] = 1.0   # gain_hi starts at 1
+    init[N_CIRCUIT_PARAMS + 3] = 0.0   # bias_hi starts at 0
+    params = pnp.array(init, requires_grad=True)
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,118 @@
+<NAME>
+adaptive_shared_rotation_network
+</NAME>
+
+<DESCRIPTION>
+The current program uses 24 distinct parameters across 26 gates, achieving a combined score of 0.60. The key bottleneck is the worst_group_margin_mean (0.35), indicating poor separation on difficult samples, despite good average accuracy.
+
+Drawing inspiration from the context of the current ansatz, I observe:
+1. The current design separates pre/post rotations with fixed CZ couplings - this creates rigid interaction patterns
+2. Parameter efficiency is critical: the score heavily penalizes redundant parameters
+3. Robust separation requires capturing sample-specific difficulty with fewer degrees of freedom
+
+Novel approach:
+- **Aggressive parameter sharing**: Collapse per-qubit rotations into fewer shared parameters, reducing distinct params from 24 to ~8
+- **Adaptive interaction pattern**: Replace rigid linear CZ chain with alternating two-qubit parametrized gates (XX/YY/ZZ) that adapt to capture non-linear relationships
+- **Compact rotation structure**: Use only 2 shared RY parameters and 1 shared RZ parameter for rotation basis, repeated across all qubits
+- **Strategic two-qubit connectivity**: Apply parametrized gates on complementary qubit pairs to create richer entanglement patterns while maintaining efficiency
+- **Depth optimization**: Reduce overall depth by consolidating operations and removing redundant post-rotations
+
+This design trades off parameter count for richer, more adaptive interaction patterns that should improve worst-group margin through better feature extraction on hard samples.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Adaptive shared rotation network with parametrized entanglement.
+
+Inspired by the current linear coupling approach, but uses:
+- Aggressive parameter sharing to achieve ~8 distinct params
+- Parametrized two-qubit gates (XX/YY/ZZ) instead of fixed CZ
+- Alternating pair connectivity for richer entanglement patterns
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial rotation layer: shared parameters across all qubits
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_a"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_a"},
+    
+    # Initial phase: shared RZ across all qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_1"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_1"},
+    
+    # First parametrized entanglement layer: even pairs with XX
+    {"gate": "XX", "wires": [0, 1], "param": "xx_1"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_1"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_1"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_1"},
+    
+    # Second rotation layer: different shared RY
+    {"gate": "RY", "wire": 0, "param": "ry_b"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_b"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    
+    # Second entanglement layer: odd offset pairs with YY
+    {"gate": "YY", "wires": [1, 2], "param": "yy_1"},
+    {"gate": "YY", "wires": [3, 4], "param": "yy_1"},
+    {"gate": "YY", "wires": [5, 6], "param": "yy_1"},
+    {"gate": "YY", "wires": [7, 0], "param": "yy_1"},
+    
+    # Third rotation layer: shared RZ
+    {"gate": "RZ", "wire": 0, "param": "rz_2"},
+    {"gate": "RZ", "wire": 1, "param": "rz_2"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_2"},
+    
+    # Third entanglement layer: diagonal pairs with ZZ for robustness
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz_1"},
+    {"gate": "ZZ", "wires": [1, 4], "param": "zz_1"},
+    {"gate": "ZZ", "wires": [2, 5], "param": "zz_1"},
+    {"gate": "ZZ", "wires": [6, 3], "param": "zz_1"},
+    
+    # Fourth rotation layer: final shared RY for output preparation
+    {"gate": "RY", "wire": 0, "param": "ry_c"},
+    {"gate": "RY", "wire": 1, "param": "ry_c"},
+    {"gate": "RY", "wire": 2, "param": "ry_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_c"},
+    {"gate": "RY", "wire": 4, "param": "ry_c"},
+    {"gate": "RY", "wire": 5, "param": "ry_c"},
+    {"gate": "RY", "wire": 6, "param": "ry_c"},
+    {"gate": "RY", "wire": 7, "param": "ry_c"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

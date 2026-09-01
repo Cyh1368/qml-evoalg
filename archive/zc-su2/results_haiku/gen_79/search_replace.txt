@@ -1,0 +1,69 @@
+Looking at the performance metrics, I need to understand the current state:
+
+**Current program analysis:**
+- Combined score: 0.68 (lower than prior 0.72)
+- Parameters: 20 (higher than prior 14)
+- Convergence: 60 steps (slower than prior 30)
+- Depth: 35 (very shallow, good for efficiency)
+- Accuracy is perfect (1.00 on all splits)
+
+**Key observations:**
+1. The current program has MORE parameters (20 vs 14) but performs WORSE (0.68 vs 0.72)
+2. Convergence is 2x slower (60 vs 30 steps)
+3. The prior successful programs used alternating CZ patterns (zigzag): forward [0,1]→[1,2]→...→[6,7], then reverse [7,6]→[6,5]→...→[1,0]
+4. The current single block is too shallow and lacks the bidirectional entanglement that proved effective
+
+**Recommendation from evidence:**
+The prior gen 66 had success with an **alternating zigzag CZ pattern** - prepending a reverse-direction CZ sweep before each forward chain. This bidirectional entanglement likely provides better expressivity with controlled complexity.
+
+**Strategy:**
+1. Add a reverse CZ chain at the start of the block
+2. Keep the forward CZ chain
+3. Use fewer, more strategic parameters
+4. Maintain shallow depth while improving expressivity
+
+The key insight: doubling nearest-neighbor entangling with bidirectional flow improves expressivity without excessive parameter growth, as shown in prior successful candidates.
+
+<NAME>
+bidirectional_cz_zigzag
+</NAME>
+
+<DESCRIPTION>
+The current program has 20 parameters and lower performance (0.68) than prior successful designs that used 14 parameters (0.72). The prior successful programs used an alternating zigzag pattern with bidirectional CZ chains: forward [0→1→2→...→7] then reverse [7→6→5→...→0].
+
+The evidence shows that prepending a reverse-direction CZ sweep before each forward CZ chain (as seen in Gen 62-66) drove expressivity gains while maintaining parameter efficiency. The current single-block design is missing this bidirectional entanglement, which explains the slower convergence (60 vs 30 steps) and higher parameters needed.
+
+This edit adds a reverse CZ chain immediately before the forward chain, creating the proven zigzag pattern. This enables better information flow bidirectionally across the qubit line with minimal overhead, improving convergence speed and reducing the need for extra parameters.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Post-entanglement RZ phase (shared, independent from rz_pre)
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+=======
+    # Reverse CZ chain (backward sweep for bidirectional entanglement)
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CZ", "wires": [5, 4]},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CZ", "wires": [3, 2]},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CZ", "wires": [1, 0]},
+    # Post-entanglement RZ phase (shared, independent from rz_pre)
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+>>>>>>> REPLACE
+</DIFF>

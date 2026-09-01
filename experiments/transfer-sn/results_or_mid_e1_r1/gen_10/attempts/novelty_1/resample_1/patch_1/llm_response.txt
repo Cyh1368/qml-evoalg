@@ -1,0 +1,101 @@
+<NAME>
+shared_parity_crossentangler
+</NAME>
+
+<DESCRIPTION>
+This edit compresses the ansatz from a fully independent 24-parameter block to an 8-parameter block by using symmetry-aware parameter sharing.
+
+Design rationale:
+- Parity-shared RX/RY/RZ layers reduce overfitting and improve parameter efficiency.
+- A full CZ ring preserves local and wrap-around entanglement across all 8 qubits.
+- Two shared cross-half controlled-rotation layers (CRZ and CRY) add higher-order nonlinear coupling with only two extra parameters per block.
+- The block remains expressive enough for the repeated re-uploading schedule while aiming for better validation/test accuracy per parameter and lower train-test gap.
+
+This keeps the ansatz valid, compact, and compatible with the fixed training loop and measurement pipeline.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Parity-shared local mixing
+    {"gate": "RX", "wire": 0, "param": "rx_even"},
+    {"gate": "RX", "wire": 2, "param": "rx_even"},
+    {"gate": "RX", "wire": 4, "param": "rx_even"},
+    {"gate": "RX", "wire": 6, "param": "rx_even"},
+    {"gate": "RX", "wire": 1, "param": "rx_odd"},
+    {"gate": "RX", "wire": 3, "param": "rx_odd"},
+    {"gate": "RX", "wire": 5, "param": "rx_odd"},
+    {"gate": "RX", "wire": 7, "param": "rx_odd"},
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Full ring entanglement to propagate feature-map correlations
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Cross-half controlled rotations add higher-order coupling with low parameter cost
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_cross"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_cross"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_cross"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_cross"},
+    {"gate": "CRY", "wires": [4, 0], "param": "cry_cross"},
+    {"gate": "CRY", "wires": [5, 1], "param": "cry_cross"},
+    {"gate": "CRY", "wires": [6, 2], "param": "cry_cross"},
+    {"gate": "CRY", "wires": [7, 3], "param": "cry_cross"},
+    # Symmetric rephasing
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

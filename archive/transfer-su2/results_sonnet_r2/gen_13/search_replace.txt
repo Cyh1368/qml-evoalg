@@ -1,0 +1,63 @@
+<NAME>
+reduce_params_single_shared_rotation
+
+<DESCRIPTION>
+The current best candidate (20 params, 100% train/val/test accuracy) uses a shared RY layer, a CZ chain, one ZZ entangler, and a shared RZ layer per block (3 params/block × 6 blocks + 2 readout = 20). Since accuracy is already saturated at 1.00, further gains must come from parameter economy while preserving expressivity. I propose collapsing the RY and RZ shared layers into a single shared-parameter combination by removing the separate RZ layer and instead using a single shared RY angle plus reusing the same shared angle name for the ZZ gate (linking entangling strength to local rotation), cutting to 2 unique params per block (12 total + 2 readout = 14 params). This tests whether the task's structure permits even fewer independent parameters while maintaining the CZ backbone connectivity and one non-local ZZ interaction per block, since the seed and prior variants show that mere presence of entanglement plus one rotation type already drives perfect classification here. If this proves too aggressive, the shared angle reuse still allows the optimizer full flexibility per-block since each of the 6 repeats has independent parameter copies, preserving depth-wise expressivity while shrinking width-wise redundancy.
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "ZZ", "wires": [0, 7], "param": "zz_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "ZZ", "wires": [0, 7], "param": "zz_shared"},
+    {"gate": "RZ", "wire": 0, "param": "zz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "zz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "zz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "zz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "zz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "zz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "zz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "zz_shared"},
+]
+>>>>>>> REPLACE
+</DIFF>

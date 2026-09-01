@@ -1,0 +1,28 @@
+<NAME>
+add_next_nearest_neighbor_crz_ring
+
+<DESCRIPTION>
+The current spec (train 0.98, val 0.91, test 0.86, gap 0.12) shows overfitting relative to the earlier seed variants. The generalization gap is larger than the seed's 0.07-0.08. To improve generalization while keeping entangling expressivity, I reduce the number of independent CRZ parameters by sharing across more pairs (already partially done with crz_a/crz_b alternating), but the deeper issue is likely too much freedom in the RZ pre/post layers duplicating capacity redundantly with CRZ parameters. Instead, I propose merging the pre-RZ and post-RZ layers into a single shared-parameter set per wire (reduces params from 16 RZ per block to 8), which cuts total parameter count substantially, encourages simpler/more regularized circuits, and should reduce the train-test gap while retaining accuracy. This follows the parameter-efficiency recommendation and typical regularization intuition in variational circuits: fewer redundant free single-qubit phases before/after the entangling layer reduces overfitting risk without lowering the entangling capacity that captures feature correlations.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+]
+>>>>>>> REPLACE

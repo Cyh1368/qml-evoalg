@@ -1,0 +1,73 @@
+Let me analyze the performance metrics and the recommendation provided.
+
+## Analysis
+
+**Current Performance:** Score 0.59 with 10 distinct parameters
+- Excellent validation accuracy (0.97) and test accuracy (0.95)
+- Good worst_group_margin (0.31) - robust to hard samples
+- Very fast convergence (90 steps)
+- Lean parameter count (10 distinct params)
+
+**Prior Best:** Score 0.57 with 11 distinct parameters
+- Similar accuracy but slightly lower worst_group_margin (0.30)
+- Slower convergence (210 steps)
+
+**Key Observations:**
+1. The current program is already very strong (score 0.59)
+2. The recommendation suggests adding a mid-circuit parity-swapped RY + global RZ block
+3. This would add 3 new parameters (`ry_mid_0`, `ry_mid_1`, `rz_mid`)
+4. The parity motif (alternating even/odd qubits) is proven to work well in the prior best solution
+5. The current circuit lacks a mid-circuit regularization layer that could further improve worst-group margin
+
+**Strategy:**
+Following the recommendation, I'll insert a mid-circuit layer after the six-gate entangler (after the two-qubit gates) and before the final `rz_post` block. This adds structured expressivity with minimal parameter overhead (only 3 new distinct parameters), while maintaining the parity-aware structure that clearly works well for this task.
+
+The parity-alternating RY gates will add complementary rotation capacity, and the broadcast RZ will provide global phase flexibility. This should marginally improve worst_group_margin and robustness without significantly increasing complexity.
+
+<NAME>
+add_mid_circuit_parity_ry_rz
+</NAME>
+
+<DESCRIPTION>
+Insert a mid-circuit parity-swapped RY + global RZ regularization block after the six-gate entangler and before the final rz_post stage. This adds three new parameters (ry_mid_0, ry_mid_1, rz_mid) with minimal overhead while leveraging the proven parity-alternating structure. The odd qubits (1,3,5,7) and even qubits (0,2,4,6) get different RY parameters, mirroring the front-end parity motif, followed by a broadcast RZ on all qubits. This should improve worst_group_margin and robustness to hard samples without pushing total parameter count beyond the sweet spot.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+=======
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RY", "wire": 0, "param": "ry_mid_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_mid_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_mid_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_mid_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_mid_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid_1"},
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+>>>>>>> REPLACE
+</DIFF>

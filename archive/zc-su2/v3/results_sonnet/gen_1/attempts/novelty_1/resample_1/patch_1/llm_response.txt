@@ -1,0 +1,70 @@
+<NAME>
+shared_param_lowparam_ansatz
+
+<DESCRIPTION>
+The current ansatz uses 24 distinct trainable parameters (one per qubit per rotation layer), which is very parameter-heavy for an 8-qubit circuit trained on a small dataset. This leads to strong overfitting (train acc 0.88 vs val 0.63, gap 0.31) and poor worst-group margin (0.03). Since parameter economy is explicitly rewarded ("fewer distinct trainable parameter names ALWAYS scores higher") and the training set is small (favoring low-capacity, well-regularized circuits that generalize), I replace the per-qubit independent rotation angles with heavily shared parameters across qubits.
+
+The new design keeps the same qualitative structure (single-qubit rotations + nearest-neighbor entanglement) but collapses the 24 independent angles down to just 4 distinct trainable parameters: a shared RY angle, a shared RZ angle, a shared parametrized CRZ entangling angle applied along a linear chain, and a second shared RY angle after entanglement. Because this ansatz block is repeated multiple times with the same parameter values, even this small parameter set can build up rich correlations across qubits through repetition, while drastically cutting capacity to reduce overfitting and improve robustness/margin on the hardest validation group. The fixed CNOT entangling layer (no parameters) provides a permutation-symmetric-like coupling structure that lets the shared single-qubit rotations act differently on each qubit only through the different classically-encoded input state on each qubit, preserving expressivity without adding parameters.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = []
+
+# Layer 1: shared RY rotation applied identically to every qubit.
+# Since each qubit carries different input-encoded state, a single shared
+# angle still produces qubit-specific effects while using only 1 parameter.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "ry1"})
+
+# Layer 2: shared RZ rotation, again a single parameter for all qubits.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": _i, "param": "rz1"})
+
+# Fixed (parameter-free) nearest-neighbor entangling backbone.
+for _i in range(N_QUBITS - 1):
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [_i, _i + 1]})
+
+# Parametrized entangling layer along the same chain, sharing one angle.
+for _i in range(N_QUBITS - 1):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, _i + 1], "param": "ent1"})
+
+# Final shared RY rotation to mix entangled amplitudes before readout.
+for _i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "ry2"})
+>>>>>>> REPLACE
+</DIFF>

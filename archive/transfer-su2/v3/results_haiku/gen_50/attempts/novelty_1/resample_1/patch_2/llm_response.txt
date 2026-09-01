@@ -1,0 +1,105 @@
+I understand. The `apply_ansatz_block` function is outside the EVOLVE-BLOCK region, so I cannot modify it. I need to work only within the EVOLVE-BLOCK to modify ANSATZ_SPEC. Let me propose a simpler approach that achieves the regularization effect purely through ANSATZ_SPEC modifications.
+
+<NAME>
+reduced_entanglement_simpler_spec
+</NAME>
+
+<DESCRIPTION>
+The current program scores 0.48 while the second prior program scores 0.60. Key differences:
+
+Second program (0.60):
+- Simpler entanglement layer with fewer entangling gates
+- test_accuracy: 0.96 vs current 0.82
+- test_loss: 0.31 vs current 0.54
+- worst_group_margin: 0.32 vs current 0.30
+- Only 7 distinct parameters vs current 7
+
+Current program (0.48):
+- More complex with 4 separate two-qubit gate layers
+- Higher generalization gap (0.17 vs 0.04)
+- Over-parameterized for the task
+
+Strategy: Simplify ANSATZ_SPEC back toward the second program's design. The second program used:
+- Initial RY layer (even/odd sharing)
+- Fewer, more selective entanglement gates (4 XX + 2 YY + 2 ZZ = 8 gates)
+- Final RZ layer (even/odd sharing)
+
+This simpler structure with strategic parameter sharing generalizes better and achieves lower worst-group margins through architectural elegance rather than complexity.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Layer 1: Initial RY rotations with binary parity sharing (even/odd)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Layer 2: Nearest-neighbor XX entanglement (parametric, shared within repeats)
+    {"gate": "XX", "wires": [0, 1], "param": "xx_near"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_near"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_near"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_near"},
+    # Layer 3: Cross-layer YY entanglement (parametric, shared within repeats)
+    {"gate": "YY", "wires": [0, 2], "param": "yy_cross"},
+    {"gate": "YY", "wires": [1, 3], "param": "yy_cross"},
+    {"gate": "YY", "wires": [4, 6], "param": "yy_cross"},
+    {"gate": "YY", "wires": [5, 7], "param": "yy_cross"},
+    # Layer 4: Long-range ZZ entanglement (parametric, shared within repeats)
+    {"gate": "ZZ", "wires": [0, 4], "param": "zz_long"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "zz_long"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "zz_long"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "zz_long"},
+    # Layer 5: Final RZ rotations with binary parity sharing (even/odd)
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Shared initial rotation layer: binary parity sharing (even/odd)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Symmetric entangling layer: nearest-neighbor XX gates with shared parameter
+    {"gate": "XX", "wires": [0, 1], "param": "ent_near"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_near"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_near"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_near"},
+    # Cross-layer entanglement: selective YY gates, shared parameter
+    {"gate": "YY", "wires": [1, 3], "param": "cross"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross"},
+    # Long-range entanglement: selective ZZ gates, shared parameter
+    {"gate": "ZZ", "wires": [0, 3], "param": "diag"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "diag"},
+    # Final rotation layer: binary parity sharing (even/odd)
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+
+</DIFF>

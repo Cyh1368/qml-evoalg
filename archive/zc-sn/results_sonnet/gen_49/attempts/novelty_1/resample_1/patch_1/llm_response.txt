@@ -1,0 +1,166 @@
+<NAME>
+double_block_diam_split_sharing
+</NAME>
+
+<DESCRIPTION>
+The best-performing prior variant (score 0.89) used a *doubled* block (same shared parameter names repeated twice) to increase circuit depth without increasing parameter count, which visibly improved validation/test accuracy relative to the single-block variant (score 0.86, our current file). The current program regressed by dropping this depth-doubling structure.
+
+This edit reinstates the double-block depth strategy while keeping the useful additions from the current program (mirrored RX layer, mid-circuit mirrored RZ layer, skip-2 entanglers, diameter entanglers). Additionally, per the recommendation, the antipodal ("diameter") CRZ layer is split into two hierarchically-shared parameters (`crz_diam_even` for pairs [0,4] & [2,6], `crz_diam_odd` for pairs [1,5] & [3,7]) instead of one single shared parameter, giving slightly richer long-range mixing at only +1 parameter cost. The whole enriched block is then duplicated (reusing identical parameter names) to double depth exactly as in the strongest prior candidate, which should recover the depth-driven generalization benefit while retaining the extra mid-phase and diameter structure.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE_ANCHOR_PLACEHOLDER
+=======
+placeholder
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # --- Layer 1: single-qubit RY rotations (per-qubit trainable) ---
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # --- Layer 2: nearest-neighbor ring entanglement with shared alternating strength ---
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring_odd"},
+
+    # --- Layer 3: single-qubit RX rotations, tied symmetrically across (i, 7-i)
+    # to halve the parameter count of this layer while preserving expressivity. ---
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_3"},
+    {"gate": "RX", "wire": 5, "param": "rx_2"},
+    {"gate": "RX", "wire": 6, "param": "rx_1"},
+    {"gate": "RX", "wire": 7, "param": "rx_0"},
+
+    # --- Layer 4 (new): mid-circuit RZ phase layer, tied with the same
+    # left-right mirror symmetry as the RX layer. Adds only 4 new
+    # parameters and 8 gates, enriching local phase control right before
+    # the long-range entanglers fire, in a regularized fashion. ---
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_3"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_0"},
+
+    # --- Layer 5: sparse skip-2 entanglement with a single shared parameter ---
+    # Provides long-range mixing while acting as an implicit regularizer
+    # (only one trainable degree of freedom controls all these interactions).
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [6, 0], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "crz_skip"},
+
+    # --- Layer 6: sparse diameter entanglement with a single shared parameter ---
+    # Connects antipodal qubits (distance 4 on the ring) to inject minimal,
+    # global connectivity in one trainable degree of freedom, complementing
+    # the ring, mid-phase, and skip-2 layers with long-range mixing.
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_diameter"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_diameter"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_diameter"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_diameter"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+_BLOCK = [
+    # --- Layer 1: single-qubit RY rotations (per-qubit trainable) ---
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # --- Layer 2: nearest-neighbor ring entanglement with shared alternating strength ---
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring_odd"},
+
+    # --- Layer 3: single-qubit RX rotations, tied symmetrically across (i, 7-i)
+    # to halve the parameter count of this layer while preserving expressivity. ---
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_3"},
+    {"gate": "RX", "wire": 5, "param": "rx_2"},
+    {"gate": "RX", "wire": 6, "param": "rx_1"},
+    {"gate": "RX", "wire": 7, "param": "rx_0"},
+
+    # --- Layer 4: mid-circuit RZ phase layer, tied with the same
+    # left-right mirror symmetry as the RX layer. Adds only 4 new
+    # parameters and 8 gates, enriching local phase control right before
+    # the long-range entanglers fire, in a regularized fashion. ---
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_3"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_0"},
+
+    # --- Layer 5: sparse skip-2 entanglement with a single shared parameter ---
+    # Provides long-range mixing while acting as an implicit regularizer
+    # (only one trainable degree of freedom controls all these interactions).
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [6, 0], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "crz_skip"},
+
+    # --- Layer 6: sparse diameter entanglement with hierarchical shared
+    # parameters split by parity (even pairs [0,4],[2,6] vs odd pairs
+    # [1,5],[3,7]). Connects antipodal qubits (distance 4 on the ring) to
+    # inject minimal, global connectivity, complementing the ring,
+    # mid-phase, and skip-2 layers with long-range mixing, at the cost of
+    # only one extra shared parameter versus a single global diameter term.
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_diam_even"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_diam_even"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_diam_odd"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_diam_odd"},
+]
+
+# Duplicate the block, reusing the same parameter names, to double the
+# effective depth while keeping the parameter count unchanged. This
+# depth-doubling strategy previously gave the strongest generalization
+# results among tested variants.
+ANSATZ_SPEC = _BLOCK + _BLOCK
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+</DIFF>

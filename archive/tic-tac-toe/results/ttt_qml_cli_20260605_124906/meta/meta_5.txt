@@ -1,0 +1,102 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Hierarchical QNN Tic-Tac-Toe Classifier**  
+- **Implementation**: A 9-qubit hierarchical ansatz uses shared RZ/RY rotations and CZ/CRZ entanglement in five layers, repeated across three feature uploads and two repeats (total 60 parameters), with an RX-based feature map and L2-loss training via Adam on balanced tic-tac-toe boards.  
+- **Performance**: Achieved ~32% train, ~38% validation, ~33% test accuracy (depth 70, gate count 261), with a small generalization gap (0.02) and low parameter efficiency (0.01).  
+- **Feedback**: Symmetry-based parameter sharing kept the circuit compact but limited expressivity, resulting in suboptimal classification accuracy; adding richer entanglement or more parameters may be needed to boost performance.
+**Program Identifier:** Generation 20 - Patch Name tenparam_hubcrz - Correct Program: True
+
+**Program Name: Symmetric hierarchical tic-tac-toe QML ansatz**  
+- **Implementation**: Uses a 9-qubit hierarchical ansatz with 4-fold rotational symmetry, sharing parameters across pre- and post-entanglement RZ and RY layers, ring CZ/CRX entanglement on the perimeter, and hub CRZ connectivity, repeated over 3 uploads × 2 repeats, with RX-based feature encoding of board states.  
+- **Performance**: Combined score 0.44 with low training accuracy (0.27), moderate validation (0.47) and test (0.40) accuracy, a 0.13 generalization gap, depth 118, 309 gates, and 66 parameters.  
+- **Feedback**: The heavy parameter sharing and deep circuit structure yielded a compact model with a small generalization gap but limited expressivity, leading to poor trainability and low parameter efficiency despite adequate validation performance.
+**Program Identifier:** Generation 21 - Patch Name improved_shared_ring_hub_crz_ansatz - Correct Program: True
+
+**Program Name: Hierarchical Symmetric QML Ansatz for Tic-Tac-Toe**  
+- **Implementation**: Defines a five-layer, symmetry-aware ansatz with shared RZ rotations on corners/edges/center, a global RY layer, alternating ring CRX entanglement, hub CRX/CRY connections, and repeated upload-repeat blocks in a Pennylane circuit trained via L2 loss on Z-expectation outputs.  
+- **Performance**: Combined score 0.48 (train acc 0.37, val acc 0.51, test acc 0.48), with 66 parameters, circuit depth 70, gate count 261, and a generalization gap of 0.12.  
+- **Feedback**: Aggressive parameter sharing yields high parameter efficiency but underfitting (low training accuracy and no observed convergence), indicating the need for increased expressivity or diversified entanglement to boost performance.
+**Program Identifier:** Generation 22 - Patch Name symmetry_shared_ry_crx_ring_hub - Correct Program: True
+
+**Program Name: Hierarchical Symmetric QNN Tic-Tac-Toe Classifier**  
+- **Implementation**: Constructs a 9-qubit Pennylane QNN with a bespoke hierarchical ansatz—pre/post RZ and RY rotations, ring-CRX entanglement on the outer eight qubits, and center-to-edge/corner CRY “hub” links—repeated across three uploads and two repeats, all with symmetry-based parameter sharing; board states are encoded via equidistant Pauli-X rotations.  
+- **Performance**: Achieved a combined score of 0.0 and failed all validation tests.  
+- **Feedback**: The rigid hierarchical entanglement and extensive parameter-sharing appear to over-constrain the model and introduce specification errors, blocking effective learning; validation failures suggest reviewing the ansatz spec validation and board-labeling/data-splitting logic.
+**Program Identifier:** Generation 23 - Patch Name multi_gate_hub_with_corner_entanglement - Correct Program: False
+
+**Program Name: Hierarchical Entanglement Tic-Tac-Toe Classifier**  
+- **Implementation**: A 5-layer QML ansatz over nine qubits encodes tic-tac-toe boards via RX feature maps with three reuploads, uses symmetry-based shared RZ/RY rotations on corners, edges, and center, ring CZ outer entanglement and hub CRZ gates, and aggregates per-qubit Z-expectations into three class scores.  
+- **Performance**: Combined score 0.45 with train/validation/test accuracies around 32–38%, validation loss ~3.36, test loss ~3.53 over 60 parameters and 70-depth circuits.  
+- **Feedback**: The low generalization gap indicates stable training but sub-optimal classification accuracy, suggesting the parameter-efficient design may under-express the task and benefit from more parameters or deeper entanglement layers.
+**Program Identifier:** Generation 24 - Patch Name reduced_params_shared_entanglement - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Parameterized CRX “ring” + CRY “hub” entanglement  
+  • Current best program (Combined 0.60; train 0.57, val 0.65, test 0.50, gap 0.07) uses CRX gates around the outer ring and CRY gates from center to edges.  
+  • Compared to Generation 20’s CZ/CRZ-only entanglement (train ~0.32, val ~0.38, test ~0.33), this change boosts train accuracy by ~0.25 and validation by ~0.27.  
+- Symmetry-aware parameter sharing across corners/edges/center  
+  • Maintains a compact 66-parameter ansatz (depth 70, gate_count 261) while improving expressivity versus aggressive sharing alone.  
+  • Yields a small generalization gap (0.07) versus 0.12 in Generation 22 with similar sharing but less diversified entanglement.  
+- Three reuploads × two repeats layout  
+  • Gives sufficient circuit depth (70) without exploding parameter count.  
+  • Balances expressivity and trainability—evidence: convergence of validation accuracy to 0.65 under 100 epochs/30 steps.  
+
+## Ineffective Approaches  
+- Pure CZ/CRZ entanglement (Generation 20 & 24)  
+  • Both used only ring CZ + hub CRZ and achieved ~32–38% accuracy, combined ~0.33–0.45.  
+  • Lacks parametrized mixing angles, under-expresses spatial correlations in board configurations.  
+- Excessive parameter sharing without entanglement diversity (Generation 22)  
+  • Despite 66 parameters, train accuracy stalled at 0.37, validation 0.51, gap 0.12.  
+  • Underfitting suggests that sharing RZ/RY alone cannot compensate for limited two-qubit gate variety.  
+- Erroneous ansatz specifications (Generation 23)  
+  • Misspecification of wires or gate types led to spec validation failures and zero accuracy across all splits.  
+
+## Implementation Insights  
+- Explicit class-expectation mapping aligns qubit geometry with labels  
+  • Averaging edge-qubit Z-expectations for “cross,” corner qubits for “circle,” and center qubit for “draw” leverages board symmetries to disentangle class outputs.  
+- Rigorous ansatz‐spec validation prevents subtle adjacency or parameter‐key bugs  
+  • The `validate_ansatz_spec` routine caught non-adjacent wires in Generation 23, ensuring only legal grid edges are entangled.  
+- Use of Pennylane’s AnnotatedQueue for circuit metadata  
+  • Automatic extraction of depth and gate_count enables tight monitoring of complexity vs. performance trade-offs.  
+- RX-based feature map with equidistant rotations  
+  • Uniform scaling of input values across 3 reuploads provides stable gradients that supported convergence to 0.65 validation accuracy.  
+
+## Performance Analysis  
+- Entanglement gate selection is pivotal  
+  • Switching from CZ/CRZ to parametrized CRX+CRY increased combined score from ~0.45 to 0.60 while holding depth and parameter count constant.  
+- Generalization gap reduction  
+  • Current best gap 0.07 vs. 0.12 in the closest predecessor (Generation 22), indicating better regularization via mixed two-qubit gates.  
+- Validation accuracy as leading indicator  
+  • Prior models peaked at ~0.51 validation; current best reached 0.65 under identical training settings, confirming substantial architectural impact.  
+- Parameter efficiency remains low (~0.01)  
+  • Even with improved accuracy, test accuracy (0.50) over 66 parameters yields efficiency 0.50/66≈0.0075, highlighting room for further parameter‐accuracy scaling.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Extend the ring entanglement by appending a second, shared‐parameter CRZ layer around the outer eight qubits.  
+   • In your `EVOLVE-BLOCK`, after all the existing CRX `"crx_ring"` entries, add eight `{"gate": "CRZ", "wires": [i, j], "param": "crz_ring"}` entries for the same perimeter edges.  
+   • Evidence: combining CRX mixers with CRZ phase couplings will enrich two-qubit correlations as mixed entanglers (CRX+CRY) yielded the biggest jump in accuracy versus CZ/CRZ alone.
+
+2. Split the single `"crx_ring"` angle into two shared parameters for horizontal versus vertical edges.  
+   • Replace each `{"gate":"CRX","wires":[u,v],"param":"crx_ring"}` with `"crx_ring_horiz"` when `(u,v)` is horizontal (e.g. (0,1),(2,3),(4,5),(6,7)) and `"crx_ring_vert"` when vertical (e.g. (1,2),(3,4),(5,6),(7,0)).  
+   • Evidence: modestly increasing ring entanglement parameters to capture directional correlations builds on the CRX ring’s proven boost to train/validation accuracy while keeping the overall ansatz compact.
+
+3. Alternate the entangler type across repeats by using a shared‐parameter CRY ring on the second repeat.  
+   • In `apply_ansatz_block`, detect `repeat_index==1` and apply `qml.CRY(params[offset+key["cry_ring"]], wires=[u,v])` for perimeter edges, with a new `"cry_ring"` key in `ANSATZ_SPEC`.  
+   • Evidence: the current best program’s mixed two-qubit gates (CRX ring + CRY hub) reduced the generalization gap; extending mixing into the ring itself may further regularize and enrich expressivity.
+
+4. Diversify the feature map axes by cycling through RX, RZ, and RY on successive uploads.  
+   • Modify `feature_map` to do `qml.RX` when `upload_index==0`, `qml.RZ` when `upload_index==1`, and `qml.RY` when `upload_index==2`, each still scaled by `FEATURE_SCALE`.  
+   • Evidence: the RX-only reuploads delivered stable gradients; introducing orthogonal encoding axes can expose different board patterns and potentially accelerate convergence.
+
+5. Increase the ansatz depth by raising `N_REPEATS` from 2 to 3 while preserving symmetry sharing.  
+   • Change `N_REPEATS = 3` (so each upload has three blocks) and keep your shared-parameter scheme intact across the larger block index space.  
+   • Evidence: the 3×2 layout balanced depth and parameter count; a 3×3 layout will further expand expressivity under the same symmetry constraints without exploding unique parameter growth.

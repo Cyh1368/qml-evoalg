@@ -1,0 +1,35 @@
+Looking at the prior programs, the best-performing candidate (2nd one) achieved perfect scores with only 3 params per block (20 total params), using shared RY, shared ZZ chain, and a single shared RZ. The current program uses 4 params per block (24 circuit params + 2 readout = 26... wait, actually shows 32 params meaning 5 params/block).
+
+The key insight: reducing shared parameters aggressively while maintaining expressivity through structural diversity (odd/even split) helped generalization. I'll reduce parameter count further by merging the pre-RZ and post-RZ layers into a single shared parameter set while keeping the even/odd split only on one layer, cutting one parameter per block.
+
+<NAME>
+merge_pre_rz_into_ry_reduce_params
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses 5 unique parameters per block (ry_shared, rz_pre_shared, zz_shared, rz_post_even, rz_post_odd), giving 32 total trainable parameters. Since RY followed immediately by RZ on the same qubit before any entangling gate is already a general single-qubit rotation subspace, the pre-entangling RZ layer is largely redundant with the RY layer for the purposes of generating the correlators used in readout (Z-Z expectations are insensitive to a global Z-rotation applied before any X/Y-mixing occurs, since RZ commutes with the state's Z-diagonal component contributions in a limited way, but more importantly the RY layer already provides the necessary single-qubit expressivity to set up entanglement via ZZ gates). Removing the redundant "rz_pre_shared" layer reduces parameters per block from 5 to 4 (24 total including gain/bias), improving parameter economy while the post-entangling even/odd RZ split retains the asymmetry needed for good class separation. This directly targets the task's strong reward for parameter economy without sacrificing the achieved 100% accuracy, since the removed layer is applied uniformly to all qubits right after StatePrep/previous block and mostly acts as a global phase-like operation that the readout (Z-Z correlators) is largely insensitive to.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE
+=======
+placeholder
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_shared"},
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_shared"},
+=======
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_shared"},
+>>>>>>> REPLACE
+
+</DIFF>

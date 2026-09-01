@@ -1,0 +1,83 @@
+<NAME>
+efficient_shared_entangler
+
+<DESCRIPTION>
+The seed ansatz used 24 independent parameters per repetition (8 RY + 8 RZ‑pre + 8 RZ‑post), giving 146 total trainable parameters for a circuit that already reaches perfect train/val/test accuracy — meaning most of that parameter budget is wasted and heavily penalizes the parameter‑economy score.
+
+This version keeps the essential per‑qubit expressivity (8 independent RY angles, since these directly shape the per‑qubit response to the fixed data encoding) but replaces the two full layers of 8 independent RZ angles with a **single shared RZ parameter** applied to all wires (a global phase‑style correction) and adds a **cross‑ring CRX entangling layer** using **one shared parameter** across 4 long-range pairs (0-4,1-5,2-6,3-7) to mix information between the two halves of the register without adding extra trainable degrees of freedom. The nearest‑neighbor CZ ring (no parameters) still provides local entanglement.
+
+This cuts the parameter count per repetition from 24 down to 10 (8 RY + 1 shared RZ + 1 shared CRX), roughly a 58% reduction, while preserving both local (CZ ring) and long‑range (CRX cross links) entanglement structure needed for expressivity. Fewer trainable parameters should shrink train/validation gap risk, speed convergence, and substantially boost the parameter‑efficiency term in the score while retaining near‑identical circuit depth/gate count and thus similar representational power.
+
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Per-qubit rotation: keeps individual expressivity, since the fixed
+    # data encoding differentiates the qubits and the ansatz must be able
+    # to respond to each one independently.
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # Local entangling ring (no trainable parameters).
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Single shared global phase-like correction across all wires:
+    # one parameter instead of eight, cutting most of the parameter cost
+    # of the original two RZ layers while still providing a tunable
+    # single-qubit degree of freedom after entangling.
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+
+    # Long-range cross-ring entanglement (half-register mixing) using a
+    # single shared parameter across the four pairs, giving global
+    # information mixing at essentially no extra parameter cost.
+    {"gate": "CRX", "wires": [0, 4], "param": "crx_shared"},
+    {"gate": "CRX", "wires": [1, 5], "param": "crx_shared"},
+    {"gate": "CRX", "wires": [2, 6], "param": "crx_shared"},
+    {"gate": "CRX", "wires": [3, 7], "param": "crx_shared"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

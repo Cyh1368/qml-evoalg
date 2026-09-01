@@ -1,0 +1,98 @@
+# Analysis
+
+Looking at the current program and prior results:
+
+1. **Current state**: 14 parameters, combined score 0.72, perfect accuracy, but convergence is slow (150 steps) and uses expensive shared parameters across pre- and post-entanglement phases.
+
+2. **Prior work**: Single-block variant achieved the same score with 14 parameters but faster convergence (90 steps) and lower depth (35 vs 66).
+
+3. **Key insight from recommendation**: The suggestion to split `rz_shared` into `rz_pre` and `rz_post` is sound because:
+   - Pre-entanglement rotations serve different purposes than post-entanglement rotations
+   - Independent phase tuning could improve convergence without adding computational burden
+   - The cost is minimal: 2→3 parameters (from 14→15, still efficient)
+   - This allows the optimizer more flexibility to find better minima
+
+4. **Current bottleneck**: 
+   - Slow convergence (150 steps vs 90 in prior version)
+   - Shared RZ phases before and after CZ chain may be constraining the optimization landscape
+   - Adding the circular closure CZ (7→0) introduced a new entanglement pattern that might benefit from phase differentiation
+
+**Strategy**: Implement the recommended split of RZ phases. This grants the optimizer finer control over the rotation timing relative to entanglement, which should improve convergence without sacrificing accuracy or efficiency.
+
+<NAME>
+split_rz_phases
+</NAME>
+
+<DESCRIPTION>
+Split the shared RZ rotations into two independent parameters: `rz_pre` (before the CZ chain) and `rz_post` (after the CZ chain). This allows the optimizer to independently tune phase insertion timing relative to entanglement, improving convergence without significantly increasing parameter count (14→15 parameters). The pre- and post-entanglement phases serve different roles in the quantum state evolution and should be independently trainable. This targeted increase in flexibility addresses the slow convergence observed in the current program (150 steps) while maintaining the already-achieved perfect accuracy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+=======
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,82 @@
+Looking at the performance data, the best-scoring program (1.37) used independent RY+RZ rotations (16 params/block) with brick-layer CZ entanglement. The current program uses shared RZ phases (only 10 params/block), which limits expressivity and results in higher validation loss (0.11 vs 0.08).
+
+My strategy: Restore the independent RY+RZ rotation structure from the best design AND add cross-ring CZ diameter connections (0↔4, 1↔5, 2↔6, 3↔7) to create a hypercube-like topology. This enables O(1) information mixing between opposite sides of the qubit ring without adding any parameters. The improved entanglement structure should drive validation loss lower than the best prior result.
+
+<NAME>
+hypercube_ry_rz_crossring
+</NAME>
+
+<DESCRIPTION>
+Combines the full independent RY+RZ rotation layers (16 params/block, proven best expressivity) with a 3-layer entanglement structure: (1) even brick CZ, (2) odd brick CZ closing the ring, and (3) cross-ring diameter CZ connections forming a hypercube-like topology. The cross-ring CZ gates (0-4, 1-5, 2-6, 3-7) allow information to propagate across the entire 8-qubit register in a single block application rather than requiring multiple ring hops. This should lower validation loss by improving the circuit's ability to correlate distant qubits, while keeping the same parameter count (98) as the best prior design.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Independent mixing retains the strongest expressivity of the current block.
+    {"gate": "RY", "wire": 0, "param": "mix_0"},
+    {"gate": "RY", "wire": 1, "param": "mix_1"},
+    {"gate": "RY", "wire": 2, "param": "mix_2"},
+    {"gate": "RY", "wire": 3, "param": "mix_3"},
+    {"gate": "RY", "wire": 4, "param": "mix_4"},
+    {"gate": "RY", "wire": 5, "param": "mix_5"},
+    {"gate": "RY", "wire": 6, "param": "mix_6"},
+    {"gate": "RY", "wire": 7, "param": "mix_7"},
+
+    # First brick layer.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Two shared staggered phases provide more flexibility than one collective
+    # phase while regularizing the eight independent phases of the current block.
+    {"gate": "RZ", "wire": 0, "param": "phase_even"},
+    {"gate": "RZ", "wire": 1, "param": "phase_odd"},
+    {"gate": "RZ", "wire": 2, "param": "phase_even"},
+    {"gate": "RZ", "wire": 3, "param": "phase_odd"},
+    {"gate": "RZ", "wire": 4, "param": "phase_even"},
+    {"gate": "RZ", "wire": 5, "param": "phase_odd"},
+    {"gate": "RZ", "wire": 6, "param": "phase_even"},
+    {"gate": "RZ", "wire": 7, "param": "phase_odd"},
+
+    # Second brick layer closes the entangling ring.
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+=======
+    # RY rotation layer – independent per qubit for full Y-axis expressivity
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    # Brick-layer CZ: even pairs
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # RZ rotation layer – independent per qubit for full Z-axis expressivity
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+    # Brick-layer CZ: odd pairs (closes ring)
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Cross-ring CZ: diameter connections for hypercube-like O(1) mixing
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,106 @@
+<NAME>
+two_axis_hub_entanglement_crz_crx_ring
+</NAME>
+
+<DESCRIPTION>
+Introduce a two-axis center-to-edge hub entanglement pattern to increase expressivity without exploding parameter count. Specifically, split the hub connections into two parameter-sharing axes: CRZ on edges (8,1) and (8,5) share one parameter, and CRX on edges (8,3) and (8,7) share another. Keep the ring perimeter CZ gates and add CRX ring gates on the perimeter with a shared crx_ring parameter. This design variation aims to improve validation/generalization by diversifying the hub interactions while maintaining parameter efficiency comparable to prior setups that succeeded (e.g., CRX ring + CRY hub in earlier seeds) and the overall training efficiency.
+
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing.
+
+    Structural changes:
+    1) Pre-entanglement RZ on all qubits (shared by symmetry)
+    2) RY rotations on all qubits (shared by symmetry)
+    3) Ring entanglement: CZ gates around outer ring
+    4) Hub entanglement: per-edge CRX gates from center to edges (distinct params)
+    5) Post-entanglement RZ on all qubits (shared by symmetry)
+    """
+    spec = []
+=======
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing.
+
+    Structural changes:
+    1) Pre-entanglement RZ on all qubits (shared by symmetry)
+    2) RY rotations on all qubits (shared by symmetry)
+    3) Ring entanglement: CZ gates around outer ring
+    4) Hub entanglement: alternating CRZ/CRX gates center-to-edges with shared parameters
+    5) Post-entanglement RZ on all qubits (shared by symmetry)
+    """
+    spec = []
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 3: Ring entanglement (outer 8 qubits)
+    # CZ gates around the perimeter
+    spec.append({"gate": "CZ", "wires": [0, 1]})
+    spec.append({"gate": "CZ", "wires": [1, 2]})
+    spec.append({"gate": "CZ", "wires": [2, 3]})
+    spec.append({"gate": "CZ", "wires": [3, 4]})
+    spec.append({"gate": "CZ", "wires": [4, 5]})
+    spec.append({"gate": "CZ", "wires": [5, 6]})
+    spec.append({"gate": "CZ", "wires": [6, 7]})
+    spec.append({"gate": "CZ", "wires": [7, 0]})
+    
+    # Layer 4: Hub entanglement (center to edges with parametrized gates)
+    # Use CRZ for adaptive coupling between center and edges
+    spec.append({"gate": "CRZ", "wires": [8, 1], "param": "crz_hub_edge"})
+    spec.append({"gate": "CRZ", "wires": [8, 3], "param": "crz_hub_edge"})
+    spec.append({"gate": "CRZ", "wires": [8, 5], "param": "crz_hub_edge"})
+    spec.append({"gate": "CRZ", "wires": [8, 7], "param": "crz_hub_edge"})
+
+    # Layer 5: Post-entanglement RZ rotations with parameter sharing
+    spec.append({"gate": "RZ", "wire": 0, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 2, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 4, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 6, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 1, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 3, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 5, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 7, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_post_center"})
+=======
+    # Layer 3: Ring entanglement (outer 8 qubits)
+    # CZ gates around the perimeter
+    spec.append({"gate": "CZ", "wires": [0, 1]})
+    spec.append({"gate": "CZ", "wires": [1, 2]})
+    spec.append({"gate": "CZ", "wires": [2, 3]})
+    spec.append({"gate": "CZ", "wires": [3, 4]})
+    spec.append({"gate": "CZ", "wires": [4, 5]})
+    spec.append({"gate": "CZ", "wires": [5, 6]})
+    spec.append({"gate": "CZ", "wires": [6, 7]})
+    spec.append({"gate": "CZ", "wires": [7, 0]})
+    # Ring entanglement on the perimeter with shared parameter (CRX on ring)
+    spec.append({"gate": "CRX", "wires": [0, 1], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [1, 2], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [2, 3], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [3, 4], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [4, 5], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [5, 6], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [6, 7], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [7, 0], "param": "crx_ring"})
+
+    # Layer 4: Hub entanglement (center to edges) with two axis parameters
+    spec.append({"gate": "CRZ", "wires": [8, 1], "param": "crz_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [8, 3], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRZ", "wires": [8, 5], "param": "crz_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [8, 7], "param": "crx_hub_edge"})
+
+    # Layer 5: Post-entanglement RZ rotations with parameter sharing
+    spec.append({"gate": "RZ", "wire": 0, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 2, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 4, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 6, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 1, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 3, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 5, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 7, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_post_center"})
+>>>>>>> REPLACE
+</DIFF>

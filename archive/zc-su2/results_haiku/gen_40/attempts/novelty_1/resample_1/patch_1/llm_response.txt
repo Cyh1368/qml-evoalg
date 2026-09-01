@@ -1,0 +1,87 @@
+<NAME>
+ry_rz_hybrid
+</NAME>
+
+<DESCRIPTION>
+Analyzing the three prior programs:
+
+1. **First prior (score 0.72)**: Uses two identical blocks with RY→RZ→CZ→RZ pattern, with 14 params, depth 65, gate_count 372.
+
+2. **Second prior (score 0.72)**: Single block with RY→RZ→CZ→RZ pattern, with 14 params, depth 35, gate_count 186. This is the more efficient version of the first.
+
+3. **Current (score 0.72)**: Single block with RX→RZ→CZ→RZ pattern, with 14 params, depth 35, gate_count 186.
+
+4. **Crossover inspiration (score 0.72)**: RY→RZ→CZ→RZ single block, identical to second prior.
+
+All three achieve perfect accuracy (1.0 train/val/test) with identical parameter efficiency (0.07) and convergence steps (90). The key differences are:
+- RY vs RX in first rotation layer
+- Single vs double block structure
+
+**Crossover strategy**: The two prior programs using RY achieve the same performance as the current RX version with identical efficiency metrics. However, all have the same combined score of 0.72. The best approach is to:
+1. Keep the single-block structure (more efficient than double block)
+2. Use RY for the initial rotation (as validated in both priors)
+3. Maintain the RZ→CZ→RZ pattern which is proven effective
+
+This creates a hybrid that combines the most efficient single-block structure with the RY initialization that appears in successful prior solutions, maximizing parameter economy while maintaining perfect accuracy.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

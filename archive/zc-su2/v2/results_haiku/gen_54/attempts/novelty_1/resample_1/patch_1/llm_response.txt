@@ -1,0 +1,77 @@
+Looking at the performance metrics and the recommendation provided, I can see a clear opportunity for improvement:
+
+**Analysis:**
+- Current program: `n_distinct_params: 7`, `combined_score: 0.66`, `convergence_step_mean: 60.00`
+- Prior programs: Both had `n_distinct_params: 7`, `combined_score: 0.67`, `convergence_step_mean: 30.00`
+- The current program has added ZZ gates and CZ gates, which:
+  - Increased depth (23→33) and gate count (105→129)
+  - Doubled convergence steps (30→60)
+  - Decreased the score (0.67→0.66)
+  - Did not improve worst_group_margin (actually stayed at 0.35)
+
+**Problem:** The added complexity is slowing convergence without improving robustness on hard samples.
+
+**Solution:** Implement the exact recommendation provided:
+1. Merge the offset-YY block into the nearest-neighbor entangler by changing all YY gates' param from `"ent_off"` to `"ent_nn"`
+2. Remove the separate `ent_off` parameter
+3. This reduces `n_distinct_params` from 7 to 6, boosting parameter efficiency
+4. Remove the ZZ and CZ layers that were added (they're hurting convergence without helping margins)
+
+This approach:
+- Returns to the simpler, faster-converging structure of prior programs
+- Reduces parameter count through consolidation
+- Should recover the 30-step convergence and 0.67 score
+- Improves parameter efficiency with 6 distinct params instead of 7
+
+<NAME>
+merge_ent_params_and_simplify
+</NAME>
+
+<DESCRIPTION>
+Merge the offset-YY entangling parameter with nearest-neighbor to reduce parameter count from 7 to 6, and remove the added ZZ and CZ layers that increased depth and convergence steps without improving worst-group margin. This consolidation strategy worked well in prior programs (0.67 score, 30-step convergence) and should recover that performance while improving parameter efficiency.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Narrow ZZ sublayer for Z-axis Ising interactions
+    {"gate": "ZZ", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "ent_nn"},
+
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+=======
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_nn"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Skip-3 CZ entangling layer for hard-sample discrimination
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [4, 7]},
+
+    # Final rotation layer with shared parameters
+=======
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Final rotation layer with shared parameters
+>>>>>>> REPLACE
+</DIFF>

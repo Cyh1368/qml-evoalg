@@ -1,0 +1,67 @@
+Looking at the current program and the prior programs, I can see that:
+
+1. **Current score: 0.68** (same as prior programs)
+2. **Key bottleneck: worst_group_margin_mean = 0.36** (this is the dominant score term per instructions)
+3. **Parameter efficiency is good** (6 distinct params, well-controlled)
+4. **Gate count increased** (102 vs 93 in prior), but accuracy metrics are identical
+
+The prior recommendation suggests replacing the offset YY gates with CRX in the second entangling block. However, looking more carefully at the architecture:
+
+- Current program already has CRX gates in a narrow layer (1,2), (3,4), (5,6)
+- The YY gates follow in the same positions with the same param "ent_nn"
+- This creates redundancy in the same parameter space
+
+**Key insight**: The worst_group_margin is stuck at 0.36, suggesting that the hardest samples are not being separated well. The current approach (XX gates + CRX + YY on same param) might not provide enough *architectural diversity* for robust separation across difficulty levels.
+
+**Proposed solution**: Replace the YY gates with CRX gates (as recommended) to:
+1. Diversify the entangling layer architecturally
+2. Potentially improve robustness on hard samples
+3. Keep parameter sharing unchanged (still using "ent_nn")
+4. Reduce gate count slightly by removing YY redundancy
+
+The CRX gates offer different quantum dynamics than YY (controlled rotation vs symmetric interaction), which may better capture the decision boundaries of harder samples.
+
+<NAME>
+swap_yy_to_crx_offset_block
+</NAME>
+
+<DESCRIPTION>
+Replace the offset nearest-neighbor YY gates in the second entangling block with CRX gates using the same shared parameter "ent_nn". This architectural diversification is inspired by Gen 48's 0.66→0.67 improvement when CRX enriched the entanglement space.
+
+Rationale:
+- YY gates and CRX gates operate on different quantum principles (symmetric interaction vs controlled rotation)
+- The current approach stacks XX + CRX + YY on the same parameter, creating potential redundancy
+- Replacing YY with CRX should improve robustness on the hardest samples (worst_group_margin_mean)
+- Maintains parameter economy (still 6 distinct parameters)
+- Reduces total gate count from 102 to 96, improving parameter efficiency metric
+- The recommended edit directly targets the bottleneck of worst-case separation
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_nn"},
+=======
+    # Second entangling block: offset nearest-neighbor CRX gates
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+>>>>>>> REPLACE
+</DIFF>
+
+Now we need to remove the redundant CRX layer that was just added earlier since we're replacing the YY gates with CRX. This prevents the now-duplicate narrow CRX layer:
+
+<DIFF>
+<<<<<<< SEARCH
+    # Narrow CRX layer to enrich entanglement variety
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+
+    # Second entangling block: offset nearest-neighbor CRX gates
+=======
+    # Second entangling block: offset nearest-neighbor CRX gates
+>>>>>>> REPLACE
+</DIFF>

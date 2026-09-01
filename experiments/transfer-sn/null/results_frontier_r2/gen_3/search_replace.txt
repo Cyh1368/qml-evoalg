@@ -1,0 +1,70 @@
+<NAME>
+simplify_ansatz_to_ry_cnot_ring
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses a large number of single-qubit rotations (RY and two RZ layers) and a linear sequence of commuting CZ gates, resulting in 24 parameters per block (146 total parameters) and deep circuits.
+
+This proposed edit drastically improves parameter efficiency and decreases circuit depth by replacing the block with a standard hardware-efficient structure:
+1. A single layer of parameterized `RY` gates on all 8 qubits.
+2. A two-step ring of non-commuting `CNOT` gates (even and odd pairs) to rapidly create cross-qubit entanglement.
+
+This configuration uses only 8 parameters per block (reducing total parameters from 146 to 50), which significantly boosts parameter efficiency while maintaining high expressivity through a more optimal entangling topology. The shorter depth also improves the speed of convergence.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [7, 0]},
+]
+>>>>>>> REPLACE
+</DIFF>

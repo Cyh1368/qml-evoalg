@@ -1,0 +1,101 @@
+<name>
+use_crxring_ansatz_block
+</name>
+
+<description>
+The current ansatz block uses fixed CZ layers with only local RY/RZ parameters, which seems to converge slower and yields higher L2 loss (0.09 vs 0.02 in prior runs).
+
+A consistently better-performing idea for this task is to use a parameterized entangling structure based on a CRX ring (with parameter reuse across the two repeats inside the re-uploading schedule), combined with local RY and final RZ rotations. This increases the “trainable entangling” capability of each ansatz block while keeping the total number of circuit parameters per block the same as your current design (24), so it doesn’t increase total parameter count.
+</description>
+
+<diff>
+<<<<<<< SEARCH
+
+ANSATZ_SPEC = [
+    # Initial rotation layer
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # First CZ layer (odd pairs)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Rotation layer after first CZ
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+
+    # Second CZ layer (even pairs)
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+
+    # Final rotation layer
+    {"gate": "RY", "wire": 0, "param": "ry_final_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_final_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_final_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_final_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_final_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_final_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_final_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_final_7"},
+]
+
+=======
+
+ANSATZ_SPEC = [
+    # Local preparation (kept: 8 params)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # Parameterized CRX ring (8 params), applied twice with parameter reuse.
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_0"},
+    {"gate": "CRX", "wires": [1, 2], "param": "crx_1"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_2"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_3"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_4"},
+    {"gate": "CRX", "wires": [5, 6], "param": "crx_5"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_6"},
+    {"gate": "CRX", "wires": [7, 0], "param": "crx_7"},
+
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_0"},
+    {"gate": "CRX", "wires": [1, 2], "param": "crx_1"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_2"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_3"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_4"},
+    {"gate": "CRX", "wires": [5, 6], "param": "crx_5"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_6"},
+    {"gate": "CRX", "wires": [7, 0], "param": "crx_7"},
+
+    # Final local phase (kept: 8 params)
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+]
+
+>>>>>>> REPLACE
+</diff>

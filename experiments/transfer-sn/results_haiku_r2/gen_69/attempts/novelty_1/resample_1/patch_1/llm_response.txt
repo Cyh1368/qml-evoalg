@@ -1,0 +1,65 @@
+<NAME>
+rx_symmetry_breaker_after_rz
+</NAME>
+
+<DESCRIPTION>
+The current program has a test accuracy of 0.86 with a combined score of 0.88, which is below the prior best of 0.93. The prior two programs achieved 0.92 and 0.93 test accuracy respectively.
+
+Analysis of the prior programs shows they used richer entanglement structures with multiple parametrized CRY gates at different ranges (nearest-neighbor and next-nearest-neighbor) and independent RY layers for initialization and finalization. The current program is too simple—it only has one parametrized gate (a single CRY bottleneck) plus fixed CZ entanglement, which severely constrains the expressivity.
+
+The recommendation suggests adding a shared RX symmetry-breaker layer immediately after the RZ main layer. This is a targeted improvement that:
+
+1. **Lifts symmetry constraints**: The RZ layer followed directly by readout creates a symmetry that limits the circuit's ability to escape local minima. Inserting RX before readout breaks this symmetry and allows the gradient flow to find better solutions.
+
+2. **Improves expressivity without explosion**: Adding 8 RX gates (one per qubit) with a single shared parameter "rx_main" adds just 1 parameter per block (keeping parameter efficiency), but dramatically improves the effective feature space that can be encoded.
+
+3. **Prior evidence**: The second prior program achieved 0.93 test accuracy with a similar strategy of layering RY, RZ, and additional rotations with parameter sharing.
+
+4. **Minimal overhead**: This adds only 8 gate operations (negligible for circuit depth at 118), while the improved gradient landscape should lead to faster convergence and better final accuracy.
+
+The change maintains parameter efficiency (still 1 new parameter per block, 4 total with N_UPLOADS=3 and N_REPEATS=2) while addressing the expressivity gap that explains the 0.06-0.07 gap between current (0.86) and prior best (0.93) test accuracy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 3: Information bottleneck - parametrized CRY on key qubit pair
+    # Forces feature extraction through a single learned gate
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_bottleneck"},
+
+    # Layer 4: Phase rotation for readout preparation
+    {"gate": "RZ", "wire": 0, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 1, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 2, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 3, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 4, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 5, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 6, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 7, "param": "rz_readout"},
+=======
+    # Layer 3: Information bottleneck - parametrized CRY on key qubit pair
+    # Forces feature extraction through a single learned gate
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_bottleneck"},
+
+    # Layer 4: Phase rotation for readout preparation
+    {"gate": "RZ", "wire": 0, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 1, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 2, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 3, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 4, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 5, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 6, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 7, "param": "rz_readout"},
+
+    # Layer 5: RX symmetry-breaker (shared parameter, lifts RZ symmetry constraints)
+    # Breaks symmetry and improves gradient flow without adding many parameters
+    {"gate": "RX", "wire": 0, "param": "rx_main"},
+    {"gate": "RX", "wire": 1, "param": "rx_main"},
+    {"gate": "RX", "wire": 2, "param": "rx_main"},
+    {"gate": "RX", "wire": 3, "param": "rx_main"},
+    {"gate": "RX", "wire": 4, "param": "rx_main"},
+    {"gate": "RX", "wire": 5, "param": "rx_main"},
+    {"gate": "RX", "wire": 6, "param": "rx_main"},
+    {"gate": "RX", "wire": 7, "param": "rx_main"},
+>>>>>>> REPLACE
+
+</DIFF>

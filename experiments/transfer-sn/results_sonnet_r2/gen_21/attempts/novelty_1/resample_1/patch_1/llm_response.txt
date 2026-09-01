@@ -1,0 +1,40 @@
+<NAME>
+tie_repeat_params_and_add_ring_crx
+
+<DESCRIPTION>
+The current spec uses 20 params/block × 6 blocks (3 uploads × 2 repeats) = 120 circuit params + readout, giving ~170 total params with an 8-point generalization gap. Per the recommendation, I tie the two repeats within each upload to the same parameter set, halving circuit parameters (120→60) while keeping the same expressive block structure (which includes CRZ ring couplings). This reduces overfitting risk and parameter count, targeting a better train-test gap and parameter efficiency. To compensate for reduced total rotation capacity from tying, I also add a second ring of parametrized CRX gates (interleaved with the existing CRZ/CZ ring) to increase the entangling expressivity per repeat without adding extra sequential parameter blocks—since params are shared across both repeats in an upload, this modestly increases N_PARAMS_PER_BLOCK but the total circuit parameter count (with tying) remains well below the current 120.
+
+Implementation: modify `apply_ansatz_block` so the parameter offset depends on `block_index // N_REPEATS` instead of `block_index`, causing both repeats within an upload to reuse identical weights. Add a second entangling ring using CRX with new distinct params interleaved with existing CZ gates, replacing every CZ gate with a parametrized CRX gate to add expressivity while remaining within the shared-per-upload parameter budget (since sharing halves total circuit params, this keeps total N_PARAMS well below the previous 170, improving parameter efficiency and generalization).
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_0"},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_1"},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_2"},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_3"},
+    {"gate": "CZ", "wires": [0, 7]},
+=======
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_0"},
+    {"gate": "CRX", "wires": [6, 5], "param": "crx_0"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_1"},
+    {"gate": "CRX", "wires": [4, 3], "param": "crx_1"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_2"},
+    {"gate": "CRX", "wires": [2, 1], "param": "crx_2"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_3"},
+    {"gate": "CRX", "wires": [0, 7], "param": "crx_3"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    offset = block_index * N_PARAMS_PER_BLOCK
+=======
+    offset = (block_index // N_REPEATS) * N_PARAMS_PER_BLOCK
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS
+=======
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS
+>>>>>>> REPLACE

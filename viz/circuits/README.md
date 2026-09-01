@@ -1,7 +1,7 @@
 # Ansatz gallery
 
 Static page showing the actual gate structure of the `transfer-sn` circuits that
-`../../transfer-sn/SEED_VS_BASELINE_REPORT.md` compares numerically:
+`../../experiments/transfer-sn/SEED_VS_BASELINE_REPORT.md` compares numerically:
 
 | Entry | What it is |
 |---|---|

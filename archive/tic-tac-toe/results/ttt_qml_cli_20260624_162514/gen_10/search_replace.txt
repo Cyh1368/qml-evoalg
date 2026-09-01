@@ -1,0 +1,129 @@
+<NAME>
+crz_shared_symmetry_mixer
+</NAME>
+
+<DESCRIPTION>
+Replace the fixed CZ entangling layer with tunable, shared CRZ entanglers (separate ring/hub parameters) to give the circuit learnable two-qubit phases that align with the Z-basis readout. Add a compact, symmetry-aware RX mixing layer (shared periphery vs center) to increase expressivity and break feature-map-only alignment, while preserving parameter efficiency via symmetry-driven sharing (corners/edges/center and ring/hub shared CRZ). Keep a small final RY output layer shared by periphery/center to sharpen decision boundaries. This balances extra expressivity (learnable entanglement) with parameter efficiency to improve validation/test accuracy and generalization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+ANSATZ_SPEC = [
+    # Compact symmetry-grouped initial rotations
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Local pre-phases shared by symmetry class
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Selective fixed entangling layer (compact): 4 ring edges + 4 hub edges
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+
+    # Split final output mixing: periphery vs center for sharper decision boundary
+    {"gate": "RY", "wire": 0, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+    {"gate": "RZ", "wire": 0, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 1, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 2, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 3, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 4, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 5, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 6, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 7, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 8, "param": "rz_out_center"},
+]
+
+=======
+
+ANSATZ_SPEC = [
+    # Symmetry-aware initial single-qubit rotations (shared by class)
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Local pre-phases shared by symmetry class
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Tunable entangling layer: shared CRZ on ring vs hub edges (learnable two-qubit phases)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_hub"},
+
+    # Compact RX mixing to increase expressivity (shared periphery vs center)
+    {"gate": "RX", "wire": 0, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 1, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 2, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 3, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 4, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 5, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 6, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 7, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Small final output layer (shared periphery vs center) for sharper decision boundaries
+    {"gate": "RY", "wire": 0, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+]
+
+>>>>>>> REPLACE
+</DIFF>

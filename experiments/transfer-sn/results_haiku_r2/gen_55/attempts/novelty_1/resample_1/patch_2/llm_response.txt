@@ -1,0 +1,41 @@
+I understand. The constraint is that I can only modify code within the EVOLVE-BLOCK markers. Let me propose a different approach that works within that constraint.
+
+Since I cannot modify the fixed training loop, feature_map function, or parameter initialization outside the EVOLVE-BLOCK, I need to work within the ANSATZ_SPEC itself. Let me instead propose an improvement to the ansatz structure that addresses the overfitting issue (train_accuracy 0.94 vs test_accuracy 0.90, a gap of 0.04).
+
+<NAME>
+reduce_overfitting_via_regularization_gates
+</NAME>
+
+<DESCRIPTION>
+The current program shows significant overfitting: train_accuracy=0.94 but test_accuracy=0.90 (gap of 0.04), and it has 32 parameters with lower test accuracy than the seed program (26 params, 0.93 test accuracy).
+
+**Root cause analysis:**
+- The current ansatz has parametrized CRZ gates in Layer 3 (cross-ring entanglement) which adds 4 new parameters
+- This increased expressivity without corresponding regularization leads to overfitting
+- The prior seed program (score 0.92) used fixed CZ gates instead, achieving better generalization
+
+**Proposed fix:**
+Replace the parametrized CRZ gates (Layer 3) with fixed CZ gates, reverting to the proven structure from the high-scoring seed program. This:
+1. Reduces parameters from 32 to 26 (matching the better seed)
+2. Removes unnecessary expressivity that causes overfitting
+3. Maintains the beneficial nearest-neighbor and next-nearest-neighbor entanglement structure
+4. Should improve test accuracy and reduce the train-test gap
+
+The key insight is that the parametrized cross-ring entanglement (CRZ) is not helping—the fixed CZ structure was better. By removing this, we get back to the proven architecture.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 3: Cross-ring CRZ (parametrized long-range entanglement)
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_cr"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_cr"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_cr"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_cr"},
+=======
+    # Layer 3: Cross-ring CZ (long-range entanglement, fixed)
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+>>>>>>> REPLACE
+</DIFF>

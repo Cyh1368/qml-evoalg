@@ -1,0 +1,152 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit ZZ-Correlator State Classifier**  
+- **Implementation**: The circuit uses Pennylane’s default.qubit to StatePrep external 8-qubit inputs, then applies six repeats of an ansatz block of per-qubit RY/RZ rotations around a linear chain of CZ gates, and measures dataset-specified two-qubit Z⊗Z correlators averaged and calibrated by a trainable gain and bias. Training is done via autograd backprop with an Adam optimizer on an L2 loss, using mini-batches, early stopping, and restore-best-weights.  
+- **Performance**: Combined score 0.81, with perfect 1.00 accuracy on train, validation, and test splits, zero generalization gap, 146 parameters, circuit depth 35, 186 gates, and convergence in ~30 optimization steps.  
+- **Feedback**: The ansatz’s high expressivity delivers immediate perfect classification and rapid convergence, but its large parameter count yields low parameter efficiency (0.01), suggesting overparameterization.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Minimal CZ-only 8-qubit classifier**  
+- **Implementation**: Repeats a single CZ gate six times—canceling itself and leaving no trainable circuit parameters—then measures fixed two-qubit Z–Z correlators on an 8-qubit StatePrep input and applies only a learnable gain and bias.  
+- **Performance**: Achieved a combined score of 0.64 with chance-level accuracies (train 50%, val 54%, test 51%), using just 2 parameters, depth 6, and gate count 6.  
+- **Feedback**: The self-inverse CZ-only ansatz preserves raw correlator features but provides no expressivity, resulting in random performance; adding parameterized gates would be necessary to improve classification accuracy.
+**Program Identifier:** Generation 3 - Patch Name observable_aligned_calibrator - Correct Program: True
+
+**Program Name: CZ-only Ansatz 8-Qubit Classifier**  
+- **Implementation**: Uses an 8-qubit fixed pipeline that loads precomputed states, applies a single CZ gate between qubits 0 and 1 repeated six times (no trainable circuit parameters), then measures dataset-provided two-qubit Z–Z correlators and fits only a two-parameter (gain/bias) linear calibration.  
+- **Performance**: Achieves near-random classification with ~50% train accuracy, ~51% test accuracy, combined score 0.64, only 2 trainable parameters, depth 6, and parameter efficiency 0.25.  
+- **Feedback**: The absence of any parameterized gates in the ansatz blocks yields zero circuit expressivity and learning, resulting in random performance; introducing trainable rotations or additional entangling gates is essential to improve accuracy despite the minimal parameter count.
+**Program Identifier:** Generation 4 - Patch Name identity_readout_calibrator - Correct Program: True
+
+**Program Name: 8-Qubit Collective RY/CZ State Classifier**  
+- **Implementation**: Precomputed 8-qubit state vectors are loaded and prepared via StatePrep; the ansatz applies shared “collective” RY and RZ rotations on all qubits interleaved with a linear CZ chain, repeated six times, plus a trainable gain and bias calibration. The ansatz specification is programmatically validated, and training uses an Adam optimizer with early stopping on validation loss.  
+- **Performance**: Achieves perfect accuracy (1.00) and low loss (~0.01) on train/validation/test splits with only 14 parameters, circuit depth 29, gate count 138, converging in ~90 steps and yielding a parameter efficiency of 0.07.  
+- **Feedback**: Collective parameter sharing exploited readout symmetry to minimize the parameter count while preserving full classification performance and zero generalization gap. The CZ entangling chain and repeated blocks provided sufficient expressivity, and early stopping plus spec validation ensured robust, error-free training.
+**Program Identifier:** Generation 6 - Patch Name symmetry_shared_two_angle - Correct Program: True
+
+**Program Name: 8-Qubit Classifier with Collective Rotations**  
+- **Implementation**: The ansatz applies two global rotation parameters (collective RY and RZ) across all eight qubits interleaved with a nearest-neighbor CZ chain, repeated six times, and concludes with trainable gain/bias calibration on averaged Z–Z correlators. It uses Pennylane’s default.qubit simulator with autograd backprop and an Adam optimizer with early stopping on validation loss.  
+- **Performance**: Achieved perfect train/validation/test accuracy (1.00) with mean losses ≈0.01, using only 14 parameters, circuit depth 29, 138 gates, and converging in ~90 optimization steps for a parameter efficiency of 0.07.  
+- **Feedback**: The shared-parameter, highly symmetric ansatz delivers strong expressivity and rapid convergence with minimal tunable angles, while the fixed correlator readout plus gain/bias calibration enhances stability and generalization.
+**Program Identifier:** Generation 7 - Patch Name shared_collective_layers - Correct Program: True
+
+**Program Name: Permutation-Symmetric 8-Qubit Classifier**  
+- **Implementation**: Employs a global-mixing ansatz with a single shared RY parameter per block interleaved by a CZ chain on eight qubits, repeated six times, plus trainable gain and bias calibration. The circuit is implemented in Pennylane as a backprop-differentiable QNode optimized with Adam on an L2 loss.  
+- **Performance**: Achieves perfect train/validation/test accuracy (1.00), zero generalization gap, low validation/test loss (~0.05/0.04), and high parameter efficiency (0.12) using only eight parameters.  
+- **Feedback**: The highly parameter-efficient, permutation-symmetric design converges in just 60 steps and generalizes flawlessly, demonstrating that minimal global-bias circuits with 23-depth and 90 gates suffice for this classification task.
+**Program Identifier:** Generation 1 - Patch Name shared_global_ry - Correct Program: True
+
+**Program Name: Symmetric Hardware-efficient 8-qubit Classifier**  
+- **Implementation**: Uses 6 repeats of a symmetry-tied hardware-efficient ansatz performing collective RY/RZ rotations across eight qubits interleaved with a linear chain of CZ gates, prepares input states via StatePrep, measures predefined two-qubit ZZ correlators, and applies a trainable gain/bias calibration for scalar output.  
+- **Performance**: Achieves perfect train/validation/test accuracy (1.00) with mean loss ~0.01, circuit depth 29, 138 gates, only 14 trainable parameters, converging in ~90 steps and yielding a parameter efficiency of 0.07.  
+- **Feedback**: Symmetry tying dramatically reduces parameter count while retaining flawless classification and zero generalization gap; the low parameter efficiency suggests room for further compression or scaling studies.
+**Program Identifier:** Generation 5 - Patch Name symmetry_tied_collective_layers - Correct Program: True
+
+**Program Name: Symmetric RY-CZ 8-Qubit Classifier**  
+- **Implementation**: Uses a permutation-symmetric ansatz with one shared RY rotation parameter per layer across all eight qubits, interleaved with a fixed linear CZ chain repeated six times, and measures averaged two-qubit Z-Z correlators calibrated by a trainable gain and bias. Training employs Adam optimization with mini-batch L2 loss, early stopping on validation loss, and best-weight restoration.  
+- **Performance**: Achieves perfect 1.00 train/validation/test accuracy, zero generalization gap, test loss ≈0.04, depth 23, 90 gates, and parameter efficiency 0.12 with just eight circuit parameters.  
+- **Feedback**: Exploiting global symmetry via collective parameters delivered fast convergence (≈60 steps) and robust generalization with minimal resources. The fixed CZ entanglement provided sufficient nonlinearity, validating the lightweight ansatz design.
+**Program Identifier:** Generation 8 - Patch Name single_axis_collective - Correct Program: True
+
+**Program Name: Global-RY/RZ CZ 8-Qubit Classifier**  
+- **Implementation**: Prepares 8-qubit states via StatePrep, applies a single upload of six repeats of a hardware-efficient ansatz consisting of global RY/RZ rotations and a linear CZ entanglement chain, measures dataset-specified two-qubit Z–Z correlators, and calibrates output with trainable gain and bias using PennyLane’s autograd and Adam optimizer with early stopping.  
+- **Performance**: Achieves perfect train/validation/test accuracy (1.00) with mean losses of 0.01, parameter efficiency of 0.07 using only 14 tunable parameters, circuit depth 29, gate count 138, and converges in ~90 steps.  
+- **Feedback**: The compact global-rotation plus CZ chain ansatz delivers high expressivity and zero generalization gap, demonstrating that a low‐parameter, repeated ansatz can fully classify the dataset while maintaining efficient training and resource usage.
+**Program Identifier:** Generation 9 - Patch Name shared_global_layers - Correct Program: True
+
+**Program Name: 8-Qubit Floquet Ansatz Classifier**  
+- **Implementation**: Uses a tied Floquet-angle ansatz with RY and RZ rotations on each of 8 qubits interleaved with a linear chain of CZ gates over 6 repeats, applies a fixed two-qubit Z–Z correlator readout averaged and calibrated by trainable gain/bias, and is trained via a Pennylane QNode with Adam optimizer and early stopping.  
+- **Performance**: Achieved perfect 1.00 accuracy on train, validation, and test splits, with validation loss 0.03, test loss 0.02, zero generalization gap, and parameter efficiency 0.12 using just 8 circuit parameters.  
+- **Feedback**: Tying a single parameter across all rotation layers drastically reduced model complexity while retaining full classification accuracy; the gain/bias calibration and early stopping contributed to rapid convergence and robust generalization.
+**Program Identifier:** Generation 10 - Patch Name tied_floquet_angle - Correct Program: True
+
+**Program Name: Recurrent Collective-Angle Ansatz 8-Qubit Classifier**  
+- **Implementation**: Applies a 6-repeat ansatz block on 8 qubits where each block uses one shared “collective_angle” for all RY/RZ rotations interleaved with a linear chain of CZ gates, then measures dataset-specified ZZ correlators and calibrates their mean via trainable gain and bias.  
+- **Performance**: Achieved perfect (1.00) train, validation, and test accuracy with low validation loss (~0.03) and test loss (~0.02), zero generalization gap, just 8 parameters, depth 29, and 138 gates, converging in 60 steps.  
+- **Feedback**: Sharing a single angle per block plus simple CZ entanglement yielded high expressivity and parameter efficiency (0.12), and early-stopping with best-weight restoration delivered stable convergence and robust generalization.
+**Program Identifier:** Generation 14 - Patch Name tie_collective_axes - Correct Program: True
+
+**Program Name: Collective-Mix XX 8-Qubit Classifier**  
+- **Implementation**: The ansatz ties a single “collective_mix” parameter per block to RY rotations on all eight qubits and nearest‐neighbor XX entanglers, repeated six times, with fixed StatePrep inputs, dataset‐defined Z–Z correlator measurements, and a trainable gain/bias calibration.  
+- **Performance**: Combined score 0.99, achieving perfect 1.00 accuracy on train/validation/test with ~0.05 loss, zero generalization gap, 23-depth/90-gate circuits, and only eight trainable parameters (parameter efficiency 0.12).  
+- **Feedback**: The shared-parameter design offers strong expressivity and outstanding generalization with minimal parameters, and the gain/bias calibration effectively scales the averaged correlator outputs.
+**Program Identifier:** Generation 15 - Patch Name tied_ry_xx_mixer - Correct Program: True
+
+**Program Name: Collective Single-Parameter RY-XX Ansatz Classifier**  
+- **Implementation**: Uses 6 repeats of an ansatz block with one shared trainable angle driving global RY rotations on all 8 qubits and nearest-neighbor XX Ising interactions, followed by fixed two-qubit Z–Z correlator measurements calibrated by a gain and bias. Training employs the Adam optimizer on an L² loss with early stopping on validation performance and precomputed StatePrep inputs.  
+- **Performance**: Achieved perfect accuracy (1.00) on train, validation, and test sets with zero generalization gap, mean loss ≈0.05, only 8 variational parameters, circuit depth 23, 90 gates, and convergence in ~30 steps.  
+- **Feedback**: The minimal, collective-parameter design delivered rapid convergence and high parameter efficiency (0.12), showing that a heavily parameter-shared ansatz can fully capture this dataset’s structure, though its expressivity for more complex tasks remains to be tested.
+**Program Identifier:** Generation 18 - Patch Name shared_ry_xx_mixer - Correct Program: True
+
+**Program Name: Collective-Angle 8-Qubit State Classifier**  
+- **Implementation**: 6-repeat ansatz with a single shared collective_angle parameter per block driving per-qubit RY/RZ rotations and a linear chain of CZ entanglers; input states are prepared via StatePrep and classification uses dataset-defined two-qubit Z–Z correlator measurements with a trainable gain and bias calibration.  
+- **Performance**: Achieved perfect train/validation/test accuracies (1.00), low validation/test losses (~0.03/0.02), zero generalization gap, with only 8 parameters, circuit depth 29, 138 gates, and convergence in ~60 steps.  
+- **Feedback**: Heavy parameter sharing delivers high efficiency (parameter_efficiency = 0.12) without loss of accuracy, while early stopping and output calibration ensure rapid convergence and robust generalization; the moderate depth balances expressivity and resource use.
+**Program Identifier:** Generation 19 - Patch Name tie_collective_axes - Correct Program: True
+
+**Program Name: Collective-Angle CZ Ansatz Classifier**  
+- **Implementation**: Employed a single collective rotation parameter per layer driving RY and RZ on all eight qubits followed by a linear chain of CZ entangling gates, repeated six times, with a trainable gain and bias calibrating the mean of fixed two-qubit Z–Z correlator measurements. Implemented in PennyLane using an Adam optimizer with early stopping and best-weights restoration.  
+- **Performance**: Achieved perfect (1.00) training, validation, and test accuracy with zero generalization gap, low loss (~0.02–0.03), only 8 parameters, depth 29, and 138 gates.  
+- **Feedback**: The one-parameter-per-layer design delivered full discriminative power with minimal parameters, yielding high parameter efficiency (0.12) and rapid convergence (~60 steps), while output calibration ensured stable scaling.
+**Program Identifier:** Generation 20 - Patch Name single_angle_collective_block - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Two‐axis global rotation with CZ chain (Current Best Program, Generation 9):  
+  • ANSATZ_SPEC ties one global_ry and one global_rz per block (N_PARAMS_PER_BLOCK=2), repeated N_REPEATS=6.  
+  • Achieves perfect train/validation/test accuracy, test_loss≈0.01, depth=29, gate_count=138, convergence in ~90 steps.  
+- Single‐axis global mixing with XX entanglers (Generations 15 & 18):  
+  • One shared “collective_mix” or “global_ry” per block driving XX Ising interactions, N_PARAMS=8.  
+  • Yields perfect accuracy, test_loss≈0.05, depth=23, gate_count=90, rapid convergence (~30 steps).  
+- Fixed two‐qubit Z–Z correlator readout + gain/bias calibration (All Top‐Performers):  
+  • Averaging dataset‐specified PauliZ⊗PauliZ observables and calibrating with two readout parameters stabilizes losses (~0.01–0.05) and ensures zero generalization gap.  
+- Block repetition count N_REPEATS=6 across all high‐scoring programs ensures full expressivity without over-depth penalties.  
+
+## Ineffective Approaches  
+- CZ‐only entanglement blocks (Generations 3 & 4):  
+  • No parameterized rotations; plateaued at ~50% accuracy (combined score ~0.64).  
+- Fully unshared, per‐qubit parameterization (146 trainable angles):  
+  • Although it converged in ~30 steps, it scored only 0.81 combined with extreme parameter redundancy (param_efficiency≈0.01).  
+- Single‐axis global RY without a second rotation axis:  
+  • Test_loss≈0.04 (Generations 1, 8, 10) vs. ~0.01 for two‐axis; omitting RZ sacrifices tighter loss minimization.  
+- Increasing N_REPEATS beyond 6:  
+  • No further accuracy or loss improvements, only added gates and depth, confirming N_REPEATS=6 as the sweet spot.  
+
+## Implementation Insights  
+- Declarative ANSATZ_SPEC + apply_ansatz_block abstraction:  
+  • Enables swapping between one‐parameter (shared_ry_xx_mixer) and two‐parameter (global_ry/global_rz) designs without altering the training loop.  
+- Ordered unique PARAMETER_KEYS_PER_BLOCK + offset indexing:  
+  • Clean parameter-to-gate mapping; in the current best program, this yields 2 keys per block → 12 circuit parameters + 2 readout.  
+- Early stopping with best‐weight restoration:  
+  • All top performers (e.g., Generation 14/19 tie_collective_axes) used min_delta=1e-4, patience=75 to halt at optimal validation loss and preserve zero generalization gap.  
+- Separation of state upload (qml.StatePrep) from ansatz application:  
+  • Decouples data handling from circuit specification, simplifying block iteration and ensuring consistent readout across splits.  
+
+## Performance Analysis  
+- Loss vs. parameter count trade-off:  
+  • Single‐axis (8 params): test_loss≈0.05, param_efficiency=0.12.  
+  • Two‐axis (14 params): test_loss≈0.01 (4× lower), param_efficiency=0.07.  
+- Convergence steps scale with N_PARAMS:  
+  • 8-parameter mixers converge in ~30–60 steps; 14-parameter global_ry/global_rz takes ~90 steps.  
+- Depth/gate count impact:  
+  • Depth=23, gate_count=90 (single-axis RY/XX) vs. depth=29, gate_count=138 (two-axis RY/RZ + CZ) yields substantial loss reduction at modest resource cost.  
+- Consistent zero generalization gap across all perfect-accuracy variants reinforces that expressivity via parameter sharing and output calibration—not sheer parameter volume—drives robust generalization.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Extend the readout layer with per‐pair weighting. Instead of averaging all PauliZ⊗PauliZ expectations uniformly, introduce one trainable weight w_i for each readout pair and compute raw = ∑_i w_i · z_i. Initialize all w_i=1/√N_pairs and include them in N_READOUT_PARAMS. This builds on the proven benefit of gain/bias calibration by letting the circuit learn which correlators are most informative, potentially lowering test_loss without increasing circuit depth.
+
+2. Generalize CZ links into fSim-style entanglers. In ANSATZ_SPEC replace each CZ gate on wires [i,i+1] with two controlled-rotations: a CRZ(ϕ_zz) followed by a CRX(ϕ_xx), sharing one ϕ_zz and one ϕ_xx per block. This 4-parameter entangling block retains the successful linear topology while giving the circuit richer pairwise interactions, informed by the strong performance of tunable entanglers in previous generations.
+
+3. Probe next-nearest-neighbor correlations. Augment ANSATZ_SPEC by adding CZ gates on wires [i, i+2] for i=0…5 in each block (no new parameters). By injecting modest non-nearest-neighbor entanglement you test whether broader connectivity further reduces loss, analogously to the stable generalization seen when readout measured only nearest-neighbor ZZ correlators.
+
+4. Parallelize the CZ chain into two commuting layers. Replace the sequential CZ list with two sublayers per block: first apply CZ on even links ([0,1],[2,3],[4,5],[6,7]) then on odd links ([1,2],[3,4],[5,6]). Because disjoint CZs commute, this reordering preserves connectivity but can halve the circuit depth, potentially accelerating convergence while maintaining perfect accuracy.
+
+5. Enrich single‐qubit mixing with a global RX axis. Augment each block’s ANSATZ_SPEC by inserting R X(global_rx) on every qubit before the existing RY and RZ calls, introducing one extra parameter per block. This three-axis rotation per block explores the full SU(2) on each qubit, extending the two-axis success of Gen 9 and trading one parameter per block for potentially tighter loss minimization.

@@ -1,0 +1,57 @@
+<NAME>
+yy_ring_loop_entangler
+</NAME>
+
+<DESCRIPTION>
+The current program has 7 distinct parameters but achieves a combined score of 0.46, with relatively weak worst_group_margin (0.25). The prior second program (score 0.54) achieved better generalization and margin separation with 12 distinct parameters, suggesting that additional structured entanglement helps resolve hard samples.
+
+The recommendation proposes adding a YY "ring loop" connecting qubits in a cycle: (0,2), (2,4), (4,6), (6,0). This creates non-local, ring-like entanglement under a single shared parameter `yy_loop`, leveraging entangler diversity without adding many parameters. Such ring topologies are known to improve MPS-like expressivity and help separate difficult samples.
+
+Key insights:
+1. The current circuit uses only 7 distinct parameters, leaving room to add one more without excessive growth.
+2. The ring structure (0→2→4→6→0) complements the existing nearest-neighbor and diagonal couplings by creating intermediate-distance correlations.
+3. All four YY gates in the ring share one parameter, keeping parameter growth minimal (+1 distinct parameter = 8 total).
+4. This structure mirrors the "entangler diversity" principle: different gate types (XX, YY, ZZ) and topologies improve worst-case margin.
+5. Positioned after the existing ZZ layer, it adds minimal depth while introducing richer correlation patterns.
+
+Expected impact:
+- Improved worst_group_margin by better separating hard samples through ring-like connectivity.
+- Maintained or improved validation_margin via more structured entanglement.
+- Slight increase in gate count and depth, but the +1 parameter cost is negligible given the benefits observed in prior runs.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Diagonal long-range entanglement with ZZ for full connectivity
+    {"gate": "ZZ", "wires": [0, 4], "param": "diag"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "diag"},
+    # Final rotation layer: binary parity sharing (even/odd)
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+=======
+    # Diagonal long-range entanglement with ZZ for full connectivity
+    {"gate": "ZZ", "wires": [0, 4], "param": "diag"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "diag"},
+    # Ring-loop YY entanglement: non-local cycle for improved sample separation
+    {"gate": "YY", "wires": [0, 2], "param": "yy_loop"},
+    {"gate": "YY", "wires": [2, 4], "param": "yy_loop"},
+    {"gate": "YY", "wires": [4, 6], "param": "yy_loop"},
+    {"gate": "YY", "wires": [6, 0], "param": "yy_loop"},
+    # Final rotation layer: binary parity sharing (even/odd)
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+>>>>>>> REPLACE
+
+</DIFF>

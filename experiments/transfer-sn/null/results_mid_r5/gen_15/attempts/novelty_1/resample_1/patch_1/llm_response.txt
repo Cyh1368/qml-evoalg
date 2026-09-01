@@ -1,0 +1,70 @@
+<NAME>
+compact_small_world_ansatz
+</NAME>
+
+<DESCRIPTION>
+This edit compresses the block to four trainable angles per repeated ansatz block while keeping strong data-driven mixing.
+
+Why this should help:
+- Parameter efficiency improves materially: 4 shared circuit parameters per block instead of 5, dropping total trainable parameters from 32 to 26.
+- The entangler pattern becomes a small-world graph: local CZ pairs preserve the useful inductive bias from the binary feature map, while two long-range bridges connect the two halves of the register and help information flow across the whole 8-qubit system.
+- Using shared parity-based RY and half-register RZ layers reduces overfitting pressure and usually converges faster under Adam on re-uploading classifiers.
+- Gate count also falls slightly, which should help the combined score without sacrificing the proven re-uploading structure.
+
+The change stays fully within the allowed ANSATZ_SPEC schema and preserves the fixed training loop and readout.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_2"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "RZ", "wire": 0, "param": "rz_front"},
+    {"gate": "RZ", "wire": 1, "param": "rz_front"},
+    {"gate": "RZ", "wire": 2, "param": "rz_front"},
+    {"gate": "RZ", "wire": 3, "param": "rz_front"},
+    {"gate": "RZ", "wire": 4, "param": "rz_back"},
+    {"gate": "RZ", "wire": 5, "param": "rz_back"},
+    {"gate": "RZ", "wire": 6, "param": "rz_back"},
+    {"gate": "RZ", "wire": 7, "param": "rz_back"},
+]
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,14 @@
+{
+  "generation": 20,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "variational_readout_layer",
+  "patch_description": "The current program achieves 0.85 combined score with 68 parameters and shows a significant generalization gap (0.05) and high test loss (0.50). The prior programs achieved 0.89\u20130.90 with fewer parameters (44\u201350) and better generalization.\n\nThe recommendation to add variational readout rotations is well-motivated:\n\n1. **Residual phase correction**: The gain\u2013bias calibration (currently just 2 parameters) stabilizes the mean and scale of Z expectations, but cannot correct for residual phase offsets or asymmetries in the qubit measurement basis. A final layer of RY and RZ rotations on every qubit before measurement can capture these corrections.\n\n2. **Minimal overhead**: Adding only 2 new shared parameters (`ry_read` and `rz_read`) keeps the total parameter count low while providing a compact, expressive final transformation.\n\n3. **Improved test accuracy**: By allowing the circuit to rotate the measurement basis adaptively, we can lift test accuracy beyond 0.90 and reduce the generalization gap.\n\n4. **Efficiency**: This layer acts immediately before measurement, so it has direct influence on the readout without requiring deep circuit modifications.\n\nThe implementation adds a final layer of single-qubit rotations in the `circuit_z_expectations` function, applied after all ansatz blocks but before measuring PauliZ. These rotations are parameterized by two shared keys that are added to the ANSATZ_SPEC, making them part of the trainable circuit parameters.",
+  "error_msg": null,
+  "timestamp": "2026-07-24T10:13:17.826629",
+  "llm_cost": 0.033375,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

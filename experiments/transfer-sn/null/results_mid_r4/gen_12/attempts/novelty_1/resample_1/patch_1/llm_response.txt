@@ -1,0 +1,77 @@
+<NAME>
+dense_rotational_entanglement_ansatz
+</NAME>
+
+<DESCRIPTION>
+The current top-performing ansatz uses an RY-layer, a CRZ-ring, and an RX-layer (24 parameters per block, 146 total). It achieves 100% accuracy with a validation loss of 0.09 and fast convergence (120 steps). 
+
+To improve the combined score, I am proposing a design that maintains the 24-parameter-per-block budget but increases the entanglement complexity and rotational coverage. By replacing the CRZ-ring with a more diverse set of controlled rotations—specifically, a combination of CRZ for phase entanglement and CRY for state-population mixing across different qubit distances—we can potentially lower the loss further.
+
+The proposed block structure:
+1.  **RY Layer** (8 params): Initial basis rotation.
+2.  **CRZ Ring** (8 params): Nearest-neighbor phase entanglement.
+3.  **CRY Long-Range** (8 params): Long-distance (skip-3) population entanglement (0-4, 1-5, 2-6, 3-7, 4-0, 5-1, 6-2, 7-3).
+
+This structure increases the "mixing" of information across the register, which is beneficial for the 8-qubit binary classification task where features are encoded as qubit-pair phase couplings.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_6"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_7"},
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: RY rotations for base state preparation
+    {"gate": "RY", "wire": 0, "param": "p_ry0"},
+    {"gate": "RY", "wire": 1, "param": "p_ry1"},
+    {"gate": "RY", "wire": 2, "param": "p_ry2"},
+    {"gate": "RY", "wire": 3, "param": "p_ry3"},
+    {"gate": "RY", "wire": 4, "param": "p_ry4"},
+    {"gate": "RY", "wire": 5, "param": "p_ry5"},
+    {"gate": "RY", "wire": 6, "param": "p_ry6"},
+    {"gate": "RY", "wire": 7, "param": "p_ry7"},
+    # Layer 2: CRZ Ring for nearest-neighbor phase correlations
+    {"gate": "CRZ", "wires": [0, 1], "param": "p_crz0"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "p_crz1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "p_crz2"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "p_crz3"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "p_crz4"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "p_crz5"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "p_crz6"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "p_crz7"},
+    # Layer 3: CRY Long-range (skip-3) for global amplitude distribution
+    {"gate": "CRY", "wires": [0, 4], "param": "p_cry0"},
+    {"gate": "CRY", "wires": [1, 5], "param": "p_cry1"},
+    {"gate": "CRY", "wires": [2, 6], "param": "p_cry2"},
+    {"gate": "CRY", "wires": [3, 7], "param": "p_cry3"},
+    {"gate": "CRY", "wires": [4, 0], "param": "p_cry4"},
+    {"gate": "CRY", "wires": [5, 1], "param": "p_cry5"},
+    {"gate": "CRY", "wires": [6, 2], "param": "p_cry6"},
+    {"gate": "CRY", "wires": [7, 3], "param": "p_cry7"},
+]
+>>>>>>> REPLACE
+</DIFF>

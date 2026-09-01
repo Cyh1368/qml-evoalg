@@ -1,0 +1,82 @@
+<NAME>
+extend_ring_crx
+</NAME>
+
+<DESCRIPTION>
+Extend ring entanglement by adding CRX gates around the outer perimeter using a shared parameter crx_ring.
+This increases expressivity without increasing the number of trainable parameters, since all new CRX gates reuse the same crx_ring key. The idea is to boost entangling power on the boundary qubits (the tic-tac-toe ring) while preserving parameter efficiency. This should help improve validation/test performance by offering richer correlation patterns without altering the fixed training loop or feature map.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing.
+
+    Structural changes:
+    1) Pre-entanglement RZ on all qubits (shared by symmetry)
+    2) RY rotations on all qubits (shared by symmetry)
+    3) Ring entanglement: CZ gates around outer ring (no extra CR gates on ring)
+    4) Hub entanglement: mixed CRZ (center-to-edges) and CRX (center-to-edges)
+       with shared parameters per axis
+    5) Post-entanglement RZ on all qubits (shared by symmetry)
+    """
+    spec = []
+=======
+
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing.
+
+    Structural changes:
+    1) Pre-entanglement RZ on all qubits (shared by symmetry)
+    2) RY rotations on all qubits (shared by symmetry)
+    3) Ring entanglement: CZ gates around outer ring (no extra CR gates on ring)
+    4) Hub entanglement: mixed CRZ (center-to-edges) and CRX (center-to-edges)
+       with shared parameters per axis
+    5) Post-entanglement RZ on all qubits (shared by symmetry)
+    """
+    spec = []
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 3: Ring entanglement (outer 8 qubits)
+    # Keep ring entanglement as CZ-only to reduce depth and parameter count
+    spec.append({"gate": "CZ", "wires": [0, 1]})
+    spec.append({"gate": "CZ", "wires": [1, 2]})
+    spec.append({"gate": "CZ", "wires": [2, 3]})
+    spec.append({"gate": "CZ", "wires": [3, 4]})
+    spec.append({"gate": "CZ", "wires": [4, 5]})
+    spec.append({"gate": "CZ", "wires": [5, 6]})
+    spec.append({"gate": "CZ", "wires": [6, 7]})
+    spec.append({"gate": "CZ", "wires": [7, 0]})
+
+    # Layer 4: Hub entanglement (center to edges) with mixed two-qubit gates
+    # - 2 edges use CRZ (parameter shared across them)
+    # - 2 edges use CRX (parameter shared across them)
+    spec.append({"gate": "CRZ", "wires": [8, 1], "param": "crz_hub_edge"})
+    spec.append({"gate": "CRZ", "wires": [8, 5], "param": "crz_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [8, 3], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [8, 7], "param": "crx_hub_edge"})
+=======
+    # Layer 3: Ring entanglement (outer 8 qubits)
+    # Keep ring entanglement as CZ-only to reduce depth; augment with CRX on the same ring
+    spec.append({"gate": "CZ", "wires": [0, 1]})
+    spec.append({"gate": "CZ", "wires": [1, 2]})
+    spec.append({"gate": "CZ", "wires": [2, 3]})
+    spec.append({"gate": "CZ", "wires": [3, 4]})
+    spec.append({"gate": "CZ", "wires": [4, 5]})
+    spec.append({"gate": "CZ", "wires": [5, 6]})
+    spec.append({"gate": "CZ", "wires": [6, 7]})
+    spec.append({"gate": "CZ", "wires": [7, 0]})
+    spec.append({"gate": "CRX", "wires": [0, 1], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [1, 2], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [2, 3], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [3, 4], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [4, 5], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [5, 6], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [6, 7], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [7, 0], "param": "crx_ring"})
+>>>>>>> REPLACE
+</DIFF>

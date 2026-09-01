@@ -280,7 +280,7 @@ def derive_identity(rel_dir_parts: tuple[str, ...], programs: list[dict]) -> dic
 def find_render_python(repo_root: Path) -> Path | None:
     candidates = [
         SCRIPT_DIR / ".venv_render" / "bin" / "python3",
-        repo_root / "tic-tac-toe" / ".venv-shinka-ttt" / "bin" / "python3",
+        repo_root / "archive" / "tic-tac-toe" / ".venv-shinka-ttt" / "bin" / "python3",
         Path(sys.executable),
     ]
     for py in candidates:
@@ -401,6 +401,11 @@ def best_program(programs: list[dict]) -> tuple[float | None, str | None]:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--repo-root", default=".")
+    ap.add_argument("--scan-root", default=None,
+                    help="directory scanned for programs.sqlite, and the base that run "
+                         "task/variant slugs are derived from. Defaults to --repo-root. "
+                         "Point it at experiments/ so that experiments/transfer-sn/results_* "
+                         "keeps the slugs it had when transfer-sn sat at the repo root.")
     ap.add_argument("--out", default="viz/data")
     ap.add_argument("--include-single-model", action="store_true",
                     help="also emit runs where only one model ever proposed. Excluded by "
@@ -409,6 +414,7 @@ def main() -> None:
     args = ap.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
+    scan_root = Path(args.scan_root).resolve() if args.scan_root else repo_root
     out_dir = Path(args.out).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -419,8 +425,8 @@ def main() -> None:
         print("[build_data] WARNING: no Python with `import pennylane` found; "
               "all circuit_svg/circuit_text will be null.")
 
-    db_paths = find_databases(repo_root)
-    print(f"[build_data] found {len(db_paths)} programs.sqlite under {repo_root}")
+    db_paths = find_databases(scan_root)
+    print(f"[build_data] found {len(db_paths)} programs.sqlite under {scan_root}")
 
     runs_summary = []
     manifest_runs = []
@@ -431,7 +437,7 @@ def main() -> None:
     run_records = []  # (identity, programs, db_path) after skip/empty filtering
 
     for db_path in db_paths:
-        rel = db_path.parent.relative_to(repo_root)
+        rel = db_path.parent.relative_to(scan_root)
         try:
             con = open_db_readonly(db_path)
         except Exception as exc:

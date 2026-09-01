@@ -1,0 +1,14 @@
+{
+  "generation": 37,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "none",
+  "patch_description": "Reverts to the empirically strongest known structure (2 distinct circuit\nparameters: a global RY angle and a global RZ angle that is reused as the\ncontrolled-RZ angle across three entangling shells \u2014 nearest-neighbor,\nskip-2, and antipodal), which previously scored 0.61, clearly outperforming\nthe 4-parameter even/odd split variant that collapsed training (score 0.40).\nThe even/odd split broke the ring's rotational symmetry and evidently created\na harder optimization landscape (the model never reached the convergence\nthreshold and stayed near chance accuracy), so it is dropped entirely rather\nthan patched.\n\nOn top of the proven 2-parameter backbone, a final global RY(theta_ry) mixer\nlayer is appended after the three entangling shells, reusing the *existing*\ntheta_ry parameter (no new distinct parameter name is introduced, so the\ncircuit-parameter count stays at 2, i.e. n_params=4 total with gain/bias).\nThis mirrors the \"output mixer\" idea from the very first seed (which used a\ndedicated theta_ry_out and scored 0.59) but without paying the parameter-count\npenalt: since parameter economy is stated to dominate the score at every\ncount, sharing the mixer angle with the input rotation instead of introducing\na fresh one is the way to capture a similar effect for free. The extra RY\nlayer gives the optimizer one more place (still governed by the same 1\nlearned scalar) to re-align qubit Bloch vectors with the fixed two-qubit\nreadout observable right before measurement, which should help push the\nworst-group margin up slightly without touching the train/test generalization\ngap or the parameter count that the evolutionary score rewards most heavily.\n\nAll shells keep the full rotational/reflection symmetry of the qubit ring\n(no even/odd anisotropy), which \u2014 combined with the \"no full K8 graph\"\nlesson already encoded in the base design (distance-3 edges are deliberately\nomitted, since a prior experiment showed the fully-connected 28-edge graph\ndilutes the per-edge rotation and hurts accuracy) \u2014 keeps the circuit in the\nregime that is known to train reliably to 100% training accuracy while\ngeneralizing best among all tested variants so far.",
+  "error_msg": null,
+  "timestamp": "2026-08-03T07:27:25.786248",
+  "llm_cost": 0.213468,
+  "llm_model": "anthropic/claude-sonnet-5"
+}

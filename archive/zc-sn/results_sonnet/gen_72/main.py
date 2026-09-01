@@ -1,0 +1,86 @@
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+
+# EVOLVE-BLOCK-START
+def _ry_layer(qubits, prefix="ry"):
+    """Per-qubit RY rotations, one trainable parameter each."""
+    return [{"gate": "RY", "wire": q, "param": f"{prefix}_{q}"} for q in qubits]
+
+
+def _rx_layer(qubits, prefix="rx"):
+    """Per-qubit RX rotations, one trainable parameter each."""
+    return [{"gate": "RX", "wire": q, "param": f"{prefix}_{q}"} for q in qubits]
+
+
+def _ring_crz(n, even_param="crz_ring_even", odd_param="crz_ring_odd"):
+    """Nearest-neighbor ring entanglement with alternating shared strength."""
+    gates = []
+    for i in range(n):
+        j = (i + 1) % n
+        param = even_param if i % 2 == 0 else odd_param
+        gates.append({"gate": "CRZ", "wires": [i, j], "param": param})
+    return gates
+
+
+def _skip_crz(n, step=2, param="crz_skip"):
+    """Sparse skip-`step` entanglement with a single shared parameter,
+    acting as an implicit regularizer while still providing longer-range
+    mixing than the nearest-neighbor ring."""
+    return [{"gate": "CRZ", "wires": [i, (i + step) % n], "param": param} for i in range(n)]
+
+
+def _diameter_crz(n, param="crz_diam"):
+    """Antipodal (distance n/2) entanglement with a single shared parameter.
+    Gives global connectivity at minimal parameter cost."""
+    half = n // 2
+    return [{"gate": "CRZ", "wires": [i, i + half], "param": param} for i in range(half)]
+
+
+def _build_block(n=N_QUBITS, ring_even_param="crz_ring_even", ring_odd_param="crz_ring_odd"):
+    """Compose one full ansatz block from modular layers:
+      1. Per-qubit RY rotations (expressivity).
+      2. Ring CRZ entanglement, alternating shared strength (local mixing).
+      3. Per-qubit RX rotations (second rotation axis, more expressivity).
+      4. Skip-2 CRZ entanglement, single shared parameter (mid-range mixing).
+      5. Skip-3 CRZ entanglement, single shared parameter (fills the
+         previously-missing distance-3 connectivity gap).
+      6. Diameter CRZ entanglement, single shared parameter (global mixing).
+    """
+    block = []
+    block += _ry_layer(range(n))
+    block += _ring_crz(n, even_param=ring_even_param, odd_param=ring_odd_param)
+    block += _rx_layer(range(n))
+    block += _skip_crz(n, step=2, param="crz_skip2")
+    block += _skip_crz(n, step=3, param="crz_skip3")
+    block += _diameter_crz(n)
+    return block
+
+
+# Block 0 gets its own ring-entanglement parameters ("_b0" suffix) so the
+# first local-mixing layer can specialize independently, while block 1
+# reuses the original shared ring parameter names. Skip-2, skip-3, and
+# diameter parameters remain fully shared across both blocks (same names
+# reused inside _build_block), preserving the stability benefit of shared
+# mid/long-range entanglement while adding only 2 extra parameters.
+_BLOCK0 = _build_block(N_QUBITS, ring_even_param="crz_ring_even_b0", ring_odd_param="crz_ring_odd_b0")
+_BLOCK1 = _build_block(N_QUBITS, ring_even_param="crz_ring_even", ring_odd_param="crz_ring_odd")
+
+ANSATZ_SPEC = _BLOCK0 + _BLOCK1
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

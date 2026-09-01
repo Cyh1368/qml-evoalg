@@ -1,0 +1,78 @@
+<NAME>
+parametrized_entangling_ladder
+</NAME>
+
+<DESCRIPTION>
+The current implementation uses fixed CZ gates in a linear chain topology. While this achieves perfect accuracy (1.0), the parameter efficiency remains low (0.07) with 14 parameters and significant depth (35.00).
+
+The key insight is to replace the fixed CZ gates with parametrized two-qubit gates (CRZ) that share a single tunable entanglement parameter. This approach:
+
+1. **Reduces parameter count minimally** (14 → 15 parameters, only +1) while gaining direct control over entanglement strength
+2. **Maintains the proven ladder topology** that has shown consistent performance
+3. **Improves parameter economy** by making entanglement tunable rather than fixed, allowing the optimizer to find the precise amount of entanglement needed for the problem
+4. **Preserves accuracy** by keeping the same connectivity pattern and single-qubit rotation structure
+5. **Potentially speeds convergence** by having an explicit knob for the most important interaction parameter
+
+This is a targeted refinement following the recommendation: replace CZ gates with CRZ gates sharing a single "phi_shared" parameter, maintaining the linear chain connectivity that has consistently outperformed other topologies.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

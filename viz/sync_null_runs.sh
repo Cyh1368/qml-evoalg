@@ -18,7 +18,7 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REMOTE_BASE="\$HOME/project/transfer_sn_null"
-DEST_BASE="$REPO/transfer-sn/null"
+DEST_BASE="$REPO/experiments/transfer-sn/null"
 RUNS=("$@")
 
 # Default: discover every completed run directory on the cluster.
@@ -70,4 +70,4 @@ c.close()\"" >/dev/null
 done
 
 echo "=== synced $synced run(s); rebuilding viewer data ==="
-python3 "$REPO/viz/build_data.py" --repo-root "$REPO" --out "$REPO/viz/data"
+python3 "$REPO/viz/build_data.py" --repo-root "$REPO" --scan-root "$REPO/experiments" --out "$REPO/viz/data"

@@ -1,0 +1,116 @@
+<NAME>
+symmetry_weighted_entanglement_and_cz_cycling
+</NAME>
+
+<DESCRIPTION>
+This edit refines the ansatz by introducing two key improvements:
+1. **Symmetry-Weighted Entanglement**: Replaces uniform `CRZ` ring/hub parameters with a more granular symmetry-based approach. The ring edges are split into 'corner-to-edge' and 'edge-to-corner' pairs (e.g., [0,1] vs [1,2]) to allow the circuit to learn directional flow on the board.
+2. **CZ Cycling**: Adds fixed `CZ` gates that cycle through different subsets of the grid connectivity across the `N_REPEATS` repetitions. By alternating between "ring-heavy" and "hub-heavy" fixed entanglement, we increase the expressive power of the circuit without adding more trainable parameters, helping to reduce the generalization gap and improve accuracy.
+3. **Optimized Mixing**: Consolidates the final `RY`/`RZ` layers into a single `RY` layer with more specific symmetry classes (corner, edge, center) to maintain parameter efficiency.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Split corners and edges into two paired symmetry-classes for light asymmetry
+    {"gate": "RY", "wire": 0, "param": "ry_corner_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_b"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge_b"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Local pre-phases shared by symmetry class to regularize
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Parametrized controlled-Z rotations (CRZ) on ring and hub edges.
+    # Tunable Z-phase entanglers align well with Z-basis readout expectations.
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_hub"},
+
+    # Final compact mixing tuned for Z-readout:
+    # separate periphery vs center adjustments for sharper decision boundaries
+    {"gate": "RY", "wire": 0, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+    {"gate": "RZ", "wire": 0, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 1, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 2, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 3, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 4, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 5, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 6, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 7, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 8, "param": "rz_out_center"},
+=======
+    # Symmetry-aware initial rotations
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Directional CRZ entanglement: Corner-to-Edge vs Edge-to-Corner
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_c_to_e"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_c_to_e"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_c_to_e"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_c_to_e"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_e_to_c"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_e_to_c"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_e_to_c"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_e_to_c"},
+
+    # Hub entanglement (Center to Edges)
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_hub"},
+
+    # Fixed CZ Ring (applied in all blocks to ensure connectivity)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Final mixing layer with refined symmetry
+    {"gate": "RY", "wire": 0, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+>>>>>>> REPLACE
+</DIFF>

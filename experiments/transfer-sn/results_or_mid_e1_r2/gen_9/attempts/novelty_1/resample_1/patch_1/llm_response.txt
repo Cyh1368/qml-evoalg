@@ -1,0 +1,94 @@
+<NAME>
+checkerboard_ryrx_block
+</NAME>
+
+<DESCRIPTION>
+The current ansatz spends most of its capacity on RZ layers. In this setting, those rotations are weakly useful because the feature map and most entanglers are diagonal in the computational basis, so RZ parameters tend to commute through the circuit and contribute little to the measured Z readout.
+
+This edit removes that dead weight and replaces it with an alternating, non-commuting local basis change pattern:
+- RY on all qubits
+- CZ on even neighbor pairs
+- RX on all qubits
+- CZ on shifted neighbor pairs
+- RY on all qubits
+
+This keeps the circuit shallow and parameter-efficient while preserving expressivity across the 6 re-uploaded blocks. It also aligns well with the fixed ZZ feature map by using only active mixing rotations around sparse entangling layers, which should improve optimization speed and reduce train-test gap.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_0_4"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_1_5"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_2_6"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_3_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_pre_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_pre_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_pre_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_pre_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_pre_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_pre_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_pre_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RX", "wire": 0, "param": "rx_mid_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_mid_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_mid_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_mid_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_mid_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_mid_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_mid_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_mid_7"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "RY", "wire": 0, "param": "ry_post_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_post_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_post_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_post_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_post_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_post_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_post_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_post_7"},
+]
+>>>>>>> REPLACE
+</DIFF>

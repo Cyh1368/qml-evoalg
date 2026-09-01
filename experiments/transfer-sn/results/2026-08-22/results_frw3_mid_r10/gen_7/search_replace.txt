@@ -1,0 +1,113 @@
+<NAME>
+cube_mixer_symmetry
+</NAME>
+
+<DESCRIPTION>
+Replace the over-parameterized line-entangler block with a compact, symmetry-preserving cube mixer.
+This ansatz uses only four shared trainable parameters per block: a collective RY input mixer, a collective RZ phase, a second collective RY mixer after full 3D cube entanglement, and a final collective RX readout mixer.
+
+Why this should help:
+- Much fewer parameters: 4 per block instead of 24, improving parameter efficiency and reducing overfitting.
+- Better inductive bias: shared parameters enforce permutation-like symmetry across qubits, which is often beneficial when labels depend on many distributed binary features.
+- Stronger entanglement coverage: the 3 perfect-matchings CZ pattern connects all qubits with short depth and better mixing than a single nearest-neighbor chain.
+- Noncommuting single-qubit layers before and after entanglement increase expressivity while keeping the optimization landscape manageable.
+
+This structure is aligned with the best-performing prior candidate and should improve validation/test accuracy while lowering the train-test gap and reducing the total circuit parameter count.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared collective input mixer: one parameter is reused across all wires.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_in"},
+
+    # Collectively shared phase layer improves interaction with the fixed
+    # IsingZZ feature encoding while keeping the block compact.
+    {"gate": "RZ", "wire": 0, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz"},
+
+    # Cube-style entanglement: three disjoint perfect matchings on 8 qubits.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Output mixer: noncommuting layer to convert entangled phases into
+    # measurable Z-basis signal.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_out"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+]
+>>>>>>> REPLACE
+</DIFF>

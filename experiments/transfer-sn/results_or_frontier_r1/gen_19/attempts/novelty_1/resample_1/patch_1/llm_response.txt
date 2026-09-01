@@ -1,0 +1,31 @@
+An important limitation of the current ansatz block is its restricted expressive power in the initial state preparation and local mixing. In the current sequence, the input mixer only consists of `RY` gates. Since the fixed feature map encodes the data using Z-Z interactions, applying an `RX` layer immediately after the `RY` rotations is crucial. It spans the orthogonal plane, enabling the subsequent Z-Z entanglement to operate on a fully expressive subset of the Bloch sphere.
+
+Furthermore, while the 3-regular graph in the current code is gate-efficient, previous iterations demonstrated that a complete graph (K8) provides maximum connectivity to capture all pairwise feature interactions perfectly. By utilizing a **perfectly scheduled complete K8 graph** (decomposed into 7 rounds of 4 disjoint edges), we can achieve the optimal entanglement of the prior highest-scoring program but with significantly shorter circuit depth.
+
+<improve_expressivity_and_scheduling>
+Add the missing permutation-equivariant `RX` layer to the input mixer to restore full SU(2) local operations. Additionally, replace the 3-regular graph with a perfectly scheduled complete CZ graph. Since all CZ gates commute, this achieves the exact same optimal unitary as the previously successful 0.98-scoring program, but reduces the depth from 141 to 123.
+</improve_expressivity_and_scheduling>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RY", "wire": 0, "param": "collective_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry"},
+    # Degree-three cycle graph, scheduled as three perfect matchings.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},

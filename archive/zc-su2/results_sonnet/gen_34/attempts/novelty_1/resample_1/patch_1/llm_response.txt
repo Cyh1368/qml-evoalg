@@ -1,0 +1,75 @@
+<NAME>
+single_theta_triaxis_dualring
+
+<DESCRIPTION>
+Crossover of the two 0.80-scoring seeds: keeps the extreme parameter economy of a single shared scalar "theta" driving every rotation (n_params = 8 total across the 8 block repetitions), while combining the best structural elements from both parents. From the RX+RY+RZ seed we take the richer per-qubit rotation sequence (RX then RY before entangling, RZ after), which gave the fastest convergence (60 steps). From the p_shared seed we take the denser dual-ring entangling topology (nearest-neighbor CZ ring + skip-2 CZ ring, both with wrap-around), which gave the lowest validation/test loss (0.01) thanks to higher connectivity. Combining both should retain the 1.00 accuracy with zero generalization gap while pushing for both fast convergence and low loss, at the same minimal 8-parameter budget as both parents (better parameter economy than the 14-param variant, which scored lower at 0.72).
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 1. Pre-entanglement RX layer: ALL 8 qubits share a SINGLE trainable
+#    parameter "theta". Combined with the RY layer immediately below
+#    (different, non-commuting axis, no entangling gate in between), this
+#    realizes a richer single-qubit rotation per qubit while still using
+#    only ONE trainable parameter overall for the whole rotation stack.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+
+# 2. Second pre-entanglement rotation layer (RY), reusing the SAME single
+#    shared parameter "theta". Two non-commuting single-qubit rotations
+#    driven by one scalar give each qubit a genuinely 2D rotation before
+#    any entanglement is introduced, which empirically sped up
+#    convergence substantially (60 vs 240 steps) relative to a single
+#    RY-only pre-layer.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 3a. Fixed nearest-neighbor CZ ring (closed chain, wrap-around), zero
+#     trainable parameters. Every qubit entangles with both immediate
+#     neighbours.
+for i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 1) % N_QUBITS]})
+
+# 3b. Fixed "skip-2" CZ ring layered on top of the nearest-neighbor ring,
+#     still zero extra trainable parameters. This adds non-local
+#     entangling loops (qubit i with qubit i+2) forming a dual-ring
+#     topology (degree ~3 per qubit) that gave the lowest validation/test
+#     loss among tested variants (0.01), at no extra parameter cost.
+for i in range(0, N_QUBITS, 2):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 2) % N_QUBITS]})
+
+# 4. Post-entanglement RZ layer reusing the SAME single parameter name
+#    "theta" as steps 1-2 (different axis again), so each block
+#    repetition contributes exactly ONE unique trainable parameter in
+#    total (maximal parameter economy) while still letting the shared
+#    scalar act non-trivially through three distinct rotation axes
+#    around the dense entangling structure.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

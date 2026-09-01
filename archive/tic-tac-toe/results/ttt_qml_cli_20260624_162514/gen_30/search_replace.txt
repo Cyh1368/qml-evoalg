@@ -1,0 +1,116 @@
+<NAME>
+grouped_parametrized_crz_entanglement
+</NAME>
+
+<DESCRIPTION>
+Replace the fixed CZ entangling layer with a modest set of grouped parametrized controlled-Z-rotations (CRZ).
+Rationale:
+- Parametrized two-qubit gates get independent parameter copies for each block repetition/upload, so replacing fixed CZs with CRZs allows the entanglement strengths to vary across uploads and repeats, effectively producing different entanglement patterns per data re-upload without changing the outer training loop.
+- Grouping multiple physical edges under the same parameter preserves symmetry and keeps the per-block parameter count moderate (we group ring edges into 4 shared params and hub links into 2 shared params).
+- This yields richer expressive power and diverse mixing pathways while limiting parameter explosion and maintaining adjacency constraints.
+I keep the same compact, symmetry-aware single-qubit layers and final output rotations, but substitute the fixed 8 CZs with 12 CRZ gates using 6 grouped parameter keys. Expect improved representation and potentially better validation/test accuracy at the cost of a controlled increase in parameter count.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Compact symmetry-aware single-qubit layer:
+    # share rotations by class to regularize and reduce params
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Partial entangling layer (compact): choose 4 ring edges and 4 hub edges
+    # to provide mixing while keeping gate count low.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+
+    # Small final single-qubit adjustment (shared per class)
+    {"gate": "RY", "wire": 0, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 8, "param": "ry_center_out"},
+]
+=======
+ANSATZ_SPEC = [
+    # Compact symmetry-aware single-qubit layer:
+    # share rotations by class to regularize and reduce params
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Grouped parametrized entangling layer (CRZ).  Using CRZ allows
+    # the effective entanglement pattern to vary across uploads/repeats
+    # because each ansatz block has independent parameter copies.
+    # Ring edges grouped to 4 shared parameters (symmetry-aware grouping).
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring_a"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring_a"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring_b"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring_b"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring_c"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring_c"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring_d"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring_d"},
+
+    # Hub edges grouped to 2 shared parameters to connect center with edges.
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_hub_a"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_hub_a"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_hub_b"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_hub_b"},
+
+    # Small final single-qubit adjustment (shared per class)
+    {"gate": "RY", "wire": 0, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 8, "param": "ry_center_out"},
+]
+>>>>>>> REPLACE
+</DIFF>

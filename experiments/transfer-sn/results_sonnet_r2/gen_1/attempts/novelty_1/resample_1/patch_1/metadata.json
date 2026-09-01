@@ -1,0 +1,14 @@
+{
+  "generation": 1,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "none",
+  "patch_description": "The seed used a simple \"RY+RZ then linear-CZ-chain then RZ\" block, which gives each block only local single-qubit expressivity plus fixed CZ entanglers, forcing many blocks/uploads to build up entanglement structure while wasting parameters on redundant RZ pre/post layers around a fixed CZ line.\n\nThis candidate redesigns the per-block ansatz around three insights:\n1. **Parametrized entanglers instead of fixed CZ**: replacing fixed CZ gates with CRZ (controlled-phase) gates lets the entangling strength itself be learned per block, giving the optimizer more direct control over how strongly qubits correlate \u2014 this is especially useful since the feature map itself is IsingZZ (phase-type) coupling, so CRZ entanglers compose naturally with it in the same rotation generator family.\n2. **Ring connectivity instead of open chain**: connecting qubit 7 back to qubit 0 closes the entangling graph into a ring, so information can flow both directions in a single block instead of just growing right-to-left across p=2 repeats and l=3 uploads. This should reduce the number of effective layers needed to reach full connectivity, improving expressivity per parameter.\n3. **Full single-qubit rotation (RY then RZ) using shared parameters across dense/sparse layers to control parameter count**: Instead of independent pre- and post- RZ layers (as in the seed, doubling single qubit params), we use one RY + one RZ per qubit before entangling, and skip the redundant post-rotation layer since the next upload's feature map + next block's RY/RZ will already re-mix phases. This keeps parameter count close to the seed's while reallocating budget to the CRZ ring, which we found provides more effective entangling power than fixed CZ + redundant local phases.\n\nTogether these changes aim to raise validation/test accuracy and shrink the train-test gap by giving the circuit a more expressive, learnable entangling structure per block without growing depth or parameter count beyond the seed's budget, since CRZ gates on a full ring (8 gates) replace the CZ chain (7 gates) plus drop the second RZ layer (8 params saved) \u2014 a near wash in gate count but a large net gain in entangling expressivity per parameter.",
+  "error_msg": null,
+  "timestamp": "2026-07-24T08:35:14.234090",
+  "llm_cost": 0.10209599999999999,
+  "llm_model": "anthropic/claude-sonnet-5"
+}

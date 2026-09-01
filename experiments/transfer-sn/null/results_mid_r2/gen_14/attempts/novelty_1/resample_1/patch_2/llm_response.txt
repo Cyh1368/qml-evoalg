@@ -1,0 +1,85 @@
+I apologize for the error. I now understand that I can only edit within the EVOLVE-BLOCK regions, which contains only ANSATZ_SPEC. The readout calibration modification I proposed is outside the EVOLVE-BLOCK and therefore immutable.
+
+Let me propose a different approach that works within the EVOLVE-BLOCK constraints. Since I cannot modify the readout code directly, I can enhance ANSATZ_SPEC by adding a final per-qubit RZ layer. This gives each qubit independent phase adjustments at the end of the circuit, which complements the single global bias/gain and provides additional expressive power without changing the fixed training infrastructure.
+
+<NAME>
+enhanced_ansatz_with_final_rz_layer
+</NAME>
+
+<DESCRIPTION>
+Enhance the ANSATZ_SPEC by adding a final RZ rotation layer (8 parameters). This provides per-qubit phase adjustments that work synergistically with the global gain/bias readout calibration. The final RZ layer allows each qubit to independently tune its phase before measurement, effectively increasing expressivity and helping the model achieve finer margin control without requiring changes to the fixed readout code.
+
+The structure becomes:
+- RY layer (8 params for initial superposition)
+- CRX circular entanglement (8 params)
+- CZ diagonal couplings (0 params)
+- RZ final layer (8 params for per-qubit phase tuning)
+
+Total: 24 params per block (up from 16), keeping the model compact while adding flexibility.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_0"},
+    {"gate": "CRX", "wires": [1, 2], "param": "crx_1"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_2"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_3"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_4"},
+    {"gate": "CRX", "wires": [5, 6], "param": "crx_5"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_6"},
+    {"gate": "CRX", "wires": [7, 0], "param": "crx_7"},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 0]},
+    {"gate": "CZ", "wires": [7, 1]},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_0"},
+    {"gate": "CRX", "wires": [1, 2], "param": "crx_1"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_2"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_3"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_4"},
+    {"gate": "CRX", "wires": [5, 6], "param": "crx_5"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_6"},
+    {"gate": "CRX", "wires": [7, 0], "param": "crx_7"},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 0]},
+    {"gate": "CZ", "wires": [7, 1]},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+]
+>>>>>>> REPLACE
+</DIFF>

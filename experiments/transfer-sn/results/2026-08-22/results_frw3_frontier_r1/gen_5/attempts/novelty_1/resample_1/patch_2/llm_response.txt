@@ -1,0 +1,99 @@
+Looking at this task, I need to improve the seed ansatz block for an 8-qubit classifier. The seed has RY+RZ rotations, a linear CZ chain, and a final RZ layer. I'll improve it with circular entanglement, long-range connections, and a second rotation layer for better expressibility.
+
+<NAME>
+circular_entangle_dual_layer
+</NAME>
+
+<DESCRIPTION>
+The seed ansatz uses only linear nearest-neighbor CZ entanglement which limits information flow. This design improves it by:
+1. Splitting CZ gates into even-odd and odd-even pairs to avoid sequential depth issues
+2. Adding the 7-0 CZ connection to close the ring (circular topology)
+3. Adding a second RY+RZ rotation layer after entanglement for more expressibility
+4. Total: 32 params per block × 6 copies = 192 params, which is reasonable
+
+The circular entanglement ensures every qubit can communicate with every other qubit more efficiently through the ring structure, and the second rotation layer after entanglement allows the circuit to create more complex correlations.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry0"},
+    {"gate": "RZ", "wire": 0, "param": "rz0"},
+    {"gate": "RY", "wire": 1, "param": "ry1"},
+    {"gate": "RZ", "wire": 1, "param": "rz1"},
+    {"gate": "RY", "wire": 2, "param": "ry2"},
+    {"gate": "RZ", "wire": 2, "param": "rz2"},
+    {"gate": "RY", "wire": 3, "param": "ry3"},
+    {"gate": "RZ", "wire": 3, "param": "rz3"},
+    {"gate": "RY", "wire": 4, "param": "ry4"},
+    {"gate": "RZ", "wire": 4, "param": "rz4"},
+    {"gate": "RY", "wire": 5, "param": "ry5"},
+    {"gate": "RZ", "wire": 5, "param": "rz5"},
+    {"gate": "RY", "wire": 6, "param": "ry6"},
+    {"gate": "RZ", "wire": 6, "param": "rz6"},
+    {"gate": "RY", "wire": 7, "param": "ry7"},
+    {"gate": "RZ", "wire": 7, "param": "rz7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz0b"},
+    {"gate": "RZ", "wire": 1, "param": "rz1b"},
+    {"gate": "RZ", "wire": 2, "param": "rz2b"},
+    {"gate": "RZ", "wire": 3, "param": "rz3b"},
+    {"gate": "RZ", "wire": 4, "param": "rz4b"},
+    {"gate": "RZ", "wire": 5, "param": "rz5b"},
+    {"gate": "RZ", "wire": 6, "param": "rz6b"},
+    {"gate": "RZ", "wire": 7, "param": "rz7b"},
+]
+=======
+ANSATZ_SPEC = [
+    # First rotation layer: RY + RZ on every qubit
+    {"gate": "RY", "wire": 0, "param": "a0"},
+    {"gate": "RZ", "wire": 0, "param": "b0"},
+    {"gate": "RY", "wire": 1, "param": "a1"},
+    {"gate": "RZ", "wire": 1, "param": "b1"},
+    {"gate": "RY", "wire": 2, "param": "a2"},
+    {"gate": "RZ", "wire": 2, "param": "b2"},
+    {"gate": "RY", "wire": 3, "param": "a3"},
+    {"gate": "RZ", "wire": 3, "param": "b3"},
+    {"gate": "RY", "wire": 4, "param": "a4"},
+    {"gate": "RZ", "wire": 4, "param": "b4"},
+    {"gate": "RY", "wire": 5, "param": "a5"},
+    {"gate": "RZ", "wire": 5, "param": "b5"},
+    {"gate": "RY", "wire": 6, "param": "a6"},
+    {"gate": "RZ", "wire": 6, "param": "b6"},
+    {"gate": "RY", "wire": 7, "param": "a7"},
+    {"gate": "RZ", "wire": 7, "param": "b7"},
+    # Circular entanglement: even-odd pairs then odd-even pairs
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Second rotation layer: RY + RZ on every qubit
+    {"gate": "RY", "wire": 0, "param": "c0"},
+    {"gate": "RZ", "wire": 0, "param": "d0"},
+    {"gate": "RY", "wire": 1, "param": "c1"},
+    {"gate": "RZ", "wire": 1, "param": "d1"},
+    {"gate": "RY", "wire": 2, "param": "c2"},
+    {"gate": "RZ", "wire": 2, "param": "d2"},
+    {"gate": "RY", "wire": 3, "param": "c3"},
+    {"gate": "RZ", "wire": 3, "param": "d3"},
+    {"gate": "RY", "wire": 4, "param": "c4"},
+    {"gate": "RZ", "wire": 4, "param": "d4"},
+    {"gate": "RY", "wire": 5, "param": "c5"},
+    {"gate": "RZ", "wire": 5, "param": "d5"},
+    {"gate": "RY", "wire": 6, "param": "c6"},
+    {"gate": "RZ", "wire": 6, "param": "d6"},
+    {"gate": "RY", "wire": 7, "param": "c7"},
+    {"gate": "RZ", "wire": 7, "param": "d7"},
+]
+>>>>>>> REPLACE
+</DIFF>

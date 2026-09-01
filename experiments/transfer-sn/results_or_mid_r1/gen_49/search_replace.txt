@@ -1,0 +1,91 @@
+<NAME>
+mixed_axis_mirrored_ansatz
+</NAME>
+
+<DESCRIPTION>
+This edit evolves the ansatz by blending a successful hierarchical entanglement scaffold with a mixed-axis controlled rotation core and a local entanglement mini-core.
+
+1.  **Hierarchical Entanglement:** Reintroduces the non-parametric CZ scaffold from the high-performing prior, combining long-range (qubit distance 4) and short-range (qubit distance 1) gates to facilitate spatial information flow across the 8-qubit register.
+2.  **Mixed-Axis Rotations:** Uses a combination of CRX, CRY, and CRZ gates in the central parametric core. Mixed axes are generally more expressive in variational circuits as they help navigate the Hilbert space more effectively than single-axis (e.g., CRZ-only) designs.
+3.  **Local Mini-Core:** Implements the recommended local mixed-axis mini-core (CRX on outer neighbors, CRY on inner neighbors) using parameter sharing. This increases expressivity and local correlation without a significant increase in the total parameter count.
+4.  **Symmetry & Efficiency:** Employs mirrored parameter sharing for pre- and post-rotations (RY and RZ). This regularizes the model, reducing the generalization gap (train-test gap) and improving parameter efficiency.
+5.  **Complexity:** Reduces the circuit depth compared to the current ring-topology version (from 114 to ~95) while maintaining a healthy parameter count (86 total parameters), aiming to improve the combined score by balancing accuracy, loss, and depth.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # RY layer with shared parameters across qubit groups
+    {"gate": "RY", "wire": 0, "param": "ry_g0"},
+    {"gate": "RY", "wire": 1, "param": "ry_g0"},
+    {"gate": "RY", "wire": 2, "param": "ry_g0"},
+    {"gate": "RY", "wire": 3, "param": "ry_g0"},
+    {"gate": "RY", "wire": 4, "param": "ry_g1"},
+    {"gate": "RY", "wire": 5, "param": "ry_g1"},
+    {"gate": "RY", "wire": 6, "param": "ry_g1"},
+    {"gate": "RY", "wire": 7, "param": "ry_g1"},
+    # CRZ ring topology
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_e0"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_e1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_e2"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_e3"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_e4"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_e5"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_e6"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_e7"},
+    # RZ layer with shared parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 1, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 2, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_g3"},
+    {"gate": "RZ", "wire": 5, "param": "rz_g3"},
+    {"gate": "RZ", "wire": 6, "param": "rz_g3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_g3"},
+]
+=======
+ANSATZ_SPEC = [
+    # Mirrored shared pre-rotations for feature lifting
+    {"gate": "RY", "wire": 0, "param": "ry_g0"},
+    {"gate": "RY", "wire": 1, "param": "ry_g0"},
+    {"gate": "RY", "wire": 2, "param": "ry_g1"},
+    {"gate": "RY", "wire": 3, "param": "ry_g1"},
+    {"gate": "RY", "wire": 4, "param": "ry_g2"},
+    {"gate": "RY", "wire": 5, "param": "ry_g2"},
+    {"gate": "RY", "wire": 6, "param": "ry_g3"},
+    {"gate": "RY", "wire": 7, "param": "ry_g3"},
+
+    # Fixed entangling scaffold: long-range + local mixing
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Mixed-axis controlled-rotation core: expressive and mirrored
+    {"gate": "CRX", "wires": [0, 7], "param": "crx_a"},
+    {"gate": "CRY", "wires": [1, 6], "param": "cry_a"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_a"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_b"},
+
+    # Local mixed-axis entanglement mini-core
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_loc"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_loc"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_loc"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_loc"},
+
+    # Mirrored shared post-rotations for phase refinement
+    {"gate": "RZ", "wire": 0, "param": "rz_g0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_g0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_g1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_g1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_g2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_g3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_g3"},
+]
+>>>>>>> REPLACE
+</DIFF>

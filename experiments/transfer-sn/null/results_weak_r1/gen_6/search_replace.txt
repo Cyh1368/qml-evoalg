@@ -1,0 +1,96 @@
+<NAME>
+parameter_efficient_entangled_ansatz
+</NAME>
+
+<DESCRIPTION>
+I am replacing the current `ANSATZ_SPEC` with a more parameter-efficient design that utilizes symmetry-based parameter sharing and adds long-range entanglement via `CRZ` gates.
+
+The previous ansatz used 146 parameters, which is quite high. This new design uses only 7 parameters per block (by sharing single-qubit rotation parameters across qubit subsets and a final layer of global rotations), resulting in 44 parameters total (including the 2 readout params). This should improve the parameter efficiency score while maintaining or improving accuracy through more strategic use of long-range entanglement (the `CRZ` links).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+
+=======
+
+ANSATZ_SPEC = [
+    # Shared RY: Even/Odd grouping (2 params)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # Shared RZ: Even/Odd grouping (2 params)
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+
+    # Entangling backbone
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Long-range entangled links (2 params)
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_1"},
+
+    # Final global rotation layer (1 param)
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,108 @@
+Looking at the performance metrics of the prior programs and the current program, I can identify key patterns:
+
+**Analysis:**
+
+1. **Prior Program 1** (0.91 score): Has a mid-circuit selective RZ layer (on even/odd qubits separately) inserted between the forward CZ chain and reverse CRZ chain. This provides intermediate phase modulation.
+
+2. **Prior Program 2** (0.91 score): Removes the selective RZ layer but adds a dedicated post-entanglement RZ layer with separate parameters (rz_post_a, rz_post_b), increasing parameters to 50.
+
+3. **Current Program** (0.90 score):
+   - Has post-entanglement RZ but appears simpler
+   - n_params = 50 (same as best prior)
+   - **Key issue**: convergence_step_mean = 330 (much higher than prior 180), indicating training difficulty
+   - Combined score dropped to 0.90 despite having 50 parameters
+
+**The Problem:** The current program lacks mid-circuit connectivity enhancement. Prior Program 1 inserted selective RZ rotations *between* the forward CZ chain and reverse CRZ chain, which improved convergence speed and model expressivity.
+
+**The Solution:** Following the recommendation in the prompt and learning from Prior Program 1, I should insert a fixed CZ gate immediately after the CRZ [5,4] gate (as suggested). This adds zero cost in parameters but strengthens mid-circuit entanglement mixing. I'll also restore the selective mid-circuit RZ layer strategy from Prior Program 1, which demonstrated better convergence (180 vs 330 steps).
+
+The optimal combination is:
+1. Add mid-circuit selective RZ rotations on even/odd qubits (as in Prior Program 1)
+2. Insert CZ gates at strategic points in the reverse chain to strengthen connectivity
+
+<NAME>
+mid_circuit_entanglement_with_selective_rz
+</NAME>
+
+<DESCRIPTION>
+Restore and enhance mid-circuit connectivity based on Prior Program 1's successful pattern. Prior Program 1 achieved 0.91 score with selective RZ rotations on even/odd qubits placed between the forward CZ chain and reverse CRZ chain, resulting in fast convergence (180 steps). Current program has degraded convergence (330 steps) despite 50 parameters.
+
+This edit:
+1. Inserts selective mid-circuit RZ rotations (even qubits get rz_mid_a, odd qubits get rz_mid_b) after the forward CZ chain and before the reverse CRZ chain.
+2. Adds strategic fixed CZ gates within the reverse chain to strengthen mid-circuit entanglement mixing without adding parameters.
+
+These changes restore the proven mid-circuit phase modulation and connectivity patterns from Prior Program 1, which showed better generalization and faster convergence.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Linear chain CZ gates for proven entanglement topology
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Post-entanglement RZ rotations with separate parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+
+    # Reverse chain with alternating CRZ parameters for proven expressivity
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+=======
+    # Linear chain CZ gates for proven entanglement topology
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Mid-circuit selective RZ rotations on even/odd qubits for enhanced phase control
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_b"},
+
+    # Reverse chain with alternating CRZ parameters for proven expressivity
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    # Mid-circuit connectivity reinforcement: fixed CZ gate after CRZ
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+
+    # Post-entanglement RZ rotations with separate parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+>>>>>>> REPLACE
+
+</DIFF>

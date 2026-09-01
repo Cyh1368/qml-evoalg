@@ -1,0 +1,126 @@
+<NAME>
+hybrid_ring_crx_cry_hub
+</NAME>
+
+<DESCRIPTION>
+Introduce a hybrid two-qubit entanglement pattern: replace the ring CZ entanglement with a ring of CRX gates that share a single parameter (crx_ring) across all ring edges, and replace the hub CRZ entanglement with CRY gates that share a single parameter (cry_hub_edge) across all center-edge connections. This reduces parameter count and introduces richer two-qubit interactions while preserving symmetry-based sharing for single-qubit layers. The rest of the architecture (pre/post RZ, RY layers) remains unchanged to maintain the fixed training loop and data handling.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build symmetry-aware hierarchical ansatz with hub CRZ entanglement.
+
+    Structure:
+    1. Pre-entanglement RZ on corners/edges/center (shared per group)
+    2. RY rotations on corners/edges/center (shared per group)
+    3. Ring CZ entanglement along the outer ring
+    4. Hub entanglement: CRZ between center and edges (hub-edge gates share one parameter)
+    5. Post-entanglement RZ on corners/edges/center (shared per group)
+    """
+    spec: list[dict] = []
+
+    # Group indices by board symmetry
+    corners = (0, 2, 4, 6)
+    edges = (1, 3, 5, 7)
+    center = 8
+
+    # Layer 1: Pre-entanglement RZ (shared per group)
+    for w in corners:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_pre_corner"})
+    for w in edges:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": center, "param": "rz_pre_center"})
+
+    # Layer 2: RY rotations (shared per group)
+    for w in corners:
+        spec.append({"gate": "RY", "wire": w, "param": "ry_corner"})
+    for w in edges:
+        spec.append({"gate": "RY", "wire": w, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": center, "param": "ry_center"})
+
+    # Layer 3: Ring entanglement (outer ring CZ) - fixed, no params
+    spec.extend([
+        {"gate": "CZ", "wires": [0, 1]},
+        {"gate": "CZ", "wires": [1, 2]},
+        {"gate": "CZ", "wires": [2, 3]},
+        {"gate": "CZ", "wires": [3, 4]},
+        {"gate": "CZ", "wires": [4, 5]},
+        {"gate": "CZ", "wires": [5, 6]},
+        {"gate": "CZ", "wires": [6, 7]},
+        {"gate": "CZ", "wires": [7, 0]},
+    ])
+
+    # Layer 4: Hub entanglement (center to edges) with per-edge params
+    # Wires: [center, edge]
+    spec.append({"gate": "CRZ", "wires": [center, 1], "param": "crz_hub_edge_0"})
+    spec.append({"gate": "CRZ", "wires": [center, 3], "param": "crz_hub_edge_1"})
+    spec.append({"gate": "CRZ", "wires": [center, 5], "param": "crz_hub_edge_2"})
+    spec.append({"gate": "CRZ", "wires": [center, 7], "param": "crz_hub_edge_3"})
+
+    # Layer 5: Post-entanglement RZ (shared per group)
+    for w in corners:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_post_corner"})
+    for w in edges:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": center, "param": "rz_post_center"})
+
+    return spec
+=======
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build symmetry-aware hierarchical ansatz with hub CRY entanglement and ring CRX.
+    
+    Structure:
+    1. Pre-entanglement RZ on corners/edges/center (shared per group)
+    2. RY rotations on corners/edges/center (shared per group)
+    3. Ring entanglement: CRX gates around outer ring (shared angle)
+    4. Hub entanglement: CRY between center and edges (hub-edge gates share one parameter)
+    5. Post-entanglement RZ on corners/edges/center (shared per group)
+    """
+    spec: list[dict] = []
+
+    # Group indices by board symmetry
+    corners = (0, 2, 4, 6)
+    edges = (1, 3, 5, 7)
+    center = 8
+
+    # Layer 1: Pre-entanglement RZ (shared per group)
+    for w in corners:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_pre_corner"})
+    for w in edges:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": center, "param": "rz_pre_center"})
+
+    # Layer 2: RY rotations (shared per group)
+    for w in corners:
+        spec.append({"gate": "RY", "wire": w, "param": "ry_corner"})
+    for w in edges:
+        spec.append({"gate": "RY", "wire": w, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": center, "param": "ry_center"})
+
+    # Layer 3: Ring entanglement (outer ring) - CRX with shared parameter
+    spec.append({"gate": "CRX", "wires": [0, 1], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [1, 2], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [2, 3], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [3, 4], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [4, 5], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [5, 6], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [6, 7], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [7, 0], "param": "crx_ring"})
+
+    # Layer 4: Hub entanglement (center to edges) with shared per-hub parameter
+    spec.append({"gate": "CRY", "wires": [center, 1], "param": "cry_hub_edge"})
+    spec.append({"gate": "CRY", "wires": [center, 3], "param": "cry_hub_edge"})
+    spec.append({"gate": "CRY", "wires": [center, 5], "param": "cry_hub_edge"})
+    spec.append({"gate": "CRY", "wires": [center, 7], "param": "cry_hub_edge"})
+
+    # Layer 5: Post-entanglement RZ (shared per group)
+    for w in corners:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_post_corner"})
+    for w in edges:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": center, "param": "rz_post_center"})
+
+    return spec
+>>>>>>> REPLACE
+</DIFF>

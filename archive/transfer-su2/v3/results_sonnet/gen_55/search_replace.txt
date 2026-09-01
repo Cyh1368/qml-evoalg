@@ -1,0 +1,40 @@
+<NAME>
+rz_output_mixer
+</NAME>
+
+<DESCRIPTION>
+The current candidate appends a closing RY layer that reuses "theta_ry" after the CRZ-dominated entangling shells, but this scored worse (0.57) than the prior seed without that closing mixer (0.61). The entangling shells and the CRZ layer operate in the RZ (Z-axis) basis, so a closing rotation axis mismatched from that basis (RY) may be fighting the alignment the entangler already built up, rather than aiding the Hermitian readout alignment. Replace the closing RY("theta_ry") layer with a closing RZ("theta_z") layer instead: this keeps the rotation axis consistent with the CRZ-based entangling shells, giving the optimizer one more use of the already-shared "theta_z" parameter to fine-tune phase alignment before readout, at zero extra parameter cost (still 2 distinct circuit params). This directly tests the axis-alignment hypothesis from the recommendation while preserving the low parameter count that dominates the score.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Mixer-style closing RY layer reusing the existing "theta_ry" parameter
+    # (no new trainable parameter). Gives the circuit an extra alignment
+    # step after the entangling shells, letting the same 2 angles do more
+    # nonlinear work without any parameter-count cost.
+    {"gate": "RY", "wire": 0, "param": "theta_ry"},
+    {"gate": "RY", "wire": 1, "param": "theta_ry"},
+    {"gate": "RY", "wire": 2, "param": "theta_ry"},
+    {"gate": "RY", "wire": 3, "param": "theta_ry"},
+    {"gate": "RY", "wire": 4, "param": "theta_ry"},
+    {"gate": "RY", "wire": 5, "param": "theta_ry"},
+    {"gate": "RY", "wire": 6, "param": "theta_ry"},
+    {"gate": "RY", "wire": 7, "param": "theta_ry"},
+]
+=======
+    # Mixer-style closing RZ layer reusing the existing "theta_z" parameter
+    # (no new trainable parameter). Axis-matched with the CRZ-based
+    # entangling shells that precede it, so it should better realign phase
+    # information right before the Hermitian readout than an RY closer,
+    # while still costing zero extra trainable parameters.
+    {"gate": "RZ", "wire": 0, "param": "theta_z"},
+    {"gate": "RZ", "wire": 1, "param": "theta_z"},
+    {"gate": "RZ", "wire": 2, "param": "theta_z"},
+    {"gate": "RZ", "wire": 3, "param": "theta_z"},
+    {"gate": "RZ", "wire": 4, "param": "theta_z"},
+    {"gate": "RZ", "wire": 5, "param": "theta_z"},
+    {"gate": "RZ", "wire": 6, "param": "theta_z"},
+    {"gate": "RZ", "wire": 7, "param": "theta_z"},
+]
+>>>>>>> REPLACE
+</DIFF>

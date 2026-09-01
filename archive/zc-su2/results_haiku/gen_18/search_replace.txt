@@ -1,0 +1,107 @@
+Looking at the performance metrics:
+
+1. **Prior program 1** (20 params): score 0.68 - separate pre/post RZ, shared RY
+2. **Prior program 2** (14 params): score 0.72 - fully shared RZ, shared RY (best so far)
+3. **Current program** (38 params): score 0.64 - alternating RY/RZ parameters (worse)
+
+The key insight is that **parameter sharing significantly improves the score**. The best performer (score 0.72) achieved this with only 14 parameters by using maximum sharing: one shared RY parameter and one shared RZ parameter.
+
+The current program has too many parameters (38) with alternating "a" and "b" suffixes, which hurts parameter efficiency. The recommendation in the prompt is also valuable: replace fixed CZ gates with parametric CRZ gates sharing a single parameter, which gives optimizer control over entanglement strength with minimal parameter cost.
+
+I propose two targeted improvements:
+
+1. **Maximize parameter sharing**: Reduce parameters back to 3 (ry_shared, rz_pre_shared, rz_post_shared) - this matches the second-best approach but keeps the structure similar.
+2. **Replace CZ with parametric CRZ**: Add a single shared "phi_ent" parameter to control entanglement strength, increasing parameters to 4 but with better controllability of the entangling layer.
+
+<NAME>
+param_share_and_parametric_entangler
+</NAME>
+
+<DESCRIPTION>
+The current program uses 38 parameters (alternating "a" and "b" suffixes), which results in poor parameter efficiency (0.03) and lower combined score (0.64).
+
+Analysis of prior programs shows:
+- Prior program 2 (14 params, score 0.72): Used maximum parameter sharing with one shared RY and one shared RZ parameter, achieving the best score.
+- Prior program 1 (20 params, score 0.68): Used separate pre/post RZ parameters.
+
+The current program regresses by using too many parameters without improving performance.
+
+Proposed improvements:
+1. **Maximize parameter sharing**: Return to highly shared parameters (3 total: ry_shared, rz_pre_shared, rz_post_shared) to restore parameter efficiency.
+2. **Parametrize entanglement**: Replace each fixed CZ gate with CRZ using a single shared "phi_ent" parameter. This gives the optimizer direct control over entanglement strength while adding only one parameter, improving controllability without significant parameter cost.
+
+Expected outcome: Combining maximum parameter sharing with parametric entanglement should achieve better parameter efficiency than the current 0.03 and better accuracy/loss trade-off than score 0.64, potentially matching or exceeding the prior best score of 0.72.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_shared"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_ent"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_shared"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

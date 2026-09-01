@@ -1,0 +1,102 @@
+Looking at the performance metrics, I notice:
+
+1. **Current state**: The single-block ansatz achieves perfect accuracy (1.0) with only 14 parameters and decent efficiency (0.07), but has slow convergence (90 steps).
+
+2. **Prior observations**:
+   - Two-block version: Same accuracy, 14 params, but doubled depth (125 vs 35) and much faster convergence (30 vs 90 steps)
+   - Four-block version: Same accuracy, 14 params, but even slower convergence (implying diminishing returns)
+
+3. **Key insight**: The current single-block design is under-parameterized relative to what the problem needs for efficient optimization. The slow convergence suggests the optimizer is struggling to find the gradient direction effectively.
+
+4. **Problem analysis**: 
+   - Pure shared parameters across all qubits limits expressivity
+   - No per-qubit or per-layer tuning capability
+   - Convergence is bottlenecked despite having enough capacity
+
+My strategy: **Introduce selective per-qubit and per-layer parameterization** while maintaining extreme parameter efficiency. Instead of sharing all parameters globally, I'll use a sparse parameterization scheme that allows the optimizer to find good solutions faster, while keeping the parameter count low.
+
+<NAME>
+sparse_per_qubit_ansatz
+</NAME>
+
+<DESCRIPTION>
+This approach replaces global parameter sharing with a strategically sparse per-qubit/per-layer parameterization. Instead of one shared RY and one shared RZ across all 8 qubits (2 params), I'll use:
+- Two layers: Layer 1 uses different RY/RZ for qubits [0,2,4,6] and another set for [1,3,5,7] (4 params total for RY and RZ)
+- This allows the optimizer to differentiate between even/odd qubits without exploding parameter count
+- The fixed CZ entanglement chain remains unchanged
+- Layer structure: RY(qubit-specific) → RZ(qubit-specific) → CZ-chain → RZ(qubit-specific)
+
+Why this should work better:
+1. **Faster convergence**: Enables per-qubit gradient signals instead of averaging across all 8 qubits
+2. **Better expressivity**: Even/odd qubit separation leverages the chain structure naturally
+3. **Parameter efficiency**: Only 4 unique parameters (not 14), better than current
+4. **Same accuracy**: The problem structure is still solvable with this richer but sparse parameterization
+5. **Optimization landscape**: More informative gradients for the optimizer to follow
+
+The key is that by separating even/odd qubits, we reduce the effective averaging that was slowing convergence, while still maintaining extreme parameter economy.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Layer 1: RY rotation - even qubits get ry_even, odd qubits get ry_odd
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Layer 2: RZ rotation - even qubits get rz_even, odd qubits get rz_odd
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    # Entanglement: Forward CZ chain
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Layer 3: Final RZ rotation - even qubits get rz_even, odd qubits get rz_odd
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

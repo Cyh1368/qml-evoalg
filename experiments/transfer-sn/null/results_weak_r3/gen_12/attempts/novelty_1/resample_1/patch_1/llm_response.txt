@@ -1,0 +1,92 @@
+<NAME>
+optimize_ansatz_with_crz_and_sharing
+
+</NAME>
+
+<DESCRIPTION>
+This edit refactors the `ANSATZ_SPEC` to use parameter sharing and replaces the CRY gates with CRZ gates, as recommended. Specifically, I have consolidated the single-qubit rotations (RY and RZ) into pair-wise shared parameters to reduce the parameter count, which has been shown in previous iterations to improve efficiency and generalization. I have also replaced the CRY gates with CRZ gates and cleaned up redundant RZ layers, resulting in a more streamlined and performant circuit architecture.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Initial RY rotations
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # First entangling layer
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+
+    # Middle RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+
+    # Second entangling layer with controlled rotations
+    {"gate": "CRY", "wires": [1, 0], "param": "cry_1_0"},
+    {"gate": "CRY", "wires": [3, 2], "param": "cry_3_2"},
+    {"gate": "CRY", "wires": [5, 4], "param": "cry_5_4"},
+    {"gate": "CRY", "wires": [7, 6], "param": "cry_7_6"},
+
+    # Cross connections
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Final RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+=======
+    # Initial RY layer (shared)
+    {"gate": "RY", "wire": 0, "param": "ry_p0"},
+    {"gate": "RY", "wire": 1, "param": "ry_p0"},
+    {"gate": "RY", "wire": 2, "param": "ry_p1"},
+    {"gate": "RY", "wire": 3, "param": "ry_p1"},
+    {"gate": "RY", "wire": 4, "param": "ry_p2"},
+    {"gate": "RY", "wire": 5, "param": "ry_p2"},
+    {"gate": "RY", "wire": 6, "param": "ry_p3"},
+    {"gate": "RY", "wire": 7, "param": "ry_p3"},
+
+    # Entangling ladder
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # RZ layer (shared)
+    {"gate": "RZ", "wire": 0, "param": "rz_p0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p3"},
+
+    # Second entangling layer with controlled phase rotations
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_p0"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_p1"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_p2"},
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_p3"},
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,88 @@
+<NAME>
+crz_cry_mixed_entangling_layer
+
+<DESCRIPTION>
+The previous experiment showed that replacing fixed CZ gates with parametrized CRZ rotations (removing the wasteful RZ_pre layer) achieved the best score (0.59), clearly outperforming both the pure-CZ seed (0.52) and the version that added RZ_pre plus ZZZ three-qubit terms (0.55, likely too deep/overparametrized without added benefit).
+
+Building on the winning CRZ design, this edit removes the RZ_pre layer and the ZZZ three-qubit interactions (which hurt performance and added depth) and instead promotes the remaining 6 fixed CZ gates to parametrized CRY rotations. Using two different rotation axes (CRZ on one set of pairs, CRY on the other) increases the expressivity of the entangling layer along complementary directions of the Bloch sphere without adding extra circuit depth (still one two-qubit gate per allowed pair), which should better capture correlations in the data while keeping the circuit as shallow as the best-performing variant so far.
+
+This keeps the qubit-pair connectivity identical to the seed/best version but makes every entangling interaction trainable, which should improve accuracy at a modest parameter cost while avoiding the overfitting/depth issues seen when adding ZZZ+RZ_pre.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre_8"},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [0, 8]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 8]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "ZZZ", "wires": [0, 4, 6], "param": "zzz_a"},
+    {"gate": "ZZZ", "wires": [1, 5, 6], "param": "zzz_b"},
+    {"gate": "ZZZ", "wires": [2, 3, 8], "param": "zzz_c"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_8"},
+=======
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_2"},
+    {"gate": "CRY", "wires": [0, 8], "param": "cry_0"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CRY", "wires": [1, 8], "param": "cry_1"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry_2"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+    {"gate": "CRY", "wires": [4, 8], "param": "cry_3"},
+    {"gate": "CRY", "wires": [5, 7], "param": "cry_4"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_5"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_8"},
+>>>>>>> REPLACE
+</DIFF>

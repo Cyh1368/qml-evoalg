@@ -1,0 +1,76 @@
+<NAME>
+add_pre_entangle_rz_and_full_edge_cry
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses only RY single-qubit rotations and CRY on a subset of edges. The model is underfitting (train acc 0.43 < val 0.56), so we need more expressivity per block while staying parameter-efficient.
+
+Two targeted changes:
+
+1. Add a trainable RZ phase layer right after the RY decode layer. Although RZ commutes with the Z readout *at the end*, here it sits before the CRY entanglers, where it rotates amplitude in the X-Y plane before entanglement. This gives each qubit a genuine 2-axis local frame (RY then RZ) before mixing, adding only 3 shared params (corner/edge/center orbits).
+
+2. Use the *full set* of adjacent grid edges for the perimeter CRY entanglers (currently only one direction per edge). Adding the missing perimeter directions (1->0, 1->2, 3->2, 3->4, 5->4, 5->6, 7->6, 7->0) under a separate shared parameter doubles the perimeter information flow (bidirectional coupling along each winning-line segment) at the cost of just 1 new shared parameter.
+
+Together this raises N_PARAMS_PER_BLOCK from 12 to 16 (N_PARAMS 72->96), still well within budget, and should improve fitting capacity and reduce loss while respecting D4 symmetry and adjacency constraints.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_corner_decode"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_edge_decode"})
+ANSATZ_SPEC.append({"gate": "RY", "wire": CENTER, "param": "ry_center_decode"})
+
+# Trainable line-segment entanglers: each endpoint feeds its legal row/column
+# midpoint.  These CRY gates build genuine nonlinear "two cells agree on a
+# line" features and were the key ingredient of the strongest prior ansatz.
+for a, b in (
+    (0, 1), (2, 1),
+    (2, 3), (4, 3),
+    (4, 5), (6, 5),
+    (6, 7), (0, 7),
+):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_endpoint_to_mid"})
+=======
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_corner_decode"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_edge_decode"})
+ANSATZ_SPEC.append({"gate": "RY", "wire": CENTER, "param": "ry_center_decode"})
+
+# Pre-entanglement phase layer.  RY then RZ gives each qubit a 2-axis local
+# frame *before* the CRY mixers, so amplitude is rotated in the X-Y plane prior
+# to entanglement (unlike a terminal RZ, this does not commute through the
+# subsequent CRY gates).  Only 3 shared params (corner/edge/center orbits).
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": w, "param": "rz_corner_pre"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": w, "param": "rz_edge_pre"})
+ANSATZ_SPEC.append({"gate": "RZ", "wire": CENTER, "param": "rz_center_pre"})
+
+# Trainable line-segment entanglers: each endpoint feeds its legal row/column
+# midpoint.  These CRY gates build genuine nonlinear "two cells agree on a
+# line" features and were the key ingredient of the strongest prior ansatz.
+for a, b in (
+    (0, 1), (2, 1),
+    (2, 3), (4, 3),
+    (4, 5), (6, 5),
+    (6, 7), (0, 7),
+):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_endpoint_to_mid"})
+
+# Reverse perimeter entanglers: midpoint feeds its corner endpoints.  This
+# completes bidirectional coupling along every perimeter winning-line segment
+# (lets the corner/circle readout absorb edge evidence) at the cost of just
+# one extra shared parameter.
+for a, b in (
+    (1, 0), (1, 2),
+    (3, 2), (3, 4),
+    (5, 4), (5, 6),
+    (7, 6), (7, 0),
+):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_mid_to_endpoint"})
+>>>>>>> REPLACE
+
+</DIFF>

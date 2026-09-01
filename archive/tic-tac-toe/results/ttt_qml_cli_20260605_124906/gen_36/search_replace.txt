@@ -1,0 +1,184 @@
+I see the issue. The `validate_ansatz_spec` and `apply_ansatz_block` functions are outside the EVOLVE-BLOCK, so I cannot modify them. I need to work within the constraints and only modify the ANSATZ_SPEC itself.
+
+Let me propose a simpler approach that works within the EVOLVE-BLOCK constraints: instead of using upload deltas (which would require changes outside the block), I'll simplify the ansatz to reduce parameters while maintaining expressivity through better architectural choices.
+
+<NAME>
+simplified_efficient_ansatz
+</NAME>
+
+<DESCRIPTION>
+The current program has 84 parameters with poor validation accuracy (0.55). The prior programs achieved better results with 60-66 parameters. The issue is that the current spec has redundant entanglement layers (both CZ and CRX on the same edges, plus duplicate hub connections).
+
+Instead of upload-indexed deltas (which require code changes outside EVOLVE-BLOCK), I'll simplify the architecture:
+1. Remove the duplicate CZ + CRX ring gates (keep only CRX which is parametrized)
+2. Remove the duplicate hub-edge CRX gates (keep only one set with shared parameter)
+3. Keep the single-qubit rotations with symmetry-based sharing
+4. This reduces parameters from 84 to ~54-60 while maintaining expressivity
+
+This should:
+- Reduce parameter count closer to the successful prior programs
+- Improve validation accuracy by reducing overfitting
+- Maintain good generalization with fewer parameters
+- Keep the hierarchical structure that worked well before
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing.
+
+    Structure:
+    1. Pre-entanglement RZ on all qubits (shared by symmetry)
+    2. RY rotations on all qubits (shared by symmetry)
+    3. Ring entanglement: CZ gates around outer ring
+    4. Hub entanglement: per-edge CRX gates from center to edges (distinct params)
+    5. Post-entanglement RZ on all qubits (shared by symmetry)
+    """
+    spec = []
+
+    # Symmetry groups for 4-fold rotational symmetry of tic-tac-toe board
+    # Corners: 0, 2, 4, 6 (all equivalent by rotation)
+    # Edges: 1, 3, 5, 7 (all equivalent by rotation)
+    # Center: 8 (unique)
+
+    # Layer 1: Pre-entanglement RZ rotations with parameter sharing
+    spec.append({"gate": "RZ", "wire": 0, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 2, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 4, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 6, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 1, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 3, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 5, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 7, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_pre_center"})
+
+    # Layer 2: RY rotations with parameter sharing
+    spec.append({"gate": "RY", "wire": 0, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 2, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 4, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 6, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 1, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 3, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 5, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 7, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 8, "param": "ry_center"})
+
+    # Layer 3: Ring entanglement (outer 8 qubits)
+    # CZ gates around the perimeter
+    spec.append({"gate": "CZ", "wires": [0, 1]})
+    spec.append({"gate": "CZ", "wires": [1, 2]})
+    spec.append({"gate": "CZ", "wires": [2, 3]})
+    spec.append({"gate": "CZ", "wires": [3, 4]})
+    spec.append({"gate": "CZ", "wires": [4, 5]})
+    spec.append({"gate": "CZ", "wires": [5, 6]})
+    spec.append({"gate": "CZ", "wires": [6, 7]})
+    spec.append({"gate": "CZ", "wires": [7, 0]})
+    # Additional ring entanglement with shared parameter spanning same perimeter
+    spec.append({"gate": "CRX", "wires": [0, 1], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [1, 2], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [2, 3], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [3, 4], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [4, 5], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [5, 6], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [6, 7], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [7, 0], "param": "crx_ring"})
+    # Additional hub-edge entanglement with same parameter (center to edges) to further propagate correlations
+    spec.append({"gate": "CRX", "wires": [8, 1], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [8, 3], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [8, 5], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [8, 7], "param": "crx_ring"})
+
+    # Layer 4: Hub entanglement (center to edges with per-edge parameters)
+    # Use CRX for edge-specific couplings between center and edges
+    spec.append({"gate": "CRX", "wires": [8, 1], "param": "crx_hub_edge_1"})
+    spec.append({"gate": "CRX", "wires": [8, 3], "param": "crx_hub_edge_2"})
+    spec.append({"gate": "CRX", "wires": [8, 5], "param": "crx_hub_edge_3"})
+    spec.append({"gate": "CRX", "wires": [8, 7], "param": "crx_hub_edge_4"})
+
+    # Layer 5: Post-entanglement RZ rotations with parameter sharing
+    spec.append({"gate": "RZ", "wire": 0, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 2, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 4, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 6, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 1, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 3, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 5, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 7, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_post_center"})
+
+    return spec
+=======
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with efficient parameter sharing.
+
+    Structure:
+    1. Pre-entanglement RZ on all qubits (shared by symmetry)
+    2. RY rotations on all qubits (shared by symmetry)
+    3. Ring entanglement: CRX gates around outer ring (shared parameter)
+    4. Hub entanglement: CRZ gates from center to edges (shared parameter)
+    5. Post-entanglement RZ on all qubits (shared by symmetry)
+
+    Removes redundant fixed CZ gates and duplicate hub connections to reduce
+    parameter count while maintaining expressivity through parametrized gates.
+    """
+    spec = []
+
+    # Symmetry groups for 4-fold rotational symmetry of tic-tac-toe board
+    # Corners: 0, 2, 4, 6 (all equivalent by rotation)
+    # Edges: 1, 3, 5, 7 (all equivalent by rotation)
+    # Center: 8 (unique)
+
+    # Layer 1: Pre-entanglement RZ rotations with parameter sharing
+    spec.append({"gate": "RZ", "wire": 0, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 2, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 4, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 6, "param": "rz_pre_corner"})
+    spec.append({"gate": "RZ", "wire": 1, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 3, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 5, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 7, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_pre_center"})
+
+    # Layer 2: RY rotations with parameter sharing
+    spec.append({"gate": "RY", "wire": 0, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 2, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 4, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 6, "param": "ry_corner"})
+    spec.append({"gate": "RY", "wire": 1, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 3, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 5, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 7, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": 8, "param": "ry_center"})
+
+    # Layer 3: Ring entanglement (outer 8 qubits)
+    # Parametrized CRX gates around the perimeter with shared parameter
+    spec.append({"gate": "CRX", "wires": [0, 1], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [1, 2], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [2, 3], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [3, 4], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [4, 5], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [5, 6], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [6, 7], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [7, 0], "param": "crx_ring"})
+
+    # Layer 4: Hub entanglement (center to edges with shared parameter)
+    # Use CRZ for center-to-edge couplings
+    spec.append({"gate": "CRZ", "wires": [8, 1], "param": "crz_hub"})
+    spec.append({"gate": "CRZ", "wires": [8, 3], "param": "crz_hub"})
+    spec.append({"gate": "CRZ", "wires": [8, 5], "param": "crz_hub"})
+    spec.append({"gate": "CRZ", "wires": [8, 7], "param": "crz_hub"})
+
+    # Layer 5: Post-entanglement RZ rotations with parameter sharing
+    spec.append({"gate": "RZ", "wire": 0, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 2, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 4, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 6, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 1, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 3, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 5, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 7, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_post_center"})
+
+    return spec
+>>>>>>> REPLACE
+</DIFF>

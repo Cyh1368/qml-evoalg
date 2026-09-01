@@ -1,0 +1,88 @@
+<NAME>
+simplify_and_entangle
+</NAME>
+
+<DESCRIPTION>
+The previous iteration attempted to increase expressivity by parametrizing the long-range entanglers (CRZ) and adding extra single-qubit RX rotations. However, this increased the gate count and validation loss, resulting in a significantly lower combined score compared to the seed. 
+
+This edit restores the more efficient entangling structure of the seed while refining the mirrored parameter sharing to maximize efficiency. Specifically:
+1. It reverts long-range and local entanglers to fixed CZ gates to minimize parameter noise and reduce gate count (252 vs 276).
+2. It replaces the inefficient single-qubit RX layer with a more powerful mirrored CRX/CRY core, which facilitates better inter-qubit correlation with the same parameter budget.
+3. It maintains mirror-symmetric RY input and RZ output layers for calibrated feature lifting and readout.
+4. The total parameter count remains 74, matching the seed's complexity but optimizing the gate placement.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+MIRROR_PAIRS = [(0, 7), (1, 6), (2, 5), (3, 4)]
+LONG_RANGE_PAIRS = [
+    ((0, 4), "crz_lr_0"),
+    ((3, 7), "crz_lr_0"),
+    ((1, 5), "crz_lr_1"),
+    ((2, 6), "crz_lr_1"),
+]
+MIX_PAIRS = [
+    ((0, 7), "rx_mix_0"),
+    ((1, 6), "rx_mix_0"),
+    ((2, 5), "rx_mix_1"),
+    ((3, 4), "rx_mix_1"),
+]
+
+ANSATZ_SPEC = []
+
+# Mirror-symmetric input lift: low-variance, parameter-efficient feature preconditioning
+for idx, (a, b) in enumerate(MIRROR_PAIRS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": a, "param": f"ry_in_{idx}"})
+    ANSATZ_SPEC.append({"gate": "RY", "wire": b, "param": f"ry_in_{idx}"})
+
+# Trainable long-range entanglers: replace fixed diagonal CZs with learnable CRZ strength
+for (a, b), param in LONG_RANGE_PAIRS:
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [a, b], "param": param})
+
+# Shared RX bottleneck: cross-basis mixing to improve expressivity without over-parameterizing
+for (a, b), param in MIX_PAIRS:
+    ANSATZ_SPEC.append({"gate": "RX", "wire": a, "param": param})
+    ANSATZ_SPEC.append({"gate": "RX", "wire": b, "param": param})
+
+# Local CZ regularizer: retain short-range structure and stabilize optimization
+for wires in ([0, 1], [2, 3], [4, 5], [6, 7]):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": list(wires)})
+
+# Mirror-symmetric output phase calibration: supports the final Z readout
+for idx, (a, b) in enumerate(MIRROR_PAIRS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": a, "param": f"rz_out_{idx}"})
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": b, "param": f"rz_out_{idx}"})
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+MIRROR_PAIRS = [(0, 7), (1, 6), (2, 5), (3, 4)]
+ANSATZ_SPEC = []
+
+# Mirror-symmetric input pre-rotations (4 params)
+for idx, (a, b) in enumerate(MIRROR_PAIRS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": a, "param": f"ry_in_{idx}"})
+    ANSATZ_SPEC.append({"gate": "RY", "wire": b, "param": f"ry_in_{idx}"})
+
+# Fixed entangling scaffold: long-range (0 params)
+for wires in ([0, 4], [1, 5], [2, 6], [3, 7]):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": wires})
+
+# Mirrored controlled-rotation core (4 params)
+# Pair 0/7 and 1/6 for CRX, Pair 2/5 and 3/4 for CRY
+ANSATZ_SPEC.append({"gate": "CRX", "wires": [0, 7], "param": "cr_a"})
+ANSATZ_SPEC.append({"gate": "CRX", "wires": [1, 6], "param": "cr_b"})
+ANSATZ_SPEC.append({"gate": "CRY", "wires": [2, 5], "param": "cr_c"})
+ANSATZ_SPEC.append({"gate": "CRY", "wires": [3, 4], "param": "cr_d"})
+
+# Fixed entangling scaffold: local mixing (0 params)
+for wires in ([0, 1], [2, 3], [4, 5], [6, 7]):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": wires})
+
+# Mirror-symmetric post-rotations for Z-readout calibration (4 params)
+for idx, (a, b) in enumerate(MIRROR_PAIRS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": a, "param": f"rz_out_{idx}"})
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": b, "param": f"rz_out_{idx}"})
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+</DIFF>

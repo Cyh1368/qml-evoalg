@@ -1,0 +1,43 @@
+Looking at the performance metrics across the three programs, I can identify key patterns:
+
+1. **Program 1** (score 0.60): Uses shared `rz_pre` and `rz_post` phases with 114 parameters
+2. **Program 2** (score 0.60): Adds final RY output layer but increases parameters to 174, reducing efficiency
+3. **Current** (score 0.58): Adds CCRZ gate but validation accuracy drops to 0.62
+
+The recommendation suggests inserting a **mid-circuit shared RZ correction** on high-degree qubits (0, 4, 8) between Layer 3 and Layer 4. This is inspired by the success of the shared `rz_phase` parameter in Program 2, which achieved better generalization (gap of 0.04 vs 0.09).
+
+**Rationale:**
+- Qubits 0, 4, 8 are central to the three-qubit interactions (they appear in all ZZZ gates)
+- A single shared parameter `rz_corr` adds minimal overhead (1 parameter) but provides targeted phase correction
+- This refines entanglement without increasing depth or unique parameters
+- Placement after Layer 3 (two-qubit entanglement) and before Layer 4 (three-qubit interactions) allows the correction to influence the high-order interactions
+- Parameter sharing keeps efficiency high while improving expressivity
+
+<NAME>
+mid_circuit_rz_correction
+</NAME>
+
+<DESCRIPTION>
+Insert a mid-circuit shared RZ correction layer targeting qubits 0, 4, and 8 (the high-degree qubits that participate in all three-qubit interactions). This single-parameter phase tweak is placed after Layer 3 (two-qubit entanglement) and before Layer 4 (three-qubit interactions), allowing it to refine the entanglement structure without significantly increasing parameter count or circuit depth. This approach builds on the success of shared phase parameters observed in prior programs and provides targeted correction for the most connected qubits.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 4: Three-qubit interactions (ZZZ gates for enhanced expressivity)
+    {"gate": "ZZZ", "wires": [0, 4, 8], "param": "zzz_0"},
+    {"gate": "ZZZ", "wires": [2, 5, 8], "param": "zzz_1"},
+    {"gate": "ZZZ", "wires": [2, 6, 7], "param": "zzz_2"},
+    {"gate": "CCRZ", "wires": [1, 3, 8], "param": "ccrz_0"},
+=======
+    # Layer 3.5: Mid-circuit RZ correction on high-degree qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_corr"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corr"},
+    {"gate": "RZ", "wire": 8, "param": "rz_corr"},
+
+    # Layer 4: Three-qubit interactions (ZZZ gates for enhanced expressivity)
+    {"gate": "ZZZ", "wires": [0, 4, 8], "param": "zzz_0"},
+    {"gate": "ZZZ", "wires": [2, 5, 8], "param": "zzz_1"},
+    {"gate": "ZZZ", "wires": [2, 6, 7], "param": "zzz_2"},
+    {"gate": "CCRZ", "wires": [1, 3, 8], "param": "ccrz_0"},
+>>>>>>> REPLACE
+</DIFF>

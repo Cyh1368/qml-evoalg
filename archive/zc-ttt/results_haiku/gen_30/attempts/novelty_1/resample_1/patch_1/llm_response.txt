@@ -1,0 +1,120 @@
+Looking at the performance metrics across the three programs:
+
+1. **Program 1** (seed): Score 0.58, 120 params, validation_acc 0.62
+2. **Program 2** (variant): Score 0.59, 114 params, validation_acc 0.63 (best validation)
+3. **Current**: Score 0.56, 90 params, validation_acc 0.58 (worst performance)
+
+The current program performs worse despite having fewer parameters. The issue appears to be:
+- Over-aggressive parameter sharing (only 90 params) leading to underfitting
+- Too many single-qubit rotations (72 gates) relative to entanglement
+- Insufficient expressivity despite the gate count
+
+The best performer (Program 2) achieves 0.63 validation accuracy with 114 params and strategic use of both parametrized and fixed gates. The key insights are:
+1. Individual RY parameters per qubit (not shared) provide better expressivity
+2. Mixed CRZ/CZ entanglement is effective
+3. Three-qubit gates add valuable expressivity
+4. Moderate parameter count (110-120) is optimal
+
+I'll create a new approach that:
+- Returns to individual qubit parameters in the encoding layer
+- Uses a cleaner, more efficient entanglement structure
+- Balances parametrized vs. fixed gates better
+- Reduces unnecessary single-qubit rotations
+- Focuses on quality entanglement patterns
+
+<NAME>
+balanced_entanglement_ansatz
+</NAME>
+
+<DESCRIPTION>
+This approach uses a fundamentally different strategy focused on **selective parameter placement** and **efficient entanglement topology**. Instead of uniformly sharing parameters across all qubits or applying redundant single-qubit rotations, this design:
+
+1. **Targeted encoding**: Individual RY parameters per qubit for flexible input encoding
+2. **Strategic phase layer**: Shared RZ parameters for global phase coherence
+3. **Optimized entanglement**: Uses a mix of parametrized (CRX, CRY, CRZ) and fixed (CZ) two-qubit gates on valid pairs, focusing on high-connectivity qubits
+4. **Three-qubit interactions**: Carefully selected ZZZ gates for enhanced expressivity without redundancy
+5. **Minimal post-processing**: Single final rotation layer for output preparation
+
+This reduces unnecessary gates while maintaining expressivity, targeting ~110 parameters for optimal generalization. The design emphasizes quality over quantity in both parameter count and gate depth.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 9
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_THREE_QUBIT_GATES = {"ZZZ", "CCRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Layer 1: Individual RY encoding on all qubits
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+
+    # Layer 2: Shared RZ phase layer for global coherence
+    {"gate": "RZ", "wire": 0, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 1, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 2, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 3, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 4, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 5, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 6, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 7, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 8, "param": "rz_phase"},
+
+    # Layer 3: Mixed entanglement with parametrized and fixed gates
+    {"gate": "CRX", "wires": [0, 2], "param": "crx_0"},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CRY", "wires": [0, 7], "param": "cry_1"},
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CRX", "wires": [2, 4], "param": "crx_4"},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CRY", "wires": [3, 5], "param": "cry_5"},
+    {"gate": "CZ", "wires": [4, 8]},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_6"},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Layer 4: Three-qubit interactions for enhanced expressivity
+    {"gate": "ZZZ", "wires": [0, 4, 8], "param": "zzz_0"},
+    {"gate": "ZZZ", "wires": [2, 5, 7], "param": "zzz_1"},
+    {"gate": "CCRZ", "wires": [1, 3, 6], "param": "ccrz_0"},
+
+    # Layer 5: Final RY rotations for output preparation
+    {"gate": "RY", "wire": 0, "param": "ry_out_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_8"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

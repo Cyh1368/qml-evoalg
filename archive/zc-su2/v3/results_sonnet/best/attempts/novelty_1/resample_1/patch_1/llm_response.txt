@@ -1,0 +1,95 @@
+<NAME>
+zz_ring_parity_shared5
+
+<DESCRIPTION>
+Crossover of the two highest-margin seeds. From the first seed we keep the parity-split initial RY encoding (ry_a on even qubits, ry_b on odd qubits) and the continuously-tunable ZZ-Ising entangling ring, which produced the best worst-group margin (0.24) of all candidates. From the second seed we keep the idea of a final shared RY "unmixing" layer that helped push validation/train accuracy higher. To aggressively cut parameter count (which scores higher at every level with no diminishing returns), the long-range ZZ coupling is merged into the *same* shared parameter as the nearest-neighbor ZZ ring (zz_g), and the separate CRZ entangling block from seed 2 is dropped since it added a distinct parameter without improving margin. This yields only 5 distinct trainable parameters (down from 6 in both seeds), while keeping a rich, fully shared-parameter entangling topology (ring + all-to-opposite long range) that lets a single scalar coherently control global entanglement strength — a structure that should generalize better from few training samples and converge faster due to the reduced parameter landscape.
+
+Layout:
+1. RY(ry_a) on qubits {0,2,4,6}, RY(ry_b) on qubits {1,3,5,7} — parity-broken encoding.
+2. ZZ(zz_g) nearest-neighbor ring over all 8 qubits (0-1,...,7-0) — cheap, tunable entanglement.
+3. RZ(rz_c) global shared phase mixing on all qubits.
+4. ZZ(zz_g) long-range coupling connecting opposite halves (0-4,1-5,2-6,3-7), reusing the SAME parameter as step 2 to avoid growing the parameter count while still spreading entanglement across the whole register.
+5. Final RY(ry_d) global shared closing rotation on all qubits.
+
+Total: 5 distinct parameters, moderate depth, fully shared-parameter Ising-ring backbone.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Parity-broken initial rotation: even qubits share ry_a, odd qubits
+    # share ry_b. This gives the encoding just enough asymmetry to separate
+    # hard groups while keeping the parameter count minimal.
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    # Shared nearest-neighbor ZZ Ising ring: a single continuously tunable
+    # entangling strength across the whole register instead of fixed CNOTs.
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_g"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_g"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_g"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_g"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_g"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_g"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_g"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_g"},
+
+    # Global shared phase mixing.
+    {"gate": "RZ", "wire": 0, "param": "rz_c"},
+    {"gate": "RZ", "wire": 1, "param": "rz_c"},
+    {"gate": "RZ", "wire": 2, "param": "rz_c"},
+    {"gate": "RZ", "wire": 3, "param": "rz_c"},
+    {"gate": "RZ", "wire": 4, "param": "rz_c"},
+    {"gate": "RZ", "wire": 5, "param": "rz_c"},
+    {"gate": "RZ", "wire": 6, "param": "rz_c"},
+    {"gate": "RZ", "wire": 7, "param": "rz_c"},
+
+    # Long-range ZZ coupling connecting opposite halves of the register,
+    # reusing the SAME shared parameter (zz_g) as the nearest-neighbor ring
+    # so entanglement spreads globally without adding a new trainable name.
+    {"gate": "ZZ", "wires": [0, 4], "param": "zz_g"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "zz_g"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "zz_g"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "zz_g"},
+
+    # Final shared closing rotation.
+    {"gate": "RY", "wire": 0, "param": "ry_d"},
+    {"gate": "RY", "wire": 1, "param": "ry_d"},
+    {"gate": "RY", "wire": 2, "param": "ry_d"},
+    {"gate": "RY", "wire": 3, "param": "ry_d"},
+    {"gate": "RY", "wire": 4, "param": "ry_d"},
+    {"gate": "RY", "wire": 5, "param": "ry_d"},
+    {"gate": "RY", "wire": 6, "param": "ry_d"},
+    {"gate": "RY", "wire": 7, "param": "ry_d"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

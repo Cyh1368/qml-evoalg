@@ -1,0 +1,601 @@
+--- a/original.py
++++ b/original.py
+@@ -1,564 +1,571 @@
+ """Seed program for ShinkaEvolve tic-tac-toe QML ansatz search.
+ 
+ Only ANSATZ_SPEC is inside the EVOLVE-BLOCK.  The data construction,
+ feature map, re-uploading layout, training loop, measurements, and metric
+ packaging are fixed so candidates are compared on the same task.
+ """
+ 
+ from __future__ import annotations
+ 
+ import json
+ import os
+ from collections import defaultdict
+ from pathlib import Path
+ 
+ import numpy as np
+ import pennylane as qml
+ from pennylane import numpy as pnp
+ 
+ 
+ # Problem constants
+ N_QUBITS = 9
+ N_UPLOADS = 3
+ N_REPEATS = 2
+ FEATURE_SCALE = 2 * np.pi / 3
+ 
+ # Paper indexing:
+ #   0 -- 1 -- 2
+ #   |    |    |
+ #   7 -- 8 -- 3
+ #   |    |    |
+ #   6 -- 5 -- 4
+ PAPER_GRID = ((0, 1, 2), (7, 8, 3), (6, 5, 4))
+ CORNERS = (0, 2, 4, 6)
+ EDGES = (1, 3, 5, 7)
+ CENTER = 8
+ GRID_EDGES = (
+     (0, 1), (1, 2), (2, 3), (3, 4),
+     (4, 5), (5, 6), (6, 7), (7, 0),
+     (1, 8), (3, 8), (5, 8), (7, 8),
+ )
+ GRID_EDGE_SET = {tuple(sorted(edge)) for edge in GRID_EDGES}
+ WIN_LINES = (
+     (0, 1, 2), (7, 8, 3), (6, 5, 4),
+     (0, 7, 6), (1, 8, 5), (2, 3, 4),
+     (0, 8, 4), (2, 8, 6),
+ )
+ 
+ # User-facing class order.  Observables are mapped to this order below.
+ CLASS_NAMES = ("cross", "circle", "draw")
+ CLASS_TO_INDEX = {name: i for i, name in enumerate(CLASS_NAMES)}
+ LABEL_VECTORS = {
+     "cross": np.array([1.0, -1.0, -1.0]),
+     "circle": np.array([-1.0, 1.0, -1.0]),
+     "draw": np.array([-1.0, -1.0, 1.0]),
+ }
+ 
+ ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ 
+ 
+ # EVOLVE-BLOCK-START
+ ANSATZ_SPEC = [
+-    {"gate": "RY", "wire": 0, "param": "ry_0"},
+-    {"gate": "RY", "wire": 1, "param": "ry_1"},
+-    {"gate": "RY", "wire": 2, "param": "ry_2"},
+-    {"gate": "RY", "wire": 3, "param": "ry_3"},
+-    {"gate": "RY", "wire": 4, "param": "ry_4"},
+-    {"gate": "RY", "wire": 5, "param": "ry_5"},
+-    {"gate": "RY", "wire": 6, "param": "ry_6"},
+-    {"gate": "RY", "wire": 7, "param": "ry_7"},
+-    {"gate": "RY", "wire": 8, "param": "ry_8"},
+-    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+-    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+-    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+-    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+-    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+-    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+-    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+-    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+-    {"gate": "RZ", "wire": 8, "param": "rz_pre_8"},
++    # Shared-parameter RY block: all 9 qubits use the same "ry_shared" parameter
++    {"gate": "RY", "wire": 0, "param": "ry_shared"},
++    {"gate": "RY", "wire": 1, "param": "ry_shared"},
++    {"gate": "RY", "wire": 2, "param": "ry_shared"},
++    {"gate": "RY", "wire": 3, "param": "ry_shared"},
++    {"gate": "RY", "wire": 4, "param": "ry_shared"},
++    {"gate": "RY", "wire": 5, "param": "ry_shared"},
++    {"gate": "RY", "wire": 6, "param": "ry_shared"},
++    {"gate": "RY", "wire": 7, "param": "ry_shared"},
++    {"gate": "RY", "wire": 8, "param": "ry_shared"},
++
++    # Shared-parameter pre-CZ RZ block: all 9 qubits use the same "rz_pre_shared" parameter
++    {"gate": "RZ", "wire": 0, "param": "rz_pre_shared"},
++    {"gate": "RZ", "wire": 1, "param": "rz_pre_shared"},
++    {"gate": "RZ", "wire": 2, "param": "rz_pre_shared"},
++    {"gate": "RZ", "wire": 3, "param": "rz_pre_shared"},
++    {"gate": "RZ", "wire": 4, "param": "rz_pre_shared"},
++    {"gate": "RZ", "wire": 5, "param": "rz_pre_shared"},
++    {"gate": "RZ", "wire": 6, "param": "rz_pre_shared"},
++    {"gate": "RZ", "wire": 7, "param": "rz_pre_shared"},
++    {"gate": "RZ", "wire": 8, "param": "rz_pre_shared"},
++
++    # Fixed two-qubit CZ gates on allowed adjacent grid edges
+     {"gate": "CZ", "wires": [0, 1]},
+     {"gate": "CZ", "wires": [1, 2]},
+     {"gate": "CZ", "wires": [2, 3]},
+     {"gate": "CZ", "wires": [3, 4]},
+     {"gate": "CZ", "wires": [4, 5]},
+     {"gate": "CZ", "wires": [5, 6]},
+     {"gate": "CZ", "wires": [6, 7]},
+     {"gate": "CZ", "wires": [7, 0]},
+     {"gate": "CZ", "wires": [1, 8]},
+     {"gate": "CZ", "wires": [3, 8]},
+     {"gate": "CZ", "wires": [5, 8]},
+     {"gate": "CZ", "wires": [7, 8]},
+-    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+-    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+-    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+-    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+-    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+-    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+-    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+-    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+-    {"gate": "RZ", "wire": 8, "param": "rz_post_8"},
++
++    # Shared-parameter post-CZ RZ block: all 9 qubits use the same "rz_post_shared" parameter
++    {"gate": "RZ", "wire": 0, "param": "rz_post_shared"},
++    {"gate": "RZ", "wire": 1, "param": "rz_post_shared"},
++    {"gate": "RZ", "wire": 2, "param": "rz_post_shared"},
++    {"gate": "RZ", "wire": 3, "param": "rz_post_shared"},
++    {"gate": "RZ", "wire": 4, "param": "rz_post_shared"},
++    {"gate": "RZ", "wire": 5, "param": "rz_post_shared"},
++    {"gate": "RZ", "wire": 6, "param": "rz_post_shared"},
++    {"gate": "RZ", "wire": 7, "param": "rz_post_shared"},
++    {"gate": "RZ", "wire": 8, "param": "rz_post_shared"},
+ ]
+ # EVOLVE-BLOCK-END
+ 
+ 
+ def board_winner(board: tuple[int, ...] | np.ndarray) -> str | None:
+     """Return 'cross', 'circle', or None if no player has three in a row."""
+     for line in WIN_LINES:
+         total = int(sum(int(board[i]) for i in line))
+         if total == 3:
+             return "cross"
+         if total == -3:
+             return "circle"
+     return None
+ 
+ 
+ def board_label(board: tuple[int, ...] | np.ndarray) -> str:
+     """Unfinished and full non-winning boards are labeled as draw."""
+     return board_winner(board) or "draw"
+ 
+ 
+ def enumerate_valid_boards() -> np.ndarray:
+     """Enumerate unique legal tic-tac-toe board states.
+ 
+     Cross moves first.  Recursion stops once a winner appears or the board is
+     full, so post-win positions are excluded.  Intermediate non-terminal
+     states are included and labeled as draw, matching the paper's setup.
+     """
+     seen: set[tuple[int, ...]] = set()
+ 
+     def visit(board: tuple[int, ...], player: int) -> None:
+         if board in seen:
+             return
+         seen.add(board)
+         if board_winner(board) is not None or all(value != 0 for value in board):
+             return
+         for wire, value in enumerate(board):
+             if value == 0:
+                 next_board = list(board)
+                 next_board[wire] = player
+                 visit(tuple(next_board), -player)
+ 
+     visit((0,) * N_QUBITS, 1)
+     return np.array(sorted(seen), dtype=np.int8)
+ 
+ 
+ def make_balanced_split(
+     grouped_boards: dict[str, np.ndarray],
+     size: int,
+     rng: np.random.Generator,
+     replace: bool,
+ ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+     """Sample a class-balanced split with +/-1 one-hot labels."""
+     if size % len(CLASS_NAMES) != 0:
+         raise ValueError(f"split size {size} must be divisible by {len(CLASS_NAMES)}")
+     per_class = size // len(CLASS_NAMES)
+     xs = []
+     ys = []
+     labels = []
+     for label in CLASS_NAMES:
+         pool = grouped_boards[label]
+         local_replace = replace or per_class > len(pool)
+         indices = rng.choice(len(pool), size=per_class, replace=local_replace)
+         xs.append(pool[indices])
+         ys.append(np.tile(LABEL_VECTORS[label], (per_class, 1)))
+         labels.extend([label] * per_class)
+     x = np.concatenate(xs, axis=0)
+     y = np.concatenate(ys, axis=0)
+     label_array = np.array(labels)
+     order = rng.permutation(len(x))
+     return x[order], y[order], label_array[order]
+ 
+ 
+ def build_data_splits(
+     seed: int = 2027,
+     train_size: int = 450,
+     validation_size: int = 300,
+     test_size: int = 600,
+     replace: bool = True,
+ ) -> dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]]:
+     """Construct paper-style class-balanced train/validation/test data.
+ 
+     The paper uses 450 training games and 600 test games, class-balanced across
+     cross win, circle win, and draw.  There are only 316 unique circle-winning
+     legal board states under this enumeration, so this implementation samples
+     independently with replacement by default to keep the paper's sizes and add
+     a validation split.  Set replace=False only when using smaller split sizes.
+     """
+     rng = np.random.default_rng(seed)
+     boards = enumerate_valid_boards()
+     grouped = {name: [] for name in CLASS_NAMES}
+     for board in boards:
+         grouped[board_label(board)].append(board)
+     grouped_arrays = {
+         name: np.array(values, dtype=np.int8)
+         for name, values in grouped.items()
+     }
+     return {
+         "train": make_balanced_split(grouped_arrays, train_size, rng, replace),
+         "validation": make_balanced_split(grouped_arrays, validation_size, rng, replace),
+         "test": make_balanced_split(grouped_arrays, test_size, rng, replace),
+     }
+ 
+ 
+ def dataset_summary(splits: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]]) -> dict:
+     """Return class counts, unique counts, and split overlaps for logging."""
+     summary = {}
+     board_sets = {}
+     for split_name, (x, _y, labels) in splits.items():
+         board_sets[split_name] = {tuple(row.tolist()) for row in x}
+         class_counts = {
+             label: int(np.sum(labels == label))
+             for label in CLASS_NAMES
+         }
+         summary[split_name] = {
+             "rows": int(len(x)),
+             "unique_boards": int(len(board_sets[split_name])),
+             "class_counts": class_counts,
+         }
+     for left, right in (("train", "validation"), ("train", "test"), ("validation", "test")):
+         summary[f"overlap_{left}_{right}"] = int(len(board_sets[left] & board_sets[right]))
+     all_boards = enumerate_valid_boards()
+     all_counts = defaultdict(int)
+     for board in all_boards:
+         all_counts[board_label(board)] += 1
+     summary["all_valid_unique_boards"] = {
+         "total": int(len(all_boards)),
+         "class_counts": {label: int(all_counts[label]) for label in CLASS_NAMES},
+     }
+     return summary
+ 
+ 
+ def validate_ansatz_spec(spec: list[dict]) -> tuple[list[str], list[str]]:
+     """Validate ANSATZ_SPEC and return errors plus ordered parameter keys."""
+     errors = []
+     parameter_keys = []
+     if not isinstance(spec, list) or not spec:
+         return ["ANSATZ_SPEC must be a non-empty list of gate dictionaries."], []
+ 
+     for gate_index, item in enumerate(spec):
+         prefix = f"gate {gate_index}"
+         if not isinstance(item, dict):
+             errors.append(f"{prefix}: expected a dict, got {type(item).__name__}")
+             continue
+         gate = str(item.get("gate", "")).upper()
+         if gate in ALLOWED_SINGLE_QUBIT_GATES:
+             wire = item.get("wire")
+             if not isinstance(wire, int) or not 0 <= wire < N_QUBITS:
+                 errors.append(f"{prefix}: {gate} requires integer wire in [0, {N_QUBITS - 1}]")
+             param = item.get("param")
+             if not isinstance(param, str) or not param:
+                 errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+             else:
+                 parameter_keys.append(param)
+         elif gate in ALLOWED_TWO_QUBIT_GATES | ALLOWED_PARAM_TWO_QUBIT_GATES:
+             wires = item.get("wires")
+             if (
+                 not isinstance(wires, (list, tuple))
+                 or len(wires) != 2
+                 or not all(isinstance(w, int) for w in wires)
+                 or wires[0] == wires[1]
+                 or not all(0 <= w < N_QUBITS for w in wires)
+             ):
+                 errors.append(f"{prefix}: {gate} requires two distinct integer wires")
+             elif tuple(sorted(wires)) not in GRID_EDGE_SET:
+                 errors.append(f"{prefix}: {gate} uses non-adjacent grid edge {wires}")
+             if gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+                 param = item.get("param")
+                 if not isinstance(param, str) or not param:
+                     errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+                 else:
+                     parameter_keys.append(param)
+         else:
+             allowed = sorted(ALLOWED_SINGLE_QUBIT_GATES | ALLOWED_TWO_QUBIT_GATES | ALLOWED_PARAM_TWO_QUBIT_GATES)
+             errors.append(f"{prefix}: unsupported gate {gate!r}; allowed gates are {allowed}")
+ 
+     ordered_unique_keys = list(dict.fromkeys(parameter_keys))
+     return errors, ordered_unique_keys
+ 
+ 
+ SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+ N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+ N_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS
+ 
+ 
+ def feature_map(board: np.ndarray) -> None:
+     """Encode cell values -1, 0, +1 as equidistant Pauli-X rotations."""
+     for wire in range(N_QUBITS):
+         qml.RX(float(FEATURE_SCALE * int(board[wire])), wires=wire)
+ 
+ 
+ def apply_ansatz_block(params, block_index: int) -> None:
+     """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+     if SPEC_ERRORS:
+         raise ValueError("; ".join(SPEC_ERRORS))
+ 
+     offset = block_index * N_PARAMS_PER_BLOCK
+     key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+     for item in ANSATZ_SPEC:
+         gate = str(item["gate"]).upper()
+         if gate in ALLOWED_SINGLE_QUBIT_GATES:
+             angle = params[offset + key_to_position[item["param"]]]
+             wire = int(item["wire"])
+             if gate == "RX":
+                 qml.RX(angle, wires=wire)
+             elif gate == "RY":
+                 qml.RY(angle, wires=wire)
+             elif gate == "RZ":
+                 qml.RZ(angle, wires=wire)
+         elif gate in ALLOWED_TWO_QUBIT_GATES:
+             wires = [int(w) for w in item["wires"]]
+             if gate == "CNOT":
+                 qml.CNOT(wires=wires)
+             elif gate == "CZ":
+                 qml.CZ(wires=wires)
+         elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+             angle = params[offset + key_to_position[item["param"]]]
+             wires = [int(w) for w in item["wires"]]
+             if gate == "CRX":
+                 qml.CRX(angle, wires=wires)
+             elif gate == "CRY":
+                 qml.CRY(angle, wires=wires)
+             elif gate == "CRZ":
+                 qml.CRZ(angle, wires=wires)
+ 
+ 
+ _DEVICE = qml.device("default.qubit", wires=N_QUBITS, shots=None)
+ 
+ 
+ @qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+ def circuit_z_expectations(board, params):
+     """Full simulated circuit returning per-qubit Z expectations."""
+     for upload_index in range(N_UPLOADS):
+         feature_map(board)
+         for repeat_index in range(N_REPEATS):
+             block_index = upload_index * N_REPEATS + repeat_index
+             apply_ansatz_block(params, block_index)
+     return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+ 
+ 
+ def class_expectations(board, params):
+     """Map nine Z expectations to [cross, circle, draw] outputs."""
+     z = pnp.stack(circuit_z_expectations(board, params))
+     cross = (z[1] + z[3] + z[5] + z[7]) / 4.0
+     circle = (z[0] + z[2] + z[4] + z[6]) / 4.0
+     draw = z[8]
+     return pnp.stack([cross, circle, draw])
+ 
+ 
+ def predict_batch(params, x_batch: np.ndarray):
+     return pnp.stack([class_expectations(board, params) for board in x_batch])
+ 
+ 
+ def l2_loss(params, x_batch: np.ndarray, y_batch: np.ndarray):
+     predictions = predict_batch(params, x_batch)
+     targets = pnp.array(y_batch, requires_grad=False)
+     return pnp.mean(pnp.sum((predictions - targets) ** 2, axis=1))
+ 
+ 
+ def evaluate_split(params, x: np.ndarray, y: np.ndarray) -> dict[str, float]:
+     predictions = np.asarray(predict_batch(params, x), dtype=float)
+     loss = float(np.mean(np.sum((predictions - y) ** 2, axis=1)))
+     accuracy = float(np.mean(np.argmax(predictions, axis=1) == np.argmax(y, axis=1)))
+     return {"accuracy": accuracy, "loss": loss}
+ 
+ 
+ def _batch_indices(order: np.ndarray, step: int, batch_size: int) -> np.ndarray:
+     start = (step * batch_size) % len(order)
+     end = start + batch_size
+     if end <= len(order):
+         return order[start:end]
+     return np.concatenate([order[start:], order[: end - len(order)]])
+ 
+ 
+ def _log(record: dict, log_file: Path | None, verbose: bool) -> None:
+     line = json.dumps(record, sort_keys=True)
+     if verbose:
+         print(line)
+     if log_file is not None:
+         with log_file.open("a", encoding="utf-8") as handle:
+             handle.write(line + "\n")
+ 
+ 
+ def circuit_metadata(params) -> dict:
+     with qml.queuing.AnnotatedQueue() as queue:
+         for upload_index in range(N_UPLOADS):
+             feature_map(np.zeros(N_QUBITS, dtype=np.int8))
+             for repeat_index in range(N_REPEATS):
+                 block_index = upload_index * N_REPEATS + repeat_index
+                 apply_ansatz_block(params, block_index)
+     tape = qml.tape.QuantumScript.from_queue(queue)
+     operations = [(op.name, op.wires.tolist()) for op in tape.operations]
+     depth = tape.graph.get_depth() if hasattr(tape.graph, "get_depth") else len(operations)
+     return {
+         "operations": operations,
+         "depth": int(depth),
+         "gate_count": int(len(operations)),
+     }
+ 
+ 
+ def run_experiment(
+     seed: int = 0,
+     data_seed: int | None = None,
+     n_epochs: int | None = None,
+     steps_per_epoch: int | None = None,
+     batch_size: int | None = None,
+     learning_rate: float | None = None,
+     validation_size: int | None = None,
+     convergence_threshold: float | None = None,
+     eval_every_epochs: int | None = None,
+     verbose: bool | None = None,
+ ) -> dict:
+     """Train the candidate ansatz and return ShinkaEvolve metrics."""
+     if SPEC_ERRORS:
+         return {
+             "spec_valid": False,
+             "error": "; ".join(SPEC_ERRORS),
+             "n_qubits": N_QUBITS,
+             "n_uploads": N_UPLOADS,
+             "n_repeats": N_REPEATS,
+             "n_params": N_PARAMS,
+             "operations": [],
+             "train_accuracy": 0.0,
+             "validation_accuracy": 0.0,
+             "test_accuracy": 0.0,
+             "train_loss": float("inf"),
+             "validation_loss": float("inf"),
+             "test_loss": float("inf"),
+         }
+ 
+     data_seed = int(os.environ.get("DATA_SEED", "2027") if data_seed is None else data_seed)
+     n_epochs = int(os.environ.get("N_EPOCHS", "100") if n_epochs is None else n_epochs)
+     steps_per_epoch = int(os.environ.get("STEPS_PER_EPOCH", "30") if steps_per_epoch is None else steps_per_epoch)
+     batch_size = int(os.environ.get("BATCH_SIZE", "15") if batch_size is None else batch_size)
+     learning_rate = float(os.environ.get("LEARNING_RATE", "0.03") if learning_rate is None else learning_rate)
+     validation_size = int(os.environ.get("VALIDATION_SIZE", "300") if validation_size is None else validation_size)
+     convergence_threshold = float(
+         os.environ.get("CONVERGENCE_THRESHOLD", "0.90")
+         if convergence_threshold is None
+         else convergence_threshold
+     )
+     eval_every_epochs = int(os.environ.get("EVAL_EVERY_EPOCHS", "1") if eval_every_epochs is None else eval_every_epochs)
+     verbose = bool(int(os.environ.get("VERBOSE_TRAINING", "1"))) if verbose is None else bool(verbose)
+ 
+     train_size = int(os.environ.get("TRAIN_SIZE", "450"))
+     test_size = int(os.environ.get("TEST_SIZE", "600"))
+     replace = bool(int(os.environ.get("SAMPLE_WITH_REPLACEMENT", "1")))
+ 
+     rng = np.random.default_rng(seed)
+     splits = build_data_splits(
+         seed=data_seed,
+         train_size=train_size,
+         validation_size=validation_size,
+         test_size=test_size,
+         replace=replace,
+     )
+     x_train, y_train, _labels_train = splits["train"]
+     x_validation, y_validation, _labels_validation = splits["validation"]
+     x_test, y_test, _labels_test = splits["test"]
+ 
+     log_root = os.environ.get("TTT_LOG_DIR")
+     log_file = None
+     if log_root:
+         Path(log_root).mkdir(parents=True, exist_ok=True)
+         log_file = Path(log_root) / f"candidate_seed_{seed}.jsonl"
+         if log_file.exists():
+             log_file.unlink()
+ 
+     params = pnp.array(rng.uniform(-0.05, 0.05, size=N_PARAMS), requires_grad=True)
+     optimizer = qml.AdamOptimizer(stepsize=learning_rate)
+     max_steps = n_epochs * steps_per_epoch
+     global_step = 0
+     convergence_epoch = None
+     convergence_step = None
+     history = []
+ 
+     _log(
+         {
+             "event": "start",
+             "seed": int(seed),
+             "data_seed": int(data_seed),
+             "n_params": int(N_PARAMS),
+             "n_params_per_block": int(N_PARAMS_PER_BLOCK),
+             "n_uploads": int(N_UPLOADS),
+             "n_repeats": int(N_REPEATS),
+             "n_epochs": int(n_epochs),
+             "steps_per_epoch": int(steps_per_epoch),
+             "batch_size": int(batch_size),
+             "learning_rate": float(learning_rate),
+             "dataset": dataset_summary(splits),
+         },
+         log_file,
+         verbose,
+     )
+ 
+     for epoch in range(1, n_epochs + 1):
+         order = rng.permutation(len(x_train))
+         last_batch_loss = None
+         for step in range(steps_per_epoch):
+             batch_ids = _batch_indices(order, step, batch_size)
+             batch_x = x_train[batch_ids]
+             batch_y = y_train[batch_ids]
+             params, last_batch_loss = optimizer.step_and_cost(
+                 lambda candidate_params: l2_loss(candidate_params, batch_x, batch_y),
+                 params,
+             )
+             global_step += 1
+ 
+         if epoch == 1 or epoch == n_epochs or epoch % eval_every_epochs == 0:
+             train_metrics = evaluate_split(params, x_train, y_train)
+             validation_metrics = evaluate_split(params, x_validation, y_validation)
+             test_metrics = evaluate_split(params, x_test, y_test)
+             if convergence_epoch is None and validation_metrics["accuracy"] >= convergence_threshold:
+                 convergence_epoch = epoch
+                 convergence_step = global_step
+             record = {
+                 "event": "epoch",
+                 "epoch": int(epoch),
+                 "global_step": int(global_step),
+                 "batch_loss": float(last_batch_loss),
+                 "train_accuracy": train_metrics["accuracy"],
+                 "validation_accuracy": validation_metrics["accuracy"],
+                 "test_accuracy": test_metrics["accuracy"],
+                 "train_loss": train_metrics["loss"],
+                 "validation_loss": validation_metrics["loss"],
+                 "test_loss": test_metrics["loss"],
+             }
+             history.append(record)
+             _log(record, log_file, verbose)
+ 
+     final_train = evaluate_split(params, x_train, y_train)
+     final_validation = evaluate_split(params, x_validation, y_validation)
+     final_test = evaluate_split(params, x_test, y_test)
+     metadata = circuit_metadata(params)
+     generalization_gap = abs(final_train["accuracy"] - final_test["accuracy"])
+     parameter_efficiency = final_test["accuracy"] / max(float(N_PARAMS), 1.0)
+ 
+     result = {
+         "spec_valid": True,
+         "n_qubits": N_QUBITS,
+         "n_uploads": N_UPLOADS,
+         "n_repeats": N_REPEATS,
+         "n_params_per_block": N_PARAMS_PER_BLOCK,
+         "n_params": N_PARAMS,
+         "depth": metadata["depth"],
+         "gate_count": metadata["gate_count"],
+         "operations": metadata["operations"],
+         "train_accuracy": final_train["accuracy"],
+         "validation_accuracy": final_validation["accuracy"],
+         "test_accuracy": final_test["accuracy"],
+         "train_loss": final_train["loss"],
+         "validation_loss": final_validation["loss"],
+         "test_loss": final_test["loss"],
+         "generalization_gap": generalization_gap,
+         "parameter_efficiency": parameter_efficiency,
+         "convergence_threshold": convergence_threshold,
+         "convergence_epoch": convergence_epoch,
+         "convergence_step": convergence_step,
+         "max_steps": max_steps,
+         "history_tail": history[-10:],
+     }
+     _log({"event": "final", **result}, log_file, verbose)
+     return result

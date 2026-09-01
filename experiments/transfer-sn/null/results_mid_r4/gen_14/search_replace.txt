@@ -1,0 +1,74 @@
+<NAME>
+aggressive_parameter_sharing_entangling_layer
+</NAME>
+
+<DESCRIPTION>
+The current program achieves excellent accuracy (1.0) and low loss (0.07) with 98 parameters through strategic parameter sharing (the final RZ layer shares one parameter across all qubits). However, convergence is slower (300 steps vs 120 in prior variants).
+
+The key insight is that the entangling layer (CRY chain) uses 7 distinct parameters for what is fundamentally the same entangling operation pattern along a chain. This suggests that these parameters may be over-parameterized relative to the benefit they provide—especially since they don't significantly reduce losses (0.07 vs 0.09 in second program with 146 params).
+
+By collapsing the 7 distinct CRY parameters into a single shared parameter (analogous to how the final RZ layer already shares one param), we:
+1. Reduce total circuit parameters from 98 to 62 (6 blocks × 10 params + 2 readout)
+2. Improve parameter efficiency from 0.01 to ~0.016 (better accuracy/param ratio)
+3. Simplify the optimization landscape, potentially accelerating convergence
+4. Maintain the proven effective structure: single-qubit rotations → chain entanglement → shared final rotation
+
+This tests the hypothesis that the entangling pattern itself (chain connectivity) matters more than position-specific parameters.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_01"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_12"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_23"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_34"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_45"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_56"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_67"},
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_chain"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_chain"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_chain"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_chain"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_chain"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_chain"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_chain"},
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

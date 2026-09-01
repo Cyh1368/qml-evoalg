@@ -1,0 +1,102 @@
+<NAME>
+add_shared_xx_ring_reuse_param
+</NAME>
+
+<DESCRIPTION>
+Reintroduce the higher-scoring 5-distinct-parameter sandwich ansatz (RY pre-rotation, RZ pre/post, single shared ZZ ring) and, per the recommendation, interleave a ring of XX gates right after the ZZ ring to mix orthogonal Ising interactions for a richer entangling structure. Crucially, to avoid increasing the trainable-parameter count (which is heavily penalized), the XX ring reuses the same shared parameter name "zz_ring" as the ZZ ring rather than introducing a new "xx_ring" parameter. This keeps n_distinct_params at 5 (matching the best-scoring prior program) while adding the orthogonal-interaction structure that reportedly improves worst-group margin and generalization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+=======
+ANSATZ_SPEC = [
+    # RY pre-rotation layer: two symmetric groups sharing one parameter each
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    # RZ pre-entangling layer: shares parameters with the post layer below
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+
+    # Fully shared entangling ring: ZZ followed by XX, both reusing the
+    # SAME shared parameter to mix orthogonal Ising interactions without
+    # increasing the trainable-parameter count.
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "XX", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "XX", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "XX", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "XX", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "XX", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "XX", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "XX", "wires": [6, 7], "param": "zz_ring"},
+
+    # RZ post-entangling layer: reuse pre-layer parameters (rz_a, rz_b)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+]
+>>>>>>> REPLACE
+</DIFF>

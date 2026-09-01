@@ -1,0 +1,38 @@
+<NAME>
+add_alternating_skip2_crz_layer
+
+<DESCRIPTION>
+The current candidate uses a fixed CZ ring (no long-range entanglement) plus pre/post RZ layers, which underperforms the earlier "crz_skip" variant that achieved 0.87 combined score. That variant used a single shared parameter for all skip-2 connections, which is very restrictive (only one trainable degree of freedom for all long-range couplings). Following the recommendation, I extend that skip-2 layer here with two alternating shared parameters (`crz_skip_even` and `crz_skip_odd`), applied alternately across edges [0,2],[1,3],[2,4],[3,5],[4,6],[5,7]. This mirrors the successful ring-alternation pattern already used effectively in the nearest-neighbor CRZ layers of the highest-scoring seed, giving the circuit more expressive long-range entanglement while keeping parameter count low (+2 params only) and preserving the tight regularization that keeps the generalization gap small. This should improve validation/test accuracy and reduce the loss compared to the current CZ-only long-range-free variant.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+
+=======
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_skip_even"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_skip_odd"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_skip_even"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_skip_odd"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "crz_skip_even"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_skip_odd"},
+]
+
+>>>>>>> REPLACE
+</DIFF>

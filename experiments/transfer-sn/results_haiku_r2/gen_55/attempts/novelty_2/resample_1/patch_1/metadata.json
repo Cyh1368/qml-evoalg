@@ -1,0 +1,14 @@
+{
+  "generation": 55,
+  "novelty_attempt": 2,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "reduce_params_improve_structure",
+  "patch_description": "The current program has 56 parameters (vs. 26 in the best prior), leading to poor parameter efficiency (0.02 vs. 0.04) and lower combined score (0.89 vs. 0.92). The issue is parameter over-proliferation without corresponding accuracy gains.\n\nAnalysis of prior successes:\n- Best program (score 0.92): 26 params, uses full parameter sharing (ry_init, rz_main, ry_final) and efficient entanglement (CZ ring + cross-ring + shared CRY)\n- Second program (score 0.92): 26 params, adds enrichment layer with parameter reuse (no extra params)\n- Current program (score 0.89): 56 params, uses separate even/odd parameters (rx_even, rx_odd, ry_even, ry_odd, rz_even, rz_odd, cry_nn, ry_mid, cry_lr)\n\nThe current design splits parameters unnecessarily (even/odd qubit pairs) without demonstrating accuracy improvement. This increases circuit complexity and parameter count without benefit.\n\nStrategy: Return to the proven high-parameter-sharing structure from the best program, but incorporate insights from the current program's entanglement patterns. Specifically:\n1. Use full parameter sharing for single-qubit rotations (ry_init, rz_main, ry_final) - proven efficient\n2. Keep nearest-neighbor CRY (cry_nn) for local entanglement\n3. Add long-range CRY gates (cry_lr) for global correlation capture\n4. Remove the even/odd split and ry_mid layer that inflate parameters without proven benefit\n5. Maintain fixed CZ gates for structure\n\nThis reduces parameters from 56 to 26 (matching best prior), improves parameter efficiency, and preserves the entanglement diversity that helped the current program's validation accuracy.",
+  "error_msg": null,
+  "timestamp": "2026-07-24T15:00:24.552426",
+  "llm_cost": 0.035385,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

@@ -1,0 +1,47 @@
+# Analysis of Performance
+
+Looking at the metrics:
+- **Current program**: Combined score 0.66, worst_group_margin 0.35, validation_margin 0.72
+- **Prior programs**: Combined score 0.67, worst_group_margin 0.36, validation_margin 0.73-0.74
+
+The current program has regressed slightly (score 0.66 vs 0.67), with lower worst_group_margin (0.35 vs 0.36). The main issue appears to be that adding the extra CRZ gate `[5, 0]` didn't help—it may have introduced noise or degraded the separation quality.
+
+The recommendation suggests **hybridizing one CRZ to CRY** under "ent_lr" to add axis diversity. This aligns with the prior observation that axis-diverse parametrized gates (like the CRX in earlier versions) improve worst-group margins.
+
+# Proposed Change
+
+**Strategy**: Replace one CRZ gate in the long-range entangling block with CRY. I'll convert the `[2, 5]` pair since it's in the middle of the CRZ sequence and changing this single rotation axis may help the circuit learn different feature separations for hard samples.
+
+**Rationale**:
+1. **Axis diversity**: CRY adds Y-axis rotational encoding alongside the dominant Z-axis (CRZ), enriching the entanglement structure
+2. **Worst-group separation**: Prior evolution showed that mixed parametrized gate types (CRX + standard gates) improved worst_group_margin; this continues that pattern
+3. **Minimal disruption**: Only one gate changes, maintaining parameter economy (still 7 distinct parameters)
+4. **Targeted at long-range**: The ent_lr block governs global entanglement patterns critical for separating difficult samples
+
+<NAME>
+hybridize_crz_to_cry_lr
+</NAME>
+
+<DESCRIPTION>
+Replace the CRZ gate acting on qubits [2, 5] with CRY under the "ent_lr" parameter. This adds Y-axis controlled rotation diversity to the long-range entangling block, which currently relies entirely on Z-axis (CRZ). The axis diversification should help the circuit learn better feature separations for the hardest validation samples, improving worst_group_margin from 0.35 back toward 0.36+. This mirrors the success of axis-mixed parametrized gates in prior versions.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [5, 0], "param": "ent_lr"},
+=======
+    # Third entangling block: long-range CRZ/CRY gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRY", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [5, 0], "param": "ent_lr"},
+>>>>>>> REPLACE
+</DIFF>

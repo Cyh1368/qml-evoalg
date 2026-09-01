@@ -1,0 +1,70 @@
+I understand. I can only edit within the EVOLVE-BLOCK markers. Let me revise my approach to keep the alternating entangler pattern entirely within the ANSATZ_SPEC, using a simpler strategy that doesn't require conditional logic in the fixed code.
+
+<NAME>
+alternate_entangler_xx_cz
+</NAME>
+
+<DESCRIPTION>
+The recommendation suggests alternating shared-parameter entanglers across repeats to inject richer two-qubit interactions. Since we cannot modify the fixed `apply_ansatz_block` function, we need a different approach.
+
+**Key insight:** We can encode the alternation pattern directly in ANSATZ_SPEC by using a clever parameter-sharing strategy:
+- Use XX gates (parametrized) for all entanglement positions
+- Share parameters strategically so that the same parameter appears in both even and odd repeats
+- This allows the optimizer to learn effective XX rotations that work across all repeats
+
+However, a simpler and more direct approach is to:
+1. Keep the single-qubit rotations (RY, RZ) as before
+2. Replace the limited ZZ interactions with a full nearest-neighbor XX chain
+3. Use two shared parameters (xx_even, xx_odd) to cover all pairs, matching the prior Gen 1 success
+
+This provides:
+- Richer entanglement through XX gates (proven to accelerate convergence in prior generations)
+- Full connectivity coverage with only 4 parameters per block (ry_even, rz_odd, xx_even, xx_odd)
+- Better gradient flow through more diverse two-qubit interactions
+- Maintains parameter economy while improving expressiveness
+
+The XX gates provide more flexible entanglement than the limited ZZ pairs in the current design, potentially reducing convergence steps.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Alternating RY on even qubits (0, 2, 4, 6)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    # Alternating RZ on odd qubits (1, 3, 5, 7)
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    # Parametrized ZZ interactions on first two pairs for entanglement
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_pair_01"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_pair_23"},
+]
+=======
+ANSATZ_SPEC = [
+    # Alternating RY on even qubits (0, 2, 4, 6)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    # Alternating RZ on odd qubits (1, 3, 5, 7)
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    # Full nearest-neighbor XX chain with shared even/odd parameters
+    # Even-indexed pairs: (0,1), (2,3), (4,5), (6,7)
+    {"gate": "XX", "wires": [0, 1], "param": "xx_even"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_even"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_even"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_even"},
+    # Odd-indexed pairs: (1,2), (3,4), (5,6)
+    {"gate": "XX", "wires": [1, 2], "param": "xx_odd"},
+    {"gate": "XX", "wires": [3, 4], "param": "xx_odd"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx_odd"},
+]
+>>>>>>> REPLACE
+</DIFF>

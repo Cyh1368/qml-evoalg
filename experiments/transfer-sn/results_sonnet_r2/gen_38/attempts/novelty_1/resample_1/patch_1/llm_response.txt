@@ -1,0 +1,61 @@
+<NAME>
+share_block_params_across_repeats
+
+<DESCRIPTION>
+Building on the parameter-sharing trend seen in prior improvements (independent RY→shared RY, independent RZ pre/post→shared), this edit applies the recommended architectural change: share ansatz block parameters across the two repeats within each upload by computing `offset = upload_index * N_PARAMS_PER_BLOCK` instead of `block_index * N_PARAMS_PER_BLOCK`. This halves circuit parameters (43 params/upload → 43*3=129 total minus readout, actually with current spec N_PARAMS_PER_BLOCK=14, so previously 14*6=84 circuit params, now 14*3=42 circuit params + 2 readout = 44 total), testing whether stronger weight tying further reduces the generalization gap while retaining expressivity through the 3 independent data-reuploading stages. This is consistent with the trend from the seed (110 params, gap 0.06) to the current best (86 params, gap 0.03) — fewer, better-shared parameters seem to improve generalization. Halving parameters again should continue this trend and may also speed convergence since there are fewer parameters to fit with the same effective circuit depth (depth and gate count remain unchanged since gate structure doesn't change, only parameter reuse).
+
+<DIFF>
+<<<<<<< SEARCH
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(records)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(circuit_params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+=======
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(records)
+        for repeat_index in range(N_REPEATS):
+            apply_ansatz_block(circuit_params, upload_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+=======
+SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)
+N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK * N_UPLOADS
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    with qml.queuing.AnnotatedQueue() as queue:
+        for upload_index in range(N_UPLOADS):
+            feature_map(np.zeros((1, N_FEATURES)))
+            for repeat_index in range(N_REPEATS):
+                block_index = upload_index * N_REPEATS + repeat_index
+                apply_ansatz_block(np.zeros(max(N_CIRCUIT_PARAMS, 1)), block_index)
+=======
+    with qml.queuing.AnnotatedQueue() as queue:
+        for upload_index in range(N_UPLOADS):
+            feature_map(np.zeros((1, N_FEATURES)))
+            for repeat_index in range(N_REPEATS):
+                apply_ansatz_block(np.zeros(max(N_CIRCUIT_PARAMS, 1)), upload_index)
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,94 @@
+## Analysis
+
+Looking at the performance metrics:
+
+**Prior programs (single block):**
+- Score: 0.72
+- n_params: 14
+- convergence_step_mean: 90
+
+**Current program (single block with split RZ parameters):**
+- Score: 0.68
+- n_params: 20 (worse parameter efficiency!)
+- convergence_step_mean: 60 (faster convergence)
+
+**Key observations:**
+1. The current program has **worse parameter efficiency** (0.05 vs 0.07) despite achieving perfect accuracy
+2. Splitting `rz_shared` into `rz_pre_shared` and `rz_post_shared` added 6 extra parameters but *decreased* the score
+3. The prior single-block program with n_params=14 and score=0.72 is better
+4. The recommendation suggests converting fixed CZ gates to parametrized CRZ gates with a shared parameter
+
+**Strategy:**
+Following the provided recommendation, I will replace the fixed CZ gates with parametrized CRZ gates using a single shared parameter `phi_shared`. This will:
+- Add only 1 parameter (14 + 1 = 15, much better than current 20)
+- Introduce tunability to the entangling layer while maintaining the linear chain structure
+- Potentially improve convergence speed (as noted in the recommendation)
+- Keep parameter economy excellent while adding expressivity
+
+The CRZ gate is a controlled rotation around the Z-axis, which is a natural extension of the CZ gate (CZ is CRZ(π)).
+
+<NAME>
+crz_entangler_tunable
+</NAME>
+
+<DESCRIPTION>
+Replace all fixed CZ gates with parametrized CRZ gates using a single shared parameter `phi_shared`. This introduces tunability to the entangling layer while maintaining the linear chain topology and keeping parameter count low (15 params vs current 20). 
+
+CRZ is a natural generalization of CZ—it allows the optimization process to learn the optimal entangling angle rather than being fixed at π. Prior testing showed ~30% faster convergence with global parametrized entanglers. This change should:
+1. Reduce parameter count (from 20 to 15)
+2. Improve parameter efficiency score
+3. Potentially maintain or improve accuracy while being more economical
+4. Speed up convergence due to added flexibility in the entangling angle
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_shared"},
+=======
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+>>>>>>> REPLACE
+</DIFF>

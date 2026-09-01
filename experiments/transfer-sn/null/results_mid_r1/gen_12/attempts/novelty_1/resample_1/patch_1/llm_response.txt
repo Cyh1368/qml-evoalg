@@ -1,0 +1,118 @@
+<NAME>
+shared_8_param_ring_ansatz
+</NAME>
+
+<DESCRIPTION>
+I’m tightening the ansatz into a parameter-shared, low-redundancy block that still keeps the circuit expressive.
+
+The main change is to reuse the same 8 trainable keys across multiple single-qubit layers, instead of allocating separate keys for every layer. This directly reduces the unique circuit parameters per block while preserving a strong inductive bias: a local RY warm-start, a ring CZ entangler, a shared RZ refinement, a long-range CRY bridge, a shifted CZ ring, and a final shared RX layer.
+
+Why this should help:
+- fewer unique parameters improves parameter efficiency and usually reduces overfitting
+- shared weights across sublayers encourage smoother optimization and better generalization
+- mixed-axis rotations plus two entangling topologies keep enough expressivity for the binary classification task
+- reduced circuit size should also help convergence speed under the fixed Adam training loop
+
+This follows the recommendation to tie parameters across repeated substructures, but in a stronger form: the same 8 keys are reused throughout the block.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 4, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_3"},
+
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_0"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cry_1"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry_2"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cry_3"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 4, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_3"},
+
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "q0"},
+    {"gate": "RY", "wire": 1, "param": "q1"},
+    {"gate": "RY", "wire": 2, "param": "q2"},
+    {"gate": "RY", "wire": 3, "param": "q3"},
+    {"gate": "RY", "wire": 4, "param": "q4"},
+    {"gate": "RY", "wire": 5, "param": "q5"},
+    {"gate": "RY", "wire": 6, "param": "q6"},
+    {"gate": "RY", "wire": 7, "param": "q7"},
+
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "RZ", "wire": 0, "param": "q0"},
+    {"gate": "RZ", "wire": 1, "param": "q1"},
+    {"gate": "RZ", "wire": 2, "param": "q2"},
+    {"gate": "RZ", "wire": 3, "param": "q3"},
+    {"gate": "RZ", "wire": 4, "param": "q4"},
+    {"gate": "RZ", "wire": 5, "param": "q5"},
+    {"gate": "RZ", "wire": 6, "param": "q6"},
+    {"gate": "RZ", "wire": 7, "param": "q7"},
+
+    {"gate": "CRY", "wires": [0, 4], "param": "q0"},
+    {"gate": "CRY", "wires": [1, 5], "param": "q1"},
+    {"gate": "CRY", "wires": [2, 6], "param": "q2"},
+    {"gate": "CRY", "wires": [3, 7], "param": "q3"},
+
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    {"gate": "RX", "wire": 0, "param": "q0"},
+    {"gate": "RX", "wire": 1, "param": "q1"},
+    {"gate": "RX", "wire": 2, "param": "q2"},
+    {"gate": "RX", "wire": 3, "param": "q3"},
+    {"gate": "RX", "wire": 4, "param": "q4"},
+    {"gate": "RX", "wire": 5, "param": "q5"},
+    {"gate": "RX", "wire": 6, "param": "q6"},
+    {"gate": "RX", "wire": 7, "param": "q7"},
+]
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,112 @@
+## Analysis
+
+Looking at the current program and prior performance:
+
+**Current state:**
+- Score: 0.68 (worse than prior programs at 0.72)
+- n_params: 20 (increased from 14)
+- parameter_efficiency: 0.05 (decreased from 0.07)
+- convergence_step: 60 (slower than first program's 90 but faster than second's 30)
+
+**Key observations:**
+1. The current program uses XX gates instead of CZ gates, which increased parameters from 14 to 20
+2. All rotations still share a single parameter per gate type
+3. The prior programs achieved perfect accuracy (1.0) with only 14 parameters and better efficiency
+4. The recommendation suggests splitting RY into even/odd patterns for flexibility
+
+**Strategy:**
+The prior programs achieved 0.72 score with 14 parameters using CZ gates and shared rotations. The current program with XX gates and more parameters scored worse (0.68). I should:
+
+1. Revert to the simpler, more efficient structure from the first program (single block with CZ)
+2. Apply the recommended even-odd partitioning to RY rotations to add selective flexibility while keeping parameter count low (targeting 3 unique parameters total: ry_even, ry_odd, rz_shared)
+3. This tests if parity-based patterns can improve expressivity while maintaining efficiency
+
+This approach balances:
+- Parameter economy (3 params vs 20)
+- Maintaining the proven effective CZ chain
+- Adding targeted expressivity through even-odd RY splitting
+- Expected gates/param ratio: ~62 (high efficiency)
+
+<NAME>
+ry_even_odd_parity_split
+</NAME>
+
+<DESCRIPTION>
+Revert to the efficient single-block CZ structure from the first prior program, but introduce even-odd partitioning for RY rotations. This splits the shared RY parameter into two: "ry_even" for qubits 0,2,4,6 and "ry_odd" for qubits 1,3,5,7. This maintains strong parameter economy (3 params vs 20) while granting selective flexibility that may capture parity-based patterns in the data. The gate count stays at 186 with only 3 unique parameters, yielding ~62 gates per parameter—excellent efficiency while testing if parity structure improves accuracy or convergence on the small training set.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_shared"},
+    {"gate": "XX", "wires": [1, 2], "param": "xx_shared"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_shared"},
+    {"gate": "XX", "wires": [3, 4], "param": "xx_shared"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_shared"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx_shared"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    # RY with even-odd partitioning
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Shared RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # CZ chain
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Final RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE
+</DIFF>

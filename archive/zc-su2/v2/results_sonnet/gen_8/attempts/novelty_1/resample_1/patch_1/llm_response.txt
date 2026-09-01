@@ -1,0 +1,106 @@
+<NAME>
+param_economy_v4_grouped2
+</NAME>
+
+<DESCRIPTION>
+Building on the observed trend that reducing the number of distinct trainable
+parameters (via aggressive but structured sharing) monotonically increased the
+combined score in previous iterations (24→16→13 distinct params raised the
+score from 0.60→0.61→0.62), this version pushes parameter sharing further
+while preserving the exact same gate topology, gate count (31 gates per
+block, giving depth_mean 20 / gate_count 93 after the fixed 3x repetition)
+and entangling connectivity (a 7-edge nearest-neighbour ring of ZZ
+interactions). 
+
+Changes from the current program:
+- The 8-qubit RY pre-rotation layer is now split into just two symmetric
+  groups (qubits 0-3 share `ry_a`, qubits 4-7 share `ry_b`) instead of four
+  pairwise groups.
+- The RZ layers before and after the entangling ring now reuse the *same*
+  two parameters (`rz_a` for qubits 0-3, `rz_b` for qubits 4-7) instead of
+  having separate pre/post parameters per group, removing redundant
+  parameters that mostly encode the same effective rotation given the shared
+  RY layer.
+- The ZZ ring keeps a single shared parameter `zz_ring`, exactly as before,
+  since collapsing all entangling gates to one angle already worked well.
+
+This reduces the total number of distinct trainable parameters from 13 down
+to 5 (`ry_a, ry_b, rz_a, rz_b, zz_ring`), a very aggressive but structured
+reduction that keeps the circuit's expressive backbone (local single-qubit
+rotations + a fully connected ring of entanglers) intact. Given that all
+prior variants achieved train/val/test accuracy ~0.99-1.00 regardless of
+this level of sharing, the underlying decision boundary appears to be
+easily captured with very few free parameters, so this should continue the
+observed trend of improved parameter efficiency and robustness (worst-group
+margin) without sacrificing accuracy, while also plausibly reducing the
+train/validation gap and convergence steps due to a smaller, better
+conditioned parameter landscape.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # RY pre-rotation layer: two symmetric groups sharing one parameter each
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    # RZ pre-entangling layer: shares parameters with the post layer below
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+
+    # Fully shared entangling ring
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+
+    # RZ post-entangling layer: reuse pre-layer parameters (rz_a, rz_b)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>
