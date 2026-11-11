@@ -154,6 +154,22 @@ test / fresh holdout), and the unit count. Model identity is reported as the ser
 model name plus the serving configuration actually used (see `PROVENANCE.md`), never as a
 bare alias.
 
+## 6b. Addendum A1 (added 2026-11-11 17:45Z, before any of its results existed)
+
+Referee point 9 asks for a symmetry-breaking task to test verifier **selectivity**.
+This is a **new prospective comparison**, declared here before submission and kept out
+of every frozen family above:
+
+* family `ring_n6`, target `alpha_1` = `h + 1.0 * (x_0 - mean x)`, i.e. the declared
+  group `D6` is **not** a label symmetry of the target;
+* all five arms, budget `B = 12`, `steps = 120`, `max_train = 256`, 12 paired seeds
+  `20261110..20261121` (a fresh seed block, so no reuse of inspected outcomes);
+* endpoint: development-selected risk on the `alpha_1` target, paired by seed,
+  inference as in section 4, its own Holm family (E);
+* prediction stated in advance: if the verifier's effect is to push the search toward
+  invariance, `llm-verify` must be **worse** than `llm-fitness` here; if the verifier is
+  selective, the two should not differ materially. Whichever happens is reported.
+
 ## 7. What is *not* changed by this protocol
 
 The audit findings (`research/audit.md`), the mathematical preliminaries, and the refusal
