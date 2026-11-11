@@ -149,10 +149,10 @@ def search_section(path, out):
     out.append("### E-S4 reliability (per arm, development record)\n")
     out.append("| family | arm | runs | invalid rate | hypothesis rate | tokens | wall s | mean dev risk |")
     out.append("|---|---|---|---|---|---|---|---|")
-    for r in d["reliability"]:
+    for fam, r in zip(d["families"], d["reliability"]):
         for arm, s in r["per_arm"].items():
             out.append("| %s | %s | %d | %.3f | %.3f | %.0f | %.0f | %.5f |"
-                       % (r["family"], arm, s["n_runs"], s["mean_invalid_rate"],
+                       % (fam, arm, s["n_runs"], s["mean_invalid_rate"],
                           s["mean_hypothesis_rate"], s["mean_tokens"],
                           s["mean_wall_time_s"], s["mean_dev_risk"]))
     out.append("")
@@ -162,7 +162,7 @@ def search_section(path, out):
     for r in d["reliability"]:
         for c in r["paired"]:
             out.append("| %s | %s | %d | %s | %s | %s | %s |"
-                       % (r["family"], c["metric"], c["n_pairs"],
+                       % (c["family"], c["metric"], c["n_pairs"],
                           fmt(c["mean_diff_a_minus_b"]), ci(c["bootstrap"]),
                           pstr(c["p_shifted_bootstrap"]), c["verdict"]))
     out.append("")
