@@ -85,8 +85,13 @@ def _repair_unit(job):
            "direction_seed": int(direction) if direction is not None else None,
            "opt_seed": int(opt_seed), "steps": int(_W["steps"]),
            "train_loss": train_risk, "theta": theta.tolist()}
-    for name, (xt, yt) in _W["eval_sets"].items():
-        row["risk_" + name] = _r2.block_dev_risk(arm, task, xt, yt, theta)
+    # The target is rebuilt from the SAME trusted TargetFn that trained the arm: an
+    # untouched-input holdout supplies new x, and the label is the generative function
+    # evaluated there.  (The first version of this script read a single alpha_0 label per
+    # split, which evaluated every eta against the invariant target; see PROVENANCE.)
+    for name, xt in _W["eval_sets"].items():
+        xt = np.asarray(xt, float)
+        row["risk_" + name] = _r2.block_dev_risk(arm, task, xt, tf.y_of(xt), theta)
     row["channel_mean"] = _r2.channel_residual(arm, int(task.n_qubits), theta,
                                                closure)["channel_mean"]
     return row
@@ -147,6 +152,15 @@ def main(argv=None):
                    help="substitute the development validation split for every "
                         "sealed array and touch nothing sealed; validates code paths "
                         "before the single real evaluation")
+    p.add_argument("--splits", default="dev,fresh_v3",
+                   help="comma list of E-R4 evaluation inputs; the consumed v1/v2 "
+                        "splits are excluded by default after the Addendum A4 defect")
+    p.add_argument("--selfcheck", default=None,
+                   help="path to repair2_results.json: compare the refit's dev-row risk "
+                        "against the logged dev_risk and fail on any mismatch")
+    p.add_argument("--skip-search", action="store_true",
+                   help="do not run E-S7 (keeps the already-consumed v1 search split "
+                        "single-read)")
     a = p.parse_args(argv)
     if a.dry_run:
         a.out = "logs/holdout_dryrun.json"
@@ -164,46 +178,83 @@ def main(argv=None):
     with open(a.access_log, "w") as fh:
         json.dump(access, fh, indent=1, default=str)
 
-    # ---- E-R4 (ring) ----
+    # ---- E-R4 (ring): untouched INPUTS; targets rebuilt from the trusted TargetFn ----
     task = _tasks.load_family("ring_n6", development=True, locked=False)
     dev_mask = np.asarray(task.splits["validation"], bool)
     x_dev = np.asarray(task.x)[dev_mask]
-    y_dev = np.asarray(task.targets["alpha_0"], float)[dev_mask]
-    if a.dry_run:
-        x1, y1 = x_dev, y_dev
-        x2, y2 = x_dev[:200], y_dev[:200]
-    else:
-        with np.load(sealed["ring_v1"]) as d1:
-            x1 = np.asarray(d1["x_test"], float)
-            y1 = np.asarray(d1["y_alpha_0_test"], float)
-        with np.load(sealed["ring_v2"]) as d2:
-            x2 = np.asarray(d2["x_test"], float)
-            y2 = np.asarray(d2["y_alpha_0_test"], float)
+    want = [s.strip() for s in a.splits.split(",") if s.strip()]
+    eval_sets = {}
+    for name in want:
+        if name == "dev":
+            eval_sets["dev"] = x_dev
+        elif name == "fresh_v3":
+            p3 = os.path.join(_tasks.DATASETS / "locked_holdout_v3", "ring_n6_x.npz")
+            sealed["ring_v3"] = p3
+            before["ring_v3"] = sha256(p3)
+            with np.load(p3) as d3:
+                eval_sets["fresh_v3"] = np.asarray(d3["x_test"], float)
+        elif name in ("sealed_v1", "fresh_v2"):
+            raise SystemExit("%s was consumed by the defective one-shot run recorded in "
+                             "research/PROVENANCE.md; re-reading it would violate the "
+                             "one-shot policy (Addendum A4)" % name)
+        else:
+            raise SystemExit("unknown split %r" % name)
     _W.update({"task": task, "closure": _r1.group_closure(task.generators),
                "workers": a.workers, "n_opt_seeds": int(a.n_opt_seeds),
                "steps": int(a.steps),
                "directions": tuple(int(d) for d in a.directions.split(",")),
-               "eval_sets": {"sealed_v1": (x1, y1), "fresh_v2": (x2, y2)}})
+               "eval_sets": eval_sets})
     repair_rows = eval_repair()
+
+    selfcheck = None
+    if a.selfcheck:
+        with open(a.selfcheck) as fh:
+            ref = json.load(fh)
+        want_keys = {(r["arm"], r["eta"], r.get("direction_seed"), r["opt_seed"]):
+                     r["dev_risk"] for r in ref["rows"] if int(r["steps"]) == int(a.steps)}
+        diffs, missing = [], 0
+        for r in repair_rows:
+            k = (r["arm"], r["eta"], r["direction_seed"], r["opt_seed"])
+            if k in want_keys and "risk_dev" in r:
+                diffs.append(abs(r["risk_dev"] - want_keys[k]))
+            else:
+                missing += 1
+        selfcheck = {"reference": a.selfcheck, "compared": len(diffs),
+                     "not_in_reference": missing,
+                     "max_abs_dev_risk_diff": float(max(diffs)) if diffs else None,
+                     "tolerance": 1e-9, "pass": bool(diffs and max(diffs) < 1e-9)}
+        print("SELFCHECK vs %s: %d compared, max |dev diff| = %.3e -> %s"
+              % (a.selfcheck, len(diffs),
+                 max(diffs) if diffs else float("nan"), "PASS" if selfcheck["pass"]
+                 else "FAIL"), flush=True)
+        if not selfcheck["pass"]:
+            raise SystemExit("self-check failed: the holdout evaluator does not "
+                             "reproduce the experiment's own dev risk")
 
     # ---- E-S7 (search) ----
     import glob
     tasks, tx, ty = {}, {}, {}
-    for fam in ("ring_n6", "graphs_n6"):
-        tasks[fam] = _tasks.load_family(fam, development=True, locked=False)
-        if a.dry_run:
-            m = np.asarray(tasks[fam].splits["validation"], bool)
-            tx[fam] = np.asarray(tasks[fam].x)[m][:200]
-            ty[fam] = np.asarray(tasks[fam].targets[tasks[fam].primary_target])[m][:200]
-            continue
-        path = sealed["ring_v1"] if fam == "ring_n6" else sealed["graphs_v1"]
-        with np.load(path) as dd:
-            key = "y_%s_test" % tasks[fam].primary_target
-            tx[fam] = np.asarray(dd["x_test"], float)
-            ty[fam] = np.asarray(dd[key], float)
-    _W.update({"tasks": tasks, "test_x": tx, "test_y": ty})
-    paths = sorted(glob.glob(os.path.join(a.runs, "run_*.json")))
-    search_rows = eval_search(paths)
+    search_rows = []
+    if a.skip_search:
+        print("E-S7 skipped (sealed v1 splits already consumed by the first one-shot "
+              "run; its valid E-S7 results stay in the original HOLDOUT_RESULTS.json)",
+              flush=True)
+    else:
+        for fam in ("ring_n6", "graphs_n6"):
+            tasks[fam] = _tasks.load_family(fam, development=True, locked=False)
+            if a.dry_run:
+                m = np.asarray(tasks[fam].splits["validation"], bool)
+                tx[fam] = np.asarray(tasks[fam].x)[m][:200]
+                ty[fam] = np.asarray(tasks[fam].targets[tasks[fam].primary_target])[m][:200]
+                continue
+            path = sealed["ring_v1"] if fam == "ring_n6" else sealed["graphs_v1"]
+            with np.load(path) as dd:
+                key = "y_%s_test" % tasks[fam].primary_target
+                tx[fam] = np.asarray(dd["x_test"], float)
+                ty[fam] = np.asarray(dd[key], float)
+        _W.update({"tasks": tasks, "test_x": tx, "test_y": ty})
+        paths = sorted(glob.glob(os.path.join(a.runs, "run_*.json")))
+        search_rows = eval_search(paths)
 
     # ---- contrasts ----
     def by(rows, key):
@@ -213,7 +264,7 @@ def main(argv=None):
         return out
 
     repair_contrasts = []
-    for split in ("sealed_v1", "fresh_v2"):
+    for split in eval_sets:
         for eta in (0.0, 0.5, 1.0):
             for a_arm, b_arm in (("repaired", "control_dup"),
                                  ("repaired", "original"),
@@ -266,8 +317,10 @@ def main(argv=None):
             search_contrasts.append(c)
 
     after = ({} if a.dry_run else {k: sha256(v) for k, v in sealed.items()})
-    result = {"protocol": "research/REVISED_PROTOCOL.md section 5",
+    result = {"protocol": "research/REVISED_PROTOCOL.md section 5 + Addendum A4",
               "one_shot": True,
+              "splits_evaluated": list(eval_sets),
+              "selfcheck": selfcheck,
               "sealed_sha256_before": before, "sealed_sha256_after": after,
               "unchanged": bool(before == after),
               "repair_design": {"arms": list(ARMS), "directions": list(DIRECTIONS),

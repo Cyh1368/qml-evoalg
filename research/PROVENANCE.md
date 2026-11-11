@@ -75,6 +75,24 @@ budgets.
    WP-REPAIR-2 / dev-analysis / one-shot-holdout chain **is** verifiably pre-registered:
    the protocol commit `ecd1be72` (16:20:02Z) precedes the job submissions
    (17:10Z, 17:21Z) and every result of that chain.
+3. **`git_commit` in `repair2_results.json` (`c62a3e26`, committed 17:50:42Z) postdates the
+   run** (submitted 17:10:06Z, started 17:30:45Z, finished ~18:00Z), because the job runs from
+   the working tree and stamps metadata when it *finishes*. The field therefore names HEAD at
+   completion, not the code at start. What rescues the claim is a file-level check:
+   `research/experiments/repair/repair_experiment2.py` was last modified at `1b7aafde`
+   (17:10:06Z) and not touched again until 18:05Z, so the code that ran is exactly
+   `1b7aafde`'s version; the same holds for `research/core/*` used by it. **Fix going
+   forward:** stamp `git rev-parse HEAD` at submit time in the job wrapper and record
+   `sha256` of the experiment module, so code identity does not depend on completion order.
+4. **The first one-shot E-R4 evaluation was invalid for `eta > 0`** (job `32984980`, finished
+   18:01:38Z): the evaluator scored every arm against a single `alpha_0` label per split, and
+   the sealed files' `alpha_*` labels use a different breaking function from the experiment's.
+   Detected because `eta = 1` risks came out at $0.019$ where the invariant floor is $\approx
+   1.0$. Consequences, policy and remedy are recorded in `REVISED_PROTOCOL.md` Addendum A4:
+   the v1/v2 ring splits stay consumed, the defective numbers are not reported, the evaluator
+   now refuses those splits, a third inputs-only holdout (seed 20261203, sha256
+   `a82280545dd6741c7650cfb83eee7a4cf326606dac266be46bd9aa2161781bc4`) is evaluated once, and a
+   self-check must reproduce the experiment's own development risk to `1e-9` first.
 
 ## 4. Artefacts released with the analysis
 

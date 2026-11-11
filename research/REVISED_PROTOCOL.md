@@ -203,6 +203,40 @@ interpretation only**: no estimand, replication unit, contrast, multiplicity fam
 decision rule or threshold is altered, and it was written after the WP-REPAIR-2 runs
 completed (which is why it is an amendment and not a silent edit).
 
+## 6e. Addendum A4 (2026-11-11 18:15Z): one-shot E-R4 defect, corrected evaluator, and a third holdout
+
+**What happened.** The one-shot run `32984980` (completed 18:01:38Z) evaluated E-R4
+correctly for `eta = 0` but **invalidly for `eta > 0`**: `holdout_oneshot.py` built one label
+array per split (`y_alpha_0_test`, the invariant target) and scored every arm against it,
+regardless of the `eta` the arm was trained on. Two independent mismatches were involved:
+(i) the single-`alpha_0` label, and (ii) the sealed files' own `alpha_*` labels use a
+*different* breaking function (`x[:,0] - mean(x)`, unnormalised) from WP-REPAIR-2's
+frozen-direction, train-normalised `b`. The symptom was unmistakable in hindsight: risks of
+$0.015$--$0.03$ at `eta = 1`, where any invariant predictor's risk is at least
+$\eta^2\mathbb{E}[b^2] \approx 1$ --- impossible against the real target, and the reason the
+`eta > 0` contrasts came out with the opposite sign to development.
+
+**Policy consequence.** Section 5 says the sealed splits are evaluated exactly once. The v1
+and v2 ring splits *were* read in that run, so they stay consumed: the defective `eta > 0`
+numbers are **not** reported as results, and the splits are **not** re-read. The evaluator now
+refuses them (`--splits sealed_v1|fresh_v2` raises).
+
+**Remedy, declared before the corrected run exists.**
+1. The evaluator now rebuilds the target from the *same trusted* `TargetFn` that trained each
+   arm, so an untouched-input holdout supplies new `x` and the label is the generative
+   function there. A third holdout (`research/datasets/locked_holdout_v3/ring_n6_x.npz`,
+   seed 20261203, **inputs only**, 4000 rows, zero dihedral-orbit overlap with development,
+   v1 and v2, sha256 `a82280545dd6741c7650cfb83eee7a4cf326606dac266be46bd9aa2161781bc4`,
+   mode 0444) is the only untouched input the corrected run may read, once.
+2. **Self-check gate** (`--selfcheck`, job `32989281`, no sealed read): the corrected
+   evaluator refits every WP-REPAIR-2 unit and must reproduce the experiment's own logged
+   development risk to `1e-9`. The v3 evaluation runs only if this passes.
+3. E-S7 (search arms on the v1 sealed test split) is unaffected by the defect --- its target
+   handling was correct --- and is reported from the original run; it is not re-run.
+
+This amendment changes no estimand, unit, contrast or decision rule. It records a defect,
+the policy consequence of having consumed two splits, and the pre-declared remedy.
+
 ## 7. What is *not* changed by this protocol
 
 The audit findings (`research/audit.md`), the mathematical preliminaries, and the refusal
