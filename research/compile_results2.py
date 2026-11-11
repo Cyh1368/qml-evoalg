@@ -261,7 +261,7 @@ def dev_section(path, out):
     out.append("")
 
 
-def holdout_section(out_path, access_path, out):
+def holdout_section(out_path, access_path, out, er4_path=None, er4_access=None):
     d = load(out_path)
     if d is None:
         out.append("_(one-shot holdout evaluation not yet run)_")
@@ -272,10 +272,21 @@ def holdout_section(out_path, access_path, out):
                "`%s`; started %s, finished %s\n"
                % (d.get("unchanged"), access_path,
                   (a.get("started") or {}).get("utc"), (a.get("finished") or {}).get("utc")))
+    e4 = load(er4_path) if er4_path else None
+    if e4 is not None:
+        out.append("- **E-R4' supersedes the E-R4 table of the first one-shot run**, whose "
+                   "`eta > 0` rows scored every arm against a single invariant label "
+                   "(REVISED_PROTOCOL Addendum A4). Self-check: %s (%s units compared, max "
+                   "|dev diff| %s); digests unchanged: %s; access record: `%s`\n"
+                   % ("PASS" if (e4.get("selfcheck") or {}).get("pass") else "FAIL",
+                      (e4.get("selfcheck") or {}).get("compared"),
+                      (e4.get("selfcheck") or {}).get("max_abs_dev_risk_diff"),
+                      e4.get("unchanged"), er4_access))
+    rows = e4["repair_contrasts"] if e4 else d["repair_contrasts"]
     out.append("### E-R4 repair arms on untouched data\n")
     out.append("| split | eta | contrast | units | mean diff | 95% CI | p_shift-boot | p_signflip | verdict |")
     out.append("|---|---|---|---|---|---|---|---|---|")
-    for c in d["repair_contrasts"]:
+    for c in rows:
         out.append("| %s | %.1f | %s vs %s | %d | %s | %s | %s | %s | %s |"
                    % (c["split"], c["eta"], c["a"], c["b"], c["n_units"],
                       fmt(c["mean_diff_a_minus_b"]), ci(c["bootstrap"]),
@@ -351,7 +362,9 @@ def main(argv=None):
                    "WP-REPAIR-2 (corrected design)", out)
     search_section("research/search/confirm_analysis2.json", out)
     dev_section("research/search/dev_analysis.json", out)
-    holdout_section("research/HOLDOUT_RESULTS.json", "research/HOLDOUT_ACCESS.json", out)
+    holdout_section("research/HOLDOUT_RESULTS.json", "research/HOLDOUT_ACCESS.json", out,
+                    er4_path="research/HOLDOUT_RESULTS_v4.json",
+                    er4_access="research/HOLDOUT_ACCESS_v4.json")
     breaking_section("research/search/breaking_target.json", out)
     with open(a.out, "w") as fh:
         fh.write("\n".join(out) + "\n")

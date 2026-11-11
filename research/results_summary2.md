@@ -270,28 +270,30 @@ Inference conventions: `research/core/paired.py` (percentile bootstrap over *uni
 
 - sealed digests unchanged across the evaluation: **True**; access record: `research/HOLDOUT_ACCESS.json`; started 2026-11-11T17:39:50.445346+00:00, finished 2026-11-11T18:01:38.656698+00:00
 
+- **E-R4' supersedes the E-R4 table of the first one-shot run**, whose `eta > 0` rows scored every arm against a single invariant label (REVISED_PROTOCOL Addendum A4). Self-check: PASS (216 units compared, max |dev diff| 0.0); digests unchanged: True; access record: `research/HOLDOUT_ACCESS_v4.json`
+
 ### E-R4 repair arms on untouched data
 
 | split | eta | contrast | units | mean diff | 95% CI | p_shift-boot | p_signflip | verdict |
 |---|---|---|---|---|---|---|---|---|
-| sealed_v1 | 0.0 | repaired vs control_dup | 8 | -0.00054 | [-0.00161, +0.00029] | 0.2724 | 0.4844 | difference not detected (CI includes 0; NOT evidence of no effect) |
-| sealed_v1 | 0.0 | repaired vs original | 8 | -0.00145 | [-0.00252, -0.00045] | 0.00415 | 0.04688 | a better (CI excludes 0 on the negative side) |
-| sealed_v1 | 0.0 | control_dup vs original | 8 | -0.00092 | [-0.00222, +0.00021] | 0.1503 | 0.3047 | difference not detected (CI includes 0; NOT evidence of no effect) |
-| sealed_v1 | 0.5 | repaired vs control_dup | 32 | -0.00850 | [-0.01083, -0.00625] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | a better (CI excludes 0 on the negative side) |
-| sealed_v1 | 0.5 | repaired vs original | 32 | -0.00455 | [-0.00595, -0.00312] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | a better (CI excludes 0 on the negative side) |
-| sealed_v1 | 0.5 | control_dup vs original | 32 | +0.00395 | [+0.00204, +0.00607] | 0.00035 | 0.00026 | b worse (CI excludes 0 on the positive side) |
-| sealed_v1 | 1.0 | repaired vs control_dup | 32 | -0.01152 | [-0.01470, -0.00843] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | a better (CI excludes 0 on the negative side) |
-| sealed_v1 | 1.0 | repaired vs original | 32 | -0.00608 | [-0.00875, -0.00361] | 5e-05 (floor < 5e-05) | 2.5e-05 | a better (CI excludes 0 on the negative side) |
-| sealed_v1 | 1.0 | control_dup vs original | 32 | +0.00545 | [+0.00175, +0.00914] | 0.00385 | 0.006865 | b worse (CI excludes 0 on the positive side) |
-| fresh_v2 | 0.0 | repaired vs control_dup | 8 | -0.00066 | [-0.00184, +0.00019] | 0.2272 | 0.3594 | difference not detected (CI includes 0; NOT evidence of no effect) |
-| fresh_v2 | 0.0 | repaired vs original | 8 | -0.00174 | [-0.00303, -0.00051] | 0.0054 | 0.04688 | a better (CI excludes 0 on the negative side) |
-| fresh_v2 | 0.0 | control_dup vs original | 8 | -0.00108 | [-0.00258, +0.00020] | 0.1344 | 0.2734 | difference not detected (CI includes 0; NOT evidence of no effect) |
-| fresh_v2 | 0.5 | repaired vs control_dup | 32 | -0.00877 | [-0.01108, -0.00651] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | a better (CI excludes 0 on the negative side) |
-| fresh_v2 | 0.5 | repaired vs original | 32 | -0.00472 | [-0.00614, -0.00327] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | a better (CI excludes 0 on the negative side) |
-| fresh_v2 | 0.5 | control_dup vs original | 32 | +0.00405 | [+0.00222, +0.00604] | 0.00015 | 0.000115 | b worse (CI excludes 0 on the positive side) |
-| fresh_v2 | 1.0 | repaired vs control_dup | 32 | -0.01180 | [-0.01495, -0.00873] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | a better (CI excludes 0 on the negative side) |
-| fresh_v2 | 1.0 | repaired vs original | 32 | -0.00609 | [-0.00869, -0.00365] | 5e-05 (floor < 5e-05) | 2e-05 | a better (CI excludes 0 on the negative side) |
-| fresh_v2 | 1.0 | control_dup vs original | 32 | +0.00571 | [+0.00218, +0.00925] | 0.0011 | 0.003405 | b worse (CI excludes 0 on the positive side) |
+| dev | 0.0 | repaired vs control_dup | 8 | -0.00083 | [-0.00225, +0.00024] | 0.185 | 0.2656 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| dev | 0.0 | repaired vs original | 8 | -0.00233 | [-0.00417, -0.00057] | 0.009 | 0.04688 | a better (CI excludes 0 on the negative side) |
+| dev | 0.0 | control_dup vs original | 8 | -0.00150 | [-0.00351, +0.00024] | 0.1223 | 0.25 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| dev | 0.5 | repaired vs control_dup | 32 | +0.01757 | [+0.01326, +0.02180] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | b worse (CI excludes 0 on the positive side) |
+| dev | 0.5 | repaired vs original | 32 | +0.01265 | [+0.00875, +0.01658] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | b worse (CI excludes 0 on the positive side) |
+| dev | 0.5 | control_dup vs original | 32 | -0.00492 | [-0.00955, -0.00033] | 0.03645 | 0.04931 | a better (CI excludes 0 on the negative side) |
+| dev | 1.0 | repaired vs control_dup | 32 | +0.05138 | [+0.04083, +0.06123] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | b worse (CI excludes 0 on the positive side) |
+| dev | 1.0 | repaired vs original | 32 | +0.03440 | [+0.02521, +0.04384] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | b worse (CI excludes 0 on the positive side) |
+| dev | 1.0 | control_dup vs original | 32 | -0.01697 | [-0.02978, -0.00450] | 0.0075 | 0.01453 | a better (CI excludes 0 on the negative side) |
+| fresh_v4 | 0.0 | repaired vs control_dup | 8 | -0.00057 | [-0.00176, +0.00028] | 0.277 | 0.4844 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| fresh_v4 | 0.0 | repaired vs original | 8 | -0.00174 | [-0.00309, -0.00051] | 0.00595 | 0.04688 | a better (CI excludes 0 on the negative side) |
+| fresh_v4 | 0.0 | control_dup vs original | 8 | -0.00117 | [-0.00279, +0.00015] | 0.1249 | 0.2734 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| fresh_v4 | 0.5 | repaired vs control_dup | 32 | +0.01551 | [+0.01106, +0.02011] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | b worse (CI excludes 0 on the positive side) |
+| fresh_v4 | 0.5 | repaired vs original | 32 | +0.01153 | [+0.00804, +0.01501] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | b worse (CI excludes 0 on the positive side) |
+| fresh_v4 | 0.5 | control_dup vs original | 32 | -0.00399 | [-0.00853, +0.00043] | 0.0817 | 0.09941 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| fresh_v4 | 1.0 | repaired vs control_dup | 32 | +0.04629 | [+0.03613, +0.05670] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | b worse (CI excludes 0 on the positive side) |
+| fresh_v4 | 1.0 | repaired vs original | 32 | +0.03067 | [+0.02227, +0.03906] | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | b worse (CI excludes 0 on the positive side) |
+| fresh_v4 | 1.0 | control_dup vs original | 32 | -0.01561 | [-0.02814, -0.00358] | 0.01205 | 0.0203 | a better (CI excludes 0 on the negative side) |
 
 ### E-S7 search arms on the sealed test split
 
@@ -319,4 +321,23 @@ Inference conventions: `research/core/paired.py` (percentile bootstrap over *uni
 | graphs_n6 | llm-fitness vs mutation-ea | 12 | +0.02053 | [-0.04866, +0.07697] | 0.5324 | 0.5723 | difference not detected (CI includes 0; NOT evidence of no effect) |
 | graphs_n6 | llm-verify vs random | 12 | +0.00568 | [-0.04052, +0.05050] | 0.8028 | 0.8125 | difference not detected (CI includes 0; NOT evidence of no effect) |
 
-_(breaking-target selectivity test not yet run)_
+## Breaking-target selectivity test (protocol Addendum A1)
+
+Family `ring_n6`, target `alpha_1` (the declared group is **not** a label symmetry here). Development risk on each run's own validation split. Declared prediction: if the verifier's benefit came from pushing toward the declared group, it must turn negative on this target.
+
+| arm | runs | mean dev risk | accuracy | nonconstant | repair fired/attempted | hyp. | hyp. pass gate | hyp. = task group |
+|---|---|---|---|---|---|---|---|---|
+| llm-fitness | 12 | 0.04049 | 0.912 | 12/12 | 0/0 | 56 | 0 | 0 |
+| llm-verify | 12 | 0.03699 | 0.916 | 12/12 | 0/0 | 73 | 4 | 0 |
+| llm-verify-repair | 12 | 0.04106 | 0.917 | 12/12 | 0/6 | 71 | 4 | 0 |
+| mutation-ea | 12 | 0.04123 | 0.915 | 12/12 | 0/0 | 79 | 0 | 0 |
+| random | 12 | 0.04122 | 0.912 | 12/12 | 0/0 | 69 | 0 | 0 |
+
+| contrast | n | mean diff | 95% CI | p_shift-boot | p_signflip | p_holm (E) | verdict |
+|---|---|---|---|---|---|---|---|
+| llm-verify vs llm-fitness | 12 | -0.00350 | [-0.00963, +0.00198] | 0.2462 | 0.3594 | 0.7386 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| llm-verify-repair vs llm-verify | 12 | +0.00407 | [-0.00069, +0.00984] | 0.1338 | 0.2207 | 0.6692 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| llm-verify-repair vs llm-fitness | 12 | +0.00058 | [-0.00535, +0.00649] | 0.848 | 0.8613 | 1 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| mutation-ea vs random | 12 | +0.00001 | [-0.00280, +0.00311] | 0.9942 | 0.9844 | 1 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| llm-verify vs random | 12 | -0.00423 | [-0.01027, +0.00135] | 0.1545 | 0.2012 | 0.6692 | difference not detected (CI includes 0; NOT evidence of no effect) |
+

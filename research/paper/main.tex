@@ -8,6 +8,10 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsthm}
+\makeatletter
+\@ifundefined{proposition}{\newtheorem{proposition}{Proposition}}{}%
+\makeatother
 \usepackage{mathtools}
 \usepackage{booktabs}
 \usepackage{microtype}
@@ -168,7 +172,7 @@ quantum advantage of any kind \\
 
 Every entry of \S\ref{sec:related} was checked against a primary record (arXiv API,
 Crossref, PMLR); all eight had at least one material error, and the corrected list is in
-the bibliography with the audit in \texttt{research/paper/REFERENCES_AUDIT.md}. Symmetry
+the bibliography with the audit in \texttt{research/paper/REFERENCES\_AUDIT.md}. Symmetry
 exploitation in variational QML is established work \cite{meyer2023}; equivariant unitary
 layers and channels, with constructive prescriptions, are general and known
 \cite{nguyen2024}; permutation-invariant QML for graph connectedness is directly occupied
@@ -231,7 +235,7 @@ residual measures. Because a residual on the block is not a certificate on the p
 we additionally measure predictor invariance directly, on all group images of every
 evaluation row: with $f$ fitted and $\Tg f$ its Reynolds average over the orbit,
 $\;\mathbb{E}\bigl[(f-\Tg f)^2\bigr]$ is reported per arm
-(\S\ref{sec:repair-results}, Table~\ref{tab:er1}); it is $0$ to roundoff for the repaired
+(\S\ref{sec:repair-results}, Table~\ref{tab:rep2floors}); it is $0$ to roundoff for the repaired
 arm and $O(10^{-2})$ for the asymmetric arms.
 
 \subsection{The projection identity, and the floor, with their measures stated}
@@ -372,6 +376,7 @@ predictor; it is not a statement about retrained architectures, and we do not us
 former as a theorem about the latter.
 
 \section{WP-SEARCH: estimands, endpoints and statistics}
+\label{sec:protocol}
 \label{sec:search}
 
 The frozen record is the $120$-run confirmatory study: five arms
@@ -720,7 +725,7 @@ why we describe the graphs task as shortcut-dominated rather than claiming the s
 
 Every development-selected candidate was refitted deterministically (reproducing its logged
 development risk to $1.7\times10^{-18}$) and scored once on the sealed split, with the file
-digests recorded before and after (\texttt{research/HOLDOUT_ACCESS.json}).
+digests recorded before and after (\texttt{research/HOLDOUT\_ACCESS.json}).
 
 \begin{table}[t]
 \centering
@@ -760,7 +765,56 @@ level of the development numbers is not an artifact of the split --- but no arm 
 graphs survives the move to sealed data, which is the third time this section has reported a
 development effect that does not materialise.
 
-% ER4-PLACEHOLDER
+\subsection{Untouched-input evaluation of the repair arms (E-R4')}
+\label{sec:er4}
+
+The first one-shot attempt at this evaluation was \emph{invalid} and is reported as such:
+the evaluator scored every arm against a single invariant label array per split, so at
+$\eta{>}0$ it answered a different question (the tell was a risk of $0.019$ at $\eta{=}1$
+where the invariant floor is $\approx1$). Protocol Addendum A4 records the defect, keeps the
+two ring splits it had already read consumed, and replaces them with an \textbf{inputs-only}
+holdout (seed 20261204, 4000 rows, zero dihedral-orbit overlap with development or any
+earlier test split, sha256 recorded, read once), evaluated only after a gate that refits
+every WP-REPAIR-2 unit and must reproduce the experiment's own development risk exactly
+(\texttt{216/216} compared, max difference $0.0$).
+
+\begin{table}[t]
+\centering
+\caption{E-R4' on untouched inputs (4 breaking directions $\times$ $8$ optimiser seeds: $8$
+units at $\eta{=}0$, $32$ at $\eta{>}0$), next to the same unit subset on development rows.
+The untouched data reproduce the WP-REPAIR-2 reading: the repaired arm beats the original
+architecture, the gate-count-matched duplicate control is \emph{not} beaten at $\eta{=}0$,
+and enforcing invariance costs $0.046$ of risk at $\eta{=}1$. Magnitudes differ slightly from
+Table~\ref{tab:rep2} because this is a subset of directions and seeds.}
+\label{tab:er4}
+\small
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+& contrast & \multicolumn{2}{c}{development (same units)} & \multicolumn{2}{c}{untouched inputs} \\
+\cmidrule(lr){3-4}\cmidrule(l){5-6}
+$\eta$ & & mean diff & 95\% CI & mean diff & 95\% CI \\
+\midrule
+0.0 & repaired $-$ control\_dup & $-0.00083$ & $[-0.00225,+0.00024]$ & $-0.00057$ & $[-0.00176,+0.00028]$ \\
+0.0 & repaired $-$ original & $\mathbf{-0.00233}$ & $[-0.00417,-0.00057]$ & $\mathbf{-0.00174}$ & $[-0.00309,-0.00051]$ \\
+0.0 & control\_dup $-$ original & $-0.00150$ & $[-0.00351,+0.00024]$ & $-0.00117$ & $[-0.00279,+0.00015]$ \\
+\midrule
+0.5 & repaired $-$ control\_dup & $+0.01757$ & $[+0.01326,+0.02180]$ & $+0.01551$ & $[+0.01106,+0.02011]$ \\
+0.5 & repaired $-$ original & $+0.01265$ & $[+0.00875,+0.01658]$ & $+0.01153$ & $[+0.00804,+0.01501]$ \\
+0.5 & control\_dup $-$ original & $-0.00492$ & $[-0.00955,-0.00033]$ & $-0.00399$ & $[-0.00853,+0.00043]$ \\
+\midrule
+1.0 & repaired $-$ control\_dup & $+0.05138$ & $[+0.04083,+0.06123]$ & $\mathbf{+0.04629}$ & $[+0.03613,+0.05670]$ \\
+1.0 & repaired $-$ original & $+0.03440$ & $[+0.02521,+0.04384]$ & $+0.03067$ & $[+0.02227,+0.03906]$ \\
+1.0 & control\_dup $-$ original & $-0.01697$ & $[-0.02978,-0.00450]$ & $-0.01561$ & $[-0.02814,-0.00358]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The untouched-input result is the cleanest statement this paper can make about repair: on data
+no part of the pipeline touched, enforcing equivariance buys nothing over a gate-matched
+asymmetric control when the target is symmetric, and costs $4.6\%$ of the target variance when
+it is not. The file digests before and after the read are identical
+(\texttt{research/HOLDOUT\_ACCESS\_v4.json}), and the evaluator now refuses to open the two
+splits consumed by the defective run.
 
 \section{Discussion}
 \label{sec:discussion}

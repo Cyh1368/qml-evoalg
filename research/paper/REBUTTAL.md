@@ -108,11 +108,29 @@ is not an independent test set. The revision (a) labels every endpoint
 development split drives all adaptive decisions, and (c) removes every confirmatory use of
 "held-out", "test" and "generalisation" for development numbers.
 
-We then ran the frozen one-shot evaluation (`research/holdout_oneshot.py`, job `32984980`),
-which records sha256 of each sealed file before and after and writes an access log
-(`research/HOLDOUT_ACCESS.json`): E-R4 (repair arms on untouched ring data, both the v1
-sealed split and a **fresh** holdout) and E-S7 (all 120 dev-selected candidates refitted
-deterministically and scored on the sealed split). Results are in §7.4 of the revision.
+We then ran the frozen one-shot evaluation (`research/holdout_oneshot.py`), which records
+sha256 of each sealed file before and after and writes an access log. **The first run had a
+defect we are reporting rather than hiding:** it scored every arm against a single `alpha_0`
+(invariant) label per split, so its `eta > 0` repair numbers answered a different question —
+visible in hindsight because `eta = 1` risks came out at 0.019 where the invariant floor is
+≈1.0. Protocol Addendum A4 records the defect, keeps the two ring splits it read **consumed**
+(they are not re-read; the evaluator now refuses them), and substitutes an **inputs-only**
+holdout (seed 20261204, 4000 rows, zero dihedral-orbit overlap with development or any earlier
+test split, sha256 recorded, mode 0444, read once) evaluated only after a gate that refits
+every WP-REPAIR-2 unit and must reproduce the experiment's own development risk exactly
+(**216/216 compared, max |difference| = 0.0**, job `32989301`; the reported run
+`32991493` passes the same gate inline before opening the file).
+
+* **E-R4' (untouched inputs, job `32991493`)** — the repaired arm beats `original` at η=0
+  (−0.00174, CI [−0.00309, −0.00051]) and is **not** better than the gate-count-matched
+  duplicate control (−0.00057, CI [−0.00176, +0.00028]); at η=1 it is worse than that control
+  by **+0.04629** (CI [+0.03613, +0.05670]). The untouched data reproduce the WP-REPAIR-2
+  reading, including the null against the matched control.
+* **E-S7 (search arms on the sealed test split, unaffected by the defect)** — refits reproduce
+  logged development risk to 1.7×10⁻¹⁸; on the ring the LLM arms beat `random`
+  (−0.00284 to −0.00356, CIs excluding 0), `verify − fitness` is undetected (+0.00072,
+  CI [−0.00039, +0.00186]), and on graphs no arm difference survives (all four CIs include 0).
+
 Access controls are documented as an access contract, not a directory name: `research/search`
 refuses any argument containing "locked" (`LOCKED_FORBIDDEN_IN`), and the one-shot script is
 outside that package by design.
@@ -316,7 +334,7 @@ their assumptions made explicit.
 |---|---|
 | 1. Recompute repair statistics on genuine units; correct the search repair endpoint | **Done.** §1 (units, all differences published) and §2 (E-S1/E-S2 + coverage). The η=0 claim did not survive. |
 | 2. Rewrite causal, generalisation, equivalence and floor claims to match estimands/assumptions | **Done.** Endpoint vocabulary enforced; "iff", "confound-free", "held-out", "clean null", "pinned near the floor" removed; floors separated into population / MC / exact-orbit with per-unit values. |
-| 3. Freeze a corrected protocol and evaluate on untouched data | **Done.** Protocol frozen at `ecd1be72` before submission; one-shot sealed + fresh-holdout evaluation with digests and an access log; a fresh ring holdout was generated after the freeze because our metadata-only access of the v1 split is on the record. |
+| 3. Freeze a corrected protocol and evaluate on untouched data | **Done, with a reported defect.** Protocol frozen at `ecd1be72` before submission; the first one-shot run's `eta>0` repair evaluation was invalid (single `alpha_0` label) and is reported as such in Addendum A4 with the two splits it read left consumed; the corrected, self-check-gated evaluation on an inputs-only holdout reproduces the corrected repair conclusion (E-R4' above), and E-S7 reports the sealed-test search results. |
 | 4. Demonstrate the behavioural contribution with direct measurements and baselines, or reposition | **Done, and the paper was repositioned.** Direct measurements: verifier group-identification failure (10/299, 0/192, 289 false accepts, with the subgroup explanation), reliability endpoints, the tool-vs-LLM contrast, constructive and classical baselines, breaking-target selectivity study. The claim is now that verification's value here is as a precondition for analytic repair, not as a teacher. |
 | 5. Correct all bibliography metadata and provide reproducible provenance | **Done.** All eight entries corrected against primary records; provenance defects in our own earlier records disclosed. |
 

@@ -1,33 +1,45 @@
-"""WP-REPAIR: the decisive causal symmetry-repair experiment (ring_n6 primary).
+"""WP-REPAIR (v1 record): causal symmetry-repair experiment on ``ring_n6``.
 
-Implements the "next decisive test" of ``research/training_review.md`` and
-``extension_plan.md`` WP-REPAIR on the real ``ring_n6`` benchmark (D6 group,
-continuous regression, orbit-disjoint splits). Locked holdouts are never read.
+Superseded by ``repair_experiment2.py`` (WP-REPAIR-2), which fixes the replication
+units and adds the operator-matched and second asymmetric controls; this module is
+kept because it produced the frozen v1 record that the referee's points 1, 5 and 6 are
+about, and because ``analyze_repair.py`` still reads that record.
 
-Design
-------
-* A frozen random-parameter **teacher** ansatz induces, on the dataset inputs,
-  a scalar signal ``f``. Its D6-invariant part is ``h`` (the orbit average of
-  ``f``); the group-centred, variance-normalised breaking part is ``b``
-  (``mean b^2 = 1`` on train). Targets are ``y_eta = h + eta * b``.
-* The **analytic invariant-risk floor** is ``eta^2 * E[b^2]``: no invariant
-  predictor can beat it, and it is verified against the empirical
-  orbit-mean floor.
-* Three matched ansatz arms are trained (Adam, common random numbers: equal
-  parameter count so a seed gives an identical initialisation):
-    - ``original``  : one-direction CRZ layer (asymmetric), 15 CRZ gates.
-    - ``repaired``  : bidirectional shared-angle CRZ (exactly D6-equivariant),
-                      30 CRZ gates.
-    - ``control``   : repeated same-direction CRZ (asymmetric, operator-family-
-                      equivalent to ``original``), 30 CRZ gates.
-  ``repaired`` vs ``control`` share the gate count and differ **only** in
-  symmetry, isolating the symmetry effect from expressivity/gate count.
+What the code actually does (this description previously described an older
+frozen-random-circuit teacher; that design is not what produced the stored record)
+-----------------------------------------------------------------------------
+* ``h`` is the dataset's **ground-truth D6-invariant oracle** ``alpha_0``
+  (``h(x) = mean_i x_i x_{i+1}``), never produced by a compared ansatz.
+* Each ``teacher_seed`` freezes a random direction ``v``; ``b`` is the
+  group-centred remainder of ``v . x``, normalised so ``mean b^2 = 1`` on the
+  training split. Targets are ``y_eta = h + eta * b``.
+* The invariant-risk floor ``eta^2 * E[b^2]`` constrains **invariant predictors
+  only**; asymmetric arms may sit below it by fitting ``eta * b``. Population,
+  representative-Monte-Carlo and exact finite-orbit versions of the floor are
+  separated in ``analyze_repair.py`` (see REVISED_PROTOCOL section on floors).
+* Three arms are trained (Adam, common random numbers so a seed gives an
+  identical initialisation): ``original`` (one-direction CRZ, 15 gates,
+  asymmetric), ``repaired`` (bidirectional shared-angle CRZ, 30 gates, exactly
+  equivariant), ``control`` (repeated same-direction CRZ, 30 gates, asymmetric).
+  ``repaired`` and ``control`` share the gate count but **not** the optimisation
+  geometry or the initial operator: ``control`` equals ``CRZ(2b)`` and its initial
+  operator differs from ``original``'s, so this v1 contrast is *not* a
+  symmetry-only comparison (WP-REPAIR-2 adds ``control_matched`` for that).
 * Selection is on the training split only; development risk is reported per
   (teacher, seed, eta, arm). The locked test split is not touched.
 
-Primary paired contrasts (paired by teacher draw and optimiser seed):
-``repaired - control``, ``repaired - original``, ``control - original`` at each
-``eta``, with run/seed-level bootstrap CIs and fraction of pairs improved.
+Replication units (corrected): at ``eta = 0`` the target does not contain ``b``, so the
+teacher/direction index is a nuisance label and the unit is the optimiser seed --- the
+stored record's 24 rows at ``eta = 0`` are **8** units written three times, and
+``analyze_repair.py`` collapses them before inference.
+
+Primary paired contrasts (paired by unit): ``repaired - control``,
+``repaired - original``, ``control - original`` at each ``eta``, with unit-level
+bootstrap CIs, null-centred bootstrap and sign-flip p-values, and fraction improved.
+
+Legacy helpers ``teacher_predictions`` and ``_base_function`` below implement the earlier
+circuit/random-function teacher idea and are **not** called by ``build_targets``; they are
+retained only for the audit trail.
 """
 import argparse
 import datetime
