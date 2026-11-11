@@ -193,6 +193,12 @@ def main(argv=None):
             before["ring_v3"] = sha256(p3)
             with np.load(p3) as d3:
                 eval_sets["fresh_v3"] = np.asarray(d3["x_test"], float)
+        elif name == "fresh_v4":
+            p4 = os.path.join(_tasks.DATASETS / "locked_holdout_v4", "ring_n6_x.npz")
+            sealed["ring_v4"] = p4
+            before["ring_v4"] = sha256(p4)
+            with np.load(p4) as d4:
+                eval_sets["fresh_v4"] = np.asarray(d4["x_test"], float)
         elif name in ("sealed_v1", "fresh_v2"):
             raise SystemExit("%s was consumed by the defective one-shot run recorded in "
                              "research/PROVENANCE.md; re-reading it would violate the "
@@ -203,33 +209,40 @@ def main(argv=None):
                "workers": a.workers, "n_opt_seeds": int(a.n_opt_seeds),
                "steps": int(a.steps),
                "directions": tuple(int(d) for d in a.directions.split(",")),
-               "eval_sets": eval_sets})
-    repair_rows = eval_repair()
+               "eval_sets": {}})
 
+    # ---- self-check FIRST: no sealed array may be opened until it passes ----
     selfcheck = None
     if a.selfcheck:
+        _W["eval_sets"] = {"dev": x_dev}
+        check_rows = eval_repair()
         with open(a.selfcheck) as fh:
             ref = json.load(fh)
         want_keys = {(r["arm"], r["eta"], r.get("direction_seed"), r["opt_seed"]):
                      r["dev_risk"] for r in ref["rows"] if int(r["steps"]) == int(a.steps)}
         diffs, missing = [], 0
-        for r in repair_rows:
+        for r in check_rows:
             k = (r["arm"], r["eta"], r["direction_seed"], r["opt_seed"])
             if k in want_keys and "risk_dev" in r:
                 diffs.append(abs(r["risk_dev"] - want_keys[k]))
             else:
                 missing += 1
+        worst = max(diffs) if diffs else float("nan")
         selfcheck = {"reference": a.selfcheck, "compared": len(diffs),
-                     "not_in_reference": missing,
-                     "max_abs_dev_risk_diff": float(max(diffs)) if diffs else None,
-                     "tolerance": 1e-9, "pass": bool(diffs and max(diffs) < 1e-9)}
+                     "not_in_reference": missing, "max_abs_dev_risk_diff": worst,
+                     "tolerance": 1e-9, "pass": bool(diffs and worst < 1e-9)}
         print("SELFCHECK vs %s: %d compared, max |dev diff| = %.3e -> %s"
-              % (a.selfcheck, len(diffs),
-                 max(diffs) if diffs else float("nan"), "PASS" if selfcheck["pass"]
-                 else "FAIL"), flush=True)
+              % (a.selfcheck, len(diffs), worst,
+                 "PASS" if selfcheck["pass"] else "FAIL"), flush=True)
         if not selfcheck["pass"]:
-            raise SystemExit("self-check failed: the holdout evaluator does not "
-                             "reproduce the experiment's own dev risk")
+            with open(a.out, "w") as fh:
+                json.dump({"selfcheck": selfcheck, "aborted": True, "metadata": _meta()},
+                          fh, indent=1, default=str)
+            raise SystemExit("self-check failed or had nothing to compare; no sealed "
+                             "array was opened")
+
+    _W["eval_sets"] = eval_sets
+    repair_rows = eval_repair()
 
     # ---- E-S7 (search) ----
     import glob

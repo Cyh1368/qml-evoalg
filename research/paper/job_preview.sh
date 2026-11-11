@@ -13,7 +13,7 @@
 set -euo pipefail
 module reset
 module load texlive/20240312-GCC-13.3.0
-cd "${REPO:-$SLURM_SUBMIT_DIR}/.."
+cd "${REPO:-$SLURM_SUBMIT_DIR}"
 SRC=research/paper/main.tex
 BUILD=build/preview
 mkdir -p "$BUILD"

@@ -645,6 +645,56 @@ improves, because averaging over a subgroup of the true symmetry still removes v
 Establishing identification would need a different instrument (counterexample search over
 the group, or a symmetry-breaking probe distribution), which we did not build.
 
+\subsection{Does the verifier's effect track the target's symmetry? (Addendum A1)}
+\label{sec:breaking}
+
+The selectivity test was declared in the protocol before it was run: all five arms on
+\texttt{ring\_n6} with target \texttt{alpha\_1} (the declared group is \emph{not} a label
+symmetry of this target), $12$ fresh paired seeds, its own Holm family, and the prediction
+stated in advance --- if the verifier's benefit came from pushing the search toward the
+declared group, it must turn negative when that group is wrong.
+
+\begin{table}[t]
+\centering
+\caption{Breaking-target selectivity test (development risk on each run's own validation
+split; refits reproduce logged risks to $\le7\times10^{-18}$). The gate's \emph{accept} rate
+tracks label preservation ($8$ of $348$ hypotheses pass here, against $299$ of $299$ on the
+invariant graphs target), so the filter works; identification still fails ($0$ of $348$
+carry $D_6$); repair never fires; and no arm ordering is detectable.}
+\label{tab:breaking}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+arm & dev risk & accuracy & hyp. & pass gate & $=$ task group & repair fired \\
+\midrule
+random            & 0.04122 & 0.9122 & 69 & 0 & 0 & --- \\
+mutation-ea       & 0.04123 & 0.9153 & 79 & 0 & 0 & --- \\
+llm-fitness       & 0.04049 & 0.9118 & 56 & 0 & 0 & --- \\
+llm-verify        & 0.03699 & 0.9163 & 73 & 4 & 0 & --- \\
+llm-verify-repair & 0.04106 & 0.9170 & 71 & 4 & 0 & 0 of 6 \\
+\midrule
+\multicolumn{7}{@{}l@{}}{\emph{paired contrasts (family E, Holm-adjusted)}} \\
+\multicolumn{7}{@{}l@{}}{verify $-$ fitness $-0.00350$ $[-0.00963,+0.00198]$, $p_{\text{Holm}}{=}0.74$} \\
+\multicolumn{7}{@{}l@{}}{verify-repair $-$ verify $+0.00407$ $[-0.00069,+0.00984]$, $p_{\text{Holm}}{=}0.67$} \\
+\multicolumn{7}{@{}l@{}}{verify-repair $-$ fitness $+0.00058$ $[-0.00535,+0.00649]$, $p_{\text{Holm}}{=}1.00$} \\
+\multicolumn{7}{@{}l@{}}{verify $-$ random $-0.00423$ $[-0.01027,+0.00135]$, $p_{\text{Holm}}{=}0.67$} \\
+\multicolumn{7}{@{}l@{}}{mutation-ea $-$ random $+0.00001$ $[-0.00280,+0.00311]$, $p_{\text{Holm}}{=}1.00$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three things follow. The verifier's \emph{filter} is selective: it accepts $100\%$ of
+hypotheses when the target is invariant and $2.3\%$ when it is not, which is the behaviour
+its definition promises. The verifier's \emph{identification} is not improved: no proposal
+carries the task's group, and the repair step never fires. And the verifier's \emph{effect on
+search} is undetectable in either direction (largest absolute mean difference $0.0042$, all
+Holm $p\ge0.67$), so the pre-declared prediction is not testable at this resolution: with the
+symmetry removed, verification neither measurably helped nor measurably hurt. That is
+consistent with the primary null --- the feedback channel rarely changes the selected
+candidate --- and inconsistent with any large ``verification helps'' story. For reference,
+moving from the invariant to the breaking target costs every arm $\approx0.031$ of risk
+($0.0065$--$0.0102$ to $0.037$--$0.041$), and no arm detects the difference.
+
 \subsection{Baselines the LLM story has to beat}
 \label{sec:baselines}
 
@@ -873,7 +923,14 @@ python3 -m research.search.analyze2 --dir logs/runs_confirm \
   --out research/search/confirm_analysis2.json --label confirmatory
 python3 -m research.search.dev_analysis --dir logs/runs_confirm \
   --out research/search/dev_analysis.json --workers 24
-python3 -m research.holdout_oneshot --workers 16   # ONE shot; writes HOLDOUT_*
+python3 -m research.search.analyze_breaking --dir logs/runs_breaking \
+  --out research/search/breaking_target.json
+python3 -m research.holdout_oneshot --splits dev --skip-search \
+  --selfcheck research/experiments/repair/repair2_results.json   # gate, no sealed read
+python3 -m research.holdout_oneshot --splits fresh_v3 --skip-search \
+  --selfcheck research/experiments/repair/repair2_results.json \
+  --out research/HOLDOUT_RESULTS_v3.json \
+  --access-log research/HOLDOUT_ACCESS_v3.json   # ONE shot on v3 only
 python3 -m research.compile_results2 --out research/results_summary2.md
 \end{verbatim}
 Stack: \texttt{Python/3.12.3}, \texttt{SciPy-bundle/2024.05} (NumPy 1.26.4, SciPy 1.13.1);

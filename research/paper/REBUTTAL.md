@@ -225,9 +225,15 @@ show). New evidence added:
   label-preservation gate**; on ring, 192 carried a hypothesis, **0** carried D6, 7 passed.
   We now explain why this is inevitable — every subgroup of a label symmetry passes — and
   reclassify the gate as a soundness filter rather than an identification test.
-* **Symmetry-breaking task (protocol Addendum A1, declared before running):** all five arms on
-  `ring_n6` with target `alpha_1`, where the declared group is *not* a label symmetry, 12
-  fresh paired seeds, its own Holm family, with the prediction stated in advance.
+* **Symmetry-breaking task (protocol Addendum A1, declared before running, now complete):**
+  all five arms on `ring_n6` with target `alpha_1`, where the declared group is *not* a label
+  symmetry, 12 fresh paired seeds, own Holm family. Result: the gate's *accept* rate tracks
+  label preservation — **8 of 348** hypotheses pass here versus **299 of 299** on the invariant
+  graphs target — so the filter is selective; identification still fails (**0 of 348** carry
+  D6); repair fires **0 of 6** attempts; and every arm contrast is undetected (largest |mean|
+  0.0042, all Holm p ≥ 0.67), so the pre-declared prediction ("verification must hurt when the
+  group is wrong") is *not testable at this resolution* rather than confirmed. We report it
+  that way. Moving from the invariant to the breaking target costs every arm ≈0.031 of risk.
 * **Density shortcut:** we no longer assert causation. We report the stratified risks
   (E-S5: the five arms' mean risk is 1.439 in band 0–5 vs 0.167 in band 8–9) and the
 classical rule's band profile (1.13 / 0.13 / 0.00 / 0.05 over the four populated bands), and describe the task as shortcut-dominated; the intervention that would license a causal
