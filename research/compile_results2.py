@@ -48,6 +48,10 @@ def pstr(entry):
     return ("%.4g" % p) + (" (floor %s)" % rep if rep else "")
 
 
+def pfloat(p):
+    return "n/a" if p is None else "%.4g" % p
+
+
 def repair_section(path, title, out):
     d = load(path)
     if d is None:
@@ -297,6 +301,38 @@ def holdout_section(out_path, access_path, out):
     out.append("")
 
 
+def breaking_section(path, out):
+    d = load(path)
+    if d is None:
+        out.append("_(breaking-target selectivity test not yet run)_")
+        return
+    out.append("## Breaking-target selectivity test (protocol Addendum A1)\n")
+    out.append("Family `%s`, target `%s` (the declared group is **not** a label symmetry "
+               "here). Development risk on each run's own validation split. Declared "
+               "prediction: if the verifier's benefit came from pushing toward the "
+               "declared group, it must turn negative on this target.\n"
+               % (d["family"], d["target"]))
+    out.append("| arm | runs | mean dev risk | accuracy | nonconstant | repair fired/attempted | hyp. | hyp. pass gate | hyp. = task group |")
+    out.append("|---|---|---|---|---|---|---|---|---|")
+    for arm, v in d["arms"].items():
+        out.append("| %s | %d | %.5f | %.3f | %d/%d | %d/%d | %d | %d | %d |"
+                   % (arm, v["n"], v["dev_risk_mean"], v["accuracy_mean"],
+                      v["n_nonconstant"], v["n"], v["n_repair_fired"],
+                      v["n_repair_attempted"], v["proposals_with_hypothesis"],
+                      v["hypotheses_passing_label_gate"],
+                      v["hypotheses_equal_to_task_group"]))
+    out.append("")
+    out.append("| contrast | n | mean diff | 95% CI | p_shift-boot | p_signflip | p_holm (E) | verdict |")
+    out.append("|---|---|---|---|---|---|---|---|")
+    for c in d["contrasts"]:
+        out.append("| %s vs %s | %d | %s | %s | %s | %s | %s | %s |"
+                   % (c["a"], c["b"], c["n_pairs"], fmt(c["mean_diff_a_minus_b"]),
+                      ci(c["bootstrap"]), pstr(c["p_shifted_bootstrap"]),
+                      pstr(c["p_signflip"]), pfloat(c["holm_p_within_family_E"]),
+                      c["verdict"]))
+    out.append("")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("--out", default="research/results_summary2.md")
@@ -316,6 +352,7 @@ def main(argv=None):
     search_section("research/search/confirm_analysis2.json", out)
     dev_section("research/search/dev_analysis.json", out)
     holdout_section("research/HOLDOUT_RESULTS.json", "research/HOLDOUT_ACCESS.json", out)
+    breaking_section("research/search/breaking_target.json", out)
     with open(a.out, "w") as fh:
         fh.write("\n".join(out) + "\n")
     print("wrote %s (%d lines)" % (a.out, len(out)))
