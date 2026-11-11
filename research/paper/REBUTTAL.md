@@ -308,11 +308,20 @@ with reproducible commands: `research/paper/REFERENCES_AUDIT.md`. Highlights:
 * **Artefacts.** Raw paired run records, dataset manifests and seeds, all result JSONs, the
   frozen protocol, the bibliography audit, the one-shot access log and one exact command per
   table ship with the paper (appendix).
-* **The Qwen material.** The legacy single-run reports under `experiments/transfer-sn/` are the
-  audited prior study's exploratory material; they are excluded from every claim in this
-  manuscript, and the revision says so. The stale docstring in the repair module is fixed: the
-  active implementation uses the invariant oracle plus a frozen linear breaking direction, and
-  the module now says exactly that.
+* **The Qwen material.** The legacy reports under `experiments/transfer-sn/` are the audited
+  prior study's exploratory material — by its own account a single incomplete run with
+  context-length failures, non-random missing generations, and a historical score that used
+  train–test information. It is excluded from every claim in this manuscript: no model ranking,
+  no generalisation statement and no effect size anywhere in the paper or this response depends
+  on it, and the revision says so explicitly. The 120-run prospective study is reported
+  separately and never merged with it.
+* **Stale documentation.** The repair module's opening description did describe
+  ansatz-generated teachers while the code uses the dataset's invariant oracle plus a frozen
+  linear breaking direction. `research/experiments/repair/repair_experiment.py` now documents
+  what the code does (invariant oracle `alpha_0`; frozen direction `v`; `b` = group-centred,
+  train-normalised remainder), states the corrected replication units, drops the withdrawn
+  "differ only in symmetry" wording, and names the two unused legacy helpers
+  (`teacher_predictions`, `_base_function`) as retained for the audit trail only.
 
 ## Presentation and scope — **accepted**
 
