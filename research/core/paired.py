@@ -166,14 +166,82 @@ def equivalence(ci_low, ci_high, margin):
             else "detected difference"}
 
 
-def verdict(ci_low, ci_high, margin=None):
-    """The only three verdicts the protocol allows, with sanctioned wording."""
+def verdict(ci_low, ci_high, margin=None, p_adjusted=None, alpha=0.05,
+            lower_is_better=True):
+    """Protocol verdicts with the metric direction and the adjusted test attached.
+
+    The contrast is always ``a - b``.  For a *lower-is-better* metric (risk) a wholly
+    positive interval means **a is worse**; the earlier wording said "b worse", which
+    reversed the reading of every positive repair contrast (REVIEW_ROUND2 6).
+
+    A raw-CI direction is not a protocol verdict when a multiplicity-adjusted p-value is
+    supplied and does not clear ``alpha``: that case is reported as a downgraded verdict so
+    a generated table cannot print a discovery the adjusted test does not support.
+    """
     if ci_low is None:
         return "no data"
-    if ci_low > 0:
-        return "b worse (CI excludes 0 on the positive side)"
-    if ci_high < 0:
-        return "a better (CI excludes 0 on the negative side)"
-    if margin is not None and ci_low > -margin and ci_high < margin:
+    inside_margin = (margin is not None and ci_low > -margin and ci_high < margin)
+    if inside_margin:
+        # Equivalence is supported by the CI sitting inside the prespecified margin; a
+        # significant difference test is not required for it and would be contradictory.
         return "practically equivalent within +/-%.5g" % margin
+    if ci_low > 0 or ci_high < 0:
+        if p_adjusted is not None and p_adjusted > alpha:
+            return ("difference not detected after multiplicity adjustment "
+                    "(adjusted p > %.2g; raw CI excludes 0 but is not a protocol verdict)"
+                    % alpha)
+        if ci_low > 0:
+            return "%s worse (raw CI excludes 0 on the positive side)" % (
+                "a" if lower_is_better else "b")
+        return "%s better (raw CI excludes 0 on the negative side)" % (
+            "a" if lower_is_better else "b")
     return "difference not detected (CI includes 0; NOT evidence of no effect)"
+
+
+def crossed_bootstrap_ci(cell_matrix, n_boot=20000, seed=0):
+    """Estimand E-C: resample seeds outside *and* directions inside.
+
+    ``cell_matrix`` is ``(n_seeds, n_directions)``.  Both replication sources are treated as
+    random, which is the only interval that exposes the joint dependence; it is wider by
+    construction and is reported as sensitivity, never as the headline (Addendum A5.1).
+    """
+    m = np.atleast_2d(np.asarray(cell_matrix, float))
+    n_seed, n_dir = m.shape
+    rng = np.random.default_rng(int(seed))
+    means = np.empty(int(n_boot))
+    for i in range(int(n_boot)):
+        rows = rng.integers(0, n_seed, n_seed)
+        cols = rng.integers(0, n_dir, n_dir)
+        means[i] = m[np.ix_(rows, cols)].mean()
+    return {"n_seeds": int(n_seed), "n_directions": int(n_dir),
+            "mean": float(m.mean()),
+            "ci95_low": float(np.percentile(means, 2.5)),
+            "ci95_high": float(np.percentile(means, 97.5)),
+            "estimand": "E-C: generalise over directions and optimiser seeds jointly",
+            "caveat": "conditions on one dataset and one task family"}
+
+
+def seed_vector_bootstrap_ci(cell_matrix, n_boot=20000, seed=0):
+    """Estimand E-A: average directions within each seed, then resample seed vectors.
+
+    Correct when the direction set is fixed (it is: the 8 frozen breaking directions) and the
+    claim is about optimiser randomness.  Units are seeds, not cells.
+    """
+    m = np.atleast_2d(np.asarray(cell_matrix, float))
+    v = m.mean(axis=1)
+    return bootstrap_ci(v, n_boot=n_boot, seed=seed) | {
+        "estimand": "E-A: fixed direction set, generalise over optimiser seeds",
+        "n_units": int(v.size)}
+
+
+def wilson_ci(k, n, z=1.959963984540054):
+    """Wilson 95% interval for a rate with an explicit denominator."""
+    n = int(n)
+    if n == 0:
+        return {"k": int(k), "n": 0, "rate": None, "ci95_low": None, "ci95_high": None}
+    p = float(k) / n
+    d = 1.0 + z * z / n
+    c = p + z * z / (2 * n)
+    h = z * ((p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5)
+    return {"k": int(k), "n": n, "rate": p,
+            "ci95_low": float((c - h) / d), "ci95_high": float((c + h) / d)}

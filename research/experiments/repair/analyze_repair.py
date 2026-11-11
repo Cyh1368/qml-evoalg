@@ -93,7 +93,67 @@ def contrast(rows, a, b, eta, steps=None, field="dev_risk"):
                                    "frac_a_better": float(np.mean([x < 0 for x in v]))}
                                for k, v in sorted(per.items())}
         out["cluster_bootstrap"] = _P.cluster_bootstrap_ci(per)
+        out.update(_estimand_layers(pairs))
+    else:
+        out["primary_estimand"] = "E-0: optimiser seeds, direction-free target"
+        out["primary"] = {"n_units": out["n_units"],
+                          "mean_diff_a_minus_b": out["mean_diff_a_minus_b"],
+                          "bootstrap": out["bootstrap"],
+                          "p_shifted_bootstrap": out["p_shifted_bootstrap"],
+                          "p_signflip": out["p_signflip"],
+                          "estimand": out["primary_estimand"]}
     return c_add_holm_placeholder(out)
+
+
+def _estimand_layers(pairs, n_boot=20000, seed=0):
+    """Addendum A5.1: four estimands for the crossed eta>0 design.
+
+    The cell-level interval (E-D) resamples 192 quantities that reuse both directions and
+    optimiser seeds, so it is kept only for traceability.  E-A is the headline: the 8
+    breaking directions are a *fixed* design set, so a claim about optimiser randomness
+    averages directions within a seed and resamples the seed vectors.
+    """
+    seeds = sorted({k[1] for k, _ in pairs}, key=str)
+    dirs = sorted({k[0] for k, _ in pairs}, key=str)
+    cell = {(k[1], k[0]): d for k, d in pairs}
+    full = [s for s in seeds if all((s, g) in cell for g in dirs)]
+    if len(dirs) < 2 or len(full) < 2:
+        return {}
+    M = np.array([[cell[(s, g)] for g in dirs] for s in full])
+    sv = M.mean(axis=1)
+    dv = M.mean(axis=0)
+    ea = _P.seed_vector_bootstrap_ci(M, n_boot=n_boot, seed=seed)
+    ea["p_shifted_bootstrap"] = _P.shifted_bootstrap_p(sv, n_boot=n_boot, seed=seed)
+    ea["p_signflip"] = _P.signflip_p(sv, n_boot=n_boot, seed=seed)
+    eb = _P.cluster_bootstrap_ci({g: M[:, i].tolist() for i, g in enumerate(dirs)},
+                                 n_boot=n_boot, seed=seed)
+    eb["p_shifted_bootstrap"] = _P.shifted_bootstrap_p(dv, n_boot=n_boot, seed=seed)
+    eb["p_signflip"] = _P.signflip_p(dv, n_boot=n_boot, seed=seed)
+    ec = _P.crossed_bootstrap_ci(M, n_boot=n_boot, seed=seed)
+    return {
+        "primary_estimand": "E-A",
+        "estimand_EA_seed_vector": ea,
+        "estimand_EB_direction_cluster": eb,
+        "estimand_EC_crossed": ec,
+        "estimand_ED_legacy_cell": {
+            "mean_diff_a_minus_b": out_mean(pairs), "bootstrap": None,
+            "note": "cell-level resampling of (direction, seed) cells; retained for "
+                    "traceability only, not a protocol headline"},
+        "estimand_matrix": {"n_seeds": int(M.shape[0]), "n_directions": int(M.shape[1]),
+                            "incomplete_seeds_dropped": len(seeds) - len(full)},
+        "conditioning_caveat": "all four intervals condition on one dataset and one task "
+                               "family; none quantifies newly sampled datasets or families",
+        "primary": {"n_units": int(M.shape[0]),
+                    "mean_diff_a_minus_b": float(np.mean(sv)),
+                    "bootstrap": {k: ea[k] for k in ("mean", "ci95_low", "ci95_high")},
+                    "p_shifted_bootstrap": ea["p_shifted_bootstrap"],
+                    "p_signflip": ea["p_signflip"],
+                    "estimand": "E-A"},
+    }
+
+
+def out_mean(pairs):
+    return float(np.mean([d for _, d in pairs]))
 
 
 def c_add_holm_placeholder(c):
@@ -188,13 +248,20 @@ def analyze(path, margin_fraction=0.05):
         for (a, b) in pairs:
             c = contrast(rows, a, b, eta, steps=main_steps)
             if c["n_units"]:
-                c["equivalence"] = _P.equivalence(c["bootstrap"]["ci95_low"],
-                                                  c["bootstrap"]["ci95_high"],
+                prim = c["primary"]["bootstrap"]
+                c["equivalence"] = _P.equivalence(prim["ci95_low"], prim["ci95_high"],
                                                   margin_fraction * base_var * (1 + eta ** 2))
                 cs.append(c)
-        adj = _P.holm([c["p_shifted_bootstrap"]["p"] for c in cs])
+        adj = _P.holm([c["primary"]["p_shifted_bootstrap"]["p"] for c in cs])
         for c, a_ in zip(cs, adj):
             c["p_holm_within_eta"] = float(a_)
+            # Addendum A5.6: the printed verdict follows the primary estimand and the
+            # multiplicity-adjusted test, never the legacy cell-level interval.
+            c["verdict"] = _P.verdict(c["primary"]["bootstrap"]["ci95_low"],
+                                      c["primary"]["bootstrap"]["ci95_high"],
+                                      p_adjusted=float(a_))
+            c["verdict_legacy_cell_ci"] = _P.verdict(c["bootstrap"]["ci95_low"],
+                                                     c["bootstrap"]["ci95_high"])
         result["contrasts"].extend(cs)
         result["floor_accounting"][str(eta)] = floor_accounting(rows, eta, main_steps)
         result["er1_function_space"][str(eta)] = er1_function_space(rows, eta, main_steps)
@@ -230,12 +297,14 @@ def main(argv=None):
             json.dump(res, fh, indent=1, default=str)
     print("units per eta:", res["unit_counts"])
     for c in res["contrasts"]:
-        b = c["bootstrap"]
-        print("eta=%.1f steps=%s %-14s vs %-14s rows=%d units=%d mean=%+.5f "
-              "CI=[%+.5f,%+.5f] p_boot=%.4f p_flip=%.4f p_holm=%.3f %s"
-              % (c["eta"], c["steps"], c["a"], c["b"], c["n_rows"], c["n_units"],
+        b = c["primary"]["bootstrap"]
+        print("eta=%.1f steps=%s %-14s vs %-14s rows=%d units=%d[%s] mean=%+.5f "
+              "CI=[%+.5f,%+.5f] p_boot=%.4g p_flip=%.4g p_holm=%.4g %s"
+              % (c["eta"], c["steps"], c["a"], c["b"], c["n_rows"],
+                 c["primary"]["n_units"], c.get("primary_estimand", "?"),
                  b["mean"], b["ci95_low"], b["ci95_high"],
-                 c["p_shifted_bootstrap"]["p"], c["p_signflip"]["p"],
+                 c["primary"]["p_shifted_bootstrap"]["p"],
+                 c["primary"]["p_signflip"]["p"],
                  c["p_holm_within_eta"], c["verdict"]))
     print("\n--- floor accounting (exact finite-orbit floor and excess) ---")
     for eta, rows in res["floor_accounting"].items():
@@ -258,9 +327,10 @@ def main(argv=None):
     for eta, rows in res["er1_function_space"].items():
         for e in rows:
             print("eta=%s %-15s R(f)-R(Pf)=%+.6f  E[(f-Pf)^2]=%.6f cross=%+.6f "
-                  "identity gap=%.1e" % (eta, e["arm"], e["mean_risk_minus_proj"],
-                                         e["mean_asymmetry"], e["mean_cross_term"],
-                                         e["identity_gap_max"]))
+                  "no-cross-term gap=%.1e  full A3 gap=%.1e"
+                  % (eta, e["arm"], e["mean_risk_minus_proj"],
+                     e["mean_asymmetry"], e["mean_cross_term"],
+                     e["identity_gap_max"], e.get("full_identity_gap_max", float("nan"))))
     return 0
 
 
