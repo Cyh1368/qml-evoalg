@@ -313,7 +313,9 @@ def main(argv=None):
             continue
         by_key = {}
         for r in runs:
-            ds_name = os.path.basename(r["path"]).split("__")[0]
+            # run files are named run_<arm>_<dataset>_..._seed<N>.json; the dataset token
+            # equals the family here, so key on (dataset-or-family, seed)
+            ds_name = r.get("dataset") or r["family"]
             by_key.setdefault((ds_name, r["seed"]), {})[r["arm"]] = r.get("bands", {})
         for a_arm, b_arm in (("llm-verify", "llm-fitness"),
                              ("llm-verify-repair", "llm-verify")):
