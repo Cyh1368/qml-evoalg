@@ -303,6 +303,37 @@ def main(argv=None):
             c["verdict"] = _P.verdict(c["bootstrap"]["ci95_low"],
                                       c["bootstrap"]["ci95_high"])
             tw.append(c)
+    # E-S5c (protocol Addendum A2): density-MATCHED arm comparisons.  All arms share
+    # seeds and therefore datasets, so a paired arm contrast restricted to the rows of
+    # one edge-count band is density-matched by construction.
+    band_contrasts = []
+    band_keys = ["%d-%d" % b for b in BANDS]
+    for fam in families:
+        if not fam.startswith("graphs"):
+            continue
+        by_key = {}
+        for r in runs:
+            ds_name = os.path.basename(r["path"]).split("__")[0]
+            by_key.setdefault((ds_name, r["seed"]), {})[r["arm"]] = r.get("bands", {})
+        for a_arm, b_arm in (("llm-verify", "llm-fitness"),
+                             ("llm-verify-repair", "llm-verify")):
+            for bk in band_keys:
+                diffs = []
+                for _k, per_arm in by_key.items():
+                    A, B = per_arm.get(a_arm, {}), per_arm.get(b_arm, {})
+                    if bk in A and bk in B and A[bk]["n"] == B[bk]["n"]:
+                        diffs.append(A[bk]["risk"] - B[bk]["risk"])
+                if not diffs:
+                    continue
+                c = {"family": fam, "band_edges": bk, "a": a_arm, "b": b_arm,
+                     "n_pairs": len(diffs), "diffs": diffs,
+                     "mean_diff_a_minus_b": float(np.mean(diffs))}
+                c["bootstrap"] = _P.bootstrap_ci(diffs)
+                c["p_shifted_bootstrap"] = _P.shifted_bootstrap_p(diffs)
+                c["verdict"] = _P.verdict(c["bootstrap"]["ci95_low"],
+                                          c["bootstrap"]["ci95_high"])
+                band_contrasts.append(c)
+
     result = {"directory": a.dir, "scope": "development only; locked splits never read",
               "n_runs": len(runs), "families": families,
               "refit_reproduction": {
@@ -313,7 +344,8 @@ def main(argv=None):
               "mc_twirl": {"elements": MC_TWIRL_ELEMENTS, "rows": DEV_ROWS_MC,
                            "note": "exact when the declared group order <= %d"
                                    % MC_TWIRL_ELEMENTS},
-              "runs": runs, "twirl_summary": tw, "baselines": baselines}
+              "runs": runs, "twirl_summary": tw, "baselines": baselines,
+              "E-S5c_density_matched_arm_contrasts": band_contrasts}
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     with open(a.out, "w") as fh:
         json.dump(result, fh, indent=1, default=str)

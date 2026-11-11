@@ -61,6 +61,37 @@ class Repair2Tests(unittest.TestCase):
             self.assertLess(d_match, 1e-12)
             self.assertGreater(d_dup, 1e-3)
 
+    def test_repaired_pair_analytic_factorisation(self):
+        """Analytic equivariance proof, checked numerically (appendix identity).
+
+        ``CRZ_ij(b) CRZ_ji(b) = exp(-i b (Z_i+Z_j)/4) exp(i b Z_i Z_j / 2)``: a
+        permutation-symmetric single-qubit field times a manifestly symmetric ZZ
+        term, hence equivariant for *every* permutation, not merely D6. Dually
+        ``CRZ_ij(b)^2 = CRZ_ij(2b) = exp(-i b Z_j/2) exp(i b Z_i Z_j/2)`` hits only
+        the target wire, which is exactly why the gate-count-matched control is not
+        equivariant.
+        """
+        from research.core import simulator as _sim
+        b = 0.77
+        zi = np.array([1.0, 1.0, -1.0, -1.0])      # Z on wire 0 (q0 = MSB)
+        zj = np.array([1.0, -1.0, 1.0, -1.0])      # Z on wire 1
+        diag = lambda v: np.diag(v.astype(complex))
+        rep = _sim.unitary([{"gate": "CRZ", "wires": [0, 1], "param": "b"},
+                            {"gate": "CRZ", "wires": [1, 0], "param": "b"}],
+                           {"b": b}, 2)
+        analytic = diag(np.exp(-1j * b / 4.0 * (zi + zj))) @ \
+            diag(np.exp(1j * b / 2.0 * (zi * zj)))
+        self.assertTrue(np.allclose(rep, analytic, atol=1e-13))
+        dup = _sim.unitary([{"gate": "CRZ", "wires": [0, 1], "param": "b"},
+                            {"gate": "CRZ", "wires": [0, 1], "param": "b"}],
+                           {"b": b}, 2)
+        dup_analytic = diag(np.exp(-1j * b / 2.0 * zj)) @ \
+            diag(np.exp(1j * b / 2.0 * (zi * zj)))
+        self.assertTrue(np.allclose(dup, dup_analytic, atol=1e-13))
+        swap = np.eye(4, dtype=complex)[np.ix_([0, 1, 2, 3], [0, 2, 1, 3])]
+        self.assertTrue(np.allclose(rep @ swap, swap @ rep, atol=1e-13))
+        self.assertFalse(np.allclose(dup @ swap, swap @ dup, atol=1e-6))
+
     def test_projection_identity_at_eta_zero(self):
         tf = _r2.TargetFn(self.task, None, 0.0, self.closure)
         dev = np.asarray(self.task.x)[np.asarray(self.task.splits["validation"], bool)]

@@ -35,6 +35,14 @@ for arm in random mutation-ea; do
   done
 done
 wc -l "$OUT/jobs.txt"
-xargs -a "$OUT/jobs.txt" -d '\n' -r -P "${WORKERS:-36}" -I{} \
-  python3 -m research.search.harness run {}
-echo "runs written to $OUT: $(ls "$OUT"/run_*.json 2>/dev/null | wc -l)"
+WORKERS="${WORKERS:-$SLURM_CPUS_PER_TASK}"
+# NOTE: `xargs -I{}` substitutes the whole line as ONE argv element, so the flags must be
+# re-split by a shell: substitute into a command string instead of using {} directly.
+xargs -a "$OUT/jobs.txt" -d '\n' -r -P "$WORKERS" -I ARGS \
+  sh -c 'python3 -m research.search.harness run ARGS' >> "$OUT/xargs.err" 2>&1 || true
+echo "runs written to $OUT: $(ls "$OUT"/run_*.json 2>/dev/null | wc -l) of $(wc -l < "$OUT/jobs.txt")"
+if [ "$(ls "$OUT"/run_*.json 2>/dev/null | wc -l)" -ne "$(wc -l < "$OUT/jobs.txt")" ]; then
+  echo "ERROR: missing runs; tail of xargs stderr:" >&2
+  tail -20 "$OUT/xargs.err" >&2 || true
+  exit 1
+fi

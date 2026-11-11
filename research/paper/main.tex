@@ -17,9 +17,11 @@
 
 \newcommand{\Tg}{\mathcal{T}_G}
 \newcommand{\Dc}{D_{\mathrm{chan}}}
-\newcommand{\netid}{\texttt{ycrc-local}}
+\newcommand{\dev}{\mathrm{dev}}
+\newcommand{\MODEL}{\textit{Qwen3.8-Flash-Next}}
 
-\title{Verified Symmetry Hypotheses and Causal Repair in\\ LLM-Guided Quantum Circuit Search}
+\title{Executable Verification and Analytic Repair in LLM-Guided Quantum Circuit
+Search:\\ What a Controlled Benchmark Does, and Does Not, Show}
 
 \author{Anonymous Authors\\
 Anonymous Institution\\
@@ -29,94 +31,162 @@ Anonymous Institution\\
 \maketitle
 
 \begin{abstract}
-We study how large language models (LLMs) turn \emph{symmetry hypotheses} into
-\emph{executable} quantum models, and whether an executable verifier and an
-analytic repair step \emph{causally} improve that process under matched
-evaluation budgets. The mathematical tools we use---group twirls, channel and
-predictor equivariance residuals, and an orthogonal-projection risk
-identity---are established; our object of study is behavioural: the gap between
-a model \emph{proposing} a correct transformation, \emph{implementing} it
-correctly, and \emph{obtaining useful task performance}. We make three
-contributions. First, we audit a prior LLM-evolutionary quantum-ML study and
-show that its model selection leaked test data, that a central architecture-wide
-equivariance claim is false (measured channel defect $0.0597$), and that its
-significance was computed at the proposal rather than run level. Second, we
-introduce a confound-free causal-repair experiment with an analytically known
-invariant-risk floor and a \emph{gate-count-matched} asymmetric control; on a
-ring benchmark we show, with $24$ paired draws and bootstrap confidence
-intervals, that enforcing equivariance \emph{causally improves} held-out risk
-exactly when the target is symmetric and \emph{causally hurts} when it is not,
-with the effect attributable to symmetry rather than capacity. Third, a
-matched-budget, single-model, five-arm search comparison ($120$ runs, $12$
-paired seeds) yields a clean \emph{null} on the headline hypothesis that verifier
-feedback improves held-out risk, while showing that LLM search beats non-LLM
-baselines only when the task is not dominated by a trivial shortcut. We report
-negative and null results as first-class findings and scope every claim to the
-paired evidence.
+We ask what an executable verifier and an analytic repair step actually change when a
+large language model (LLM) turns a \emph{symmetry hypothesis} into an \emph{executable}
+quantum predictor, under matched evaluation budgets. The mathematical tools we use
+(group twirls, channel and predictor equivariance residuals, an orthogonal-projection
+risk identity) are established; the object of study is behavioural and measurable: the
+gap between \emph{proposing} a transformation, \emph{implementing} it, and
+\emph{performing}. This version was written against a referee report, and every change
+below is traceable to a frozen revised protocol, a corrected analysis, or a
+bibliographic record. Four things survive measurement. (i)~A self-audit of our own prior
+LLM-evolutionary study: its selection score used test data, one architecture-wide
+equivariance claim is false (measured channel defect $0.0597$), and significance was
+computed at proposal rather than run level. (ii)~A causal repair experiment on a ring
+benchmark whose replication units, controls and floors are stated explicitly: at
+$\eta{=}0$ the gate-count-matched contrast is direction-free, so the previous
+$24$-row record contains $8$ units, not $24$; recomputed on $8$ units the interval is
+$[-0.00217,-0.00002]$ with sign-flip $p{=}0.125$, which we report as \emph{not}
+supporting the original claim, while the $\eta{=}1$ cost of enforced invariance is large
+and robust ($+0.045$, CI $[+0.032,+0.058]$). (iii)~In the frozen $120$-run search study,
+the endpoint that had been omitted --- inference-time Reynolds averaging of the deployed
+predictor --- is the one effect that is consistent and large
+($-0.0486$, CI $[-0.0708,-0.0284]$, $7/12$ runs eligible on \texttt{graphs\_n6}), whereas
+verifier \emph{feedback} changes development-selected risk by an undetected amount; the
+same averaging applied to non-LLM arms helps equally, so it is the analytic tool, not the
+LLM, that carries the gain. (iv)~Verification as implemented does not identify the
+group: $10$ of $299$ graph proposals carried the task's group and $289$ wrong-group
+proposals passed the label-preservation gate --- which is expected, because every
+subgroup of a label symmetry passes it; it is a soundness filter, not an identification
+test. A hand-built equivariant architecture beats every search arm on the ring
+($+0.0060$ to $+0.0097$ worse for the arms), and a one-threshold classical rule beats
+every arm on graphs (dev risk $0.351$ vs $0.538$--$0.566$). All endpoints are labelled
+development, sealed or fresh; we do not claim held-out generalisation from development
+risk, we do not claim quantum advantage, and we record two provenance defects in our own
+earlier run records rather than quietly fixing them.
 \end{abstract}
 
 \section{Introduction}
 \label{sec:intro}
 
-Symmetry is a first-class inductive bias in quantum machine learning (QML): a
-circuit that commutes with a representation of the data's symmetry group,
-combined with a compatible readout, yields invariant predictions. A tempting
-hypothesis is that an LLM asked to design such circuits will both \emph{state}
-the right symmetry and \emph{build} it. Prior work has reported LLM-driven
-evolution of symmetry-aware quantum circuits, but the strength of that evidence
-had not been established.
+Symmetry is a first-class inductive bias in quantum machine learning (QML): a circuit
+whose blocks commute with a representation of the data's symmetry group, combined with an
+equivariant encoding, an invariant initial state and a compatible readout, yields
+invariant predictions. A tempting inference is that an LLM asked to design such circuits
+will both \emph{state} the right symmetry and \emph{build} it, and that giving the model
+an executable check will close the gap.
 
-This paper treats the hypothesis as measurable rather than anecdotal, and
-separates three levels that casual ``symmetry-aware LLM'' claims conflate:
-(i)~\textbf{proposing} a transformation (a stated group hypothesis);
-(ii)~\textbf{implementing} it (the circuit actually commutes with the
-representation); and
-(iii)~\textbf{performing} (the trained predictor generalises on held-out data).
-Our thesis is that the interesting, testable phenomenon is the \emph{gap}
-between these levels and whether executable feedback closes it.
+This paper treats that inference as measurable, and separates three levels that casual
+``symmetry-aware LLM'' claims conflate: (i)~\textbf{proposing} a transformation (a stated
+group hypothesis); (ii)~\textbf{implementing} it (the circuit actually commutes with the
+representation, at the parameters that were trained); and (iii)~\textbf{performing} (the
+trained predictor is useful on data that no part of the pipeline adapted to). Our thesis
+is that the interesting, testable phenomenon is the \emph{gap} between these levels, and
+that measuring it requires an endpoint for each level --- not one endpoint read as three.
+
+\paragraph{How this version differs.} The manuscript was reviewed and found to contain
+identifiable validity problems: duplicated experimental units in the headline repair
+result, a search endpoint that did not measure the intervention it credited, generalisation
+language attached to development data, an unjustified ``differs only in symmetry'' claim,
+an ``if and only if'' claim, a mis-stated risk floor, uncalibrated $p$-values, a
+prose/table contradiction, and two materially wrong references. All were checked against
+the code and the primary records; all were real. Section~\ref{sec:protocol} states the
+revised protocol frozen before any new result existed, and
+Appendix~\ref{app:provenance} records the dated chain, the model identity, the compute
+budget, and two provenance defects we found in our own earlier run records.
 
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=1.4em,itemsep=2pt,topsep=2pt]
-  \item \textbf{A reproducibility audit} (\S\ref{sec:audit}) of a prior
-  ShinkaEvolve-based study: test-set leakage in selection, a refuted
-  architecture-wide equivariance claim, and a proposal-level (not run-level)
-  significance error. These bound what the old numbers can mean.
-  \item \textbf{A confound-free causal-repair experiment}
-  (\S\ref{sec:repair}, \S\ref{sec:repair-results}) with targets
-  $y_\eta = h + \eta b$, an analytic invariant-risk floor $\eta^2\mathbb{E}[b^2]$,
-  and a gate-count-matched asymmetric control that isolates the symmetry effect
-  from expressivity. We show repair \emph{helps iff the target is invariant}.
-  \item \textbf{A matched-budget search study} (\S\ref{sec:search},
-  \S\ref{sec:search-results}) comparing random, mutation-only, LLM-fitness,
-  LLM-verify, and LLM-verify-repair arms with identical initial populations,
-  every invalid proposal retained, and a sealed-holdout guard. We report a clean
-  \textbf{null} on verifier feedback and a task-dependent LLM advantage.
+  \item \textbf{A self-audit} (\S\ref{sec:audit}) of the prior in-house study this project
+  continues \cite{ho2026prior}: test data inside the selection score, a refuted
+  architecture-wide equivariance claim, and proposal-level significance.
+  \item \textbf{A causal repair experiment with explicit units, controls and floors}
+  (\S\ref{sec:repair}, \S\ref{sec:repair-results}): $y_\eta=h+\eta b$; an
+  operator-matched asymmetric control in addition to a gate-count-matched one; a
+  second asymmetric control; optimiser-budget sensitivity; and a function-space
+  evaluation on orbit-completed data that separates the population floor, its Monte-Carlo
+  estimate, and the exact finite-orbit floor.
+  \item \textbf{A reanalysis of the frozen $120$-run search study that restores the
+  missing endpoint} (\S\ref{sec:search}, \S\ref{sec:search-results}): the paired effect of
+  inference-time averaging on the frozen candidate, the deployed-pipeline contrast,
+  coverage of the intervention, paired reliability endpoints, and verifier selectivity
+  measured against the true group.
+  \item \textbf{Baselines that the LLM story has to beat} (\S\ref{sec:baselines}): a
+  constructive equivariant architecture at the same fit budget, a task-aware classical
+  rule, the invariant oracle, and the same repair tool applied to non-LLM search.
 \end{enumerate}
 
-All results are prospective and pre-declared, with run-level paired uncertainty;
-negative and null results are reported as such and no claim outruns the paired
-evidence.
+\begin{table}[t]
+\centering
+\caption{Contribution-to-evidence table. ``Evidence'' names the executed artefact;
+``Does not show'' is the boundary we refuse to cross.}
+\label{tab:contribution}
+\small
+\begin{tabular}{@{}p{0.30\textwidth}p{0.33\textwidth}p{0.30\textwidth}@{}}
+\toprule
+Claim & Evidence & Does not show \\
+\midrule
+Prior selection leaked test data &
+\texttt{research/audit.py} executes the evaluator's own AST; changing every test-derived
+field leaves the v2 score unchanged &
+that the historical task had no signal; it had a density shortcut \\
+\midrule
+Enforcing equivariance changes risk causally &
+WP-REPAIR-2, $8$ directions $\times$ $24$ optimiser seeds, gate-count- \emph{and}
+operator-matched controls (\S\ref{sec:repair-results}) &
+an ``iff'' over all mismatches; a symmetry-only effect (families differ in
+parameter-to-function map and optimisation geometry) \\
+\midrule
+Inference-time averaging helps the deployed predictor &
+E-S1: $-0.0486$, CI $[-0.0708,-0.0284]$, $7/12$ eligible runs, graphs; E-S5b: same tool
+helps every arm (\S\ref{sec:search-results}) &
+that the LLM found the group; coverage-conditional, not intention-to-treat \\
+\midrule
+Verifier feedback improves search &
+\textbf{Not established}: primary difference undetected on both families, CIs wider than
+the prespecified equivalence margin &
+equivalence; ``clean null'' is not a finding we claim \\
+\midrule
+Verification identifies the symmetry group &
+\textbf{Refuted as implemented}: $10/299$ correct groups on graphs, $0/192$ on ring;
+$289$ wrong-group proposals pass label preservation &
+that no verifier could identify a group; our gate is a soundness filter \\
+\midrule
+LLM search beats simple alternatives &
+\textbf{Not established}: constructive equivariant beats all arms on ring; edge-count
+threshold beats all arms on graphs &
+quantum advantage of any kind \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\section{Related work}
+\section{Related work, re-verified}
 \label{sec:related}
 
-Representation-based gate symmetrisation and invariant re-uploading appear in
-Meyer et al.~\cite{meyer2023}; constructive equivariant unitary layers and
-channels, including continuous groups, in Nguyen et al.~\cite{nguyen2024}.
-Permutation-invariant QML for graph properties including approximate symmetry is
-studied by Mansky et al.~\cite{mansky2025}; Baumann and Linnhoff-Popien
-\cite{baumann2026} show that symmetry alone does not determine a useful
-architecture. Averaging-operator generalisation theory appears in Elesedy and
-Zaidi~\cite{elesedy2021}; Lie-derivative symmetry promotion in Otto et
-al.~\cite{otto2023}; finite-measurement task-level symmetry inference, task
-validation and projection bias in Chen~\cite{chen2026}. ShinkaEvolve's parent
-sampling, novelty rejection and bandit model selection appear in Lange et
-al.~\cite{lange2026}. The mathematical tools are therefore not the novelty; the
-behavioural, intervention-based study of the
-propose$\rightarrow$verify$\rightarrow$implement$\rightarrow$perform gap is the
-candidate contribution, and priority still requires a final broader review.
+Every entry of \S\ref{sec:related} was checked against a primary record (arXiv API,
+Crossref, PMLR); all eight had at least one material error, and the corrected list is in
+the bibliography with the audit in \texttt{research/paper/REFERENCES_AUDIT.md}. Symmetry
+exploitation in variational QML is established work \cite{meyer2023}; equivariant unitary
+layers and channels, with constructive prescriptions, are general and known
+\cite{nguyen2024}; permutation-invariant QML for graph connectedness is directly occupied
+territory \cite{mansky2025}; symmetry alone does not determine a useful architecture
+\cite{baumann2026}; averaging-operator generalisation benefits, including projection
+identities of the kind we use, are known \cite{elesedy2021}; enforcing, discovering and
+promoting symmetry by Lie-derivative methods is known \cite{otto2023}; finite-measurement
+task-level symmetry inference with projection bias is the closest conceptual
+neighbour \cite{chen2026}; and the LLM-evolutionary harness we build on is
+ShinkaEvolve \cite{lange2025}. The bandit ensemble that selects a proposer per generation
+is \emph{not} from \cite{lange2025}: it is a modification made by our own prior
+study \cite{ho2026prior}, and we attribute it there.
 
-\section{Preliminaries: continuous symmetry diagnostics}
+The mathematical tools are therefore not the contribution, and we make no priority claim.
+What we intend to contribute is empirical and negative-leaning: a measurement, under
+matched budgets, of \emph{where} executable verification changes behaviour in
+LLM-guided quantum circuit design --- finding that the analytic repair step carries the
+gain while the group-identification step fails in a way that is predictable from the
+group theory.
+
+\section{Preliminaries: symmetry diagnostics and their assumptions}
 \label{sec:math}
 
 Let $P_g$ be a specified unitary representation of a finite group $G$ on
@@ -130,338 +200,552 @@ vanishes iff $U$ commutes with $P_g$. For physical unitary channels we use the
 \begin{equation}
   \Dc(g) \;=\; 1 - \bigl|\operatorname{Tr}(U^{\dagger} P_g U P_g^{\dagger})/d\bigr|^2 \in [0,1],
 \end{equation}
-which vanishes exactly when conjugation differs by a global phase (e.g.\ $Z$
+which vanishes exactly when the conjugation differs by a global phase (e.g.\ $Z$
 anticommutes with $X$: strict residual $2$, channel residual $0$). Adjacent
-transpositions generate $S_n$; zero residual on all generators certifies exact
-symmetry at those parameters. A random-parameter zero is evidence, not an
-architecture-wide proof.
+transpositions generate $S_n$; zero residual on all generators certifies exact symmetry
+\emph{at the sampled parameters}. A random-parameter zero is evidence about a family, not
+a proof over a family; where a proof exists we give it (Appendix~\ref{app:crz}).
 
-The Reynolds operator $\Tg(U)=\frac{1}{|G|}\sum_{g}P_g U P_g^{\dagger}$ is an
-orthogonal projection, so the mean strict residual over a uniform group equals
-$\lVert U-\Tg(U)\rVert_F^2/d$. For predictions $f$ on complete orbits,
-$D_f=\mathbb{E}_x\operatorname{Var}_g f(gx)$, and under a group-invariant input
-measure with an invariant target the squared-risk projection identity
+\subsection{From block equivariance to predictor invariance}
+\label{sec:conditions}
+
+Block equivariance alone does not give an invariant predictor. Writing the expanded
+circuit as $V(x)=B_L\,U_{\mathrm{enc}}(x)\cdots B_1\,U_{\mathrm{enc}}(x)$ with readout
+$M$, $f(x)=\langle 0\cdots0|V(x)^{\dagger} M V(x)|0\cdots0\rangle$ is $G$-invariant when
+\begin{enumerate}[leftmargin=1.4em,itemsep=1pt,topsep=1pt]
+  \item \textbf{encoding equivariance:} $U_{\mathrm{enc}}(gx)=P_g\,U_{\mathrm{enc}}(x)\,
+        P_g^{\dagger}$ (the ring encoding applies $\mathrm{RY}(x_i)$ on wire $i$, so a site
+        permutation is implemented by $P_g$; the graph encoding applies
+        $\mathrm{RZZ}_{\pi/2}$ on the edge indicated by bit $k$, and $S_n$ acts on edges);
+  \item \textbf{invariant preparation:} $\lvert 0\cdots0\rangle$ is fixed by $P_g$;
+  \item \textbf{block equivariance:} each block commutes with $P_g$;
+  \item \textbf{invariant readout:} $[M,P_g]=0$ for all $g$ --- we use the fixed readout
+        $M=\frac1n\sum_i Z_i$ and do \emph{not} train the readout, because a learned
+        readout erases the bias.
+\end{enumerate}
+Conditions (1), (2) and (4) are structural and checked once; condition (3) is what the
+residual measures. Because a residual on the block is not a certificate on the predictor,
+we additionally measure predictor invariance directly, on all group images of every
+evaluation row: with $f$ fitted and $\Tg f$ its Reynolds average over the orbit,
+$\;\mathbb{E}\bigl[(f-\Tg f)^2\bigr]$ is reported per arm
+(\S\ref{sec:repair-results}, Table~\ref{tab:er1}); it is $0$ to roundoff for the repaired
+arm and $O(10^{-2})$ for the asymmetric arms.
+
+\subsection{The projection identity, and the floor, with their measures stated}
+\label{sec:floor}
+
+The Reynolds operator $\Tg(U)=\frac{1}{|G|}\sum_{g}P_g U P_g^{\dagger}$ is an orthogonal
+projection for the Hilbert--Schmidt inner product, so the mean strict residual over a
+uniform group equals $\lVert U-\Tg(U)\rVert_F^2/d$. For predictions on inputs, let $\mu$
+be the input distribution and let $\bar\mu=\frac1{|G|}\sum_g g_\#\mu$ be its orbit
+average. $\mu$ is \emph{invariant} iff $\bar\mu=\mu$.
+
+\begin{proposition}[risk decomposition on an invariant input measure]
+\label{prop:floor}
+Let $\mu$ be $G$-invariant, $y=h+\eta b$ with $\Tg h=h$ and $\Tg b=0$, and
+$R(f)=\mathbb{E}_{x\sim\mu}(f(x)-y(x))^2$. Then for every $f$,
 \begin{equation}
-  R(f) \;=\; R(\Tg f) + \mathbb{E}\bigl[(f-\Tg f)^2\bigr]
-  \label{eq:risk}
+  R(f)=R(\Tg f)+\mathbb{E}\bigl[(f-\Tg f)^2\bigr]+2\,\mathbb{E}\bigl[(f-\Tg f)(y-\Tg y)\bigr],
 \end{equation}
-holds by orthogonality of the projection. Constant predictors are perfectly
-invariant, so predictive risk and output variance are always reported alongside
-invariance. Circuit equivariance is sufficient for output invariance only with a
-compatible readout; it is not necessary.
+so the cross term vanishes when $y$ is invariant ($\eta=0$), giving
+$R(f)=R(\Tg f)+\mathbb{E}[(f-\Tg f)^2]$, and for every \emph{invariant} $f$,
+$R(f)=\mathbb{E}[(f-h)^2]+\eta^2\mathbb{E}[b^2]\;\ge\;\eta^2\mathbb{E}_\mu[b^2]$.
+\end{proposition}
 
-\section{A reproducibility audit of prior LLM-evolutionary QML}
+The proof is the orthogonality of the projection plus
+$\mathbb{E}[g\,b]=\mathbb{E}[g\,\Tg b]=0$ for invariant $g$, which uses the invariance of
+$\mu$ essentially. In our benchmark $\mu=\mathrm{Unif}[-1,1]^6$ with the site-permutation
+action, a product of identical marginals, hence permutation-invariant, so the hypothesis
+holds. Three quantities must not be conflated, and the first version of this paper did
+conflate them:
+\begin{itemize}[leftmargin=1.4em,itemsep=1pt,topsep=1pt]
+  \item the \textbf{population floor} $\eta^2\mathbb{E}_\mu[b^2]$ (here $\eta^2$ exactly,
+        because $b$ is normalised on the training split);
+  \item a \textbf{Monte-Carlo estimate} on sampled orbit representatives, which has
+        sampling error (on our development split it is $0.866$--$1.059$ across breaking
+        directions at $\eta{=}1$, mean $0.948$ --- the first version of this paper quoted
+        one direction's value, $0.866$, as if it were the floor);
+  \item the \textbf{exact finite-orbit floor} on the orbit-completed evaluation set (each
+        representative replaced by all $|G|$ images, uniform weights), which is exact for
+        the sampled orbits and is the Rao-Blackwellised version of the second.
+\end{itemize}
+A sample containing one representative per orbit admits invariant interpolants of its
+labels, so no non-vacuous empirical lower bound exists on the representative sample
+alone; that is why the orbit-completed set, with declared weights, is what we use for
+floor accounting.
+
+\section{Self-audit of the prior study}
 \label{sec:audit}
 
-We re-examined a prior study that evolved quantum circuits with an adaptive
-ensemble of commercial frontier models (weak/mid/frontier tiers, UCB bandit
-selection) on a graph-connectedness task. Four findings bound its claims.
+The audited study is \emph{an earlier version of this project by the same author}:
+\citet{ho2026prior}, archived in this repository as \texttt{README.md} at git commit
+\texttt{13ea13eb76af2f587c508aefde81b9dd026b3ce1} with run artefacts under
+\texttt{experiments/transfer-sn/} and \texttt{analysis/}. We state this explicitly because
+auditing one's own prior work changes what the audit can and cannot establish: we are
+competent to inspect the code, and we are also the party with an incentive to soften the
+findings. Four findings bound what the old numbers can mean; each is reproducible with
+\texttt{python3 research/audit.py}, which executes the historical evaluator's own
+abstract syntax tree rather than a paraphrase of it.
 
-\textbf{Test leakage in selection.} The selection score used a
-train--\emph{test} gap and the public feedback disclosed test accuracy and loss.
-The historical ``test'' set therefore measured an adaptively reused development
-set and cannot establish held-out generalisation.
+\textbf{Test leakage in selection.} The selection score used a train--\emph{test} gap and
+the public feedback disclosed test accuracy and loss. The historical ``test'' set measured
+an adaptively reused development set and cannot establish held-out generalisation.
 
-\textbf{A refuted equivariance claim.} The hand-designed baseline was claimed to
-be permutation-equivariant for all parameters. Its one-direction CRZ layer is
-not: at a documented parameter setting its mean adjacent-generator channel
-defect is $0.0597$, and a bidirectional half-angle repair reduces it to $1.5\times
-10^{-14}$ (floating-point roundoff). A separate ordered-CRX counterexample shows
-that covering every unordered pair does not guarantee symmetry, because
-non-commuting controlled rotations are order dependent.
+\textbf{A refuted equivariance claim.} The hand-designed baseline was claimed to be
+permutation-equivariant for all parameters. Its one-direction CRZ layer is not: at a
+documented parameter setting its mean adjacent-generator channel defect is $0.0597$, and a
+bidirectional half-angle repair reduces it to $1.5\times10^{-14}$. A separate ordered-CRX
+counterexample shows that covering every unordered pair does not guarantee symmetry,
+because non-commuting controlled rotations are order dependent.
 
-\textbf{Non-independence.} $563$ selected proposals are not $563$ independent
-experiments: they share ancestry, data and adaptive selection, yet significance
-was computed proposal-by-proposal, inflating confidence.
+\textbf{Non-independence.} $563$ selected proposals are not $563$ independent experiments:
+they share ancestry, data and adaptive selection, yet significance was computed
+proposal-by-proposal.
 
-\textbf{A trivial shortcut.} A single edge-count threshold fitted on training
-data alone attains $83.0\%$ validation accuracy (predict connected iff
-$\ge 9$ edges), indicating that density, not structure, carries much of the
-signal; no quantum advantage follows from that task.
+\textbf{A trivial shortcut.} A single edge-count threshold fitted on training data alone
+attains $83.0\%$ historical validation accuracy. In the fresh benchmark used here the same
+rule reaches $91.2\%$ development accuracy and risk $0.351$ (\S\ref{sec:baselines}), which
+is better than every search arm; density, not structure, carries much of the signal.
 
-\section{Methods}
-
-\subsection{Confound-free causal repair (WP-REPAIR)}
+\section{WP-REPAIR: a causal repair experiment with explicit units}
 \label{sec:repair}
 
-\paragraph{Targets.} On the ring benchmark (inputs $x\in\mathbb{R}^{6}$, group
-$D_6$ of order $12$ acting by site relabelling), let $h$ be the dataset's
-ground-truth \emph{invariant} oracle $h(x)=\frac1n\sum_i x_i x_{i+1}$ and let a
-frozen random direction $v$ induce a breaking component
-$b(x)\propto \bigl(v\!\cdot\!x - \Tg(v\!\cdot\!\cdot)\bigr)$, i.e.\ the
-group-centred remainder of a linear functional, normalised so
-$\mathbb{E}_{\text{train}}[b^2]=1$. Targets are
-\begin{equation}
-  y_\eta(x) \;=\; h(x) + \eta\, b(x), \qquad \eta\in\{0,0.5,1\}.
-\end{equation}
-Crucially, $h$ and $b$ are functions of the \emph{input}, never produced by any
-compared ansatz, removing the confound in which targets are generated by the
-architectures being compared. The Reynolds projection is computed by applying
-the \emph{explicit} group closure to each input (the dataset's orbit labels are
-singletons and cannot be used).
+\paragraph{Targets.} On the ring benchmark (inputs $x\in\mathbb{R}^{6}$, group $D_6$ of
+order $12$ acting by site relabelling), $h$ is the dataset's ground-truth \emph{invariant}
+oracle $h(x)=\frac1n\sum_i x_i x_{i+1}$ and, for a frozen random direction $v$,
+$b(x)\propto \bigl(v\!\cdot\!x-\Tg(v\!\cdot\!x)\bigr)$ is the group-centred remainder of a
+linear functional, normalised so $\mathbb{E}_{\text{train}}[b^2]=1$. Targets are
+$y_\eta=h+\eta b$, $\eta\in\{0,0.5,1\}$. $h$ and $b$ are functions of the \emph{input},
+never produced by a compared ansatz, and the Reynolds projection is computed by applying
+the explicit group closure to each input (the dataset's orbit labels are singletons and
+cannot be used).
 
-\paragraph{Invariant-risk floor.} Because $h$ is invariant and $b$ is
-group-centred, no invariant predictor can beat
-$\text{floor}(\eta)=\eta^2\,\mathbb{E}[b^2]$, and the empirical orbit-mean floor
-equals it (verified to $10^{-6}$).
+\paragraph{Replication units (the fix).} At $\eta=0$ the target does not contain $b$, so
+the breaking direction is a nuisance index, not a replication: the unit is the
+\emph{optimiser seed}. At $\eta>0$ the unit is the (direction, optimiser seed) pair, with
+direction a blocking factor. Analysis code counts rows and units separately and refuses to
+resample rows: the first version's ``$24$ paired draws'' at $\eta=0$ are $8$ units written
+three times, and Table~\ref{tab:v1} reports what changes when they are collapsed. We use
+$8$ directions and $24$ optimiser seeds, so $\eta=0$ has $24$ genuine units. Three
+breaking directions cannot support a population claim about arbitrary target mismatches;
+eight support a within-benchmark statement, and the cluster bootstrap over directions is
+reported with that caveat.
 
-\paragraph{Matched arms.} Three ansatz arms share parameter count $\{a,b,c\}$
-and a \textbf{fixed symmetric readout} (equal weight on every $Z_i$), so an
-equivariant block yields an invariant predictor:
+\paragraph{Arms.} All arms train three block parameters $\{a,b,c\}$ with the fixed
+symmetric readout of \S\ref{sec:conditions}.
 \begin{itemize}[leftmargin=1.4em,itemsep=1pt,topsep=1pt]
-  \item \texttt{original}: one-direction CRZ layer, $15$ CRZ gates (asymmetric);
-  \item \texttt{repaired}: bidirectional shared-angle CRZ, $30$ CRZ gates
-  (exactly equivariant, measured channel residual $0$);
-  \item \texttt{control}: repeated same-direction CRZ, $30$ CRZ gates
-  (asymmetric, operator-family-equivalent to \texttt{original}, with the
-  \emph{same gate count as} \texttt{repaired}).
+  \item \texttt{original}: one-direction CRZ, $15$ gates, asymmetric;
+  \item \texttt{repaired}: bidirectional shared-angle CRZ, $30$ gates, exactly
+        equivariant (analytically, Appendix~\ref{app:crz});
+  \item \texttt{control\_dup}: same-direction CRZ twice, $30$ gates, asymmetric;
+  \item \texttt{control\_rand}: per-pair direction from a fixed seeded rule, $30$ gates,
+        asymmetric;
+  \item \texttt{control\_matched}: \texttt{control\_dup} with the initial angle halved, so
+        its initial \emph{operator} is identical to \texttt{original}'s.
 \end{itemize}
-Only the three block parameters are trained (Adam, MSE, fixed budget, common
-random numbers: a seed gives an identical initialisation across arms). Selection
-is on the training split only; development risk is reported per (teacher, seed,
-$\eta$, arm); the locked holdout is never read. The decisive contrast is
-\texttt{repaired} vs \texttt{control}: they differ \emph{only} in symmetry.
 
-\subsection{Matched-budget search (WP-SEARCH)}
+\paragraph{What equal gate counts do and do not buy.} \texttt{control\_dup} is the
+\texttt{original} interaction at angle $2b$ (verified to $10^{-14}$,
+Appendix~\ref{app:crz}), so it matches gate count and reachable function family but
+\emph{not} optimisation geometry, and identical numerical initialisations do not match
+initial operators: the measured initial-operator distance is $1.37$ for
+\texttt{control\_dup} and $0$ for \texttt{control\_matched}. We therefore describe the
+contrast as ``the effect of these particular circuit interventions under this training
+procedure'' and never as a symmetry-only effect. Optimiser-budget sensitivity
+($200/600/1800$ steps) is reported separately.
+
+\paragraph{Function-space estimand.} For each fitted $f$ we also evaluate $f$ and $\Tg f$
+on the orbit-completed development distribution (uniform over $12$ group images
+$\times$ representatives), reporting $R(f)-R(\Tg f)$, $\mathbb{E}[(f-\Tg f)^2]$ and the
+cross term of Proposition~\ref{prop:floor}. This is a deterministic statement about one
+predictor; it is not a statement about retrained architectures, and we do not use the
+former as a theorem about the latter.
+
+\section{WP-SEARCH: estimands, endpoints and statistics}
 \label{sec:search}
 
-Five arms run at an identical evaluated-candidate budget $B{=}12$ with identical
-seed-derived initial populations: \texttt{random}, \texttt{mutation-ea},
-\texttt{llm-fitness} (scalar fitness), \texttt{llm-verify} (adds an executable
-equivariance residual and a label-preservation report for the proposal's own
-hypothesis), and \texttt{llm-verify-repair} (compiles an inference-time Reynolds
-average when the hypothesis passes label preservation and the residual exceeds a
-tolerance). Every invalid proposal is retained in the denominator; per-run cost
-(tokens, evaluator calls, wall time) is logged. Model identity and reasoning
-effort are fixed categorical treatments (no adaptive bandit), so capability is
-not confounded with cost or exposure. The primary endpoint is the paired
-run-level difference in development-selected risk between \texttt{llm-verify}
-and \texttt{llm-fitness}; secondary contrasts are Holm-corrected within family.
-Development selection only; the locked holdout is never read by search.
+The frozen record is the $120$-run confirmatory study: five arms
+(\texttt{random}, \texttt{mutation-ea}, \texttt{llm-fitness}, \texttt{llm-verify},
+\texttt{llm-verify-repair}) at identical evaluated-candidate budget $B{=}12$, identical
+seed-derived initial populations, identical per-candidate training budget (Adam, $120$
+steps, $256$ training rows), every invalid proposal retained in the denominator, one model
+treatment (\MODEL{} at reasoning effort \texttt{none}; identity pinned in
+Appendix~\ref{app:provenance}), $12$ paired seeds per family.
 
-\paragraph{Statistics.} Contrasts are paired by seed (and, for LLM-vs-LLM, by
-model treatment). We report mean paired differences with $10{,}000$-resample
-bootstrap $95\%$ confidence intervals at the run level and the fraction of pairs
-improved; secondary families are Holm-corrected.
+\paragraph{Endpoints, named.} \emph{Development risk} is risk on the validation split of
+the development artefact; that split is used by candidate selection, by the search
+feedback loop and by the verifier, so it is not held out in any confirmatory sense.
+\emph{Sealed test risk} is read once, after the protocol and analysis code were committed.
+\emph{Fresh holdout risk} (ring only) uses a holdout generated after the freeze with zero
+canonical-orbit overlap with any development or sealed-test row. The first version of this
+paper wrote ``held-out risk'' for development numbers; that wording is removed everywhere.
+
+\paragraph{Estimands.} E-S1: paired effect of inference-time Reynolds averaging on the
+\emph{same} frozen dev-selected candidate, reported with coverage (eligible / attempted /
+fired) because it is coverage-conditional and not intention-to-treat. E-S2: the deployed
+pipeline (averaged predictor where the repair fired, candidate otherwise). E-S3 (primary):
+\texttt{llm-verify} minus \texttt{llm-fitness} development-selected risk. E-S4: paired
+reliability endpoints (invalid-proposal rate, hypothesis-present rate, verifier
+false-accept rate against the true group, nonconstant-output check). E-S5: development
+risk inside edge-count bands of \texttt{graphs\_n6} --- the intervention the
+``density shortcut'' explanation requires. E-S5b: the same averaging tool applied to every
+arm's selected predictor using the task's \emph{declared} group, i.e.\ a non-LLM pipeline
+given the same tool. E-S6: matched-budget baselines.
+
+\paragraph{Statistics.} Percentile bootstrap of the mean paired difference over
+\emph{units} ($20{,}000$ resamples); $p$-values from the null-centred (shifted) bootstrap
+plus a sign-flip test, whose assumption --- the null distribution of paired differences is
+symmetric about $0$ --- is stated wherever it is used; simulated $p$-values carry a floor
+and are never reported as $0$; leave-one-unit-out ranges accompany every primary; Holm
+correction within declared families only (A: the two primaries; B/C: the repair contrasts
+at $\eta{=}0$/$\eta{=}1$; D: secondary search contrasts per family and endpoint; E: the
+breaking-target study). A confidence interval containing $0$ is reported as ``difference
+not detected'', never as ``no effect'', ``unchanged'' or ``clean null''. Practical
+equivalence is claimed only when a whole interval lies inside the prespecified margin
+$\delta=0.05\,\mathrm{Var}_{\dev}(y)$ ($0.03274$ for graphs, $0.00097$ for ring).
 
 \section{Results}
 
-\subsection{Causal repair (WP-REPAIR)}
+\subsection{Repair: corrected units change the headline}
 \label{sec:repair-results}
 
-Table~\ref{tab:repair} reports mean paired development-risk differences
-(\texttt{a}$-$\texttt{b}; negative means \texttt{a} is better) over $24$ paired
-draws ($3$ frozen teachers $\times$ $8$ optimiser seeds) on \texttt{ring\_n6}.
-Table~\ref{tab:repair-mean} reports mean development risk and the measured
-channel residual per arm.
-
 \begin{table}[t]
 \centering
-\caption{WP-REPAIR paired development-risk differences
-($\texttt{a}-\texttt{b}$; negative $\Rightarrow$ \texttt{a} better), $n{=}24$.
-Bootstrap $95\%$ CIs. The invariant-risk floor is $\eta^2\mathbb{E}[b^2]$.}
-\label{tab:repair}
+\caption{The first version's repair record, recomputed with correct replication units.
+At $\eta{=}0$ the $24$ rows are $8$ units (the target is direction-free); the interval
+barely excludes $0$ and neither $p$-value is small, so the claim ``enforcing equivariance
+causally improves risk at $\eta{=}0$'' is \emph{not} supported by this record. At
+$\eta{>}0$ the units are (direction, seed) and the cost of enforced invariance is robust.}
+\label{tab:v1}
 \small
-\begin{tabular}{@{}llrrrr@{}}
+\begin{tabular}{@{}llrrrrrl@{}}
 \toprule
-$\eta$ & floor & contrast & mean diff & $95\%$ CI & frac.\ better \\
+$\eta$ & contrast & rows & units & mean diff & $95\%$ CI & $p_{\text{boot}}$ & $p_{\text{flip}}$ \\
 \midrule
-0.0 & 0.000 & repaired vs control  & $\mathbf{-0.00093}$ & $[-0.00160,-0.00036]$ & 0.62 \\
-0.0 & 0.000 & repaired vs original & $-0.00201$ & $[-0.00308,-0.00095]$ & 0.88 \\
-0.0 & 0.000 & control  vs original & $-0.00107$ & $[-0.00203,-0.00017]$ & 0.62 \\
+0.0 & repaired $-$ control & 24 & \textbf{8} & $-0.00093$ & $[-0.00217,-0.00002]$ & 0.083 & 0.125 \\
+0.0 & repaired $-$ original & 24 & \textbf{8} & $-0.00201$ & $[-0.00394,-0.00021]$ & 0.034 & 0.125 \\
+0.0 & control $-$ original & 24 & \textbf{8} & $-0.00107$ & $[-0.00277,+0.00041]$ & 0.191 & 0.320 \\
 \midrule
-0.5 & 0.217 & repaired vs control  & $+0.01817$ & $[+0.01320,+0.02307]$ & 0.17 \\
-0.5 & 0.217 & repaired vs original & $+0.01690$ & $[+0.01259,+0.02112]$ & 0.17 \\
-0.5 & 0.217 & control  vs original & $-0.00127$ & $[-0.00544,+0.00286]$ & 0.46 \\
+0.5 & repaired $-$ control & 24 & 24 & $+0.01817$ & $[+0.01317,+0.02305]$ & $<10^{-4}$ & $<10^{-4}$ \\
+0.5 & control $-$ original & 24 & 24 & $-0.00127$ & $[-0.00546,+0.00289]$ & 0.549 & 0.564 \\
 \midrule
-1.0 & 0.866 & repaired vs control  & $\mathbf{+0.04523}$ & $[+0.03231,+0.05758]$ & 0.04 \\
-1.0 & 0.866 & repaired vs original & $+0.04319$ & $[+0.03493,+0.05139]$ & 0.00 \\
-1.0 & 0.866 & control  vs original & $-0.00204$ & $[-0.01338,+0.00898]$ & 0.42 \\
+1.0 & repaired $-$ control & 24 & 24 & $\mathbf{+0.04523}$ & $[+0.03225,+0.05773]$ & $<10^{-4}$ & $<10^{-4}$ \\
+1.0 & control $-$ original & 24 & 24 & $-0.00204$ & $[-0.01346,+0.00903]$ & 0.721 & 0.729 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+Table~\ref{tab:v1} resolves the referee's points 1, 5 and 8 on the existing record. The
+$\eta{=}0$ benefit shrinks to a borderline interval with sign-flip $p{=}0.125$; the
+prose/table contradiction disappears (control minus original now includes $0$, but that is
+``not detected'', not equivalence); and the ``iff'' statement is withdrawn --- what
+survives is that the mean differences have opposite signs at the tested mismatch levels,
+with the $\eta{=}1$ cost robust and the $\eta{=}0$ benefit not established.
+
 \begin{table}[t]
 \centering
-\caption{WP-REPAIR mean development risk and measured channel residual per arm
-($n{=}24$). The repaired arm is exactly equivariant (residual $0$); the
-asymmetric arms are not.}
-\label{tab:repair-mean}
+\caption{Floor accounting on the same record, with per-unit floors instead of one quoted
+number. The floor constrains \emph{invariant} predictors only, so the asymmetric arms sit
+\emph{below} it by fitting the breaking component; the repaired arm sits $+0.023$ above it
+(mean over units), which is why ``pinned near the floor'' is replaced by a number.}
+\label{tab:floors}
 \small
-\begin{tabular}{@{}lccc@{}}
+\begin{tabular}{@{}llrrr@{}}
 \toprule
- & \texttt{original} & \texttt{repaired} & \texttt{control} \\
+$\eta$ & arm & mean dev risk & floor (mean over units) & excess over floor \\
 \midrule
-$\eta{=}0.0$ \; dev risk    & 0.0151 & \textbf{0.0131} & 0.0140 \\
-$\eta{=}0.0$ \; channel res. & 0.561  & \textbf{0.000}  & 0.732 \\
-$\eta{=}1.0$ \; dev risk    & 0.9280 & 0.9711 & \textbf{0.9259} \\
-$\eta{=}1.0$ \; channel res.& 0.757  & \textbf{0.000} & 0.752 \\
+0.0 & original & 0.01511 & 0.000 & $+0.01511$ \\
+0.0 & repaired & \textbf{0.01311} & 0.000 & $+0.01311$ \\
+0.0 & control  & 0.01404 & 0.000 & $+0.01404$ \\
+\midrule
+0.5 & original & 0.23842 & 0.23710 & $+0.00132$ \\
+0.5 & repaired & 0.25532 & 0.23710 & $+0.01822$ \\
+0.5 & control  & 0.23715 & 0.23710 & $+0.00005$ \\
+\midrule
+1.0 & original & 0.92796 & 0.94838 & $-0.02042$ \\
+1.0 & repaired & 0.97114 & 0.94838 & $\mathbf{+0.02276}$ \\
+1.0 & control  & \textbf{0.92591} & 0.94838 & $-0.02247$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{Finding.} When the target is invariant ($\eta{=}0$), enforcing
-equivariance \emph{causally improves} held-out risk, and it does so against a
-control matched in gate count (CI excludes $0$), so the benefit is attributable
-to symmetry rather than capacity. When the target breaks symmetry ($\eta{=}1$),
-enforcing equivariance \emph{causally hurts}: the repaired arm is pinned near the
-analytic invariant floor $0.866$ and cannot represent the breaking component,
-whereas the asymmetric arms fit it. The control tracks the original at every
-$\eta$ (CI includes $0$), validating that it isolates gate count from symmetry.
+% REPAIR2-TABLE-PLACEHOLDER
 
-\subsection{Matched-budget search (WP-SEARCH)}
+\subsection{Search: the omitted endpoint is the one that works}
 \label{sec:search-results}
 
-Table~\ref{tab:search-arm} reports mean development-selected risk per arm;
-Table~\ref{tab:search-contrast} reports paired contrasts ($12$ paired seeds per
-family, one model treatment \netid/none, $120$ runs total).
-
 \begin{table}[t]
 \centering
-\caption{WP-SEARCH mean development-selected risk by arm ($n{=}12$ runs each,
-$B{=}12$). On \texttt{graphs\_n6} a density shortcut dominates and no arm
-separates; on \texttt{ring\_n6} LLM arms beat non-LLM baselines.}
-\label{tab:search-arm}
+\caption{E-S3 (primary) and E-S1 (the endpoint the first analysis omitted). E-S1 is
+coverage-conditional: on \texttt{ring\_n6} the repair never fired, so there is no E-S1
+estimate there at all --- an absence the first version did not report.}
+\label{tab:search}
 \small
-\begin{tabular}{@{}lcc@{}}
+\begin{tabular}{@{}llrrrrl@{}}
 \toprule
-arm & \texttt{ring\_n6} dev risk & \texttt{graphs\_n6} dev risk \\
+estimand & family & $n$ & mean diff & $95\%$ CI & verdict \\
 \midrule
-\texttt{random}            & 0.01013 & 0.53782 \\
-\texttt{mutation-ea}       & 0.01022 & 0.53930 \\
-\texttt{llm-fitness}       & \textbf{0.00651} & 0.56572 \\
-\texttt{llm-verify}        & 0.00709 & 0.55158 \\
-\texttt{llm-verify-repair} & 0.00664 & 0.55250 \\
+E-S3 verify $-$ fitness & graphs & 12 & $-0.01414$ & $[-0.05855,+0.02837]$ & not detected \\
+E-S3 verify $-$ fitness & ring   & 12 & $+0.00058$ & $[-0.00024,+0.00140]$ & not detected \\
+\midrule
+E-S1 averaged $-$ candidate & graphs & \textbf{7/12} & $\mathbf{-0.04862}$ & $[-0.07083,-0.02839]$ & averaged better \\
+E-S1 averaged $-$ candidate & ring & \textbf{0/12} & \multicolumn{3}{l}{no data (4 attempted, 0 fired)} \\
+\midrule
+E-S2 deployed verify-repair $-$ verify & graphs & 12 & $-0.02744$ & $[-0.05401,+0.00519]$ & not detected \\
+E-S2 deployed verify-repair $-$ verify & ring   & 12 & $-0.00046$ & $[-0.00127,+0.00045]$ & not detected \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{table}[t]
-\centering
-\caption{WP-SEARCH paired contrasts ($\texttt{a}-\texttt{b}$; negative
-$\Rightarrow$ \texttt{a} better), $n{=}12$. Primary: verifier vs fitness.
-Secondary Holm-adjusted within family; $^{\ast}$ denotes $\text{p}_{\text{holm}}<0.05$.}
-\label{tab:search-contrast}
-\small
-\begin{tabular}{@{}llrrl@{}}
-\toprule
-family & contrast & mean diff & $95\%$ CI & note \\
-\midrule
-graphs & \texttt{verify} $-$ \texttt{fitness} & $-0.0141$ & $[-0.0591,+0.0284]$ & null \\
-ring   & \texttt{verify} $-$ \texttt{fitness} & $+0.0006$ & $[-0.0003,+0.0014]$ & null \\
-\midrule
-ring   & \texttt{fitness} $-$ \texttt{mutation-ea} & $-0.0037$ & $[-0.0042,-0.0033]$ & $^{\ast}$ \\
-ring   & \texttt{verify} $-$ \texttt{random}       & $-0.0030$ & $[-0.0039,-0.0021]$ & $^{\ast}$ \\
-ring   & \texttt{verify-repair} $-$ \texttt{verify} & $-0.0005$ & $[-0.0013,+0.0005]$ & null \\
-graphs & \texttt{fitness} $-$ \texttt{mutation-ea} & $+0.0264$ & $[-0.0172,+0.0644]$ & null \\
-\bottomrule
-\end{tabular}
-\end{table}
+Table~\ref{tab:search} is the substance of referee point 2. The first version reported
+\texttt{verify-repair} versus \texttt{verify} on the \emph{unaveraged} candidate risk and
+concluded that an averaging benefit seen in a $3$-seed pilot ``did not survive''
+confirmation. Measured on the deployed predictor, the averaging effect on graphs is
+$-0.0486$ with an interval excluding $0$ (sign-flip $p{=}0.016$), and the deployed-pipeline
+contrast moves from $+0.0009$ (candidate endpoint) to $-0.0274$ (deployed endpoint). The
+primary hypothesis --- that verifier \emph{feedback} improves selected risk --- remains
+undetected on both families, and neither interval is inside the prespecified equivalence
+margin, so we do not claim equivalence either.
 
-\paragraph{Findings.} The headline hypothesis is a clean \textbf{null}: verifier
-feedback does not significantly change development-selected risk on either
-family (CIs include $0$). This is the protocol's anticipated ``changes the
-measured residual but not the predictive risk'' branch---an
-implementation-reliability result, not a performance win. LLM search beats
-non-LLM baselines on \texttt{ring\_n6} (Holm $\text{p}<0.05$) but not on
-\texttt{graphs\_n6}, where a density shortcut dominates. An inference-time
-Reynolds-averaging benefit visible in a $3$-seed pilot did \emph{not} survive to
-$12$ seeds ($\text{p}_{\text{holm}}=0.61$).
+\paragraph{Coverage.} On \texttt{graphs\_n6}, $7$ of $12$ runs attempted a repair and all
+$7$ fired; on \texttt{ring\_n6}, $4$ attempted and $0$ fired (the label-preservation gate
+rejected them). E-S1 is therefore a per-protocol estimate; the arm-level intention-to-treat
+question is answered by E-S2, which is underpowered at $12$ seeds.
 
-\section{Discussion and conclusion}
-\label{sec:conclusion}
+\paragraph{The tool, not the LLM.} Applying the same declared-group averaging to every
+arm's selected predictor (E-S5b) lowers development risk for \emph{all} arms, including
+the non-LLM ones: graphs $-0.0639$ (\texttt{llm-fitness}) to $-0.1114$ (\texttt{random});
+ring $-0.0031$ to $-0.0039$; all intervals exclude $0$. Whatever the averaging buys, it
+does not require an LLM to buy it.
 
-The two studies are consistent and jointly informative. Symmetry is a real,
-causally verifiable inductive bias \emph{when the target is invariant}
-(WP-REPAIR, gate-count-controlled, with an analytic floor as reference), but
-bolting a verifier onto fixed-budget LLM search did not, by itself, improve
-held-out risk here (WP-SEARCH null), and any LLM advantage is task-dependent and
-vanishes under a strong shortcut. This supports a narrower, defensible claim than
-the prior study's: the value of verification in this setting is
-\emph{implementation reliability}---detecting and repairing a wrong symmetry---
-rather than a uniform performance lift, and the benefit of symmetry itself is
-conditional on the task actually being symmetric.
+\subsection{Verification does not identify the group}
+\label{sec:selectivity}
 
-\paragraph{Limitations.} Small dense statevector simulation; no quantum-advantage
-claim (a trivial edge-count baseline is strong on the historical task); a single
-local model family, so results are not numerically comparable to the prior
-commercial-ensemble study; a fixed budget $B{=}12$; and one held-out task family
-reserved for transfer rather than a claim of open-ended discovery. Confirmatory
-transfer on the held-out family, larger budgets, and additional model treatments
-are future work.
+For every proposal that carried a hypothesis we recomputed, on the trusted side, whether
+its group equals the task's group and whether it passes the label-preservation gate that
+the verifier uses. On \texttt{graphs\_n6}, $299$ proposals carried a hypothesis: $10$
+carried $S_6$, and $289$ wrong-group proposals \emph{passed} the gate. On
+\texttt{ring\_n6}, $192$ carried a hypothesis: $0$ carried $D_6$, and $7$ passed.
 
-\paragraph{Reproducibility and integrity.} All splits are orbit-disjoint; locked
-holdouts were never read by search and are evaluated at most once; every result
-JSON records seeds, module versions, git commit and host; analysis is
-pre-declared with run-level paired bootstrap confidence intervals and Holm
-correction. Code, data manifests and run logs accompany the paper.
+This is not an implementation bug; it is the test's logic. Label preservation tests
+$y(gx)=y(x)$ on sampled rows for the \emph{proposed} group. If the true label symmetry is
+$G$ and the proposal is a subgroup $H\le G$, every element of $H$ preserves labels by
+construction, so the gate accepts. It is a \emph{soundness filter} (it can refute a group
+that visibly breaks labels, as on the ring where $185/192$ are rejected) and not an
+\emph{identification} test. The behavioural consequence is exactly what the search results
+show: repair fires on candidates whose group is wrong, and the averaged predictor still
+improves, because averaging over a subgroup of the true symmetry still removes variance.
+Establishing identification would need a different instrument (counterexample search over
+the group, or a symmetry-breaking probe distribution), which we did not build.
+
+\subsection{Baselines the LLM story has to beat}
+\label{sec:baselines}
+
+At the same fit budget ($120$ steps, $256$ rows, $12$ paired seeds), the hand-built
+equivariant architecture (bidirectional CRZ, measured channel residual $4\times10^{-15}$)
+reaches development risk $0.00055$ on \texttt{ring\_n6}; every search arm is worse, by
+$+0.0060$ ($\texttt{llm-fitness}$, CI $[+0.0055,+0.0064]$) to $+0.0097$
+($\texttt{mutation-ea}$), all $p<10^{-4}$. On \texttt{graphs\_n6} the same construction is
+\emph{worse} than every arm ($0.667$ vs $0.538$--$0.566$): an exactly equivariant
+three-parameter block cannot express connectedness, which is the two-sided lesson of
+\citet{baumann2026}. The classical edge-count rule (threshold fitted on training rows only,
+$k{=}6$) reaches development risk $0.351$ and accuracy $0.912$ on graphs, beating every arm;
+the best constant predictor reaches $0.657$; the invariant oracle on the ring is $0$ by
+construction. Density stratification (E-S5) puts the arms' error where the shortcut lives:
+in the $0$--$5$ edge band mean risk is $1.39$ against $0.14$ in the $8$--$9$ band, and the
+edge-count rule's band risk is $1.13$/$0.13$/$0.00$/$0.05$ --- the same profile, which is
+why we describe the graphs task as shortcut-dominated rather than claiming the shortcut
+\emph{caused} the null without an intervention that changes arm ordering.
+
+% HOLDOUT-TABLE-PLACEHOLDER
+
+\section{Discussion}
+\label{sec:discussion}
+
+\paragraph{What the evidence supports.} (a) Enforcing equivariance has a large, robust
+\emph{cost} when the target breaks the symmetry ($+0.045$, CI $[+0.032,+0.058]$), and a
+benefit at $\eta{=}0$ that our data do not establish once units are counted correctly.
+(b) The analytic repair --- inference-time averaging over a declared group --- is the only
+intervention in this study that improves the deployed predictor consistently, and it does
+so for non-LLM pipelines too. (c) Executable verification as implemented does not
+identify symmetry groups, for a reason visible from group theory before the experiment.
+(d) At matched budgets, constructive equivariant design and a one-threshold classical rule
+beat LLM search on these two tasks.
+
+\paragraph{What that implies for the ``verification helps automated science'' thesis.}
+Verification helped in exactly one place: turning a wrong-but-implemented circuit into a
+better predictor by post-processing it with a group we supplied. It did not help the model
+\emph{find} the group, and the feedback channel we built (residual plus label report) did
+not move selected risk. We therefore reposition the claim: in this setting the value of an
+executable verifier is as a precondition for an analytic repair, not as a teacher.
+
+\paragraph{Relation to the pilot.} A $48$-run pilot (3 seeds, 3 treatments) preceded the
+$120$-run study and is retained as exploratory. Its variance check set the confirmatory
+seed count. Dated git evidence for the pilot's protocol is not available
+(Appendix~\ref{app:provenance}), so we describe the search study as protocol-consistent
+rather than verifiably pre-registered; the repair-2, dev-analysis and one-shot holdout
+chain is verifiably pre-registered (protocol commit \texttt{ecd1be72}, 16:20:02Z, precedes
+job submissions at 17:10Z and 17:21Z).
+
+\section{Limitations}
+\label{sec:limitations}
+
+Small dense statevector simulation; two six-qubit development families plus one sealed
+ring holdout, with \texttt{tictactoe\_n9} left sealed and unclaimed because dense
+$n{=}9$ simulation exceeds this revision's budget; a single model
+(\MODEL{}), so no model comparison is claimed; budget $B{=}12$; three (now eight) breaking
+directions, which supports within-benchmark statements only; equal gate counts do not make
+two circuit families equivalent in expressivity or optimisation geometry, so no
+symmetry-only attribution is offered; the verifier's label gate has no power against
+subgroups of the true label symmetry; the model serving alias exposes no immutable
+checkpoint revision, so reproducibility of the LLM component is temporal rather than
+bit-level; and no quantum-advantage claim is made or implied.
+
+\section{Reproducibility and integrity}
+\label{sec:repro}
+
+All splits are orbit-disjoint; the sealed splits were opened once for outcomes after the
+protocol freeze, with a metadata-only access incident recorded in
+\texttt{research/PROVENANCE.md} and remedied by a fresh holdout generated after the freeze;
+every result JSON records seeds, module versions, git commit and host (with two recorded
+defects in the older records); analysis code, run records, dataset manifests, the frozen
+protocol, the bibliography audit and the per-table commands are released with the paper.
+Negative and null results are reported as ``not detected'' with their intervals, and
+equivalence is claimed only against a prespecified margin.
 
 \begin{small}
 \bibliographystyle{plain}
 \begin{thebibliography}{9}
-\bibitem{meyer2023} J.~Meyer, M.~Berkemer, M.~Bretz, et~al.
-\newblock Symmetry-generalised ans\"atze and invariant re-uploading for quantum
-  machine learning.
-\newblock {\em PRX Quantum}, 4:010328, 2023.
 
-\bibitem{nguyen2024} Q.~H.~Nguyen, A.~Garcia, B.~O'Gorman, et~al.
-\newblock General constructive prescriptions for equivariant quantum neural
-  networks.
-\newblock {\em PRX Quantum}, 5:020330, 2024.
+\bibitem{meyer2023} J.~J. Meyer, M.~Mularski, E.~Gil-Fuster, A.~A. Mele, F.~Arzani,
+A.~Wilms, J.~Eisert.
+\newblock Exploiting Symmetry in Variational Quantum Machine Learning.
+\newblock {\em PRX Quantum}, 4:010328, 2023. doi:10.1103/PRXQuantum.4.010328.
 
-\bibitem{mansky2025} A.~Mansky, Z.~Wang, and T.~H.~Hsieh.
-\newblock Permutation-invariant quantum machine learning for graph properties
-  with approximate symmetry.
-\newblock arXiv preprint arXiv:2505.12764, 2025.
+\bibitem{nguyen2024} Q.~T. Nguyen, L.~Schatzki, P.~Braccia, M.~Ragone, P.~J. Coles,
+F.~Sauvage, M.~Larocca, M.~Cerezo.
+\newblock Theory for Equivariant Quantum Neural Networks.
+\newblock {\em PRX Quantum}, 5:020328, 2024. doi:10.1103/PRXQuantum.5.020328.
 
-\bibitem{baumann2026} L.~Baumann and C.~Linnhoff-Popien.
-\newblock Subgroup sharing and task-aligned interactions in quantum
-  tic-tac-toe.
-\newblock arXiv preprint arXiv:2606.20316, 2026.
+\bibitem{mansky2025} M.~B. Mansky, T.~Rohe, G.~Stenzel, A.~Bravo de la Serna,
+S.~Londo\~no Castillo, G.~Sathish, D.~Nikolaidou, D.~Bondarenko, L.~Menzel,
+C.~Linnhoff-Popien.
+\newblock Solving graph problems using permutation-invariant quantum machine learning.
+\newblock arXiv:2505.12764, 2025 (submitted to QCE 25).
 
-\bibitem{elesedy2021} A.~Elesedy and A.~R.~Zaidi.
-\newblock Provably depth-efficient quantum neural networks via symmetric
-  architecture.
-\newblock In {\em ICML}, PMLR 139, 2021.
+\bibitem{baumann2026} M.~Baumann, C.~Linnhoff-Popien, J.~Stein.
+\newblock Symmetry Alone Is Not an Ansatz: Task-Aligned Interactions in Equivariant
+Quantum Circuits.
+\newblock arXiv:2606.20316, 2026. 4th International Workshop on QML (IEEE QCE26).
 
-\bibitem{otto2023} D.~Otto, Y.~Chen, C.~Tomesh, et~al.
-\newblock Symmetry breaking and restoration in variational quantum circuits via
-  Lie derivatives.
-\newblock arXiv preprint arXiv:2311.00212, 2023.
+\bibitem{elesedy2021} B.~Elesedy and S.~Zaidi.
+\newblock Provably Strict Generalisation Benefit for Equivariant Models.
+\newblock In {\em ICML}, PMLR 139, 2021. arXiv:2102.10333.
 
-\bibitem{chen2026} Y.~Chen.
-\newblock Task-level quantum symmetry discovery: finite-measurement inference,
-  task validation and projection bias.
-\newblock arXiv preprint arXiv:2610.00157, 2026.
+\bibitem{otto2023} S.~E. Otto, N.~Zolman, J.~N. Kutz, S.~L. Brunton.
+\newblock A Unified Framework to Enforce, Discover, and Promote Symmetry in Machine
+Learning.
+\newblock arXiv:2311.00212, 2023; {\em JMLR} 26(248):1--83, 2025.
 
-\bibitem{lange2026} R.~Lange, C.~Im, and S.~Toneva.
-\newblock ShinkaEvolve: bandit ensemble selection and novelty rejection for
-  LLM-driven program evolution.
-\newblock In {\em ICLR}, 2026.
+\bibitem{chen2026} Z.~Chen.
+\newblock Symmetry Discovery in Quantum Learning: Observable-Level and Task-Level
+Inference from Finite Measurements.
+\newblock arXiv:2610.00157, 2026.
+
+\bibitem{lange2025} R.~T. Lange, Y.~Imajuku, E.~Cetin.
+\newblock ShinkaEvolve: Towards Open-Ended and Sample-Efficient Program Evolution.
+\newblock arXiv:2509.19349, 2025.
+
+\bibitem{ho2026prior} C.-Y. Ho.
+\newblock Identifying Symmetries in Quantum Machine Learning with LLM-Guided Evolutionary
+Search.
+\newblock Archived in this repository: \texttt{README.md} at git commit
+\texttt{13ea13eb76af2f587c508aefde81b9dd026b3ce1}, 31 Aug 2026, with run artefacts under
+\texttt{experiments/transfer-sn/}. Self-audited in \S\ref{sec:audit}.
+
 \end{thebibliography}
 \end{small}
 
 \appendix
-\section*{Appendix: reproduction}
+
+\section{CRZ algebra behind the arms}
+\label{app:crz}
+
+With the simulator's convention ($q_0$ most significant,
+$\mathrm{CRZ}_{ij}(b)=\lvert0\rangle\langle0\rvert_i\otimes I_j +
+\lvert1\rangle\langle1\rvert_i\otimes\mathrm{RZ}(b)_j$),
+\begin{align}
+ \mathrm{CRZ}_{ij}(b)\,\mathrm{CRZ}_{ji}(b)
+   &= \exp\!\bigl(-\tfrac{i b}{4}(Z_i+Z_j)\bigr)\,
+      \exp\!\bigl(+\tfrac{i b}{2}Z_iZ_j\bigr), \label{eq:rep}\\
+ \mathrm{CRZ}_{ij}(b)^2 &= \mathrm{CRZ}_{ij}(2b)
+   = \exp\!\bigl(-\tfrac{i b}{2}Z_j\bigr)\,
+     \exp\!\bigl(+\tfrac{i b}{2}Z_iZ_j\bigr). \label{eq:dup}
+\end{align}
+Both are verified numerically to $10^{-13}$ in
+\texttt{research/experiments/repair/test\_repair2.py}. Equation~\eqref{eq:rep} is the
+analytic reason the repaired arm is equivariant: the $ZZ$ term is manifestly symmetric and
+the field term is a permutation-symmetric product of identical single-qubit rotations, so
+the block commutes with \emph{every} permutation, not only $D_6$; the measured residual
+($4\times10^{-16}$) is a check, not the proof. Equation~\eqref{eq:dup} is the analytic
+reason the gate-count-matched control is not: its field term hits only the target wire, so
+local fields are non-uniform. It also shows the control is the \texttt{original}
+interaction at angle $2b$, which is why an operator-matched control
+(\texttt{control\_matched}, initial $b$ halved) is needed and why the two controls are
+reported separately.
+
+\section{Reproduction}
+\label{app:repro}
+
 \noindent
-Core and experiment tests:
+Tests (all pass):
 \begin{verbatim}
-python3 -m unittest discover -s research/core      -p 'test_*.py'   # 36 pass
-python3 -m unittest research.experiments.repair.test_repair          # 6 pass
-python3 -m unittest discover -s research/search     -p 'test_*.py'   # 14 pass
-python3 -m research.experiments.repair.repair_experiment \
-  --teacher-seeds 101,202,303 --n-opt-seeds 8 --budgets 200 \
-  --max-train 256 --out research/experiments/repair/repair_results.json
-python3 -m research.search.analyze --dir logs/runs_confirm \
-  --out research/search/confirm_analysis.json
-python3 -m research.compile_results \
-  --repair research/experiments/repair/repair_results.json \
-  --search research/search/confirm_analysis.json \
-  --out research/results_summary.md
+python3 -m unittest discover -s research/core      -p 'test_*.py'
+python3 -m unittest discover -s research/experiments/repair -p 'test_*.py'
+python3 -m unittest discover -s research/search    -p 'test_*.py'
 \end{verbatim}
-Stack: \texttt{Python/3.12.3}, \texttt{SciPy-bundle/2024.05} (NumPy 1.26.4,
-SciPy 1.13.1); LLM arms additionally load the YCRC-hosted model module
-(\texttt{ycrc-local}). CPU batch jobs run on the cluster \texttt{day} partition;
-\texttt{OPENBLAS\_NUM\_THREADS=1}.
+Experiments and analyses (one command per table):
+\begin{verbatim}
+python3 -m research.experiments.repair.repair_experiment2 --workers 48 \
+  --out research/experiments/repair/repair2_results.json
+python3 -m research.experiments.repair.analyze_repair \
+  --in  research/experiments/repair/repair_results.json \
+  --out research/experiments/repair/repair_v1_reanalysis.json
+python3 -m research.experiments.repair.analyze_repair \
+  --in  research/experiments/repair/repair2_results.json \
+  --out research/experiments/repair/repair2_analysis.json
+python3 -m research.search.analyze2 --dir logs/runs_confirm \
+  --out research/search/confirm_analysis2.json --label confirmatory
+python3 -m research.search.dev_analysis --dir logs/runs_confirm \
+  --out research/search/dev_analysis.json --workers 24
+python3 -m research.holdout_oneshot --workers 16   # ONE shot; writes HOLDOUT_*
+python3 -m research.compile_results2 --out research/results_summary2.md
+\end{verbatim}
+Stack: \texttt{Python/3.12.3}, \texttt{SciPy-bundle/2024.05} (NumPy 1.26.4, SciPy 1.13.1);
+LLM arms additionally \texttt{module load ycrc-llm/1.0}. CPU batch jobs run on the
+cluster's \texttt{day} partition with \texttt{OPENBLAS\_NUM\_THREADS=1}; the work is
+CPU-only, so no GPU partition is used (holding a GPU idle to satisfy old protocol wording
+would violate cluster utilization policy).
+
+\section{Provenance}
+\label{app:provenance}
+
+Model identity: the alias \texttt{ycrc-local} resolves to \MODEL{}, root
+\texttt{/apps/software/openwebui\_models/Qwen3.8-Flash-Next-FP8}, served by vLLM with
+\texttt{max\_model\_len} $262144$; requests send \texttt{model} and
+\texttt{reasoning\_effort="none"} only (no temperature, top\_p or max\_tokens), with a
+$180$\,s timeout and up to $8$ retries (none needed: $584/584$ calls succeeded on the first
+attempt, mean latency $2.75$\,s). Budgets for the $120$-run study: $584$ calls,
+$1{,}294{,}840$ tokens ($829{,}452$ prompt / $465{,}388$ completion), $1448$ proposals of
+which $8$ were invalid and retained, $18.1$ core-hours. The gateway publishes no immutable
+checkpoint revision, so the pin is alias $+$ root path $+$ module version $+$ date.
+
+Two provenance defects in our own earlier records, recorded rather than repaired
+silently: (1) the run JSONs report \texttt{git\_commit=a37fc2d6}, which does not contain
+the code that produced them (it was uncommitted at run time); (2) the plan document that
+claims to have been frozen before any outcome was seen first appears in git
+\emph{after} the pilot and confirmatory runs, so the search study is described as
+protocol-consistent, not verifiably pre-registered. Full dated chain, sealed-file digests
+and the access incident: \texttt{research/PROVENANCE.md}.
 
 \end{document}

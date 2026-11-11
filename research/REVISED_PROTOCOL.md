@@ -154,7 +154,7 @@ test / fresh holdout), and the unit count. Model identity is reported as the ser
 model name plus the serving configuration actually used (see `PROVENANCE.md`), never as a
 bare alias.
 
-## 6b. Addendum A1 (added 2026-11-11 17:45Z, before any of its results existed)
+## 6b. Addendum A1 (added 2026-11-11 **17:37:14Z**, commit `e32e0f9a`; job submitted 17:37:16Z — i.e. before any of its results existed)
 
 Referee point 9 asks for a symmetry-breaking task to test verifier **selectivity**.
 This is a **new prospective comparison**, declared here before submission and kept out
@@ -169,6 +169,20 @@ of every frozen family above:
 * prediction stated in advance: if the verifier's effect is to push the search toward
   invariance, `llm-verify` must be **worse** than `llm-fitness` here; if the verifier is
   selective, the two should not differ materially. Whichever happens is reported.
+
+## 6c. Addendum A2 (2026-11-11 17:45Z, committed before its analysis runs): density-matched arm comparison
+
+The referee asked for "density-matched arm comparisons or explicit shortcut-strength sweeps"
+before any causal role may be asserted for the density shortcut. Because all arms share seeds
+and therefore datasets, restricting a paired arm contrast to the rows inside one edge-count
+band **is** a density-matched comparison by construction. New estimand **E-S5c**: for each
+band, the paired mean difference between arms over the rows in that band (same units and
+inference as the D-family contrasts, Holm within the family "band contrasts per family");
+still development risk. Interpretation fixed in advance: if within-band arm differences are
+small and of mixed sign while the between-band risk profile is steep, the shortcut explains
+the level of risk but not the ordering of arms; if within-band ordering reproduces the
+marginal ordering, the shortcut does not explain the null. No quantum-advantage or
+task-generality claim is made either way.
 
 ## 7. What is *not* changed by this protocol
 
