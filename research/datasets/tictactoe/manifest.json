@@ -1,0 +1,143 @@
+{
+  "seed": 20261110,
+  "protocol": "WP-TTT prospective family, generated independently of the parent datasets manifest. Split and targets are fixed before training. The locked holdout is sealed: locked_holdout/tictactoe_n9.npz must stay outside every search context and is opened once, only after architecture, optimizer, seeds and analysis choices are frozen. This directory naming is an access contract, not a filesystem security boundary.",
+  "families": {
+    "tictactoe_n9": {
+      "n": 9,
+      "group": "D4",
+      "generators": {
+        "rotation": [
+          6,
+          3,
+          0,
+          7,
+          4,
+          1,
+          8,
+          5,
+          2
+        ],
+        "reflection": [
+          2,
+          1,
+          0,
+          5,
+          4,
+          3,
+          8,
+          7,
+          6
+        ]
+      },
+      "lines": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ],
+        [
+          6,
+          7,
+          8
+        ],
+        [
+          0,
+          3,
+          6
+        ],
+        [
+          1,
+          4,
+          7
+        ],
+        [
+          2,
+          5,
+          8
+        ],
+        [
+          0,
+          4,
+          8
+        ],
+        [
+          2,
+          4,
+          6
+        ]
+      ],
+      "encoding": "row-major 3x3 cells; -1=O, 0=empty, +1=X; x arrays are float64 shape (rows, 9)",
+      "sampling": "All terminal tic-tac-toe boards reachable by alternating play from the empty board with X first. Play continues after a win, so boards carrying extra marks beyond a completed line are reachable and are kept when terminal. Exact D4 orbits (lexicographic minimum over all 8 elements) are shuffled once with default_rng(20261110) and allocated 60/20/20 to train/validation/test; whole orbits never cross splits. Labeled boards are weighted uniformly within each split, so larger orbits carry more weight. No class balancing.",
+      "reachability_rule": "board reachable from the empty board by alternating X,O,X,... moves with X first; move counts satisfy nX == nO or nX == nO + 1",
+      "terminal_rule": "X owns at least one of the 8 lines, or O owns at least one line, or the board is full (no empty cell)",
+      "tasks": [
+        "winner",
+        "winner_designated",
+        "winner_designated_corner"
+      ],
+      "targets": {
+        "winner": "D4-invariant target. +1 if X owns at least one line (tested first), else -1 if O owns at least one line, else 0 (full board with no line, i.e. a draw). X is tested first, which resolves the boards where play continued past a win and both players own a line; that tie-break is itself D4-invariant.",
+        "winner_designated": "Counterfactual requested by WP-TTT. Exact rule: let w = winner(board) and L = the lines owned by w. If w == 0 the label is 0. Otherwise the label is -w (a sign flip) if at least one line in L contains cell 4 (the centre), and +w otherwise. Cell 4 is fixed by every element of D4 and lines map to lines, so this predicate is D4-invariant: measured violation fraction is 0.0, i.e. as specified it does NOT break D4. See notes.",
+        "winner_designated_corner": "Supplementary counterfactual that does break D4. Exact rule: let w = winner(board) and L = the lines owned by w. If w == 0 the label is 0. Otherwise the label is -w if at least one line in L contains cell 0 (the top-left corner), and +w otherwise; i.e. the same sign flip as winner_designated but keyed on a corner. Cell 0 is not fixed by D4 (its orbit is the four corners), so a line through cell 0 can move off cell 0 under a rotation or reflection and the label changes."
+      },
+      "invariance": {
+        "winner": {
+          "designated_cell": null,
+          "measured_violation_fraction": 0.0
+        },
+        "winner_designated": {
+          "designated_cell": 4,
+          "measured_violation_fraction": 0.0
+        },
+        "winner_designated_corner": {
+          "designated_cell": 0,
+          "measured_violation_fraction": 0.3751638269986894
+        }
+      },
+      "notes": [
+        "X-priority tie-break in `winner` matters: because play is not stopped at the first win, terminal boards exist where both players own a line (e.g. X top row, O middle row, X bottom row). They are labeled +1.",
+        "WP-TTT asked for a D4-breaking counterfactual using the centre cell. The centre is fixed by all 8 group elements, so any predicate of the form \"the winning line contains cell 4\" is D4-invariant and cannot break the symmetry; validate.py reports the measured violation fraction (0.0) and flags the specification defect. `winner_designated` is kept exactly as requested and `winner_designated_corner` (designated cell 0) is provided as the working counterfactual.",
+        "The terminal predicate is applied to every reachable board, so play is not stopped at the first win. Under the stricter stop-at-first-win-or-full-board convention the family would hold 958 boards instead of 1526; the 156 boards where both players own a line, and the X-priority tie-break, arise only under the convention used here. Draws are the 16 full boards with no line for either player.",
+        "This family is discrete classification on {-1,0,1} boards. It has no continuous symmetry-breaking control variable and no quadratic defect law; unlike ring_n6 there are no alpha conditions and no alpha-squared target-defect scaling to report."
+      ],
+      "counts": {
+        "train": {
+          "rows": 904,
+          "orbits": 133,
+          "target_means": {
+            "winner": 0.5265486725663717,
+            "winner_designated": 0.06637168141592921,
+            "winner_designated_corner": 0.10619469026548672
+          }
+        },
+        "validation": {
+          "rows": 316,
+          "orbits": 45,
+          "target_means": {
+            "winner": 0.31645569620253167,
+            "winner_designated": -0.11392405063291139,
+            "winner_designated_corner": 0.08860759493670886
+          }
+        },
+        "test": {
+          "rows": 306,
+          "orbits": 45,
+          "target_means": {
+            "winner": 0.35947712418300654,
+            "winner_designated": 0.058823529411764705,
+            "winner_designated_corner": 0.16339869281045752
+          }
+        }
+      },
+      "files": {
+        "development/tictactoe_n9.npz": "31f470cdc7390f2299e10dd1e9a169b9f893be4ef5985a0404bfd4afc3985089",
+        "locked_holdout/tictactoe_n9.npz": "bb6360a8d16a1be8c7bc1863a92664e7628b59763c2a1de06a4573b44d3f0954"
+      }
+    }
+  }
+}
