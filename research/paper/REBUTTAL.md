@@ -70,8 +70,8 @@ not speak to the repair.
 
 **What we did.** `research/search/analyze2.py` defines the estimands separately:
 * **E-S1** — paired before/after averaging on the *same frozen candidate*:
-  **−0.04862, CI [−0.07083, −0.02839], shifted-bootstrap p < 10⁻⁴, sign-flip p = 0.0156,
-  7 of 12 runs** on `graphs_n6`; on `ring_n6` **4 repairs attempted, 0 fired → no data**,
+  **−0.04862, CI [−0.07083, −0.02839], shifted-bootstrap p < 5×10⁻⁵, sign-flip p = 0.0156 (exact),
+  all 7/7 averaged predictors better, 7 of 12 runs** on `graphs_n6`; on `ring_n6` **4 repairs attempted, 0 fired → no data**,
   which the first version did not report either.
 * **E-S2** — deployed-pipeline endpoint: `verify-repair − verify` moves from **+0.0009**
   (candidate endpoint, as first reported) to **−0.02744, CI [−0.05401, +0.00519]** (deployed).
@@ -139,8 +139,9 @@ per orbit admits invariant interpolants, so no non-vacuous empirical floor exist
 representatives alone.
 
 On the specific arithmetic: the 0.866 the referee used is a *per-direction* floor (the first
-teacher's). Recomputed per unit, the floor ranges 0.866–1.059 across directions (mean 0.948),
-and the repaired arm's excess above the floor is **+0.0228** (range −0.010 to +0.052), while
+teacher's). Recomputed per unit, the floor ranges 0.866–1.059 across the three directions (mean 0.948),
+and the repaired arm's excess above its own unit's floor is **+0.0228 (per-unit range
+−0.0098 to +0.0524; per-direction mean +0.0246)**, while
 the asymmetric arms sit **below** the floor (−0.020, −0.022) because the floor constrains
 only invariant predictors. "Pinned near the floor" is therefore replaced by these numbers
 plus the approximation/optimisation error (excess risk with intervals, and the budget-
@@ -198,8 +199,8 @@ show). New evidence added:
   `ring_n6` with target `alpha_1`, where the declared group is *not* a label symmetry, 12
   fresh paired seeds, its own Holm family, with the prediction stated in advance.
 * **Density shortcut:** we no longer assert causation. We report the stratified risks
-  (E-S5: band 0–5 mean risk 1.39 vs 0.14 in band 8–9) and the classical rule's band profile,
-  and describe the task as shortcut-dominated; the intervention that would license a causal
+  (E-S5: the five arms' mean risk is 1.439 in band 0–5 vs 0.167 in band 8–9) and the
+classical rule's band profile (1.13 / 0.13 / 0.00 / 0.05 over the four populated bands), and describe the task as shortcut-dominated; the intervention that would license a causal
   claim (density-matched arm ordering, or a shortcut-strength sweep) is named as required
   future work rather than claimed.
 * **Novelty:** the title, abstract and conclusions are narrowed to this benchmark; no priority
