@@ -50,11 +50,27 @@ copies of eight experiments.
    record does not support the η=0 benefit**: the interval is on the edge of excluding zero
    and neither calibrated p-value is small. We say so in the abstract.
 3. New experiment WP-REPAIR-2 (`research/experiments/repair/repair_experiment2.py`, job
-   `32982225`) with the unit definition enforced by design: **8** breaking directions ×
-   **24** optimiser seeds, so η=0 has 24 genuine units and η>0 has 192; η=0 is emitted once
-   (direction-free) rather than three times. For η>0 we report every direction separately
-   and add a cluster bootstrap over directions with the caveat that 8 clusters support only
-   a within-benchmark statement.
+   `32982225`, **complete**: 2340 fits) with the unit definition enforced by design: **8**
+   breaking directions × **24** optimiser seeds, so η=0 has 24 genuine units (120 rows → 24
+   units) and η>0 has 192 (960 rows → 192 units); η=0 is emitted once (direction-free)
+   rather than three times. Its verdict, with Holm inside the η=0 family:
+
+   | contrast (η=0, 24 units) | mean diff | 95% CI | p_boot | p_flip | p_Holm |
+   |---|---|---|---|---|---|
+   | repaired − control_dup | −0.00060 | [−0.00135, +0.00019] | 0.123 | 0.150 | 0.246 |
+   | repaired − control_rand | **−0.00171** | [−0.00276, −0.00080] | 0.0012 | 0.0004 | **0.006** |
+   | repaired − original | **−0.00134** | [−0.00237, −0.00031] | 0.011 | 0.018 | **0.043** |
+   | control_dup − original | −0.00074 | [−0.00166, +0.00002] | 0.082 | 0.133 | 0.246 |
+   | control_matched − original | +0.00003 | [−0.00033, +0.00053] | 0.875 | 0.937 | 0.875 |
+
+   The repaired arm beats the original and the random-direction control, but the
+   **gate-count-matched duplicate control closes most of the gap**, so the symmetry-specific
+   part (−0.0006) is *not* established — the referee's suspicion that the original contrast
+   was confounded by capacity is supported by our own new data. At η=1 the cost is robust
+   (repaired − control_dup **+0.03605**, CI [+0.03134, +0.04087], 192 units, Holm p < 10⁻³)
+   and grows with the optimiser budget (+0.051 at 600 steps, +0.057 at 1800).
+   For η>0 we report every direction separately and add a cluster bootstrap over directions
+   with the caveat that 8 clusters support only a within-benchmark statement.
 4. The paper's language now distinguishes "not detected" from "no effect" everywhere
    (`paired.verdict()` returns only sanctioned wordings).
 
@@ -116,7 +132,11 @@ initial `b` is halved so its initial operator is *identical* to the original's (
 (iii) optimiser-budget sensitivity at 200/600/1800 steps; (iv) the function-space estimand
 **E-R1** evaluates `f` and its exact Reynolds projection on the orbit-completed distribution
 with declared uniform weights, and we state that this answers a different question from
-retraining different families. Appendix A gives the CRZ algebra as the analytic argument for
+retraining different families. The new controls behave as designed, which validates the
+matching: `control_matched` is statistically indistinguishable from `original` at η=0
+(+0.00003, CI [−0.00033, +0.00053]) while differing from it at η=1 (−0.00234, CI
+[−0.00439, −0.00043]), and `control_dup` — the same interaction at double angle — recovers
+most of the η=0 gap. Appendix A gives the CRZ algebra as the analytic argument for
 the repaired family (the measured residual is a check, not the proof).
 
 ## 5. "Repair helps iff the target is invariant" — **accepted; withdrawn**
@@ -131,12 +151,22 @@ optimised architectures, and we no longer use the former as a theorem about the 
 
 We now (i) state the measure: μ = Unif[−1,1]⁶ with the site-permutation action, a product of
 identical marginals, hence invariant, and prove the invariance we use; (ii) give the
-decomposition `R(f) = R(Pf) + E[(f−Pf)²] + 2E[(f−Pf)(y−ȳ)]`, whose cross term vanishes only
+decomposition `R(f) = R(Pf) + E[(f−Pf)²] − 2E[(f−Pf)(y−ȳ)]`, whose cross term vanishes only
 for an invariant target — measured per arm, and reported; (iii) separate the **population**
 floor, its **Monte-Carlo** estimate on representatives, and the **exact finite-orbit** floor
 on the orbit-completed set (uniform weights, declared), and we agree that one representative
 per orbit admits invariant interpolants, so no non-vacuous empirical floor exists on
 representatives alone.
+
+**A sign error we found in our own statement while checking this point.** The frozen
+protocol and the draft both wrote the decomposition with `+ 2E[(f−Pf)(y−ȳ)]`; the correct
+sign is `−`. It is not cosmetic: with the wrong sign one predicts
+`R(f) − R(Pf) = E[(f−Pf)²] ≥ 0` for *every* target, whereas the corrected identity predicts
+a *negative* value when the target breaks the symmetry — and that is what WP-REPAIR-2
+measures (−0.013 to −0.018 at η=0.5, −0.033 to −0.047 at η=1 for the asymmetric arms: projecting
+an asymmetric fit onto the invariant subspace hurts exactly where invariance is wrong). The
+corrected identity holds to 3.7×10⁻¹⁶ over all 2340 fits (5.5×10⁻¹⁸ at η=0). The protocol
+carries this as dated Amendment A3 rather than a silent edit.
 
 On the specific arithmetic: the 0.866 the referee used is a *per-direction* floor (the first
 teacher's). Recomputed per unit, the floor ranges 0.866–1.059 across the three directions (mean 0.948),

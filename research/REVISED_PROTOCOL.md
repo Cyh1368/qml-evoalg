@@ -184,6 +184,25 @@ the level of risk but not the ordering of arms; if within-band ordering reproduc
 marginal ordering, the shortcut does not explain the null. No quantum-advantage or
 task-generality claim is made either way.
 
+## 6d. Addendum A3 (2026-11-11 18:05Z): algebraic correction to the E-R1 description
+
+E-R1 above stated that on the orbit-completed measure
+`R_orb(f) - R_orb(P_G f)` "is exactly `E[(f - P_G f)^2] >= 0` by the projection identity".
+That is true **only for an invariant target**. The correct identity for an arbitrary target
+is
+
+```
+R(f) - R(Pf) = E[(f-Pf)^2] - 2 E[(f-Pf)(y - P y)],
+```
+
+so with a symmetry-breaking target the difference can be negative. WP-REPAIR-2 measures
+exactly that (`-0.013` to `-0.018` at `eta=0.5`, `-0.033` to `-0.047` at `eta=1` for the
+asymmetric arms), and the corrected identity holds to `3.7e-16` over all 2340 fits
+(`5.5e-18` at `eta=0`). This amendment changes a **stated algebraic fact and its
+interpretation only**: no estimand, replication unit, contrast, multiplicity family,
+decision rule or threshold is altered, and it was written after the WP-REPAIR-2 runs
+completed (which is why it is an amendment and not a silent edit).
+
 ## 7. What is *not* changed by this protocol
 
 The audit findings (`research/audit.md`), the mathematical preliminaries, and the refusal

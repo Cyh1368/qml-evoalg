@@ -221,8 +221,10 @@ def orbit_eval(arm, task, tf, theta, x_dev, closure):
     risk_proj = float(np.mean((f_proj - y) ** 2))
     floor_orb = float(np.mean((y - y_bar) ** 2))         # exact finite-orbit floor
     asym = float(np.mean((f - f_proj) ** 2))
-    # R(f) = R(Pf) + E[(f-Pf)^2] + 2 E[(f-Pf)(y-ybar)]; the cross term vanishes
-    # exactly for an invariant target (eta = 0), which is the projection identity.
+    # R(f) = R(Pf) + E[(f-Pf)^2] - 2 E[(f-Pf)(y-ybar)] (sign verified: the identity holds
+    # to 3.7e-16 over all WP-REPAIR-2 fits); the cross term vanishes exactly for an
+    # invariant target (eta = 0), which is the projection identity. For eta > 0 the cross
+    # term dominates E[(f-Pf)^2], so R(f) - R(Pf) < 0 for the asymmetric arms.
     cross = float(np.mean((f - f_proj) * (y - y_bar)))
     return {"orb_risk": risk_f, "orb_risk_proj": risk_proj,
             "orb_floor": floor_orb, "orb_excess_floor": risk_f - floor_orb,

@@ -131,7 +131,14 @@ def _P_unit(row, eta):
 
 
 def er1_function_space(rows, eta, steps=None):
-    """E-R1: paired R_orb(f) - R_orb(Pf) with its cross term, per arm."""
+    """E-R1: paired R_orb(f) - R_orb(Pf) with its cross term, per arm.
+
+    The identity checked here is ``R(f) - R(Pf) = E[(f-Pf)^2] - 2 E[(f-Pf)(y-ybar)]``
+    (sign as in REVISED_PROTOCOL Amendment A3).  ``identity_gap_max`` is the deviation from
+    the *invariant-target* specialisation (it equals ``2|cross|`` and is therefore nonzero
+    for eta > 0 by construction); ``full_identity_gap_max`` is the deviation from the full
+    identity and must be at roundoff for every row, at every eta.
+    """
     sel = [r for r in rows if r["eta"] == float(eta)
            and (steps is None or int(r.get("steps", 0)) == int(steps))
            and "orb_risk" in r]
@@ -145,7 +152,10 @@ def er1_function_space(rows, eta, steps=None):
              "mean_cross_term": float(np.mean([r.get("orb_cross_term", 0.0)
                                                for r in rs])),
              "identity_gap_max": float(np.max([abs(x - r["orb_asymmetry"])
-                                               for x, r in zip(d, rs)]))}
+                                               for x, r in zip(d, rs)])),
+             "full_identity_gap_max": float(np.max([
+                 abs((x - r["orb_asymmetry"]) + 2.0 * r.get("orb_cross_term", 0.0))
+                 for x, r in zip(d, rs)]))}
         e["bootstrap"] = _P.bootstrap_ci(d)
         out.append(e)
     return out

@@ -44,11 +44,13 @@ LLM-evolutionary study: its selection score used test data, one architecture-wid
 equivariance claim is false (measured channel defect $0.0597$), and significance was
 computed at proposal rather than run level. (ii)~A causal repair experiment on a ring
 benchmark whose replication units, controls and floors are stated explicitly: at
-$\eta{=}0$ the gate-count-matched contrast is direction-free, so the previous
-$24$-row record contains $8$ units, not $24$; recomputed on $8$ units the interval is
-$[-0.00217,-0.00002]$ with sign-flip $p{=}0.125$, which we report as \emph{not}
-supporting the original claim, while the $\eta{=}1$ cost of enforced invariance is large
-and robust ($+0.045$, CI $[+0.032,+0.058]$). (iii)~In the frozen $120$-run search study,
+$\eta{=}0$ the target is direction-free, so the previous $24$-row record contains $8$ units,
+not $24$ (recomputed: interval $[-0.00217,-0.00002]$, sign-flip $p{=}0.125$); the redesigned
+experiment with $24$ genuine $\eta{=}0$ units finds that the repaired arm beats the original
+($-0.00134$, Holm $p{=}0.043$) but \emph{not} the gate-count-matched duplicate control
+($-0.00060$, CI $[-0.00135,+0.00019]$), so the symmetry-specific benefit is not established,
+while the $\eta{=}1$ cost of enforced invariance is large, robust and budget-increasing
+($+0.03605$, CI $[+0.03134,+0.04087]$ at $200$ steps, rising to $+0.057$ at $1800$). (iii)~In the frozen $120$-run search study,
 the endpoint that had been omitted --- inference-time Reynolds averaging of the deployed
 predictor --- is the one effect that is consistent and large
 ($-0.0486$, CI $[-0.0708,-0.0284]$, $7/12$ runs eligible on \texttt{graphs\_n6}), whereas
@@ -133,7 +135,8 @@ that the historical task had no signal; it had a density shortcut \\
 \midrule
 Enforcing equivariance changes risk causally &
 WP-REPAIR-2, $8$ directions $\times$ $24$ optimiser seeds, gate-count- \emph{and}
-operator-matched controls (\S\ref{sec:repair-results}) &
+operator-matched controls (Table~\ref{tab:rep2}): robust cost at $\eta{>}0$, \emph{no}
+established symmetry-specific benefit at $\eta{=}0$ &
 an ``iff'' over all mismatches; a symmetry-only effect (families differ in
 parameter-to-function map and optimisation geometry) \\
 \midrule
@@ -245,16 +248,23 @@ average. $\mu$ is \emph{invariant} iff $\bar\mu=\mu$.
 Let $\mu$ be $G$-invariant, $y=h+\eta b$ with $\Tg h=h$ and $\Tg b=0$, and
 $R(f)=\mathbb{E}_{x\sim\mu}(f(x)-y(x))^2$. Then for every $f$,
 \begin{equation}
-  R(f)=R(\Tg f)+\mathbb{E}\bigl[(f-\Tg f)^2\bigr]+2\,\mathbb{E}\bigl[(f-\Tg f)(y-\Tg y)\bigr],
+  R(f)\;=\;R(\Tg f)+\mathbb{E}\bigl[(f-\Tg f)^2\bigr]-2\,\mathbb{E}\bigl[(f-\Tg f)(y-\Tg y)\bigr],
 \end{equation}
 so the cross term vanishes when $y$ is invariant ($\eta=0$), giving
-$R(f)=R(\Tg f)+\mathbb{E}[(f-\Tg f)^2]$, and for every \emph{invariant} $f$,
+$R(f)=R(\Tg f)+\mathbb{E}[(f-\Tg f)^2]\ge R(\Tg f)$, and for every \emph{invariant} $f$,
 $R(f)=\mathbb{E}[(f-h)^2]+\eta^2\mathbb{E}[b^2]\;\ge\;\eta^2\mathbb{E}_\mu[b^2]$.
 \end{proposition}
 
 The proof is the orthogonality of the projection plus
 $\mathbb{E}[g\,b]=\mathbb{E}[g\,\Tg b]=0$ for invariant $g$, which uses the invariance of
-$\mu$ essentially. In our benchmark $\mu=\mathrm{Unif}[-1,1]^6$ with the site-permutation
+$\mu$ essentially. The sign matters and an earlier draft of this paper had it wrong: with
+an invariant target the post-hoc projection can only \emph{help} ($R(f)\ge R(\Tg f)$), but
+when the target breaks the symmetry the cross term dominates and $R(f)-R(\Tg f)<0$ ---
+measured, $-0.013$ to $-0.018$ at $\eta{=}0.5$ and $-0.033$ to $-0.047$ at $\eta{=}1$ for
+the asymmetric arms, i.e.\ projecting an asymmetric fit onto the invariant subspace
+\emph{hurts} exactly where invariance is wrong. The full identity holds to
+$3.7\times10^{-16}$ over all $2340$ fits of WP-REPAIR-2 ($5.5\times10^{-18}$ at
+$\eta{=}0$). In our benchmark $\mu=\mathrm{Unif}[-1,1]^6$ with the site-permutation
 action, a product of identical marginals, hence permutation-invariant, so the hypothesis
 holds. Three quantities must not be conflated, and the first version of this paper did
 conflate them:
@@ -471,7 +481,96 @@ $\eta$ & arm & mean dev risk & floor (mean over units) & excess over floor \\
 \end{tabular}
 \end{table}
 
-% REPAIR2-TABLE-PLACEHOLDER
+\begin{table}[t]
+\centering
+\caption{WP-REPAIR-2 with the unit definition enforced by design: $\eta{=}0$ is emitted
+once (the target is direction-free) with $24$ optimiser seeds, $\eta{>}0$ has
+$8$ directions $\times$ $24$ seeds $=192$ units. Holm is applied within the
+$\eta{=}0$ and $\eta{=}1$ families. Reading: the repaired arm does beat the
+\texttt{original} and the random-direction control at $\eta{=}0$, but the
+\emph{gate-count-matched duplicate} control closes most of that gap, so the
+symmetry-specific part ($-0.0006$) is not established. At $\eta{>}0$ the cost of enforced
+invariance is robust and grows with the optimiser budget.}
+\label{tab:rep2}
+\small
+\begin{tabular}{@{}llrrrrrl@{}}
+\toprule
+$\eta$ & contrast & units & mean diff & $95\%$ CI & $p_{\text{boot}}$ & $p_{\text{flip}}$ & $p_{\text{Holm}}$ \\
+\midrule
+0.0 & repaired $-$ control\_dup & 24 & $-0.00060$ & $[-0.00135,+0.00019]$ & 0.123 & 0.150 & 0.246 \\
+0.0 & repaired $-$ control\_rand & 24 & $\mathbf{-0.00171}$ & $[-0.00276,-0.00080]$ & 0.0012 & 0.0004 & \textbf{0.006} \\
+0.0 & repaired $-$ original & 24 & $\mathbf{-0.00134}$ & $[-0.00237,-0.00031]$ & 0.011 & 0.018 & \textbf{0.043} \\
+0.0 & control\_dup $-$ original & 24 & $-0.00074$ & $[-0.00166,+0.00002]$ & 0.082 & 0.133 & 0.246 \\
+0.0 & control\_matched $-$ original & 24 & $+0.00003$ & $[-0.00033,+0.00053]$ & 0.875 & 0.937 & 0.875 \\
+\midrule
+0.5 & repaired $-$ control\_dup & 192 & $+0.01142$ & $[+0.00958,+0.01329]$ & $<10^{-4}$ & $<10^{-5}$ & $<10^{-3}$ \\
+0.5 & repaired $-$ original & 192 & $+0.00879$ & $[+0.00719,+0.01043]$ & $<10^{-4}$ & $<10^{-5}$ & $<10^{-3}$ \\
+0.5 & control\_dup $-$ original & 192 & $-0.00263$ & $[-0.00457,-0.00069]$ & 0.0083 & 0.0081 & 0.017 \\
+0.5 & control\_matched $-$ original & 192 & $-0.00043$ & $[-0.00124,+0.00032]$ & 0.276 & 0.295 & 0.276 \\
+\midrule
+1.0 & repaired $-$ control\_dup & 192 & $\mathbf{+0.03605}$ & $[+0.03134,+0.04087]$ & $<10^{-4}$ & $<10^{-5}$ & $<10^{-3}$ \\
+1.0 & repaired $-$ control\_rand & 192 & $+0.02797$ & $[+0.02296,+0.03316]$ & $<10^{-4}$ & $<10^{-5}$ & $<10^{-3}$ \\
+1.0 & repaired $-$ original & 192 & $+0.02526$ & $[+0.02135,+0.02920]$ & $<10^{-4}$ & $<10^{-5}$ & $<10^{-3}$ \\
+1.0 & control\_dup $-$ original & 192 & $-0.01080$ & $[-0.01545,-0.00620]$ & $<10^{-4}$ & $2\times10^{-5}$ & $<10^{-3}$ \\
+1.0 & control\_matched $-$ original & 192 & $-0.00234$ & $[-0.00439,-0.00043]$ & 0.021 & 0.021 & 0.021 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{WP-REPAIR-2 floor accounting on the orbit-completed distribution (exact finite-orbit
+floor, uniform weights over the $12$ group images), with the measured predictor invariance
+$\mathbb{E}[(f-\Tg f)^2]$ and the mean channel residual. The repaired arm is exactly
+invariant (residual and asymmetry at roundoff, as proved in Appendix~\ref{app:crz}); the
+asymmetric arms sit below the floor at $\eta{=}1$ by fitting the breaking component.}
+\label{tab:rep2floors}
+\small
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+$\eta$ & arm & dev risk & orbit risk & exact floor & excess & $\mathbb{E}[(f-\Tg f)^2]$ \\
+\midrule
+0.0 & original & 0.01471 & 0.01473 & 0.00000 & $+0.01473$ & $1.4\times10^{-4}$ \\
+0.0 & repaired & \textbf{0.01337} & 0.01337 & 0.00000 & $+0.01337$ & $9\times10^{-34}$ \\
+0.0 & control\_dup & 0.01397 & 0.01399 & 0.00000 & $+0.01399$ & $4\times10^{-5}$ \\
+0.0 & control\_matched & 0.01475 & 0.01477 & 0.00000 & $+0.01477$ & $1.8\times10^{-4}$ \\
+0.0 & control\_rand & 0.01508 & 0.01509 & 0.00000 & $+0.01509$ & $1.0\times10^{-4}$ \\
+\midrule
+0.5 & original & 0.24164 & 0.24612 & 0.24021 & $+0.00591$ & $1.4\times10^{-3}$ \\
+0.5 & repaired & 0.25042 & 0.25587 & 0.24021 & $+0.01565$ & $1.2\times10^{-33}$ \\
+0.5 & control\_dup & \textbf{0.23900} & 0.24289 & 0.24021 & $+0.00268$ & $2.0\times10^{-3}$ \\
+\midrule
+1.0 & original & 0.93566 & 0.95210 & 0.96085 & $-0.00875$ & $1.8\times10^{-3}$ \\
+1.0 & repaired & 0.96091 & 0.98029 & 0.96085 & $\mathbf{+0.01944}$ & $1.6\times10^{-33}$ \\
+1.0 & control\_dup & \textbf{0.92486} & 0.94043 & 0.96085 & $-0.02042$ & $2.8\times10^{-3}$ \\
+1.0 & control\_matched & 0.93332 & 0.95003 & 0.96085 & $-0.01082$ & $2.0\times10^{-3}$ \\
+1.0 & control\_rand & 0.93294 & 0.95224 & 0.96085 & $-0.00861$ & $2.0\times10^{-3}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{What WP-REPAIR-2 decides.} With the unit definition enforced and three asymmetric
+controls, the $\eta{=}0$ picture is: the repaired arm is better than the
+\texttt{original} ($-0.00134$, Holm $p{=}0.043$) and better than the random-direction control
+($-0.00171$, Holm $p{=}0.006$), but the gate-count-matched duplicate control closes most of
+that gap ($-0.00060$, CI $[-0.00135,+0.00019]$), and the operator-matched control is
+indistinguishable from the original ($+0.00003$) --- which is the validation that the
+matching works. The defensible statement is therefore: \emph{under this training procedure,
+enforcing equivariance improves risk over the asymmetric architectures we tried by an amount
+whose symmetry-specific part is smaller than our resolution}, and the honest headline is the
+asymmetry: the cost at $\eta{>}0$ is $60\times$ the size of the $\eta{=}0$ benefit and is
+detected at every budget. Table~\ref{tab:rep2floors} shows why: the repaired arm's predictor
+is invariant to roundoff ($\mathbb{E}[(f-\Tg f)^2]\sim10^{-33}$) while the asymmetric arms
+keep $O(10^{-3})$ of breaking component, which is worth $0.02$ of risk at $\eta{=}1$.
+
+\paragraph{Budget sensitivity.} Repeating the principal contrast at $600$ and $1800$
+Adam steps (fewer units: $6$ at $\eta{=}0$, $12$ at $\eta{>}0$) leaves the $\eta{=}0$
+repaired-versus-duplicate-control difference undetected at every budget
+($-0.00135$, CI $[-0.00316,+0.00006]$ at $600$; $-0.00111$, CI $[-0.00288,+0.00014]$ at
+$1800$), while the $\eta{=}1$ cost of enforced invariance \emph{grows} with the budget
+($+0.036$ at $200$, $+0.051$ at $600$, $+0.057$ at $1800$ steps, all intervals excluding
+$0$): more optimisation makes the asymmetric arms better at fitting the breaking component,
+which is the mechanism Proposition~\ref{prop:floor} predicts.
 
 \subsection{Search: the omitted endpoint is the one that works}
 \label{sec:search-results}
@@ -570,8 +669,10 @@ why we describe the graphs task as shortcut-dominated rather than claiming the s
 \label{sec:discussion}
 
 \paragraph{What the evidence supports.} (a) Enforcing equivariance has a large, robust
-\emph{cost} when the target breaks the symmetry ($+0.045$, CI $[+0.032,+0.058]$), and a
-benefit at $\eta{=}0$ that our data do not establish once units are counted correctly.
+\emph{cost} when the target breaks the symmetry ($+0.03605$, CI $[+0.03134,+0.04087]$, $192$
+units, rising to $+0.057$ at $1800$ optimiser steps), and at $\eta{=}0$ a benefit that the
+gate-count-matched control removes: the repaired arm beats the original architecture but not
+the duplicate-gate control, so no symmetry-specific benefit is established.
 (b) The analytic repair --- inference-time averaging over a declared group --- is the only
 intervention in this study that improves the deployed predictor consistently, and it does
 so for non-LLM pipelines too. (c) Executable verification as implemented does not
