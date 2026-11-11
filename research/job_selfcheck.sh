@@ -13,5 +13,5 @@ module reset
 module load Python/3.12.3-GCCcore-13.3.0 SciPy-bundle/2024.05-gfbf-2024a
 export OPENBLAS_NUM_THREADS=1
 cd "${REPO:-$SLURM_SUBMIT_DIR}"
-python3 research/holdout_oneshot.py --dry-run --splits dev --skip-search \
+python3 -m research.holdout_oneshot --dry-run --splits dev --skip-search \
   --selfcheck research/experiments/repair/repair2_results.json --workers 16

@@ -663,7 +663,52 @@ $0.00$ ($8$--$9$) and $0.05$ ($10$--$11$) --- the same profile, which is
 why we describe the graphs task as shortcut-dominated rather than claiming the shortcut
 \emph{caused} the null without an intervention that changes arm ordering.
 
-% HOLDOUT-TABLE-PLACEHOLDER
+\subsection{One-shot sealed evaluation of the search arms (E-S7)}
+\label{sec:holdout}
+
+Every development-selected candidate was refitted deterministically (reproducing its logged
+development risk to $1.7\times10^{-18}$) and scored once on the sealed split, with the file
+digests recorded before and after (\texttt{research/HOLDOUT_ACCESS.json}).
+
+\begin{table}[t]
+\centering
+\caption{E-S7: sealed-test risk of the frozen $120$-run candidates, refitted deterministically
+(reproducing logged development risk to $1.7\times10^{-18}$) and scored once. The sealed split
+reproduces the development pattern: on the ring the LLM arms beat the non-LLM arms and the
+verifier-versus-fitness difference is undetected; on graphs no arm difference is detected and
+every arm sits far above the $0.351$ edge-count rule.}
+\label{tab:holdout}
+\small
+\begin{tabular}{@{}llrrl@{}}
+\toprule
+family & arm & dev risk & sealed-test risk & paired vs \texttt{random} on test \\
+\midrule
+ring & random            & 0.01013 & 0.00995 & --- \\
+ring & mutation-ea       & 0.01022 & 0.01025 & $+0.00030$ $[-0.00009,+0.00090]$ \\
+ring & llm-fitness       & 0.00651 & 0.00639 & $\mathbf{-0.00356}$ $[-0.00469,-0.00239]$ \\
+ring & llm-verify        & 0.00709 & 0.00711 & $\mathbf{-0.00284}$ $[-0.00442,-0.00117]$ \\
+ring & llm-verify-repair & 0.00664 & 0.00697 & $\mathbf{-0.00298}$ $[-0.00452,-0.00154]$ \\
+\midrule
+graphs & random          & 0.53782 & 0.48704 & --- \\
+graphs & mutation-ea     & 0.53930 & 0.49753 & $+0.01049$ $[-0.01082,+0.03816]$ \\
+graphs & llm-fitness     & 0.56572 & 0.51806 & $+0.03102$ $[-0.04167,+0.09514]$ \\
+graphs & llm-verify      & 0.55158 & 0.49272 & $+0.00568$ $[-0.04052,+0.05050]$ \\
+graphs & llm-verify-repair & 0.55250 & 0.50674 & $+0.01970$ $[-0.00448,+0.05037]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The two prespecified contrasts of interest behave as on development:
+\texttt{llm-verify} $-$ \texttt{llm-fitness} on the ring is $+0.00072$
+(CI $[-0.00039,+0.00186]$, not detected) and on graphs $-0.02534$
+(CI $[-0.11142,+0.05299]$, not detected), while \texttt{llm-fitness} $-$
+\texttt{mutation-ea} on the ring is $-0.00386$ (CI $[-0.00491,-0.00277]$). Test risks are
+uniformly a little below development risks on graphs (the sealed split is easier), so the
+level of the development numbers is not an artifact of the split --- but no arm difference on
+graphs survives the move to sealed data, which is the third time this section has reported a
+development effect that does not materialise.
+
+% ER4-PLACEHOLDER
 
 \section{Discussion}
 \label{sec:discussion}
