@@ -1,0 +1,55 @@
+<NAME>
+merge_center_rz_and_refine_spec
+</NAME>
+
+<DESCRIPTION>
+Introduce two targeted refinements to the ANSATZ_SPEC block:
+1) Merge the pre-center and post-center single-qubit Z rotations into a single shared parameter rz_center, enabling parameter sharing across pre- and post-entanglement layers and reducing overall parameter count.
+2) Update the descriptive docstring to reflect a clarified structure where center rotations are shared across layers, and ring/hub entanglements remain as before.
+
+These changes are lightweight, stay within EVOLVE-BLOCK constraints, and aim to improve generalization and parameter efficiency without altering the fixed training loop or data/feature map behavior.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing.
+
+    Structure:
+    1. Pre-entanglement RZ on all qubits (shared by symmetry)
+    2. RY rotations on all qubits (shared by symmetry)
+    3. Ring entanglement: CZ gates around outer ring
+    4. Hub entanglement: per-edge CRX gates from center to edges (distinct params)
+    5. Post-entanglement RZ on all qubits (shared by symmetry)
+    """
+    spec = []
+=======
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing.
+
+    Structural changes:
+    1) Pre-entanglement RZ on all qubits (shared by symmetry)
+    2) RY rotations on all qubits (shared by symmetry)
+    3) Ring entanglement: CRX gates around outer ring (shared parameter across edges)
+    4) Hub entanglement: CRY gates center-to-edges (hub-edge gates share one parameter)
+    5) Post-entanglement RZ on all qubits (shared by symmetry)
+    """
+    spec = []
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+spec.append({"gate": "RZ", "wire": 8, "param": "rz_pre_center"})
+=======
+spec.append({"gate": "RZ", "wire": 8, "param": "rz_center"})
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+spec.append({"gate": "RZ", "wire": 8, "param": "rz_post_center"})
+=======
+spec.append({"gate": "RZ", "wire": 8, "param": "rz_center"})
+>>>>>>> REPLACE
+</DIFF>

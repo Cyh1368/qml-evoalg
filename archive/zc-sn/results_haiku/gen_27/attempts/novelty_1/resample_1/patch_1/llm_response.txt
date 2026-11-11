@@ -1,0 +1,102 @@
+<NAME>
+skip_link_cz_expressivity
+</NAME>
+
+<DESCRIPTION>
+The prior programs show that a linear chain of CZ gates combined with reverse parametrized gates achieves strong performance (0.91 score). However, the current program attempts to add global mixing layers, which increases parameters to 62 and degrades performance (0.90 score).
+
+Key insight from the recommendation: augment the zero-cost CZ chain with skip-link CZs that connect non-adjacent qubits at no parameter cost. This broadens long-range connectivity without the parameter bloat seen in the current approach.
+
+Novel approach: Instead of adding more parametrized gates globally, strategically insert fixed CZ skip-links at mid-range qubit pairs (0–2, 2–4, 4–6, 6–0) to create a mesh-like topology. This maintains the efficient parameter count while enabling richer correlations. The skip-links act as shortcuts through the linear chain, promoting information flow and nonlocal entanglement patterns that the reverse parametrized layer can exploit.
+
+The design:
+1. Keep the efficient initialization (RY shared pairs, RZ pre-rotations) from prior work
+2. Expand entanglement with linear chain CZ + strategic skip-link CZs (no parameters)
+3. Use single shared parametrized layer (CRZ reverse) instead of multiple layers
+4. Restore efficient post-rotation structure (RZ shared pairs only)
+5. Removes the expensive global mixing RX/RY layer
+
+This balances expressivity (via topology) with parameter efficiency, targeting faster convergence and reduced train-test gap.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Shared initial RY rotations - pairs of qubits share parameters
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    
+    # Shared pre-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    
+    # Linear chain CZ gates for low-depth entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    
+    # Skip-link CZ gates for enhanced mid-range and cyclic connectivity (zero cost)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+    
+    # Reverse chain with shared CRZ gate for amplitude-based entanglement control
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev"},
+    
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

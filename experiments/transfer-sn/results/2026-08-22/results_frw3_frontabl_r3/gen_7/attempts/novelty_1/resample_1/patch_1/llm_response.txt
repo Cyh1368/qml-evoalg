@@ -1,0 +1,62 @@
+Looking at the performance data, the best-scoring program (0.45) uses **shared parameters** across all qubits (only 4 unique params per block = 26 total) with a hypercube CZ entangler. This gives 90% validation accuracy with only 1% generalization gap. The current program has too many individual parameters (24 per block = 146 total), causing overfitting (7% gap).
+
+My key insight: **interleave rotations between entangling dimensions** of the hypercube. The best prior program applies all 12 CZ gates at once, but inserting shared RY rotations between the three entangling dimensions creates richer multi-qubit correlations. This adds only 2 extra shared parameters (6 vs 4 per block) while significantly increasing per-block expressivity.
+
+<NAME>
+interleaved_hypercube_shared_params
+</NAME>
+
+<DESCRIPTION>
+Interleaved hypercube entangler with shared parameters. Instead of applying all 12 CZ gates at once (like the best prior), we split the hypercube into 3 dimension layers and insert shared RY rotations between them. This creates deeper entanglement patterns within each block while keeping parameters heavily shared (6 unique per block = 38 total). The RY between CZ layers allows the circuit to create complex multi-qubit states that a single entangling layer cannot, because RY rotates between Z-eigenstates that CZ preserves, enabling richer interference. Still very regularized via parameter sharing, targeting low generalization gap + higher accuracy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = []
+
+# Input mixer: shared RY rotates all qubits from Z-basis equally
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": q, "param": "ry_in"})
+
+# Shared RZ adds a trainable one-body phase before entangling
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": q, "param": "rz_in"})
+
+# Hypercube dimension 0: pairs differing in bit 0
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [0, 1]})
+ANSATZ_SPEC.append({"gate": "CZ", "wires": [2, 3]})
+ANSATZ_SPEC.append({"gate":

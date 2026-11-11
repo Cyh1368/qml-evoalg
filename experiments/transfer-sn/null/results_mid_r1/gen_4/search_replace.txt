@@ -1,0 +1,85 @@
+<NAME>
+crz_entanglement_efficiency
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses a relatively large parameter set (146 total) with separate RZ layers before and after a simple CZ line of entanglement. To improve parameter efficiency while maintaining accuracy, I propose replacing the post-entanglement RZ layer with parametrized CRZ (controlled rotation Z) gates in a line pattern. This consolidates expressiveness: instead of having parameters in separate RZ gates and no parameters in CZ gates, we integrate the rotation parameters directly into the entanglement layer via CRZ.
+
+Key benefits:
+1. **Parameter reduction**: Reduces from 24 params/block (8 RY + 8 RZ pre + 8 RZ post) to 23 params/block (8 RY + 8 RZ + 7 CRZ), saving ~1.4% of circuit parameters per block, or ~4% overall (146 → 140).
+2. **Better parameter utilization**: CRZ gates parametrically couple qubits, allowing rotation angles to directly influence entanglement strength, which can improve trainability and generalization.
+3. **Maintained expressiveness**: Two layers of single-qubit rotations plus parametrized two-qubit entanglement preserve the model's capability to learn complex decision boundaries.
+4. **Faster convergence potential**: Fewer redundant parameters can lead to faster convergence (evidenced by improved parameter efficiency helping optimization dynamics).
+
+The structure becomes:
+- RY rotations (8 params, independent)
+- RZ rotations (8 params, independent)
+- CRZ line: each of the 7 qubit-pairs (0-1, 1-2, ..., 6-7) has a parametrized controlled-Z rotation (7 params, independent)
+
+This removes the post-entanglement RZ layer, which was somewhat redundant given the flexible pre-entanglement RZ and the now-parametrized entanglement layer.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_6"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

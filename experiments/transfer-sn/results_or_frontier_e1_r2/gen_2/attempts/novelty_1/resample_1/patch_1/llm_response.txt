@@ -1,0 +1,30 @@
+<NAME>
+hardware_efficient_ansatz
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses a deep, relatively weak entangling layer of linear `CZ` gates, flanked by 24 parameters per block (RY and two RZ layers). This creates a high parameter count (146 total parameters) that contributes to a significant generalization gap (train 0.94 vs test 0.87) and reduces the `parameter_efficiency` score. Furthermore, the linear CZ topology takes 7 depth layers per block and lacks full connectivity.
+
+We propose a much more efficient Hardware-Efficient Ansatz (HEA) block:
+1. **Fewer parameters**: Replaced the two `RZ` layers and one `RY` layer with just one `RY` and one `RZ` layer. This drops the parameter count from 24 to 16 per block (a 33% reduction), leading to 98 total parameters. This will boost parameter efficiency and mitigate overfitting (reducing the generalization gap).
+2. **Stronger, shallower entanglement**: We replaced the linear `CZ` gates with a 2-step alternating ring of `CNOT` gates (Evens-Odds, then Odds-Evens). `CNOT` is highly entangling (mixing X and Z bases), and the alternating ring guarantees full connectivity across all 8 qubits with a circuit depth of only 2.
+3. **Interleaved rotations**: Placing the `RZ` layer between the two `CNOT` steps ensures that the local phase rotations don't trivially commute with the entangling operations, maximizing expressivity while maintaining a compact circuit depth.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire":

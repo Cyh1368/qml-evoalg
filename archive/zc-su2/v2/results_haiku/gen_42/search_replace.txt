@@ -1,0 +1,52 @@
+Looking at the performance data, I notice:
+
+1. **Current program (0.66 score)**: Removed the narrow CRX layer that was in the prior best performer (0.67 score)
+2. **Prior best (0.67 score)**: Had a CRX triad right after XX gates, with `ent_nn` parameter sharing, followed by YY gates
+3. **Key metric to improve**: `worst_group_margin_mean` is 0.35 (current) vs 0.36 (prior best). This is the critical bottleneck for robust separation on hard samples
+
+The recommendation to insert a second CRX triad immediately **after** the YY block makes strategic sense:
+- The first CRX triad (between XX and YY) provides controlled entanglement variety
+- A second CRX triad after YY adds another layer of controlled rotation encoding
+- This enriches expressivity without adding distinct parameters (reuses `ent_nn`)
+- Preserves the parameter efficiency that the scoring heavily rewards
+
+The double CRX→YY→CRX motif should better capture non-linear feature interactions, which helps with the hardest samples (those with smallest margins).
+
+<NAME>
+add_post_yy_crx_triad
+</NAME>
+
+<DESCRIPTION>
+Insert a second narrow CRX triad immediately after the YY block, using the same `ent_nn` parameter. This mirrors the successful pattern from the prior best performer (0.67 score) which had a CRX triad between XX and YY.
+
+The additional CRX layer after YY provides:
+1. Richer controlled entanglement patterns without new parameters
+2. Better discrimination of hard samples (worst_group_margin improvement)
+3. Maintains parameter economy (still 7 distinct parameters)
+4. Leverages the XX→CRX→YY→CRX backbone that showed strong results
+
+This targets the primary weakness: worst_group_margin_mean (0.35→0.36) by adding expressivity at the critical middle section of the ansatz.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+
+    # Intermediate rotations
+=======
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+
+    # Second CRX triad for enhanced entanglement after YY block
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+
+    # Intermediate rotations
+>>>>>>> REPLACE
+</DIFF>

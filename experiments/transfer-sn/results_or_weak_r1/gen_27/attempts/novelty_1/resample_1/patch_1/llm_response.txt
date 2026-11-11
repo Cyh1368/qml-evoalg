@@ -1,0 +1,113 @@
+The current architecture is overly complex, leading to overfitting (evidenced by the 0.05 generalization gap and the drop in validation accuracy compared to the simpler initial ansatz). The best performing model (Gen 13) used a simpler, two-bank (0-3, 4-7) parameter-sharing structure that significantly reduced the parameter count (to ~38) and stabilized generalization.
+
+I am replacing the current ansatz with this proven, high-efficiency two-bank architecture. This reduces the parameter space by nearly 50%, which should help the Adam optimizer converge to a more generalizable solution while maintaining necessary entanglement.
+
+<NAME>
+revert_to_proven_two_bank_ansatz
+</NAME>
+
+<DESCRIPTION>
+I am replacing the complex, over-parameterized ansatz (which had 74 parameters and was overfitting) with a simpler two-bank (0-3, 4-7) sharing scheme. This scheme uses 6 parameters per block (RY_a, RY_b, RZ_pre_a, RZ_pre_b, RZ_post_a, RZ_post_b) for a total of 38 parameters. This architecture has previously demonstrated excellent generalization (gap ~0.00) and stability, and is designed to improve the test/validation accuracy by reducing the model's capacity for overfitting while maintaining sufficient expressivity.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Rebalanced design:
+# - N_UPLOADS=2, N_REPEATS=3 for deeper variational processing per data injection
+# - Keep parameter-efficient structure: shared RY, shared pre-RZ, shared post-RZ (12 params / block).
+# - Increase entanglement using only fixed CZ gates (no extra parameters).
+ANSATZ_SPEC = [
+    # Shared RY across qubit pairs: (0,1),(2,3),(4,5),(6,7)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_3"},
+
+    # Shared pre-RZ
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_3"},
+
+    # Interleaved ring CZ entanglement (no extra params)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Additional ladder CZs to improve mixing (fixed gates only)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Shared post-RZ
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_3"},
+]
+=======
+# Efficient two-bank ansatz design (0-3 and 4-7):
+# - Coarse-grained parameter sharing across two 4-qubit banks reduces overfitting.
+# - High-performance baseline structure from previous iterations.
+ANSATZ_SPEC = [
+    # Coarse-grained RY sharing (0-3 vs 4-7)
+    {"gate": "RY", "wire": 0, "param": "ry_h"},
+    {"gate": "RY", "wire": 1, "param": "ry_h"},
+    {"gate": "RY", "wire": 2, "param": "ry_h"},
+    {"gate": "RY", "wire": 3, "param": "ry_h"},
+    {"gate": "RY", "wire": 4, "param": "ry_h2"},
+    {"gate": "RY", "wire": 5, "param": "ry_h2"},
+    {"gate": "RY", "wire": 6, "param": "ry_h2"},
+    {"gate": "RY", "wire": 7, "param": "ry_h2"},
+
+    # Coarse-grained RZ_pre sharing (0-3 vs 4-7)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_h2"},
+
+    # Proven interleaved CZ rings
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Coarse-grained RZ_post sharing (0-3 vs 4-7)
+    {"gate": "RZ", "wire": 0, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_h2"},
+]
+>>>>>>> REPLACE
+</DIFF>

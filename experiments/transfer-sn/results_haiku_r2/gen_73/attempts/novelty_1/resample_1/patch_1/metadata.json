@@ -1,0 +1,14 @@
+{
+  "generation": 73,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "expand_entanglement_with_shared_params",
+  "patch_description": "The current program achieves 0.89 combined score with only 5 parameters per block (ry_basis, cry_bottleneck, rz_readout, rx_main). The prior programs achieved 0.92 with 5 parameters (first seed) and 0.92 with 6 parameters (second seed), suggesting we need richer entanglement structure.\n\nThe key insight from the prior programs is that they use:\n1. Multiple parametrized two-qubit gates (CRY on nearest-neighbor AND next-nearest-neighbor pairs)\n2. Shared parameters across these gates to keep parameter count low while enabling richer expressivity\n\nThe current program has a severe bottleneck: only ONE parametrized two-qubit gate (cry_bottleneck on [0,4]). This limits the circuit's ability to create complex entanglement patterns needed for classification.\n\nThe recommendation suggests consolidating boundary RY layers into one shared key. However, the current program already does this efficiently (ry_basis is shared across all 8 qubits). Instead, I'll follow the proven pattern from the second prior program:\n\n1. Keep the efficient single-qubit layers (ry_basis, rz_readout, rx_main)\n2. Add parametrized nearest-neighbor CRY ring (8 gates, all sharing cry_nn parameter)\n3. Add parametrized next-nearest-neighbor CRY (8 gates, all sharing cry_nnn parameter)\n\nThis increases N_PARAMS_PER_BLOCK from 5 to 7 (adding cry_nn and cry_nnn), which is still well below the 32-parameter limit and matches the structure that achieved 0.92 in prior runs. The shared parameters ensure efficient learning while the expanded connectivity enables richer feature extraction.\n\nExpected improvements:\n- Better test accuracy (0.90 \u2192 0.93+) through richer entanglement\n- Reduced generalization gap through better feature learning\n- Faster convergence through more expressive ansatz\n- Still maintains parameter efficiency",
+  "error_msg": null,
+  "timestamp": "2026-07-24T17:21:39.273834",
+  "llm_cost": 0.030154,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

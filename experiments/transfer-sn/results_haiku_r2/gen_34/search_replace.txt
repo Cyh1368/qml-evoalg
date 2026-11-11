@@ -1,0 +1,73 @@
+You're right. I can only modify the ANSATZ_SPEC within the EVOLVE-BLOCK. Let me revise my approach to add the per-wire readout rotations directly into the ANSATZ_SPEC.
+
+<NAME>
+per_wire_readout_rotations
+</NAME>
+
+<DESCRIPTION>
+The current program achieves a combined score of 0.89, whereas the prior baseline achieved 0.91. The main performance gap appears in test accuracy (0.88 vs 0.93) and test loss (0.42 vs 0.34).
+
+**Analysis:**
+The prior program uses aggressive parameter sharing (3 unique keys across 8 qubits per block) and applies simple gain/bias calibration to the mean Z expectation. The current program has increased to 6 unique parameter keys but test performance has degraded. This suggests the extra parameters are not being used efficiently, and the readout mechanism is too simplistic to capture per-wire phase information.
+
+**Proposed Improvement:**
+Following the formal recommendation, I will add per-wire variational readout rotations directly within ANSATZ_SPEC. These RY and RZ gates will be applied to all qubits at the end of each ansatz block using two new shared parameter keys ("ry_read" and "rz_read"). This approach:
+
+1. Uses only 2 additional shared parameter keys, adding minimal overhead.
+2. Captures residual per-wire phase offsets that the global gain/bias cannot correct.
+3. Works synergistically with the existing global calibration: gain/bias handles the overall signal scale, while per-wire rotations correct per-qubit phase distortions.
+4. Are applied within the ansatz block so they benefit from the full differentiation pipeline.
+
+**Expected Impact:**
+- Test accuracy should improve toward ~0.92–0.93 (reducing gap to prior baseline).
+- Test loss should improve toward ~0.35.
+- Minimal increase in depth and gate count (16 single-qubit gates per block).
+- Parameter efficiency should remain reasonable since we only add 2 unique parameters per block.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 8: Final RZ layer
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+=======
+    # Layer 8: Final RZ layer
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+
+    # Layer 9: Per-wire readout RY corrections (shared parameter, applied to all qubits)
+    {"gate": "RY", "wire": 0, "param": "ry_read"},
+    {"gate": "RY", "wire": 1, "param": "ry_read"},
+    {"gate": "RY", "wire": 2, "param": "ry_read"},
+    {"gate": "RY", "wire": 3, "param": "ry_read"},
+    {"gate": "RY", "wire": 4, "param": "ry_read"},
+    {"gate": "RY", "wire": 5, "param": "ry_read"},
+    {"gate": "RY", "wire": 6, "param": "ry_read"},
+    {"gate": "RY", "wire": 7, "param": "ry_read"},
+
+    # Layer 10: Per-wire readout RZ corrections (shared parameter, applied to all qubits)
+    {"gate": "RZ", "wire": 0, "param": "rz_read"},
+    {"gate": "RZ", "wire": 1, "param": "rz_read"},
+    {"gate": "RZ", "wire": 2, "param": "rz_read"},
+    {"gate": "RZ", "wire": 3, "param": "rz_read"},
+    {"gate": "RZ", "wire": 4, "param": "rz_read"},
+    {"gate": "RZ", "wire": 5, "param": "rz_read"},
+    {"gate": "RZ", "wire": 6, "param": "rz_read"},
+    {"gate": "RZ", "wire": 7, "param": "rz_read"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

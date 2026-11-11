@@ -1,0 +1,52 @@
+Looking at this problem, I need to design an ansatz that effectively converts IsingZZ phase information into measurable Z-expectation differences. The key insight is that the feature map encodes data in computational basis phases, so RY rotations are critical for phase-to-amplitude conversion, and the entangling topology matters greatly.
+
+<NAME>
+hypercube_ry_cascade
+</NAME>
+
+<DESCRIPTION>
+This ansatz uses a 3-dimensional hypercube entangling topology instead of a linear chain. For 8 qubits (labeled as 3-bit binary strings 000-111), the hypercube connects qubit pairs that differ in exactly one bit, organized into 3 parallel layers:
+- Dim 0: (0,1),(2,3),(4,5),(6,7) — pairs differing in bit 0
+- Dim 1: (0,2),(1,3),(4,6),(5,7) — pairs differing in bit 1  
+- Dim 2: (0,4),(1,5),(2,6),(3,7) — pairs differing in bit 2
+
+This ensures every qubit pair is connected by at most log2(8)=3 CZ gates — optimal diameter. Between each entangling layer, RY rotations convert accumulated phases into amplitude differences observable in Z measurements. A final RZ layer provides phase tuning. This replaces the seed's linear CZ chain (diameter 7) with a log-depth structure that propagates correlations exponentially faster, critical for the IsingZZ-encoded features which create qubit-pair correlations across the full register. The RY-dominated rotation basis is specifically chosen because RY gates are the only real single-qubit rotations that don't commute with Z, making them maximally effective at extracting phase information into Z-measurement outcomes.
+</DESCRIPTION>
+
+<CODE>
+```python
+# EVOLVE-BLOCK-START
+
+ANSATZ_SPEC = []
+
+# Layer 0: RY rotations on all qubits
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": q, "param": f"y0_{q}"})
+
+# Hypercube dimension 0 entanglement: pairs differing in bit 0
+for b in [0, 2, 4, 6]:
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [b, b + 1]})
+
+# Layer 1: RY rotations
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": q, "param": f"y1_{q}"})
+
+# Hypercube dimension 1 entanglement: pairs differing in bit 1
+for b in [0, 1, 4, 5]:
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [b, b + 2]})
+
+# Layer 2: RY rotations
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": q, "param": f"y2_{q}"})
+
+# Hypercube dimension 2 entanglement: pairs differing in bit 2
+for b in [0, 1, 2, 3]:
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [b, b + 4]})
+
+# Final layer: RZ rotations for phase fine-tuning
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": q, "param": f"z3_{q}"})
+
+# EVOLVE-BLOCK-END
+```
+</CODE>

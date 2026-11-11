@@ -1,0 +1,50 @@
+<NAME>
+entangled_feature_diffusion
+</NAME>
+
+<DESCRIPTION>
+The previous approach relied on simple linear chains of gates. This implementation adopts a 'diffusive' entanglement strategy. By using Controlled-Rotation gates (CRZ) on a circular graph topology, the information from the 8-qubit register is heavily diffused across all qubits. This design mimics a hardware-efficient 'brick-wall' or 'staircase' circuit topology, which has been shown to be more effective at generating sufficient entanglement to separate complex data features, while keeping the gate depth manageable. Specifically, we alternate between local RY rotations and cross-talk inducing CRZ gates, which allows the optimizer to learn correlations between qubits more efficiently than simple CZ chains.
+</DESCRIPTION>
+
+<CODE>
+```{python}
+# The completely new algorithm implementation here.
+
+# EVOLVE-BLOCK-START
+# Strategy: Diffusive Entanglement Layer
+# We use a circular topology of CRZ gates (creating all-to-all connectivity potential over layers)
+# combined with full RY and RZ rotation layers for local expressivity.
+ANSATZ_SPEC = [
+    # Layer 1: Data-agnostic local rotation
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    
+    # Layer 2: Diffusive Entanglement (Ring topology with parametric CRZ)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_01"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_12"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_23"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_34"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_45"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_56"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_67"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_70"},
+    
+    # Layer 3: Final Phase Adjustment
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+]
+# EVOLVE-BLOCK-END
+```
+</CODE>

@@ -1,0 +1,80 @@
+<NAME>
+duplicate_blocks_for_tied_uploads
+
+<DESCRIPTION>
+Since only ANSATZ_SPEC (inside the EVOLVE-BLOCK) can be edited, and the fixed training loop always allocates N_PARAMS_PER_BLOCK * N_UPLOADS * N_REPEATS circuit parameters based on the number of unique param keys found in ANSATZ_SPEC, I cannot directly change how block_index maps to parameter offset. However, I can achieve an equivalent "tie parameters across uploads" effect indirectly by keeping the same param key names used across what would conceptually be different uploads - but since apply_ansatz_block always multiplies block_index by N_PARAMS_PER_BLOCK with a fixed offset formula in the read-only code, the only way to influence the number of independent parameters is through the size of PARAMETER_KEYS_PER_BLOCK itself.
+
+Given the constraint, the best available lever inside the EVOLVE-BLOCK is to reduce the number of distinct parameters per block by sharing parameter names within a single block (e.g., across wires), which reduces total parameter count and encourages a more constrained, better-regularized ansatz -- similar in spirit to weight tying, but implemented via intra-block parameter sharing since cross-block (cross-upload) sharing isn't accessible from the editable region. I share the RZ pre/post rotation angle across specific wire-pairs that are entangled together, and share the CRZ entangling angle across two decoupled entangling pairs, cutting redundant parameters while retaining sufficient expressivity from the RY layer (still fully independent per wire) and the ring of entanglers.
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_0"},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_1"},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_2"},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_3"},
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_01"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_01"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_23"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_23"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_45"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_45"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_67"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_67"},
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_a"},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_b"},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_a"},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_b"},
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_01"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_01"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_23"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_23"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_45"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_45"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_67"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_67"},
+]
+>>>>>>> REPLACE

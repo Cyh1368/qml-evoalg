@@ -1,0 +1,36 @@
+<NAME>
+remove_output_mixer_reuse
+</NAME>
+
+<DESCRIPTION>
+The current candidate added a final global RY layer that reuses "theta_ry" as a post-entangling "output mixer" at zero extra parameter cost. Empirically this hurt performance: the current program scores 0.57 (validation accuracy 0.88) versus the earlier 2-parameter multi-shell candidate without this mixer layer, which scored 0.61 (validation accuracy 0.90). Reusing theta_ry for both the initial state-preparation rotation and a final pre-measurement rotation couples two roles that want different optimal angles under gradient descent, since the parameter is shared identically across all 3 repeated blocks and now also across both intra-block sub-roles -- this likely creates conflicting gradients that slow/impair convergence (worst_group_margin also dropped from 0.35/0.33 baseline). Removing the redundant output-mixer layer reverts to the simpler, empirically stronger 2-parameter structure (theta_ry local rotation + theta_z shared across RZ layer and all three CRZ entangling shells), restoring the higher validation accuracy and margin while keeping the same minimal parameter count.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Shell 3: long-range antipodal pairing (distance 4), same shared angle.
+    {"gate": "CRZ", "wires": [0, 4], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "theta_z"},
+    # Output mixer: a final global RY layer, reusing "theta_ry" (no new
+    # distinct parameter). Gives the optimizer a free extra alignment stage
+    # right before the fixed two-qubit readout, at zero parameter cost.
+    {"gate": "RY", "wire": 0, "param": "theta_ry"},
+    {"gate": "RY", "wire": 1, "param": "theta_ry"},
+    {"gate": "RY", "wire": 2, "param": "theta_ry"},
+    {"gate": "RY", "wire": 3, "param": "theta_ry"},
+    {"gate": "RY", "wire": 4, "param": "theta_ry"},
+    {"gate": "RY", "wire": 5, "param": "theta_ry"},
+    {"gate": "RY", "wire": 6, "param": "theta_ry"},
+    {"gate": "RY", "wire": 7, "param": "theta_ry"},
+]
+=======
+    # Shell 3: long-range antipodal pairing (distance 4), same shared angle.
+    {"gate": "CRZ", "wires": [0, 4], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "theta_z"},
+]
+>>>>>>> REPLACE
+</DIFF>

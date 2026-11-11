@@ -1,0 +1,44 @@
+<NAME>
+enhance_cross_resonance_connectivity
+</NAME>
+
+<DESCRIPTION>
+The current program achieves excellent accuracy (1.00) with parameter efficiency (92 params), but convergence is relatively slow (390 steps). The issue is likely that the entangling structure, while compact, may lack sufficient connectivity to help gradient-based optimization explore the solution space efficiently.
+
+Currently:
+- CRX gates: nearest-neighbor pairs only [0,1], [2,3], [4,5], [6,7]
+- CRY gates: adjacent layers [1,2], [3,4], [5,6]
+- This forms a "ribbon" connectivity pattern
+
+Proposal: Add CRZ parametrized gates on vertical/long-range pairs ([0,4], [2,6], [1,5], [3,7]) to:
+1. Improve inter-layer connectivity without excessive parameter growth
+2. Provide alternative interaction channels for faster optimization convergence
+3. Maintain compact structure while boosting expressivity
+
+This adds only 4 new unique parameters per block (8 CRZ gates but 4 pairs can share), keeping the design parameter-efficient. Expected benefit: faster convergence with maintained or improved accuracy, potentially increasing the combined score.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Cross-layer entanglement for connectivity
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_12"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_34"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_56"},
+    
+    # Final single-qubit rotation layer with parameter sharing
+=======
+    # Cross-layer entanglement for connectivity
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_12"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_34"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_56"},
+    
+    # Vertical/long-range entanglement for improved inter-layer communication
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_vert_0"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_vert_1"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_vert_2"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_vert_3"},
+    
+    # Final single-qubit rotation layer with parameter sharing
+>>>>>>> REPLACE
+
+</DIFF>

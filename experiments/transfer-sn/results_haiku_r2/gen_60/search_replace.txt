@@ -1,0 +1,56 @@
+<NAME>
+add_rx_symmetry_breaker
+</NAME>
+
+<DESCRIPTION>
+The current ansatz achieves a combined score of 0.92 with strong validation accuracy (0.94) but moderate test accuracy (0.92), suggesting some room for generalization improvement. The recommendation to add an RX rotation layer after the RZ layer is well-founded in quantum circuit theory:
+
+1. **Symmetry Breaking**: The current ansatz uses primarily RY and CRY gates with RZ for phase control. Adding RX rotations introduces orthogonal rotation axes that can break symmetries in the parameter landscape, reducing barren plateaus.
+
+2. **Rotation Sandwich Pattern**: Placing RX("rx_main") immediately after RZ("rz_readout") creates a single-qubit rotation sandwich effect around the entanglers. This sandwich pattern has proven effective in breaking barren plateaus while maintaining efficient parameter usage.
+
+3. **Minimal Cost**: The change adds only 1 unique parameter per block (since all qubits share "rx_main"), increasing N_PARAMS_PER_BLOCK from 3 to 4. Given the fixed training budget and that we're already at 20 params total, this modest expansion (to 24 total across 6 blocks) should yield better optimization without overfitting.
+
+4. **Prior Results**: Both prior programs (scores 0.91 and 0.92) used 26+ and 32 params respectively with more complex structures. This change maintains lean parameterization while adding principled expressiveness.
+
+The edit adds 8 RX gates sharing parameter "rx_main" immediately after the RZ layer, matching the recommendation exactly.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 5: Phase rotation for readout preparation
+    {"gate": "RZ", "wire": 0, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 1, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 2, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 3, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 4, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 5, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 6, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 7, "param": "rz_readout"},
+]
+=======
+    # Layer 5: Phase rotation for readout preparation
+    {"gate": "RZ", "wire": 0, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 1, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 2, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 3, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 4, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 5, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 6, "param": "rz_readout"},
+    {"gate": "RZ", "wire": 7, "param": "rz_readout"},
+
+    # Layer 6: RX rotation for symmetry breaking and barren plateau mitigation
+    # Single shared parameter across all qubits enables efficient parameterization
+    # while the orthogonal rotation axis (RX vs RY/RZ) breaks symmetries effectively
+    {"gate": "RX", "wire": 0, "param": "rx_main"},
+    {"gate": "RX", "wire": 1, "param": "rx_main"},
+    {"gate": "RX", "wire": 2, "param": "rx_main"},
+    {"gate": "RX", "wire": 3, "param": "rx_main"},
+    {"gate": "RX", "wire": 4, "param": "rx_main"},
+    {"gate": "RX", "wire": 5, "param": "rx_main"},
+    {"gate": "RX", "wire": 6, "param": "rx_main"},
+    {"gate": "RX", "wire": 7, "param": "rx_main"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,14 @@
+{
+  "generation": 51,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "add_crz_diagonal_layer",
+  "patch_description": "The current ansatz achieves 0.91 test accuracy with only 4 unique parameters per block (ry_basis, cry_nnn, rz_readout, plus 2 readout params). Analysis of prior successful programs reveals:\n\n1. **Prior program 2** achieved the same 0.91 combined score but with 5 parameters per block, and critically\u2014it included **parametrized two-qubit diagonal gates** (the CRY gates at nearest-neighbor spacing in Layer 5a plus next-nearest-neighbor in Layer 5b).\n\n2. **Key insight**: The recommendation explicitly suggests turning fixed diagonal CZ gates into parametrized CRZ gates. The current program has a fixed nearest-neighbor CZ ring (Layer 2) that could be made trainable.\n\n3. **Cost-benefit**: Replacing the 8 fixed CZ gates in Layer 2 with parametrized CRZ(crz_diag) gates adds only **one new parameter** to PARAMETER_KEYS_PER_BLOCK (crz_diag is fully shared), increasing N_PARAMS from 20 to 22 total. This is a +10% parameter increase but should improve expressivity significantly.\n\n4. **Rationale**: \n   - Fixed CZ gates provide only fixed entanglement structure; parametrization allows the circuit to learn the strength and phase of mid-block entanglement.\n   - The nearest-neighbor ring is a critical structural element; making it tunable mirrors the success of the CRY layers in prior programs.\n   - Full parameter sharing across all 8 CRZ gates minimizes overhead while maximizing learned connectivity.\n   - This change improves circuit expressivity with minimal complexity, following the proven pattern of prior successful designs.\n\n**Expected outcomes**: \n- Potential gain in test accuracy (0.91 \u2192 0.92+) from richer mid-block entanglement\n- Improved parameter efficiency despite +2 params (test_acc / n_params ratio may improve)\n- Faster convergence due to more flexible entanglement structure\n- Minimal increase in circuit depth (CRZ replaces CZ, same 1-qubit depth per gate)",
+  "error_msg": null,
+  "timestamp": "2026-07-24T14:31:48.183424",
+  "llm_cost": 0.025301,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

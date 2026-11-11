@@ -1,0 +1,27 @@
+<NAME>
+add_crx_after_zz_entangler
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses a single parametrized ZZ(g) entangling layer on disjoint long-range pairs [0,4],[1,5],[2,6],[3,7]. To increase expressivity per parameter without adding much circuit depth, we insert a complementary parallel block of CRX(f) gates on the same four disjoint qubit pairs immediately after the ZZ(g) layer, sharing a single new parameter f. CRX gates entangle via a different generator (X-rotation conditioned on control) than the ZZ interaction (diagonal phase coupling), so combining them should let the circuit capture richer correlations between the same qubit pairs while only adding one new trainable parameter (n_distinct_params goes from 4 to 5, matching the best-performing seed configuration). Because the four CRX gates act on disjoint qubit pairs, they can be applied in a single parallel layer, keeping the depth increase minimal (only +1) despite adding 4 gates. This mirrors the recommendation to complement phase-type entanglement (ZZ/CRZ) with rotation-type entanglement (CRX) using a shared parameter, aiming to reduce the train-test gap by giving the optimizer more flexible entangling structure without exploding parameter count.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "ZZ", "wires": [0, 4], "param": "g"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "g"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "g"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "g"},
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+=======
+    {"gate": "ZZ", "wires": [0, 4], "param": "g"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "g"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "g"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "g"},
+    {"gate": "CRX", "wires": [0, 4], "param": "f"},
+    {"gate": "CRX", "wires": [1, 5], "param": "f"},
+    {"gate": "CRX", "wires": [2, 6], "param": "f"},
+    {"gate": "CRX", "wires": [3, 7], "param": "f"},
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+>>>>>>> REPLACE
+</DIFF>

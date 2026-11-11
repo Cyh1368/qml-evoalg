@@ -1,0 +1,91 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit IsingZZ Feature-Map Quantum Classifier**  
+- **Implementation**: Alternates a fixed IsingZZ feature map encoding 28 binary inputs with variational blocks of per-qubit RY/RZ rotations and adjacent CZ entanglement (3 uploads × 2 repeats), yielding 146 trainable parameters plus output gain/bias, and is trained via Adam optimizer with L2 loss and early stopping.  
+- **Performance**: Achieved a combined score of 0.85 with train/validation/test accuracies of 0.94/0.89/0.87, a 0.07 generalization gap, circuit depth 99 and 270 gates, converging by ~750 steps.  
+- **Feedback**: The simple chain-of-CZ ansatz and output calibration delivered strong accuracy and controlled overfitting, but the low parameter efficiency (0.01) suggests redundancy in the rotation layers.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: 8-Qubit Entangling-Ring Quantum Classifier**  
+- **Implementation**: Alternates three uploads of a fixed IsingZZ feature map with two repeats per upload of an ansatz block composed of local RY+RZ rotations on each qubit followed by a parametrized CRZ entangling ring, yielding 146 trainable parameters optimized via Adam on an L2 loss with mini-batch training and early stopping.  
+- **Performance**: Achieved mean train/validation/test accuracies of 0.96/0.86/0.85, a generalization gap of 0.10, circuit depth 114, gate count 228, parameter efficiency 0.01, and combined score 0.78.  
+- **Feedback**: The ring-entangler structure delivers high expressivity and stable convergence but incurs a relatively large parameter count and low efficiency, suggesting that future work could focus on reducing parameters or depth to improve efficiency.
+**Program Identifier:** Generation 1 - Patch Name none - Correct Program: True
+
+**Program Name: Trainable CRZ Ring Ansatz Classifier**  
+- **Implementation**: Builds an ansatz block with pre-entanglement RY+RZ per qubit, a ring of trainable CRZ entanglers plus skip connections, and a post-entanglement RY layer, repeated over 3 feature uploads and 2 repeats; integrates a fixed IsingZZ feature map, output gain/bias calibration, and trains via Adam optimizer with early stopping.  
+- **Performance**: Achieved mean train/validation/test accuracies of 0.96/0.86/0.89 (generalization gap 0.07) using 206 parameters, depth 124, gate count 288, yielding a combined score of 0.78.  
+- **Feedback**: The CRZ-based entanglement enhanced expressivity and accuracy compared to the fixed CZ seed, but the model did not reach the 0.90 convergence threshold and exhibits low parameter efficiency, suggesting potential ansatz pruning or convergence‐threshold tuning.
+**Program Identifier:** Generation 2 - Patch Name none - Correct Program: True
+
+**Program Name: 8-Qubit Layered Ansatz Binary Classifier**  
+- **Implementation**: Encodes 28 binary features via fixed IsingZZ couplings on 8 qubits, then applies 6 repeats of a custom ansatz block (each block with RY, RZ pre/post rotations and CRZ entanglers in a ring), yielding 240 circuit parameters plus 2 readout calibration parameters; trained with Adam on L2 loss using mini-batches and early stopping.  
+- **Performance**: Combined score: 0.0; fails to pass validation tests.  
+- **Feedback**: The deep, highly parameterized circuit suffers from specification or mapping mismatches and does not compile against the validation suite; simplifying the ansatz and correcting gate definitions are necessary to achieve a valid and performant model.
+**Program Identifier:** Generation 4 - Patch Name none - Correct Program: False
+
+**Program Name: CRZ Ring Entangling Ansatz Classifier**  
+- **Implementation**: Defines an 8-qubit binary classifier that encodes 28 binary features via fixed two-qubit IsingZZ feature maps, then applies ansatz blocks—each with local RY+RZ rotations on every qubit and a brick-wall “ring” of parametrized CRZ entanglers—repeated over 3 uploads and 2 repeats for 146 variational parameters plus gain/bias readout, optimized with Pennylane’s Adam backprop.  
+- **Performance**: Combined score 0.0, indicating it fails all validation tests.  
+- **Feedback**: Although the learnable CRZ ring couplers aim to enhance expressivity without increasing parameter count, specification or implementation errors prevent correct execution and yield no measurable performance benefits.
+**Program Identifier:** Generation 7 - Patch Name none - Correct Program: False
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+- Simple chain-of-CZ entanglement with sandwiching single-qubit rotations  
+  – The current best program (“8-Qubit IsingZZ Feature-Map Quantum Classifier,” combined score 0.85) uses per-qubit RY → RZ pre-rotations, a linear CZ chain, then RZ post-rotations in each block (146 parameters, depth 99).  
+- Fixed IsingZZ feature‐map re-uploads  
+  – All top-performing classifiers (scores ≥ 0.78) interleave three uploads of a fixed two-qubit IsingZZ feature map with variational blocks; this maintained high expressivity (train > 0.94) while controlling overfitting (gap ≈ 0.07–0.10).  
+- Output gain/bias calibration  
+  – Both the best (0.87 test accuracy, gap 0.07) and the Gen 1 entangling-ring program (0.85 test, gap 0.10) integrate a trainable readout gain and bias, which stabilized decision thresholds and improved generalization.  
+- Moderate depth/parameter budget  
+  – Converging by ~750 steps, the 99-depth/146-param model outperformed deeper or higher-param architectures (depth ≥ 114 or params ≥ 206) in combined score, highlighting a sweet spot for expressivity vs. complexity.
+
+## Ineffective Approaches
+- Over-parametrized ansätze without pruning  
+  – The Trainable CRZ Ring Ansatz (206 params, depth 124) achieved slightly higher test accuracy (0.89) but dropped combined score to 0.78, indicating that extra CRZ parameters and skip connections added complexity without net benefit.  
+- Deep stacking beyond two repeats  
+  – The 6-layered ansatz (240 params) failed to compile against validation tests (score 0.0), revealing that excessive depth can introduce specification mismatches and mapping errors.  
+- Full trainable two-qubit gates in place of simple CZ  
+  – Replacing CZ with trainable CRZ entanglers (Gen 2) did not surpass the baseline chain-CZ model; expressivity gains were offset by increased circuit depth (124 vs. 99) and param inefficiency.  
+- Ignoring parameter efficiency  
+  – All low-scoring or invalid programs had parameter efficiencies ≤ 0.01, but only the best model leveraged its 146 params optimally; adding more parameters without clear redundancy reduction hurt combined performance.
+
+## Implementation Insights
+- Explicit ansatz specification yields error-free validation  
+  – Defining ANSATZ_SPEC strictly in terms of ALLOWED_SINGLE_QUBIT_GATES and ALLOWED_TWO_QUBIT_GATES ensured SPEC_ERRORS was empty in the best program, enabling seamless training and metadata extraction.  
+- Parameter-key ordering and offset computation  
+  – The best program’s use of a deterministic `PARAMETER_KEYS_PER_BLOCK` list and offset indexing simplified `apply_ansatz_block`, reducing overhead and guarding against misaligned parameter–gate mappings.  
+- Early-stopping with restore-best-weights  
+  – Integrating validation-loss patience (75 steps) and weight restoration in the training loop let the chain-CZ classifier converge reliably (~750 steps) and prevented overfitting, directly contributing to its low generalization gap.  
+- Batched expectation evaluations via autograd backprop  
+  – Using `qml.qnode(..., diff_method="backprop")` with batch-stacked Z-expectations achieved stable gradients across 8 qubits, critical for the best program’s smooth convergence and consistent accuracy (std ≈ 0.00).
+
+## Performance Analysis
+- Combined score vs. circuit complexity  
+  – The best model (0.85) outperformed two higher-parameter variants (both 0.78) despite slightly lower raw test accuracy than the 206-param CRZ ring (0.89), underscoring a penalty for depth (124 vs. 99) and parameter count (206 vs. 146).  
+- Generalization gap minimization  
+  – Both the best and Gen 2 programs achieved a gap of 0.07, but only the simpler CZ chain block maintained that low gap at minimal depth; the entangling-ring (gap 0.10) underperformed in generalization despite similar train/val accuracy.  
+- Test accuracy trade-offs  
+  – Incremental gains in test accuracy (0.87→0.89) from richer entanglers were overshadowed by increased depth/params, reducing combined score by ~0.07; balanced expressivity with parameter economy proved most effective.  
+- Parameter efficiency plateau  
+  – All valid models report efficiency ≈ 0.01, but only the best program translated that into top combined performance, suggesting that further efficiency gains require ansatz pruning rather than mere parameter reduction.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Replace the fixed CZ chain in each variational block with a single shared-parameter CRZ layer. Concretely, mutate each block so that all CZ gates become CRZ(θ_block) gates sharing one trainable θ per block (instead of zero‐angle CZs). This injects minimal extra expressivity (one extra param per block) while keeping depth and gate count nearly unchanged, and tests whether a tiny tunable phase on the entanglers can lift test accuracy without overfitting.  
+
+2. Close the entangling chain into a ring by adding a CZ(7,0) in each block. By simply appending CZ(wires=[7,0]) after the existing linear chain you introduce a single long‐range correlation per block at no extra parameters. This preserves the simple CZ+single‐qubit-rotation structure and constant depth but may help capture cross‐dataset features that span the “ends” of the chain.  
+
+3. Extend readout calibration from a scalar gain to per-qubit gains. Replace the single trainable gain with an 8-element gain vector gᵢ so that predictions = mean_i [gᵢ·(⟨Zᵢ⟩ – bias)]. This adds 7 extra parameters but allows the model to learn which qubits are most predictive, leveraging the successful calibration idea while keeping the depth and core ansatz fixed.  
+
+4. Perform an ablation study on the RZ “pre” and “post” rotation layers to identify and prune any redundant layer. Generate two variants: one without the RZ_pre layer and one without RZ_post, each reducing 8 parameters and depth by one layer. This directly tests whether both sandwiching rotations are needed for generalization, and may uncover a leaner 130-parameter ansatz that matches or outperforms the 146-param baseline.  
+
+5. Introduce a sparse long-range CZ link in alternate blocks. For example, in every second block add CZ(wires=[0,4]) immediately after the standard chain to capture nonlocal feature correlations. This mutation preserves the overall parameter budget and keeps blocks simple, but injects targeted longer-range entanglement that could boost expressive power without the pitfalls of full CRZ rings or deeper stacks.

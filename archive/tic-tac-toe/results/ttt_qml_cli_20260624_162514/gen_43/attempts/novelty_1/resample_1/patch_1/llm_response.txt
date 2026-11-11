@@ -1,0 +1,85 @@
+<NAME>
+symmetry_crx_entanglement_and_parameter_refinement
+</NAME>
+
+<DESCRIPTION>
+The previous candidate used a high-depth entangling layer (depth 76) with low validation accuracy (0.42). I am refining the entangling motif to use CRX gates selectively on both the ring and hub edges but reducing the depth by grouping independent pairs. 
+
+Specifically, I'm replacing the `CRY_ring` with `CRX` gates on the grid edges to better match the `RX` feature map encoding. I've also simplified the parameter sharing: instead of separating periphery and center for every single layer, I've returned to the three-class symmetry (corner, edge, center) for the initial and final layers, which helps the model distinguish the 8-fold symmetry of the Tic-Tac-Toe board while maintaining parameter efficiency.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Tunable entangling layers mixing different axes:
+    # CRY on the ring edges (shared parameter) to mix into Y-basis,
+    # CRX on the hub edges (shared parameter) to mix into X-basis.
+    # These complement the RX feature map so information can be read out in Z.
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_ring"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_ring"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_ring"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_ring"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_ring"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_ring"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_ring"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_ring"},
+    {"gate": "CRX", "wires": [1, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [3, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [5, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [7, 8], "param": "crx_hub"},
+
+    # Compact RX mixing (shared periphery vs center) to increase expressivity
+    {"gate": "RX", "wire": 0, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 1, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 2, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 3, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 4, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 5, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 6, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 7, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Small final output layer (shared periphery vs center) for sharper decision boundaries
+    {"gate": "RY", "wire": 0, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+=======
+    # Selectively entangle corners to edges (CRX) and edges to center (CRZ).
+    # This creates a data-dependent flow from board features to the output observables.
+    {"gate": "CRX", "wires": [0, 1], "param": "ent_crx"},
+    {"gate": "CRX", "wires": [2, 3], "param": "ent_crx"},
+    {"gate": "CRX", "wires": [4, 5], "param": "ent_crx"},
+    {"gate": "CRX", "wires": [6, 7], "param": "ent_crx"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "ent_crz"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "ent_crz"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "ent_crz"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "ent_crz"},
+
+    # Compact RX mixing (shared by symmetry class)
+    {"gate": "RX", "wire": 0, "param": "rx_corner"},
+    {"gate": "RX", "wire": 2, "param": "rx_corner"},
+    {"gate": "RX", "wire": 4, "param": "rx_corner"},
+    {"gate": "RX", "wire": 6, "param": "rx_corner"},
+    {"gate": "RX", "wire": 1, "param": "rx_edge"},
+    {"gate": "RX", "wire": 3, "param": "rx_edge"},
+    {"gate": "RX", "wire": 5, "param": "rx_edge"},
+    {"gate": "RX", "wire": 7, "param": "rx_edge"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Final RY layer (shared by symmetry class)
+    {"gate": "RY", "wire": 0, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,14 @@
+{
+  "generation": 22,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "dual_gain_readout_minimal_ansatz",
+  "patch_description": "**Key Observations from Prior Programs:**\n\nThe prior programs achieved perfect accuracy (1.0) with:\n- Program 1: 26 params, depth 24, convergence at 60 steps\n- Program 2: 32 params, depth 29, convergence at 60 steps\n- Current: 26 params, depth 35, convergence at 90 steps (slower)\n\nThe current program uses:\n- Even/odd split RY (2 params)\n- Shared RZ pre-layer (1 param)\n- Fixed CZ chain (0 params)\n- Shared RZ post-layer (1 param)\n= 4 params/block \u00d7 6 blocks = 24 circuit params + 2 readout = 26 total\n\n**New Strategy:**\n\n1. **Dual-gain readout calibration** (recommendation applied):\n   - Replace single `gain` with `gain_even` and `gain_odd` to separately scale even-starting and odd-starting qubit pairs in READOUT_PAIRS\n   - This allows differential weighting of the most informative correlators, improving model expressiveness with minimal overhead (+1 param)\n   - Expected: Better calibration of correlator subsets, lower validation loss\n\n2. **Optimized ansatz structure**:\n   - Keep even/odd RY split (proven effective in program 2)\n   - Replace fixed CZ chain with parametrized ZZ interactions on a sparser pattern\n   - Use XX/YY interactions on complementary pairs for richer entanglement\n   - This reduces circuit depth while maintaining expressiveness\n\n3. **Refined parameter sharing**:\n   - Single RY parameter split across even/odd qubits\n   - Shared XX/YY pairs for economy\n   - Removes redundant pre/post RZ layers (causes depth bloat in current)\n\n**Expected improvements:**\n- Maintain 100% accuracy\n- Reduce circuit depth from 35 to ~28\n- Reduce gate count while keeping expressiveness\n- Faster convergence (< 60 steps)\n- Improved parameter efficiency through smarter readout calibration",
+  "error_msg": null,
+  "timestamp": "2026-07-24T09:25:42.583176",
+  "llm_cost": 0.050079,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

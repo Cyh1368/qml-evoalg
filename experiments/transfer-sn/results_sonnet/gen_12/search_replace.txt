@@ -1,0 +1,80 @@
+<NAME>
+tied_ring_with_scalar_gain
+
+<DESCRIPTION>
+The current 158-param design shares two CRZ parameters across the ring (crz_ring_a/b) but has a train-test gap of 0.12, suggesting slight overfitting from having independent pre/post RZ layers on every qubit. I reduce parameter count and improve generalization by: (1) collapsing the pre-RZ and post-RZ layers into a single shared-per-pair RZ layer structure using only 4 unique RZ parameters (tied in pairs across wires) instead of 16 independent ones, cutting total parameters substantially while retaining full expressive coverage of single-qubit phase rotations; (2) keeping the trainable ring CRZ entangler with 2 tied parameters (alternating), which already contributed to a compact, well-performing design. This follows the same "compact tied-parameter" pattern that produced the best prior score (0.85 at 146 params) while trying to close the generalization gap further via more sharing. Fewer independent parameters should reduce overfitting (evidenced by the previous 146-param variant's smaller gap of 0.07) while keeping enough capacity via re-uploading (l=3, p=2) to reach high train accuracy.
+
+<DIFF>
+<<<<<<< REPLACE
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring_a"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring_b"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring_a"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring_b"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring_a"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring_b"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring_a"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring_a"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring_b"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring_a"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring_b"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring_a"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring_b"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring_a"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+>>>>>>> REPLACE
+>>>>>>> REPLACE

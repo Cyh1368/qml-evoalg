@@ -1,0 +1,106 @@
+<NAME>
+enhanced_entanglement_with_diagonal_gates
+</NAME>
+
+<DESCRIPTION>
+Analysis of the prior performance metrics:
+
+**Current strength (score 0.43):**
+- High train accuracy (1.00) and reasonable validation accuracy (0.82)
+- Good worst_group_margin (0.25), indicating robust separation on hard samples
+- Efficient parameter count (9 distinct params)
+- Low depth (12) and gate count (66)
+
+**Key insight from prior attempts:**
+- The seed (24 params, score 0.29) showed overfitting: train 0.88 but validation 0.63
+- The aggressive parameter sharing (5 params, score 0.33) sacrificed capacity too much: validation dropped to 0.52
+- The current design (9 params, score 0.43) found a sweet spot with modest sharing
+
+**Proposed improvement strategy:**
+The current circuit uses:
+1. Alternating RY gates (2 params: ry_a, ry_b)
+2. Local XX entanglement (4 params: ent_0/1/2/3)
+3. Cross-layer YY entanglement (1 param: cross_a, reused twice)
+4. Final RZ gates (2 params: rz_a, rz_b)
+
+To push validation and worst_group_margin higher while controlling generalization gap, I propose:
+
+1. **Add more diverse entanglement patterns**: Include ZZ gates on different qubit pairs to create stronger non-local correlations. The worst_group_margin of 0.25 suggests some hard samples still aren't well-separated; additional diagonal entanglement could help.
+
+2. **Enhance RY parametrization slightly**: Use 3 distinct RY params (ry_a, ry_b, ry_c) instead of 2, applied in a pattern that breaks symmetry while maintaining parameter efficiency. This gives the circuit more expressiveness for distinguishing complex state properties.
+
+3. **Add a single shared ZZ gate on complementary pairs**: ZZ gates commute with Ising XX/YY and provide orthogonal evolution channels. One shared parameter across strategic pairs (0-4, 2-6) bridges the center of the qubit line.
+
+This approach:
+- Increases distinct params from 9 to 11 (minimal increase)
+- Maintains low depth and gate count
+- Provides orthogonal entanglement channels (XX, YY, ZZ) for better expressiveness
+- Keeps parameter sharing high (11 params across 22+ gates = ~2x reuse)
+- Targets worst_group_margin improvement by enabling finer discrimination
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Shared initial rotation layer (4 distinct params across 8 qubits)
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    # Symmetric entangling layer with learnable XX gates: even-odd pairs
+    {"gate": "XX", "wires": [0, 1], "param": "ent_0"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_1"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_2"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_3"},
+    # Additional cross-layer entanglement: bridge even qubits
+    {"gate": "YY", "wires": [0, 2], "param": "cross_a"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross_a"},
+    # Final rotation layer (1 shared param per qubit parity)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared initial rotation layer with 3-way alternation for more expressiveness
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_c"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_a"},
+    # Symmetric entangling layer with learnable XX gates: even-odd pairs
+    {"gate": "XX", "wires": [0, 1], "param": "ent_0"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_1"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_2"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_3"},
+    # Additional cross-layer entanglement: bridge even qubits with YY
+    {"gate": "YY", "wires": [0, 2], "param": "cross_a"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross_a"},
+    # Diagonal entanglement for orthogonal channel: ZZ on complementary pairs
+    {"gate": "ZZ", "wires": [0, 4], "param": "diag_a"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "diag_a"},
+    # Final rotation layer (2 shared params)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

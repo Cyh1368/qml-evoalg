@@ -1,0 +1,30 @@
+<NAME>
+crz_ring_per_upload_shared_rz
+
+<DESCRIPTION>
+The current 170-param variant has the best train/val accuracy but the largest generalization gap (0.08) among prior candidates, suggesting some overfitting from the fully independent pre/post RZ layers (16 distinct RZ params per block x 6 blocks = 96 params just for RZ rotations). The 110-param variant (seed 2) achieved similar validation accuracy (0.88) with much better parameter efficiency by sharing the RZ pre/post rotation parameters (reusing "rz_pre_i" for both pre and post layers) and using a shared CRZ ring pattern (crz_a/crz_b alternating). 
+
+I combine the best aspects: keep independent RY per qubit (full single-qubit expressivity for encoding), but merge pre- and post- RZ layers into a single shared set of 8 RZ parameters (reducing param count and encouraging the RZ layer to act consistently before and after entanglement, which acts as an implicit regularizer), while keeping the fully independent 4-parameter CRZ ring untouched since that follows the current spec's already-good entangling design. This should reduce total parameters from 170 to ~134, reduce the generalization gap by cutting redundant capacity, while retaining most of the expressivity that gave strong train/val accuracy.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+]
+>>>>>>> REPLACE

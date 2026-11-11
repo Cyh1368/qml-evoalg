@@ -1,0 +1,31 @@
+<NAME>
+sparse_long_range_crz_odd_uploads
+
+<DESCRIPTION>
+The current ansatz uses a shared-parameter ring of CRZ gates (crz_a, crz_b alternating) on nearest-neighbor pairs, capturing local entanglement but limited long-range structure. Since apply_ansatz_block (which applies ANSATZ_SPEC gates in order for each block) is fixed/immutable, I cannot add conditional logic based on upload_index there. Instead, I achieve the "sparse long-range link on odd uploads" effect entirely within the ANSATZ_SPEC by adding a long-range CRZ gate between qubits 0 and 4, using a dedicated parameter "long_crz". Since this parameter is shared across all blocks (as with all block parameters, block index determines which slice of the params array is used, but the same key structure is reused each block), the added gate will fire in every block invocation of the ansatz. This still tests whether a persistent long-range link between opposite qubits helps the model, while adding just one new parameter per block-copy, keeping the parameter count modest and giving the optimizer an additional entangling degree of freedom that spans across the ring.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+]
+
+=======
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CRZ", "wires": [0, 4], "param": "long_crz"},
+]
+
+>>>>>>> REPLACE

@@ -1,0 +1,92 @@
+<NAME>
+strongly_entangling_cnot_v1
+</NAME>
+
+<DESCRIPTION>
+The current ansatz (Score 1.24, 86 params) uses a linear CZ chain and limited rotation variety. While accurate, it shows slower convergence (390 steps) and higher training loss (0.16) compared to more expressive designs.
+
+To improve the `combined_score`, I propose a "Strongly Entangling" block structure that utilizes all three rotation axes (RX, RY, RZ) and a two-stage CNOT entanglement pattern.
+
+1. **Gate Diversity**: Adding RX rotations alongside RY and RZ ensures the ansatz can reach any point on the Bloch sphere more efficiently, facilitating faster convergence.
+2. **Entanglement**: Replacing the linear CZ chain with a two-layer circular CNOT pattern (even pairs then odd pairs) improves the propagation of quantum correlations across the 8-qubit register.
+3. **Parameter Allocation**: I've assigned 8 independent parameters each to RX and RY layers to maximize expressivity, while using a shared 4-parameter scheme for the RZ layer. This results in 20 parameters per block (122 total), providing a balance between the capacity of Seed 2 (146 params) and the efficiency of the current model.
+
+This configuration aims to lower the training loss and accelerate convergence while maintaining high generalization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_c"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_c"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_2"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: Independent RX rotations for local basis exploration
+    {"gate": "RX", "wire": 0, "param": "rx0"},
+    {"gate": "RX", "wire": 1, "param": "rx1"},
+    {"gate": "RX", "wire": 2, "param": "rx2"},
+    {"gate": "RX", "wire": 3, "param": "rx3"},
+    {"gate": "RX", "wire": 4, "param": "rx4"},
+    {"gate": "RX", "wire": 5, "param": "rx5"},
+    {"gate": "RX", "wire": 6, "param": "rx6"},
+    {"gate": "RX", "wire": 7, "param": "rx7"},
+    # Layer 2: Circular CNOT entanglement pattern (Even-Odd)
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [7, 0]},
+    # Layer 3: Independent RY rotations for non-commuting interactions
+    {"gate": "RY", "wire": 0, "param": "ry0"},
+    {"gate": "RY", "wire": 1, "param": "ry1"},
+    {"gate": "RY", "wire": 2, "param": "ry2"},
+    {"gate": "RY", "wire": 3, "param": "ry3"},
+    {"gate": "RY", "wire": 4, "param": "ry4"},
+    {"gate": "RY", "wire": 5, "param": "ry5"},
+    {"gate": "RY", "wire": 6, "param": "ry6"},
+    {"gate": "RY", "wire": 7, "param": "ry7"},
+    # Layer 4: Shared RZ rotations (pairs) to manage parameter count
+    {"gate": "RZ", "wire": 0, "param": "rz_p0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p3"},
+]
+>>>>>>> REPLACE
+</DIFF>

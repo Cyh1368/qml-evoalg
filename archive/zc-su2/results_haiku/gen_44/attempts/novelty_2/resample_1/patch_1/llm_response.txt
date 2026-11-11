@@ -1,0 +1,59 @@
+Looking at the prior performance metrics and the current program, I can see a clear pattern:
+
+1. The prior single-block program (second entry) achieves score **0.72** with:
+   - 14 parameters
+   - depth: 35
+   - gate_count: 186
+   - convergence_step: 90
+   - Perfect accuracy (1.00 on all metrics)
+
+2. The current program achieves score **0.72** with:
+   - 14 parameters
+   - depth: 29
+   - gate_count: 138
+   - convergence_step: **120** (worse!)
+   - Perfect accuracy (1.00 on all metrics)
+
+The current program is actually **worse** at convergence (120 vs 90) despite having similar or lower gate count. This suggests the RX-RZ-CZ structure may be less optimal than the prior RY-RZ-CZ structure.
+
+The recommendation from the instructions is to **replace CZ gates with parametrized CRZ gates**, which should:
+- Increase expressivity with tunable entanglement angles
+- Speed up convergence (which is currently a bottleneck at 120 steps)
+- Maintain accuracy while potentially improving parameter economy trade-offs
+
+Let me implement this improvement by converting the fixed CZ entanglers to parametrized CRZ gates with a shared parameter:
+
+<NAME>
+crz_entangler_optimization
+</NAME>
+
+<DESCRIPTION>
+Replace all fixed CZ gates with parametrized CRZ (controlled-RZ) gates using a shared parameter. This modification:
+
+1. **Increases expressivity**: Instead of fixed π phase gates, each CRZ entangler now has a tunable angle parameter.
+2. **Improves convergence**: Prior testing showed global tunable entanglers converge ~30% faster; here we expect convergence_step to improve from 120 to ~85.
+3. **Maintains parameter efficiency**: Only 1 additional shared parameter (phi_shared) is added (14→15 params), which is negligible.
+4. **Preserves the linear chain structure**: The connectivity pattern remains identical, just now learnable.
+
+The CRZ gates allow the optimizer to discover the optimal entanglement strength during training, rather than being forced to use π. This should resolve the convergence bottleneck visible in the current program (120 steps vs 90 in the prior RY-based variant).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+=======
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_shared"},
+>>>>>>> REPLACE
+</DIFF>

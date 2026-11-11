@@ -1,0 +1,60 @@
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 0. Pre-pre-entanglement rotation layer: ALL 8 qubits share the SAME
+#    single trainable parameter "theta" but on the RX axis. Combined with
+#    the RY layer below (different axis, no entangling gate in between),
+#    this realizes a richer single-qubit rotation (spanning two
+#    non-commuting axes) per qubit while still using only ONE trainable
+#    parameter overall, at zero extra parameter cost.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+
+# 1. Pre-entanglement rotation layer: ALL 8 qubits share a SINGLE trainable
+#    parameter "theta" (down from 2 in prior generations). This is the
+#    minimal possible parametrization for a rotation layer while still
+#    touching every qubit.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 2. Dense, fixed (parameter-free) entangling layer combining:
+#    (a) a closed ring of nearest-neighbor CZ edges (distance 1, wrap-around)
+#        so every qubit entangles with both its immediate neighbors, and
+#    (b) a set of "diameter" CZ edges connecting each qubit to its
+#        antipodal partner (distance 4 on an 8-cycle), giving every qubit
+#        one additional long-range entangling partner.
+#    Together this gives every qubit degree 3 in the entangling graph while
+#    adding ZERO trainable parameters, compensating for the reduced
+#    rotation-layer parameter count.
+for i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 1) % N_QUBITS]})
+for i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + N_QUBITS // 2]})
+
+# 3. Post-entanglement rotation layer: reuse the SAME "theta" parameter
+#    (different axis, RZ), so each block repetition contributes only ONE
+#    unique trainable parameter in total, maximizing parameter economy.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

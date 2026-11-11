@@ -1,0 +1,132 @@
+<NAME>
+parameter_efficient_cry_ansatz
+</NAME>
+
+<DESCRIPTION>
+This modification aims to improve the parameter efficiency while maintaining expressivity by reducing the number of trainable CRY gates and optimizing parameter sharing. The previous version had too many independent CRY parameters (8), which increased the total parameter count significantly without proportional performance gains. This version reduces CRY gates and shares parameters more effectively across qubit pairs while maintaining the entangling capability.
+
+Key improvements:
+1. Reduce CRY gates from 8 to 4 by pairing them more effectively
+2. Share CRY parameters between symmetric qubit pairs to reduce parameter count
+3. Maintain the CZ ring structure that showed good performance in previous iterations
+4. Keep the coarse-grained RY and RZ parameter sharing that proved effective
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+# Enhanced ansatz with controlled rotations for better expressivity
+ANSATZ_SPEC = [
+    # Coarse-grained RY sharing (0-3 vs 4-7)
+    {"gate": "RY", "wire": 0, "param": "ry_h"},
+    {"gate": "RY", "wire": 1, "param": "ry_h"},
+    {"gate": "RY", "wire": 2, "param": "ry_h"},
+    {"gate": "RY", "wire": 3, "param": "ry_h"},
+    {"gate": "RY", "wire": 4, "param": "ry_h2"},
+    {"gate": "RY", "wire": 5, "param": "ry_h2"},
+    {"gate": "RY", "wire": 6, "param": "ry_h2"},
+    {"gate": "RY", "wire": 7, "param": "ry_h2"},
+
+    # Coarse-grained RZ_pre sharing (0-3 vs 4-7)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_h2"},
+
+    # Proven interleaved CZ rings
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Additional fixed chords (no extra parameters) to improve expressivity
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Controlled rotations for increased expressivity
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_01"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_23"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_45"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_67"},
+
+    # Coarse-grained RZ_post sharing (0-3 vs 4-7)
+    {"gate": "RZ", "wire": 0, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_h2"},
+]
+
+=======
+
+# Parameter-efficient ansatz with controlled rotations
+ANSATZ_SPEC = [
+    # Coarse-grained RY sharing (0-3 vs 4-7)
+    {"gate": "RY", "wire": 0, "param": "ry_h"},
+    {"gate": "RY", "wire": 1, "param": "ry_h"},
+    {"gate": "RY", "wire": 2, "param": "ry_h"},
+    {"gate": "RY", "wire": 3, "param": "ry_h"},
+    {"gate": "RY", "wire": 4, "param": "ry_h2"},
+    {"gate": "RY", "wire": 5, "param": "ry_h2"},
+    {"gate": "RY", "wire": 6, "param": "ry_h2"},
+    {"gate": "RY", "wire": 7, "param": "ry_h2"},
+
+    # Coarse-grained RZ_pre sharing (0-3 vs 4-7)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_h2"},
+
+    # Proven interleaved CZ rings
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Additional fixed chords (no extra parameters) to improve expressivity
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Controlled rotations with parameter sharing for efficiency
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_shared"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_shared"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_shared"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_shared"},
+
+    # Coarse-grained RZ_post sharing (0-3 vs 4-7)
+    {"gate": "RZ", "wire": 0, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_h2"},
+]
+
+>>>>>>> REPLACE
+
+</DIFF>

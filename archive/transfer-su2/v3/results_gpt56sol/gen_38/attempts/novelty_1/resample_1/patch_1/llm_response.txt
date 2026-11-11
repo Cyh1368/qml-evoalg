@@ -1,0 +1,54 @@
+<NAME>
+tied_zz_yy_correlators
+</NAME>
+
+<DESCRIPTION>
+Replace the underperforming second collective single-qubit mixer and shifted CZ matching with tied nearest-neighbor ZZ and YY correlation layers. The prior results show that shared ZZ correlations generalize substantially better than the current RX/CZ tail. Adding the orthogonal YY layer increases access to noncommuting correlation features that can improve the hardest-group margin, while reusing `collective_angle` preserves the minimum one-dimensional circuit parameterization and its strong few-shot regularization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Reusing the same angle about X creates a noncommuting mixer between the
+    # two fixed connectivity patterns. This prevents the shifted CZ matching
+    # from collapsing into a single commuting graph.
+    {"gate": "RX", "wire": 0, "param": "collective_angle"},
+    {"gate": "RX", "wire": 1, "param": "collective_angle"},
+    {"gate": "RX", "wire": 2, "param": "collective_angle"},
+    {"gate": "RX", "wire": 3, "param": "collective_angle"},
+    {"gate": "RX", "wire": 4, "param": "collective_angle"},
+    {"gate": "RX", "wire": 5, "param": "collective_angle"},
+    {"gate": "RX", "wire": 6, "param": "collective_angle"},
+    {"gate": "RX", "wire": 7, "param": "collective_angle"},
+
+    # A shifted perfect matching changes which nonlocal sectors interact.
+    # Across the three tied repetitions, the two graph patterns are repeatedly
+    # interleaved at no additional trainable-parameter cost.
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 7]},
+    {"gate": "CZ", "wires": [3, 4]},
+=======
+    # A tied ZZ ring directly trains translation-symmetric two-body features,
+    # retaining the better-generalizing correlation structure of prior blocks.
+    {"gate": "ZZ", "wires": [0, 1], "param": "collective_angle"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "collective_angle"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "collective_angle"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "collective_angle"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "collective_angle"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "collective_angle"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "collective_angle"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "collective_angle"},
+
+    # Interleave an orthogonal YY correlator on the same ring. Sharing the
+    # angle adds correlation channels without adding any fitted parameters.
+    {"gate": "YY", "wires": [0, 1], "param": "collective_angle"},
+    {"gate": "YY", "wires": [1, 2], "param": "collective_angle"},
+    {"gate": "YY", "wires": [2, 3], "param": "collective_angle"},
+    {"gate": "YY", "wires": [3, 4], "param": "collective_angle"},
+    {"gate": "YY", "wires": [4, 5], "param": "collective_angle"},
+    {"gate": "YY", "wires": [5, 6], "param": "collective_angle"},
+    {"gate": "YY", "wires": [6, 7], "param": "collective_angle"},
+    {"gate": "YY", "wires": [7, 0], "param": "collective_angle"},
+>>>>>>> REPLACE
+
+</DIFF>

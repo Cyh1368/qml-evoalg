@@ -1,0 +1,76 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit RY-RZ CZ Ansatz Classifier**  
+- **Implementation**: Uses three rounds of fixed IsingZZ feature-map encoding interleaved with two repeats per round of an 8-qubit ansatz block composed of per-qubit RY and RZ rotations and a linear chain of CZ gates, with trainable gain and bias readout; training employs a Pennylane QNode, Adam optimizer on L2 loss, mini-batch updates, early stopping, and metadata extraction.  
+- **Performance**: Achieves a combined raw score of 0.97 with 1.00 train, 0.99 validation, and 0.98 test accuracy, a 0.01 generalization gap, 146 parameters, depth 99, 270 gates, converging in ~180 steps.  
+- **Feedback**: The ansatz delivers near-perfect classification and rapid convergence with minimal overfitting, but its low parameter efficiency (~0.01 accuracy per parameter) indicates room to prune redundant parameters.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: 8-Qubit Ring CRX Ansatz Classifier**  
+- **Implementation**: Encodes 28-dimensional binary inputs via IsingZZ feature maps and applies three uploads interleaved with two repeats of ansatz blocks—each block comprising RY rotations on all qubits, ring-structured CRX entangling gates, and RZ rotations—then trains both circuit and two readout (gain, bias) parameters using an Adam optimizer on L2 loss with early stopping and best-weight restoration.  
+- **Performance**: Achieved 100% accuracy on train, validation, and test sets with zero generalization gap, average loss ~0.02, combined score 1.52, using 146 parameters, depth 114, and 228 gates.  
+- **Feedback**: The repeated uploads and ring CRX entanglement deliver perfect classification capacity but result in low parameter efficiency (0.01), indicating overparameterization relative to task complexity; output calibration and early stopping ensured stable convergence.
+**Program Identifier:** Generation 1 - Patch Name crx_entanglement_ansatz - Correct Program: True
+
+**Program Name: 8-Qubit Re-uploading Ansatz Classifier**  
+- **Implementation**: The ansatz interleaves three feature-map uploads with two repeats of a block that applies shared RY/RZ rotations on even/odd qubits and a fixed multi-pair CZ entangling pattern, plus trainable readout gain and bias; training uses Pennylane’s autograd backend, Adam optimizer, L2 loss, and early stopping.  
+- **Performance**: Achieved combined_score_raw 0.73 with train/validation/test accuracies of 0.82/0.78/0.75, a generalization gap of 0.07, using 38 parameters, circuit depth 87, and 276 gates.  
+- **Feedback**: Even/odd parameter sharing dramatically cuts parameter count but yields low parameter efficiency (0.02) and may limit expressivity; the fixed entanglement pattern keeps depth manageable but could constrain further performance gains.
+**Program Identifier:** Generation 3 - Patch Name shared_evenodd_rotations_parallel_entanglers - Correct Program: True
+
+**Program Name: 8-Qubit CZ-Scaffold Binary Classifier**  
+- **Implementation**: Uses repeated IsingZZ feature uploads interleaved with a 3×2-structure ansatz block composed of per-qubit RY and RZ rotations, a CZ ring plus skip-edge entangling scaffold, and a shared post-RZ parameter for parameter reduction, yielding 104 trainable parameters.  
+- **Performance**: Achieved combined raw score 0.97 with train/validation/test accuracies of 0.99/0.99/0.98, depth 130, gate count 312, and zero generalization gap.  
+- **Feedback**: The high-connectivity CZ scaffold and parameter sharing delivered strong expressivity and stable generalization, but low parameter efficiency (0.01) and moderate circuit depth suggest opportunities to simplify the ansatz for improved resource utilization.
+**Program Identifier:** Generation 5 - Patch Name cz_more_connectivity_shared_final_rz - Correct Program: True
+
+**Program Name:** 8-Qubit Reuploading Classifier with Linear CRZ Entanglement  
+- **Implementation:** The circuit encodes 28-dimensional binary features via an IsingZZ feature map in three reuploadings, each followed by two repeats of a 31-parameter ansatz block (8 RY, 8 pre-RZ, 7 CRZ, 8 post-RZ gates on a linear qubit chain) plus trainable gain and bias; parameters are optimized end-to-end with Pennylane’s Adam backprop on an L2 loss and early stopping.  
+- **Performance:** Achieved a combined score of 0.97 with train/validation/test accuracies of 0.99/1.00/0.99, validation/test losses ≈0.11, circuit depth 99, 270 gates, and 188 total parameters.  
+- **Feedback:** The deep reuploading structure and linear CRZ coupling yield excellent accuracy and zero generalization gap, but the high parameter count results in low parameter efficiency (0.01), suggesting the ansatz could be pruned or compressed without degrading performance.
+**Program Identifier:** Generation 6 - Patch Name crz_layer_enhancement - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Repeated feature‐map uploads with interleaved ansatz blocks (N_UPLOADS=3, N_REPEATS=2) consistently yielded rapid convergence and high accuracy. Both the “8-Qubit RY-RZ CZ Ansatz” (combined raw 0.97, depth 99) and the best “8-Qubit Ring CRX Ansatz Classifier” (combined 1.52, depth 114) use this pattern.  
+- Rich two-qubit entanglement topologies improved expressivity without adding parameters:  
+  • Ring‐structured CRX (8-Qubit Ring CRX) achieved 100% train/validation/test accuracy and zero gap with 146 parameters.  
+  • CZ‐scaffold entangler (8-Qubit CZ-Scaffold) matched 0.97 combined score using 104 shared-parameter blocks.  
+- Full parametrization of single-qubit rotations (per-qubit RY and RZ) before and after entanglers provided the flexibility needed for perfect classification, as seen in both RY-RZ CZ and CRX-ring models.  
+- Early stopping with best‐weight restoration and simple L2 loss consistently delivered stable generalization (generalization gap ≤0.01 in top models).  
+
+## Ineffective Approaches  
+- Aggressive parameter sharing across qubits (even/odd shared RY/RZ in “8-Qubit Re-uploading Ansatz Classifier”) slashed parameter count to 38 but yielded only 0.73 combined score and a 0.07 generalization gap, indicating under-expressivity.  
+- Linear CRZ chains with high parameter counts (188 parameters in “Reuploading Classifier with Linear CRZ Entanglement”) achieved 0.97 combined score—on par with lower-param CZ‐based ansätze—demonstrating diminishing returns and low parameter efficiency.  
+- Excessive circuit depth without richer entanglement (e.g., depth 130 in CZ-scaffold versus 114 in ring CRX with better score) increased gate count without proportional performance gains.  
+
+## Implementation Insights  
+- Defining the ansatz via a declarative ANSATZ_SPEC and mapping parameter keys to indices (as in apply_ansatz_block) offers modularity: swapping in CRX vs CZ entanglers required only spec edits, not core loop changes.  
+- Leveraging parameterized two-qubit gates (CRX) on a closed-ring topology improved expressivity over fixed CZ chains, with identical parameter counts (146) and only a modest depth increase (+15).  
+- Placement of per-qubit RY rotations before entanglement and RZ rotations after (as in ring CRX ansatz) appears critical: it ensures local feature rotation and global mixing, driving perfect separability.  
+- Consistent use of Pennylane’s backprop interface and AdamOptimizer with small random initialization (±0.05) and calibrated gain/bias readout stabilized training across all high-performing models.  
+
+## Performance Analysis  
+- Combined score progression: 0.73 (shared even/odd) → 0.97 (RY-RZ CZ, CRZ-linear, CZ-scaffold) → 1.52 (ring CRX), pinpointing ring CRX as the clear top performer.  
+- All top classifiers share zero or near-zero generalization gap; only the under-parametrized shared even/odd model suffered overfit (gap 0.07).  
+- Parameter efficiency remains low (~0.01 accuracy per parameter) even for the ring CRX and CZ-scaffold, indicating that further pruning or compression could maintain accuracy while improving efficiency.  
+- Circuit depth correlates with accuracy up to a point: models with depth ≥99 achieved ≥0.97 combined score, but beyond ~114 (ring CRX) extra depth added little benefit relative to gate count.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Experiment with alternative upload‐repeat schedules to sharpen feature mixing. For example, keep six ansatz blocks total but switch to N_UPLOADS=6, N_REPEATS=1 (one block per upload) or N_UPLOADS=4, N_REPEATS=1.5 (i.e. four uploads with some uploads applying two blocks). This preserves the proven six‐block pattern while front‐loading more frequent feature re‐uploads, testing whether more granular data injections yield faster convergence or tighter generalization gaps.
+
+2. Enrich single‐qubit expressivity by adding RX rotations before the existing RY layer. Concretely, prepend each block in ANSATZ_SPEC with “RX wire i, param rx_i” for i∈0…7, followed by the current RY→CRX‐ring→RZ sequence. Full SU(2) parametrization around the entanglers has driven perfect separability in top models and may further reduce loss or accelerate convergence.
+
+3. Hybridize the two‐qubit entangler topology by interleaving fixed CZ gates with parameterized CRX in the ring. For instance, in ANSATZ_SPEC replace every even‐indexed CRX with a CZ (no param) or a CRZ gate, achieving a mixed CRX–CZ ring. This draws on the CZ‐scaffold’s parameter efficiency and the CRX‐ring’s expressivity to probe sweet spots in depth versus parameter count.
+
+4. Stack a second CRX‐ring entanglement sublayer inside each ansatz block using shared parameters. Duplicate the eight CRX entries in the block spec immediately after the first ring but point them to the same “crx_0…crx_7” keys. This densifies entanglement without increasing parameter count, leveraging ring‐CRX’s proven topology while exploring whether deeper two‐qubit mixing boosts accuracy.
+
+5. Integrate a light‐weight pruning or L₁ regularization on CRX parameters post‐training to carve away negligible gates. After convergence, threshold or drive small‐magnitude crx_i to zero and re-evaluate on validation. Given the low parameter efficiency (~0.01 accuracy/param), modest pruning (10–20%) may maintain ≥0.97 combined score while substantially boosting compactness.

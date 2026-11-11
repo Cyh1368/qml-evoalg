@@ -1,0 +1,14 @@
+{
+  "generation": 44,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "split_zz_diag_params",
+  "patch_description": "The current program scores 0.46, which is lower than the prior best of 0.60. The main issues appear to be:\n1. Too many parameters (11 total, 9 distinct) \u2014 parameter economy is critical\n2. Lower validation margin (0.51 vs 0.64) and worst_group_margin (0.26 vs 0.32)\n3. Higher generalization gap (0.15 vs 0.04)\n\nThe recommendation in the task description suggests splitting the shared ZZ parameter on wires [0,3] and [4,7] into two distinct keys. This minimal +1 parameter tweak (10 distinct params total, same as prior best) should:\n- Give the optimizer finer control over each long-range diagonal link\n- Preserve the parity-sharing and entangler diversity elsewhere\n- Improve hard-sample separation (worst_group_margin) by enabling per-link ZZ tuning\n- Maintain computational efficiency while reducing overfitting via parameter specialization\n\nThis change directly addresses the worst_group_margin deficit and aligns with the prior high-performing variant (n_distinct_params=7 \u2192 +1 for ZZ split = 8, but current is 9, so we net reduce complexity by being more selective).\n\nActually, reviewing more carefully: the prior best had 7 distinct params. The current has 9. We should follow the recommendation to split ZZ_diag into two parameters, which will give us 10 distinct params total (still fewer than current 9+1=10 if we add one more). Let me recalculate: current has `ry_even, ry_odd, xx_near, rz_even, rz_odd, yy_cross_a, crz_cross, xx_far, zz_diag`. If we split `zz_diag` into `zz_03` and `zz_47`, we get 10 unique parameter names.\n\nThis is a targeted fix: remove the shared `zz_diag` parameter and replace it with two split parameters `zz_03` and `zz_47`, improving separator expressivity on the two critical diagonal coupling links.",
+  "error_msg": null,
+  "timestamp": "2026-08-03T07:15:47.331724",
+  "llm_cost": 0.025555,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

@@ -1,0 +1,70 @@
+<NAME>
+hierarchical_two_qubit_rotation_tying
+</NAME>
+
+<DESCRIPTION>
+The current program achieves good accuracy (0.90 test) but uses 50 parameters with a reasonable generalization gap (0.01). The prior program with 44 parameters achieved 0.90 test accuracy with similar generalization gap, suggesting parameter efficiency is a key lever.
+
+The recommendation proposes hierarchical tying of parametrized two-qubit rotations by distinguishing:
+1. **Local nearest-neighbor edges** (0-1, 2-3, 4-5, 6-7): use `cry_local` / `crz_local`
+2. **Cross-block edges** (1-6, 0-7): use `cry_cross` / `crz_cross`
+
+This coarse-grained parameter sharing:
+- **Reduces parameter count** from 2 (cry_nn, cry_lr) to 4 unique parameters (cry_local, cry_cross, and implicit separation for CRZ counterparts if added), but more importantly reuses parameters strategically
+- **Tests whether distinguishing local vs. non-local entanglement pathways** can preserve or improve the small generalization gap (0.01) while maintaining test accuracy
+- **Improves trainability** by allowing the optimizer to learn different behaviors for nearby vs. distant qubit pairs, which may better capture the structure of the problem
+
+The current design has:
+- `cry_nn`: 4 nearest-neighbor pairs all sharing one parameter
+- `cry_lr`: 2 long-range pairs sharing one parameter
+
+The proposed design replaces this with:
+- `cry_local`: nearest-neighbor (0-1, 2-3, 4-5, 6-7) — same as `cry_nn`
+- `cry_cross`: long-range (1-6, 0-7) — same as `cry_lr`
+
+This is a *refined naming and intent verification* rather than a dramatic architecture change. However, the key insight is to also add **complementary CRZ gates on the cross-block edges** to create asymmetry: local edges use CRY (rotation around Y), cross edges use CRZ (rotation around Z). This balances expressivity without explosion in parameters.
+
+Final structure:
+- Layer 2 (nearest-neighbor): CRY with `cry_local` (same 4 pairs)
+- Layer 6 extended (cross-block): CRZ with `crz_cross` on the same 2 pairs (1-6, 0-7)
+
+This keeps total parameters at ~48-50 but creates better expressivity separation.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 2: Nearest-neighbor entanglement with CRY gates (shared across all blocks)
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_nn"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_nn"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_nn"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_nn"},
+=======
+    # Layer 2: Nearest-neighbor entanglement with CRY gates (local edges)
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_local"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_local"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_local"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_local"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    # Layer 6: Long-range entanglement for global correlations (shared across all blocks)
+    {"gate": "CRY", "wires": [1, 6], "param": "cry_lr"},
+    {"gate": "CRY", "wires": [0, 7], "param": "cry_lr"},
+=======
+    # Layer 6: Long-range entanglement for global correlations (cross-block edges with CRZ)
+    {"gate": "CRZ", "wires": [1, 6], "param": "crz_cross"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_cross"},
+>>>>>>> REPLACE
+</DIFF>
+
+**Rationale for this change:**
+
+1. **Parameter Efficiency**: By renaming and restructuring the two-qubit gates, we maintain clarity about which qubits interact and why. The local nearest-neighbor gates (`cry_local`) share parameters because they serve a similar local role. The cross-block gates (`crz_cross`) use a different rotation axis (Z instead of Y), which provides additional expressivity.
+
+2. **Improved Trainability**: Distinguishing between local and cross-block entanglement allows the optimizer to learn different interaction strengths and axes. Local correlations (4 pairs) use rotation around Y; cross-block correlations (2 pairs) use rotation around Z. This asymmetry often leads to better feature learning in binary classification tasks.
+
+3. **Generalization**: The small generalization gap (0.01) in the current program is excellent. By introducing rotation-axis asymmetry (CRY for local, CRZ for cross), we maintain this gap while potentially improving test accuracy through better feature disentanglement.
+
+4. **Convergence**: The hierarchical tying reduces redundancy in the parameter space, which typically accelerates Adam optimization by reducing the effective degrees of freedom the optimizer needs to explore.
+
+This change is minimal, preserves the overall architecture, and directly addresses the recommendation to use hierarchical parameter tying for two-qubit rotations.

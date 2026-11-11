@@ -1,0 +1,64 @@
+Looking at the performance metrics:
+
+**Current state:**
+- Combined score: 0.90
+- validation_accuracy: 0.92 (slightly lower than prior 0.94)
+- test_accuracy: 0.90 (stable)
+- generalization_gap: 0.03 (slightly worse than prior 0.02)
+- convergence_step_mean: 330 (significantly worse than prior 180)
+- n_params: 50 (efficient)
+
+**Analysis:**
+The current circuit has 50 parameters but shows:
+1. Slower convergence (330 vs 180 steps)
+2. Larger generalization gap (0.03 vs 0.02)
+3. Slightly lower validation accuracy (0.92 vs 0.94)
+
+Comparing to prior programs, the key difference is that the current program removed the mid-circuit RZ layer and the fused post-entanglement stage. The earlier program with a dedicated mid-circuit layer (second prior program) achieved 0.94 validation accuracy while maintaining the same parameter count.
+
+**Proposed improvement:**
+Add a wrap-around long-range CZ+CRZ pair connecting qubits 7 and 0 to form a ring topology. This tests whether ring-topology benefits can improve generalization and convergence, addressing the current gap. The single additional parameter is offset by potential improvements in expressivity and generalization through better information flow around the qubit chain.
+
+This aligns with the recommendation to "probe long-range coupling" and maintains the proven three-stage phase layering pattern while adding minimal complexity.
+
+<NAME>
+add_wrap_around_crz
+</NAME>
+
+<DESCRIPTION>
+Add a wrap-around CZ gate followed by a parametrized CRZ gate connecting the last qubit (7) back to the first qubit (0). This creates a ring topology instead of a linear chain, enabling:
+1. Long-range information flow between boundary qubits
+2. Better generalization through improved quantum entanglement structure
+3. Potential faster convergence via enhanced connectivity
+
+This single new parameter (crz_wrap) leverages the proven CRZ effectiveness from the reverse chain section while testing ring-topology benefits on generalization gap (currently 0.03, target ≤0.02). The minimal gate overhead is justified by addressing the convergence slowdown (330 vs 180 steps in prior runs) through structural improvements.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Reverse chain with alternating CRZ parameters for proven expressivity
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+]
+=======
+    # Reverse chain with alternating CRZ parameters for proven expressivity
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+
+    # Wrap-around ring-topology coupling for improved long-range information flow
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_wrap"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

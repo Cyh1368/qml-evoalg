@@ -1,0 +1,35 @@
+Looking at the current program and the performance metrics, I can see that:
+
+1. **Current state**: 7 distinct parameters, combined score 0.66, worst_group_margin_mean 0.35
+2. **Prior best**: Also 7 distinct parameters, combined score 0.67, worst_group_margin_mean 0.36
+3. **Key observation**: The recommendation suggests merging `ent_off` (YY gates) into `ent_nn`, reducing to 6 distinct parameters
+
+The recommendation is strategically sound because:
+- All top performers use 7 shared parameters with tight gradient concentration
+- Reducing to 6 parameters while maintaining the entanglement structure tests whether further consolidation can improve **parameter efficiency** (currently 0.11) without sacrificing margin
+- The YY gates at wires [1,2], [3,4], [5,6] are offset nearest-neighbor—structurally similar to XX gates, making them natural candidates to share parameters
+- This reduces complexity while maintaining the same entanglement connectivity pattern
+
+The edit is minimal and surgical: change each YY gate's `"param":"ent_off"` to `"param":"ent_nn"` and remove the now-unused `ent_off` parameter.
+
+<NAME>
+merge_ent_off_into_ent_nn
+</NAME>
+
+<DESCRIPTION>
+Merge the offset-YY entanglement block into the nearest-neighbor entangler by reusing the "ent_nn" parameter for YY gates instead of a separate "ent_off" parameter. This reduces the distinct parameter count from 7 to 6 while maintaining the same entanglement connectivity pattern (offset nearest-neighbor YY gates are structurally similar to XX gates and can share gradient flows). The consolidation improves parameter efficiency and tests whether tighter parameter coupling enhances worst-group margin while maintaining convergence speed and accuracy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+=======
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_nn"},
+>>>>>>> REPLACE
+</DIFF>

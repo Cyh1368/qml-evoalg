@@ -1,0 +1,27 @@
+<NAME>
+crz_reduced_ring_plus_local_cz
+
+<DESCRIPTION>
+Since apply_ansatz_block cannot be edited (it's outside the EVOLVE-BLOCK), I need to encode the desired sparse long-range connectivity structurally inside ANSATZ_SPEC using fixed CZ gates. Building on the best-performing candidate (score 0.85) that used a simple linear CZ chain with a wraparound closure, and noting the reversed CRZ-based variant underperformed, I revert to the higher-scoring linear-chain CZ backbone augmented with CRZ couplings at alternating positions along the chain in the forward direction (0->1->2->...->7->0), matching the exact topology of the best prior program. This restores the higher generalization behavior. Since block-level odd/even alternation cannot be added without editing the fixed apply_ansatz_block function, I instead diversify long-range coupling by adding one extra fixed CZ gate directly between distant qubits (3 and 7) within the single ANSATZ_SPEC block definition, which applies identically in every block but provides persistent long-range correlation capture, complementing the local ring closure. This is a minimal, static structural change fully expressible within ANSATZ_SPEC.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_0"},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_1"},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_2"},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_3"},
+    {"gate": "CZ", "wires": [0, 7]},
+=======
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_1"},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_2"},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_3"},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [3, 7]},
+>>>>>>> REPLACE

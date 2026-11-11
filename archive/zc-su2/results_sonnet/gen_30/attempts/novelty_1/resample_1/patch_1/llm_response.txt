@@ -1,0 +1,71 @@
+<NAME>
+triple_rotation_shared_theta_dense_entangle
+
+<DESCRIPTION>
+Builds on the highest-scoring prior design (single globally-shared "theta" parameter driving both RY and RZ layers, combined with a fixed CZ ring + diameter connections) which achieved the best economy/accuracy trade-off (score 0.80, n_params=8). The key insight from comparing generations is that *parameter count dominates the score*, while additional fixed (parameter-free) entangling connectivity or extra rotation axes reusing the *same* parameter name can add expressive power and speed convergence without any extra trainable-parameter cost.
+
+This version pushes that insight further: it keeps exactly one trainable parameter name ("theta") per block copy (matching the best n_params=8 setup), but now uses **three** rotation axes (RY, RZ, RX) all sharing "theta", interleaved with **three** different fixed entangling topologies (nearest-neighbor ring, antipodal "diameter" pairs, and skip-2 twisted ring) for much richer, near-all-to-all connectivity at zero extra parameter cost. The intuition: more diverse fixed entanglement combined with more rotation axes reusing a single scalar parameter increases the Hilbert-space trajectory reachable by a 1-parameter family per repetition, which should improve convergence speed and robustness while preserving the maximal parameter economy that drove the 0.80 score.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 1. First rotation layer (RY) on all qubits, sharing a SINGLE trainable
+#    scalar parameter "theta" -- the maximal parameter-economy choice
+#    validated by the highest-scoring prior generation (n_params=8,
+#    score=0.80).
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 2. Fixed nearest-neighbor entangling ring (distance-1, wrap-around).
+#    Zero extra trainable parameters.
+for i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 1) % N_QUBITS]})
+
+# 3. Second rotation layer (RZ), reusing the SAME "theta" parameter on a
+#    different axis -- adds expressivity at zero extra parameter cost.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+
+# 4. Fixed antipodal "diameter" entangling layer (distance-4 pairs),
+#    giving every qubit a long-range partner. Zero extra parameters.
+for i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + N_QUBITS // 2]})
+
+# 5. Third rotation layer (RX), again reusing the SAME "theta" parameter,
+#    completing a full 3-axis rotation cycle driven by one scalar per
+#    block repetition, maximizing expressivity-per-parameter.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+
+# 6. Fixed "skip-2" twisted entangling ring (distance-2 pairs), adding a
+#    third independent entangling topology for near-all-to-all coverage
+#    across the register, again at zero trainable-parameter cost.
+for i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 2) % N_QUBITS]})
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

@@ -1,0 +1,96 @@
+I see the issue. The gate definitions and application logic are outside the EVOLVE-BLOCK, so I cannot modify them. However, I can still improve the ansatz by using only the gates that are already supported. Let me propose a revised approach that uses only supported gates within the EVOLVE-BLOCK.
+
+<NAME>
+enriched_minimal_ansatz
+</NAME>
+
+<DESCRIPTION>
+The current minimal ansatz (n_params=8, score=0.89) achieves extreme parameter efficiency but sacrifices expressivity, resulting in high validation loss (0.46) and lower test accuracy (0.89). The prior second program (n_params=26, score=0.91) achieved better results (test_accuracy=0.93, validation_loss=0.32) through more structured entanglement.
+
+Since IsingZZ cannot be added without modifying the fixed gate definitions (which are outside EVOLVE-BLOCK), I propose an alternative enrichment strategy using only supported parametrized gates (CRX, CRY, CRZ):
+
+1. **Add parametrized two-qubit gates**: Introduce CRY gates on strategic qubit pairs after the CZ entanglement layers. This adds learnable nonlinearity without requiring new gate types.
+
+2. **Moderate parameter increase**: Adding 4 CRY gates with a shared parameter "cry_enrich" adds only 1 parameter per block (6 total circuit params), bringing n_params from 8 to 14—still highly efficient.
+
+3. **Leverage proven architecture**: The second program used CRY gates successfully. We adopt a similar strategy but with aggressive parameter sharing to maintain efficiency.
+
+4. **Better expressivity-efficiency tradeoff**: The current ansatz has only 1 parameter per block (theta), which is too constrained. Adding one more parameter (cry_enrich) per block provides additional degrees of freedom to fit the validation distribution while keeping parameter count low.
+
+5. **Addresses validation loss**: Current validation_loss=0.46 vs prior 0.32. The additional CRY layer should help reduce this gap by providing more flexible feature interaction patterns.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Minimal shared-parameter ansatz with mid-block IsingZZ enrichment
+    # Combines parameter efficiency with stable gradient flow via IsingZZ
+
+    # Layer 1: Single-qubit rotations with full parameter sharing
+    {"gate": "RY", "wire": 0, "param": "theta"},
+    {"gate": "RY", "wire": 1, "param": "theta"},
+    {"gate": "RY", "wire": 2, "param": "theta"},
+    {"gate": "RY", "wire": 3, "param": "theta"},
+    {"gate": "RY", "wire": 4, "param": "theta"},
+    {"gate": "RY", "wire": 5, "param": "theta"},
+    {"gate": "RY", "wire": 6, "param": "theta"},
+    {"gate": "RY", "wire": 7, "param": "theta"},
+
+    # Layer 2: Nearest-neighbor entanglement (fixed, no parameters)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Layer 3: Next-nearest-neighbor entanglement (fixed, no parameters)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+]
+=======
+ANSATZ_SPEC = [
+    # Enriched minimal ansatz: parameter efficiency with structured nonlinearity
+    # Adds parametrized two-qubit gates for better expressivity while maintaining low parameter count
+
+    # Layer 1: Single-qubit rotations with full parameter sharing
+    {"gate": "RY", "wire": 0, "param": "theta"},
+    {"gate": "RY", "wire": 1, "param": "theta"},
+    {"gate": "RY", "wire": 2, "param": "theta"},
+    {"gate": "RY", "wire": 3, "param": "theta"},
+    {"gate": "RY", "wire": 4, "param": "theta"},
+    {"gate": "RY", "wire": 5, "param": "theta"},
+    {"gate": "RY", "wire": 6, "param": "theta"},
+    {"gate": "RY", "wire": 7, "param": "theta"},
+
+    # Layer 2: Nearest-neighbor entanglement (fixed, no parameters)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Layer 3: Next-nearest-neighbor entanglement (fixed, no parameters)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Layer 4: Parametrized two-qubit gates for mid-block enrichment
+    # Strategic placement on long-range pairs with shared parameter for efficiency
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_enrich"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cry_enrich"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry_enrich"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cry_enrich"},
+]
+>>>>>>> REPLACE
+</DIFF>

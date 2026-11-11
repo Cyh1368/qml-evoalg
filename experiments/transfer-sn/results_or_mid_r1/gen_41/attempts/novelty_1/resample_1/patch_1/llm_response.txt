@@ -1,0 +1,47 @@
+<NAME>
+enhanced_cr_entanglement
+</NAME>
+
+<DESCRIPTION>
+The current ansatz achieves good test accuracy (0.87) but has relatively low parameter efficiency (0.01). 
+
+Analysis of the prior programs shows that parameter sharing via mirror symmetry improved the combined score from 0.23 to 0.27 while reducing n_params from 98 to 74. The fixed circuit architecture (N_REPEATS=2, N_UPLOADS=3) and the constraint that we can only modify ANSATZ_SPEC means I cannot implement parameter sharing across repeats at the code level.
+
+However, I can enhance the ansatz expressivity by adding a second layer of parameterized controlled rotations on complementary qubit pairs. This increases the capacity of the ansatz to learn feature interactions without drastically increasing the parameter count per block.
+
+The strategy is to:
+1. Keep the existing pre-rotation, entangling scaffold, and post-rotation layers
+2. Insert an additional controlled-rotation layer between the first and second controlled-rotation layers, targeting orthogonal qubit pairs (0-2, 1-3, 4-6, 5-7)
+3. Reuse some parameters where symmetry allows, adding only 2 new parameters (crz_b, crx_c)
+
+This increases N_PARAMS_PER_BLOCK from 12 to 14, and total params from 74 to 14*3*2+2 = 86.
+
+The intuition: deeper controlled-rotation layers with different pair connectivity enhance entanglement patterns and feature extraction across multiple scales, potentially improving test accuracy and reducing the generalization gap without excessive overfitting.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Mixed-axis controlled-rotation core: expressive but parameter-efficient
+    {"gate": "CRX", "wires": [0, 7], "param": "crx_a"},
+    {"gate": "CRY", "wires": [1, 6], "param": "cry_a"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_a"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_b"},
+
+    # Shared post-phase refinement for readout calibration
+=======
+    # Mixed-axis controlled-rotation core: expressive but parameter-efficient
+    {"gate": "CRX", "wires": [0, 7], "param": "crx_a"},
+    {"gate": "CRY", "wires": [1, 6], "param": "cry_a"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_a"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_b"},
+
+    # Secondary controlled-rotation layer: orthogonal pairs for multi-scale entanglement
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_b"},
+    {"gate": "CRX", "wires": [4, 6], "param": "crx_c"},
+    {"gate": "CRX", "wires": [5, 7], "param": "crx_c"},
+
+    # Shared post-phase refinement for readout calibration
+>>>>>>> REPLACE
+
+</DIFF>

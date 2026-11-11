@@ -1,0 +1,112 @@
+<NAME>
+symmetric_complete_graph
+</NAME>
+
+<DESCRIPTION>
+Replace the over-parameterized pair-specific block with a globally shared, permutation-symmetric block. Since the 28 binary features correspond to all qubit pairs and the readout averages Z over every qubit, complete-graph CZ mixing aligns the circuit inductive bias with both the feature representation and measurement symmetry. Sharing one parameter across each local rotation layer reduces the model from 80 to 20 total parameters, improving regularization and parameter efficiency while eliminating the weakly motivated asymmetric CRZ bridge. Prior results indicate this structure substantially improves validation accuracy, loss, generalization, and convergence speed.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Pair-shared local mixing regularizes the symmetric mean-Z model.
+    {"gate": "RY", "wire": 0, "param": "ry_pre_01"},
+    {"gate": "RY", "wire": 1, "param": "ry_pre_01"},
+    {"gate": "RY", "wire": 2, "param": "ry_pre_23"},
+    {"gate": "RY", "wire": 3, "param": "ry_pre_23"},
+    {"gate": "RY", "wire": 4, "param": "ry_pre_45"},
+    {"gate": "RY", "wire": 5, "param": "ry_pre_45"},
+    {"gate": "RY", "wire": 6, "param": "ry_pre_67"},
+    {"gate": "RY", "wire": 7, "param": "ry_pre_67"},
+    {"gate": "RZ", "wire": 0, "param": "rz_01"},
+    {"gate": "RZ", "wire": 1, "param": "rz_01"},
+    {"gate": "RZ", "wire": 2, "param": "rz_23"},
+    {"gate": "RZ", "wire": 3, "param": "rz_23"},
+    {"gate": "RZ", "wire": 4, "param": "rz_45"},
+    {"gate": "RZ", "wire": 5, "param": "rz_45"},
+    {"gate": "RZ", "wire": 6, "param": "rz_67"},
+    {"gate": "RZ", "wire": 7, "param": "rz_67"},
+
+    # Parallelizable skip chains spread correlations across the register.
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CRZ", "wires": [6, 7], "param": "bridge_crz"},
+
+    # Independent pair-shared readout-basis mixing.
+    {"gate": "RY", "wire": 0, "param": "ry_post_01"},
+    {"gate": "RY", "wire": 1, "param": "ry_post_01"},
+    {"gate": "RY", "wire": 2, "param": "ry_post_23"},
+    {"gate": "RY", "wire": 3, "param": "ry_post_23"},
+    {"gate": "RY", "wire": 4, "param": "ry_post_45"},
+    {"gate": "RY", "wire": 5, "param": "ry_post_45"},
+    {"gate": "RY", "wire": 6, "param": "ry_post_67"},
+    {"gate": "RY", "wire": 7, "param": "ry_post_67"},
+]
+=======
+ANSATZ_SPEC = [
+    # Globally shared rotations match the permutation-invariant mean-Z readout.
+    {"gate": "RY", "wire": 0, "param": "ry_pre"},
+    {"gate": "RY", "wire": 1, "param": "ry_pre"},
+    {"gate": "RY", "wire": 2, "param": "ry_pre"},
+    {"gate": "RY", "wire": 3, "param": "ry_pre"},
+    {"gate": "RY", "wire": 4, "param": "ry_pre"},
+    {"gate": "RY", "wire": 5, "param": "ry_pre"},
+    {"gate": "RY", "wire": 6, "param": "ry_pre"},
+    {"gate": "RY", "wire": 7, "param": "ry_pre"},
+    {"gate": "RZ", "wire": 0, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 1, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 2, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 3, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 4, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 5, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 6, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 7, "param": "rz_phase"},
+
+    # Complete-graph mixing mirrors the 28 pairwise feature couplings.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [0, 6]},
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [1, 7]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [2, 7]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [4, 7]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # A shared final basis rotation preserves symmetry and exposes phases to Z.
+    {"gate": "RY", "wire": 0, "param": "ry_post"},
+    {"gate": "RY", "wire": 1, "param": "ry_post"},
+    {"gate": "RY", "wire": 2, "param": "ry_post"},
+    {"gate": "RY", "wire": 3, "param": "ry_post"},
+    {"gate": "RY", "wire": 4, "param": "ry_post"},
+    {"gate": "RY", "wire": 5, "param": "ry_post"},
+    {"gate": "RY", "wire": 6, "param": "ry_post"},
+    {"gate": "RY", "wire": 7, "param": "ry_post"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,132 @@
+<NAME>
+parametrized_entanglement_with_phase_layers
+</NAME>
+
+<DESCRIPTION>
+The current program achieves excellent generalization (0.01 gap) with high efficiency (26 params), but test accuracy is at 0.90. To improve further while preserving parameter efficiency, I propose:
+
+1. **Add intermediate shared RZ phase layers** between the CZ matching blocks to provide finer phase control and better separation of computation stages. This costs minimal parameters (1-2 additional unique params).
+
+2. **Replace the final CZ matching layer with parametrized CRZ gates** using a shared parameter. This adds expressivity to the output entanglement stage, where expressing features in the Z basis is critical, while keeping parameter count low.
+
+3. **Add an additional shared RZ layer before readout** for final phase calibration.
+
+The rationale is that the current architecture has excellent structure (hypercube perfect matchings, collective parameter sharing), but adding selective phase refinement and parametrized entanglement at the output should increase expressivity for the final measurement basis without causing overfitting—the strong generalization suggests the model has room for more capacity.
+
+Expected impact:
+- Maintain or improve generalization gap (currently excellent at 0.01)
+- Increase test accuracy toward 0.92-0.93
+- Add ~3-4 parameters, keeping efficiency high
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Regular degree-three cube entangler. The edges are grouped into three
+    # disjoint perfect matchings, giving all qubits equal connectivity and a
+    # short entangling depth.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Non-diagonal output mixers convert the encoded phase information and
+    # entanglement into the fixed single-qubit Z measurements.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_out"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+=======
+    # Regular degree-three cube entangler. The edges are grouped into three
+    # disjoint perfect matchings, giving all qubits equal connectivity and a
+    # short entangling depth.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Intermediate phase refinement after first matching
+    {"gate": "RZ", "wire": 0, "param": "collective_rz_mid1"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz_mid1"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz_mid1"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz_mid1"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz_mid1"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz_mid1"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz_mid1"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz_mid1"},
+
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Intermediate phase refinement after second matching
+    {"gate": "RZ", "wire": 0, "param": "collective_rz_mid2"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz_mid2"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz_mid2"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz_mid2"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz_mid2"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz_mid2"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz_mid2"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz_mid2"},
+
+    # Final third matching with parametrized controlled rotations for expressive output entanglement
+    {"gate": "CRZ", "wires": [0, 4], "param": "collective_crz_out"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "collective_crz_out"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "collective_crz_out"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "collective_crz_out"},
+
+    # Non-diagonal output mixers convert the encoded phase information and
+    # entanglement into the fixed single-qubit Z measurements.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_out"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_out"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+
+    # Final phase calibration before measurement
+    {"gate": "RZ", "wire": 0, "param": "collective_rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz_final"},
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,105 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-qubit Quantum Binary Classifier**
+- **Implementation**: The circuit encodes 28 binary features via fixed two-qubit IsingZZ gates, then applies an ansatz block of per-qubit RY rotations, pre/post RZ rotations, and a linear chain of CZ entanglers, repeated over 3 feature uploads × 2 repeats. A trainable gain and bias calibrate the mean Z-expectation readout, and all 146 parameters are optimized with PennyLane’s Adam optimizer on an L2 loss.
+- **Performance**: Achieved train_accuracy=1.00, validation_accuracy=0.99, test_accuracy=0.98 with a 0.01 generalization gap using depth=99, gate_count=270, and combined_score_raw=0.97.
+- **Feedback**: The repeated feature re-uploading and entanglement structure deliver near-perfect accuracy and minimal overfitting, converging in ~180 steps, though the parameter efficiency remains modest (0.01). The ansatz specification validated without errors and supported stable training.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: 8-Qubit Repeated Brick-Wall Ansatz Classifier**  
+- **Implementation**: Uses a fixed two-qubit IsingZZ feature map on 28 binary features, followed by 3 uploads of an ansatz block—each block layering RY rotations, an even/odd brick-wall CNOT pattern, and RZ rotations—repeated twice per upload, yielding 98 trainable circuit parameters plus gain/bias, optimized via Pennylane’s Adam with validation-based early stopping.  
+- **Performance**: Achieved a combined score of 0.96 (target 1.08) with train/validation/test accuracies of 0.97/0.96/0.98, circuit depth 81, 228 gates, and convergence at ~390 steps.  
+- **Feedback**: Demonstrates strong accuracy and a minimal generalization gap (0.01) with a compact parameter set, but low parameter efficiency (0.01) and sub-optimal combined score suggest adding deeper entanglement or more expressive gates could further boost performance.
+**Program Identifier:** Generation 1 - Patch Name brickwall_ry_rz_cnot_ring - Correct Program: True
+
+**Program Name: Collective Rotation Ansatz Classifier**
+- **Implementation**: Implements an 8-qubit binary classifier using a fixed IsingZZ feature map with 3 re-uploads and 2 repeats of a trainable block of collective RY, RZ, RX rotations (one parameter per rotation on all qubits) plus a classical gain/bias calibration layer. Training uses a Pennylane QNode with the Adam optimizer, mini-batch MSE loss, and validation-based early stopping.
+- **Performance**: Achieved combined_score_raw 0.74 with mean test accuracy 0.75 using only 20 parameters in a depth-71, 228-gate circuit.
+- **Feedback**: The compact 20-parameter collective rotation design delivers high parameter efficiency (0.04) and low generalization gap (0.03) but yields only moderate accuracy, suggesting limited expressivity of uniform rotations.
+**Program Identifier:** Generation 2 - Patch Name collective_phase_mixers - Correct Program: True
+
+**Program Name: 8-Qubit Reuploading RY-RZ CNOT Classifier**
+- **Implementation**: Implements an 8-qubit binary classifier using a fixed two-qubit IsingZZ feature map and an ansatz block of per-qubit RY and RZ rotations followed by ring CNOT entanglement, repeated over 3 data uploads × 2 layers (96 circuit parameters) plus a trainable gain and bias. The model is trained with PennyLane’s Adam optimizer on an L2 loss, using batch updates, early stopping with validation-loss monitoring, and best-weight restoration.
+- **Performance**: Achieved mean train/validation/test accuracies of 0.98/0.97/0.99, a 0.01 generalization gap, combined raw score 0.96 (target 1.08), depth 81, gate count 228, and parameter efficiency 0.01.
+- **Feedback**: The dense RY–RZ rotation pattern and ring entanglement deliver high accuracy and minimal overfitting, but the large parameter count constrains efficiency; output calibration via gain/bias and early stopping stabilized convergence by step 90.
+**Program Identifier:** Generation 3 - Patch Name optimize_ansatz_topology_and_efficiency - Correct Program: True
+
+**Program Name: 8-Qubit RY+CNOT Ansatz Binary Classifier**  
+- **Implementation**: Encodes 28-dimensional binary features via a fixed three-layer IsingZZ feature map on predefined qubit pairs, interleaved with two repeats per upload of an ansatz block that applies RY rotations on all eight qubits followed by a linear CNOT ladder. This yields six blocks and 50 trainable parameters optimized using the Adam optimizer with early stopping and L₂ loss.  
+- **Performance**: Achieved a combined score of –2.87 with train/validation/test accuracies of 0.71/0.58/0.58, a 0.12 generalization gap, circuit depth 75, gate count 180, and parameter efficiency 0.01.  
+- **Feedback**: The uniform RY+CNOT structure provided moderate training fit but limited expressivity and generalization; incorporating more varied two-qubit rotations or deeper entanglement patterns could improve validation performance and parameter efficiency.
+**Program Identifier:** Generation 4 - Patch Name streamlined_ry_cnot_ansatz - Correct Program: True
+
+**Program Name: 8-Qubit Multi-Upload Quantum Classifier**  
+- **Implementation**: Implements an 8-qubit binary classifier in PennyLane using a fixed two-qubit IsingZZ feature map over three data uploads and two ansatz repeats, with per-qubit RY/RZ rotations and a linear CZ entanglement chain parameterized by 98 trainable angles, and trained via Adam with early stopping.  
+- **Performance**: Achieved a combined score of 0.97 with perfect training accuracy (1.00), 0.99 validation accuracy, and 0.98 test accuracy over circuits of depth 99 and 270 gates.  
+- **Feedback**: The multi-upload feature map and dense entangling layers yielded high accuracy and a minimal generalization gap (0.01), though the low parameter efficiency (0.01 accuracy per parameter) indicates the ansatz may be overparameterized for the task.
+**Program Identifier:** Generation 5 - Patch Name commutation_tied_rz - Correct Program: True
+
+**Program Name: 8-Qubit Re-uploading Ansatz Classifier**  
+- **Implementation**: Encodes 28 binary features via fixed two-qubit IsingZZ phase couplings over 8 qubits, interleaves three data re-uploads with two repeats of a parameterized block (RY/RZ rotations on each qubit and brick-wall CZ entanglement), yielding 98 circuit parameters plus gain and bias, trained end-to-end with Adam and early-stopping.  
+- **Performance**: Achieved combined raw score 0.98 with 0.99 train accuracy and perfect 1.00 validation/test accuracy, generalization gap 0.01, circuit depth 81, and 228 gates.  
+- **Feedback**: The re-uploading brick-wall entanglement structure delivers flawless classification but results in low parameter efficiency (0.01) and moderate circuit depth; calibration layers and early stopping stabilized convergence at ~210 steps.
+**Program Identifier:** Generation 6 - Patch Name lean_brickwall_ring_ansatz - Correct Program: True
+
+**Program Name: 8-Qubit Re-uploading Variational Classifier**  
+- **Implementation**: This model alternates three uploads of a fixed IsingZZ feature map over 28 binary features with two repeats of a 16-parameter ansatz block comprising single-qubit RY/RX rotations and ring CZ entangling gates. Training uses Pennylane’s autograd and Adam on an L2 loss with trainable gain/bias readout calibration and early stopping.  
+- **Performance**: It achieved perfect train, validation, and test accuracy (1.00) with validation/test losses around 0.10/0.09 and combined raw score 0.99.  
+- **Feedback**: The re-uploading scheme and symmetric entangling connectivity enable robust perfect classification and rapid convergence (~150 steps), but yield low parameter efficiency (0.01) and a moderate circuit depth (81) with 228 gates.
+**Program Identifier:** Generation 7 - Patch Name ry_cz_rx_efficient - Correct Program: True
+
+**Program Name: 8-Qubit CZ-Brick Ansatz Classifier**  
+- **Implementation**: An 8-qubit PennyLane QNode alternates fixed IsingZZ feature maps for 28 binary inputs with an ansatz block—layered RY/RZ rotations and brick-wall plus cross CZ entanglers—repeated 3 times and 2 repeats per upload, optimizing 146 circuit and readout parameters via Adam on L2 loss with early stopping.  
+- **Performance**: Achieves perfect train/validation/test accuracy (1.00), zero generalization gap, combined_score_raw 0.98, mean loss ~0.09, and parameter efficiency 0.01.  
+- **Feedback**: The dense entanglement and calibration layers drive rapid convergence (~150 steps) and flawless classification but incur high circuit depth (91) and gate count (288), yielding low parameter efficiency despite ideal accuracy.
+**Program Identifier:** Generation 8 - Patch Name ring_cross_cz_rich_entangle - Correct Program: True
+
+**Program Name: 8-Qubit Phase-Coupling Ansatz Classifier**  
+- **Implementation**: Encodes 28 binary features via fixed two-qubit IsingZZ couplings on 8 qubits, then applies three uploads of a variational block consisting of per-qubit RY rotations and tied RZ phases before and after a CZ brick-wall network, repeated twice per upload. The ansatz comprises 98 trainable circuit parameters plus a gain and bias, optimized with Pennylane’s default.qubit backend, autograd differentiation, and the Adam optimizer minimizing an L2 loss.  
+- **Performance**: Achieves a raw combined score of 0.97 with 100% train accuracy, 99% validation accuracy, 98% test accuracy, a 0.01 generalization gap, circuit depth 87, and 270 gates.  
+- **Feedback**: Reusing tied local phase parameters around the CZ layers delivers strong expressivity and perfectly repeatable results (zero standard deviation) with convergence in ~150 steps, while the low parameter efficiency (0.01) suggests opportunities to reduce or compress the parameter set.
+**Program Identifier:** Generation 9 - Patch Name tied_phase_cz_brickwall - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Alternating per-qubit RY–RX rotations with ring CZ entanglement (Generation 7 “ry_cz_rx_efficient”) achieved the top combined_score_raw of 0.99, perfect train/validation/test accuracy, zero generalization gap, and convergence in ~150 steps.  
+- Three feature re-uploads interleaved with two ansatz repeats (used in Generations 5–9) consistently drove high accuracy (≥0.97) and minimal generalization gaps (≤0.01).  
+- Wrapping CZ layers with local Z rotations (Generation 5 “commutation_tied_rz” and Generation 9 “tied_phase_cz_brickwall”) boosted expressivity—each reached combined_score_raw ≈ 0.97 with train/validation ≈ 1.00 and test ≈ 0.98.  
+- Trainable gain/bias readout calibration plus Adam optimization and validation-based early stopping stabilized convergence and kept overfitting in check across all high-performing circuits.  
+
+## Ineffective Approaches  
+- Very low-parameter collective rotations (Generation 2 “Collective Rotation Ansatz Classifier,” 20 params) underfit severely (combined_score_raw 0.74, test_acc 0.75).  
+- Simple RY+CNOT ladders (Generation 4) achieved only 0.71 train accuracy and suffered a 0.12 generalization gap, indicating insufficient expressivity.  
+- Shallow brickwall CNOT patterns with fewer layers (Generation 1) plateaued at combined_score_raw 0.96 (test_acc 0.99) despite good efficiency, falling short of richer CZ-based chains.  
+- Overly dense entanglement without parameter reduction (Generation 8 “ring_cross_cz_rich_entangle,” 146 params, 288 gates) increased circuit depth and gate count but did not outperform leaner designs, yielding the same perfect accuracy but lower parameter efficiency.  
+
+## Implementation Insights  
+- Formal spec validation via validate_ansatz_spec and ordered_unique_keys ensured correct parameter indexing for Generation 7’s 16-parameter block, preventing gate-parameter mismatches.  
+- Vectorized batch predictions using pnp.array and pnp.stack of qml.expval outputs (predict_batch) accelerated forward passes and gradient computations.  
+- AnnotatedQueue + QuantumScript metadata extraction enabled precise measurement of circuit depth and gate count, linking structural changes directly to performance shifts.  
+- The current best program’s lean block (per-qubit RY, ring CZ, per-qubit RX) yields 98 total trainable parameters—versus 146 in richer ansätze—demonstrating that a streamlined design can maximize accuracy and minimize overfitting.  
+
+## Performance Analysis  
+- Combined_score_raw rose from 0.97 (Generations 5 & 9 with 98 params but linear CZ + extra Z-rotations) to 0.98 (Generations 6 & 8 with brickwall/rich entanglers) to 0.99 (Generation 7 with ring CZ + RX/RY). This shows judicious choice of entangling topology and rotation layers matters more than sheer parameter count.  
+- The current best program (Gen 7) uses depth 81 and gate_count 228, outperforming deeper circuits (e.g., Gen 5’s depth 99/270 gates) in both convergence speed (~150 vs. ~180 steps) and accuracy consistency (zero gap).  
+- All high-parameter designs share a low parameter efficiency (~0.01), but reducing from 146 to 98 parameters in Generation 7 delivered the highest effective score per parameter and fastest convergence.  
+- Zero generalization_gap in Generation 7 versus ~0.01 in other top performers underscores that a balanced, moderate-complexity ansatz can eliminate overfitting while maintaining perfect classification.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Wrap each CZ‐ring in per‐qubit Z rotations. Global insights from Generations 5 and 9 showed that commutation‐tied RZ layers around CZ chains boosted expressivity without overfitting. In your ANSATZ_SPEC, insert a parameterized RZ on every qubit immediately before and after the CZ‐ring (e.g. “RZpre_i→CZ chain→RZpost_i”), adding 16 extra Z‐parameters per block to enrich phase flexibility while preserving the lean RY–CZ–RX structure.  
+
+2. Alternate CZ topologies across blocks. Generation 6 (“ry_cz_rx_brickwall”) and Generation 7 (“ry_cz_rx_efficient”) respectively achieved 0.98 and 0.99 combined scores by leveraging brickwall and ring entanglers. In your block‐loop, use the existing ring‐CZ pattern for even block indices and swap in a brickwall CZ pattern (e.g. entangling pairs [0,2],[1,3],[4,6],[5,7],[2,4],[3,5],[6,0],[7,1]) for odd block indices to combine the rapid convergence of ring CZ with the marginal expressivity boost of brickwall layouts.  
+
+3. Enrich nonlocal coupling with sparse CRZ gates. Adding trainable two‐qubit rotations after CZs has been hypothesized to reduce block count needed for peak accuracy. Modify every second CZ in the ring (for example, the CZ between qubits (1,2),(3,4),…) to be followed by a CRZ on the same wires; this injects extra adjustable entanglement phases without dramatically increasing gate count.  
+
+4. Increase feature re‐uploads to four rounds. The best program’s three re‐uploads drove zero generalization gap, but deeper feature mixing may allow the ansatz to encode more complex decision boundaries with the same per‐block structure. Set N_UPLOADS = 4 and keep N_REPEATS = 2, then retune parameter indexing so you have four feature‐map→ansatz sequences; this tests whether richer data re‐injection can further accelerate convergence.  
+
+5. Make the feature scale learnable per upload. Trainable gain/bias readout calibration stabilized convergence across all top circuits, suggesting upstream feature‐scaling could also adapt to data. Replace the fixed FEATURE_SCALE with a trainable vector feat_scale of length N_UPLOADS (initialized to π/2) and multiply each upload’s IsingZZ angles by the corresponding feat_scale[upload_index], giving the circuit control over how strongly each feature‐reupload is imprinted.

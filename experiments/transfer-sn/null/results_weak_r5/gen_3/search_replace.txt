@@ -1,0 +1,88 @@
+<NAME>
+shared_evenodd_rots_reduce_params
+</NAME>
+
+<DESCRIPTION>
+Reduce ansatz parameter count per block by reusing rotation parameters across qubits with even/odd wire parity (parameter sharing via identical `param` strings). Concretely:
+- Replace per-qubit RY with two shared parameters: `ry_e` (even wires) and `ry_o` (odd wires).
+- Replace per-qubit RZ layers (pre and post) with two shared parameters each: `rz_pre_e/rz_pre_o` and `rz_post_e/rz_post_o`.
+- Keep the fixed CZ entangling chain unchanged.
+This dramatically lowers `n_params` (thus optimizer work and overfitting risk) while preserving enough variational freedom for the 3× reuploading and 2× block repetition to learn decision boundaries.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared single-qubit rotations (parameter sharing by even/odd wire parity)
+    {"gate": "RY", "wire": 0, "param": "ry_e"},
+    {"gate": "RY", "wire": 1, "param": "ry_o"},
+    {"gate": "RY", "wire": 2, "param": "ry_e"},
+    {"gate": "RY", "wire": 3, "param": "ry_o"},
+    {"gate": "RY", "wire": 4, "param": "ry_e"},
+    {"gate": "RY", "wire": 5, "param": "ry_o"},
+    {"gate": "RY", "wire": 6, "param": "ry_e"},
+    {"gate": "RY", "wire": 7, "param": "ry_o"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_e"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_o"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_e"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_o"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_e"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_o"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_e"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_o"},
+
+    # Fixed entangling chain
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_post_e"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_o"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_e"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_o"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_e"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_o"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_e"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_o"},
+]
+>>>>>>> REPLACE
+</DIFF>

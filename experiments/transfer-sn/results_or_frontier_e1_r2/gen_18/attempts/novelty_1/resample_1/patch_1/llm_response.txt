@@ -1,0 +1,57 @@
+<NAME>
+split_dense_entangler
+</NAME>
+
+<DESCRIPTION>
+Drawing inspiration from the highly successful all-to-all CZ network in the highest-scoring prior program, this ansatz maximizes entanglement by retaining all 28 possible CZ pairings (which perfectly matches the 28-dimensional all-to-all feature map). However, to prevent the 28 commuting CZ gates from collapsing into a single diagonal operator, the network is fundamentally restructured. 
+
+We split the 28 CZ gates into two distinct, non-commuting entanglement layers:
+- Layer A contains distance 1 and distance 4 couplings (12 gates).
+- Layer B contains distance 2 and distance 3 couplings (16 gates).
+
+These two layers are separated by a global non-commuting RX bridge. This completely shatters the commutativity of the dense CZ block, dramatically increasing the expressivity of the ansatz while maintaining the exact same gate count. 
+
+The ansatz uses only three globally shared parameters per block (`ry1`, `rx1`, `ry2`). This massive parameter sharing provides strong regularization, enabling rapid convergence, outstanding parameter efficiency, and robust generalization. The initial RY creates the necessary superposition from the zero state, the RX bridge enforces the non-commuting split, and the final RY ensures full visibility for the terminal Z measurement.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program for ShinkaEvolve ansatz search: 8-qubit binary classifier.
+
+Records are 28-dimensional binary feature vectors from an external dataset.
+Each feature k is encoded by the fixed feature map as a two-qubit phase
+coupling on the qubit pair FEATURE_PAIRS[k]. Labels are +1/-1 and encode a
+property of the records determined by the dataset.
+
+Only ANSATZ_SPEC is inside the EVOLVE-BLOCK. The dataset, feature map,
+re-uploading layout, training loop, measurement and metric packaging are
+fixed so candidates are compared on the same task.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+
+import numpy as np
+import pennylane as qml
+from pennylane import numpy as pnp
+
+
+# Problem constants
+N_QUBITS = 8
+N_UPLOADS = 3
+N_REPEATS = 2
+FEATURE_SCALE = np.pi / 2
+
+_DATA_PATH = os.environ.get("TASK_DATA", str(Path(__file__).resolve().parent / "dataset.npz"))
+_DATA = np.load(_DATA_PATH)
+FEATURE_PAIRS = [tuple(int(w) for w in row) for row in _DATA["feature_pairs"]]
+N_FEATURES = len(FEATURE_PAIRS)
+
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+

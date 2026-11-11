@@ -1,0 +1,14 @@
+{
+  "generation": 8,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "param_economy_v4_grouped2",
+  "patch_description": "Building on the observed trend that reducing the number of distinct trainable\nparameters (via aggressive but structured sharing) monotonically increased the\ncombined score in previous iterations (24\u219216\u219213 distinct params raised the\nscore from 0.60\u21920.61\u21920.62), this version pushes parameter sharing further\nwhile preserving the exact same gate topology, gate count (31 gates per\nblock, giving depth_mean 20 / gate_count 93 after the fixed 3x repetition)\nand entangling connectivity (a 7-edge nearest-neighbour ring of ZZ\ninteractions). \n\nChanges from the current program:\n- The 8-qubit RY pre-rotation layer is now split into just two symmetric\n  groups (qubits 0-3 share `ry_a`, qubits 4-7 share `ry_b`) instead of four\n  pairwise groups.\n- The RZ layers before and after the entangling ring now reuse the *same*\n  two parameters (`rz_a` for qubits 0-3, `rz_b` for qubits 4-7) instead of\n  having separate pre/post parameters per group, removing redundant\n  parameters that mostly encode the same effective rotation given the shared\n  RY layer.\n- The ZZ ring keeps a single shared parameter `zz_ring`, exactly as before,\n  since collapsing all entangling gates to one angle already worked well.\n\nThis reduces the total number of distinct trainable parameters from 13 down\nto 5 (`ry_a, ry_b, rz_a, rz_b, zz_ring`), a very aggressive but structured\nreduction that keeps the circuit's expressive backbone (local single-qubit\nrotations + a fully connected ring of entanglers) intact. Given that all\nprior variants achieved train/val/test accuracy ~0.99-1.00 regardless of\nthis level of sharing, the underlying decision boundary appears to be\neasily captured with very few free parameters, so this should continue the\nobserved trend of improved parameter efficiency and robustness (worst-group\nmargin) without sacrificing accuracy, while also plausibly reducing the\ntrain/validation gap and convergence steps due to a smaller, better\nconditioned parameter landscape.",
+  "error_msg": null,
+  "timestamp": "2026-07-27T23:22:32.360264",
+  "llm_cost": 0.059272,
+  "llm_model": "anthropic/claude-sonnet-5"
+}

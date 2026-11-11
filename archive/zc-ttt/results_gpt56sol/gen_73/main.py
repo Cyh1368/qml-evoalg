@@ -1,0 +1,89 @@
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 9
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_THREE_QUBIT_GATES = {"ZZZ", "CCRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Regularized local feature mixing.
+    {"gate": "RY", "wire": 0, "param": "in_ry_0"},
+    {"gate": "RY", "wire": 1, "param": "in_ry_14"},
+    {"gate": "RY", "wire": 2, "param": "in_ry_23"},
+    {"gate": "RY", "wire": 3, "param": "in_ry_23"},
+    {"gate": "RY", "wire": 4, "param": "in_ry_14"},
+    {"gate": "RY", "wire": 5, "param": "in_ry_56"},
+    {"gate": "RY", "wire": 6, "param": "in_ry_56"},
+    {"gate": "RY", "wire": 7, "param": "in_ry_7"},
+    {"gate": "RY", "wire": 8, "param": "in_ry_8"},
+
+    # Hierarchical parity reduction. The ordering admits a shallow,
+    # approximately balanced execution schedule on the allowed graph.
+    {"gate": "CNOT", "wires": [6, 2]},
+    {"gate": "CNOT", "wires": [3, 1]},
+    {"gate": "CNOT", "wires": [5, 7]},
+
+    {"gate": "CNOT", "wires": [1, 8]},
+
+    {"gate": "CNOT", "wires": [8, 4]},
+    {"gate": "CNOT", "wires": [7, 0]},
+
+    {"gate": "CNOT", "wires": [4, 2]},
+    {"gate": "CNOT", "wires": [2, 0]},
+
+    # Phases at this point represent trainable subtree-parity features.
+    {"gate": "RZ", "wire": 0, "param": "parity_rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "parity_rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "parity_rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "parity_rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "parity_rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "parity_rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "parity_rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "parity_rz_7"},
+    {"gate": "RZ", "wire": 8, "param": "parity_rz_8"},
+
+    # Shared high-order interaction couples complementary parity branches.
+    {"gate": "ZZZ", "wires": [0, 3, 8], "param": "global_parity"},
+    {"gate": "ZZZ", "wires": [2, 5, 7], "param": "global_parity"},
+
+    # Reverse the parity tree, retaining learned phases while restoring
+    # distributed local degrees of freedom.
+    {"gate": "CNOT", "wires": [2, 0]},
+    {"gate": "CNOT", "wires": [4, 2]},
+
+    {"gate": "CNOT", "wires": [7, 0]},
+    {"gate": "CNOT", "wires": [8, 4]},
+
+    {"gate": "CNOT", "wires": [1, 8]},
+
+    {"gate": "CNOT", "wires": [5, 7]},
+    {"gate": "CNOT", "wires": [3, 1]},
+    {"gate": "CNOT", "wires": [6, 2]},
+
+    # Decode parity phases into measurement-sensitive amplitudes.
+    {"gate": "RY", "wire": 0, "param": "out_ry_0"},
+    {"gate": "RY", "wire": 1, "param": "out_ry_14"},
+    {"gate": "RY", "wire": 2, "param": "out_ry_23"},
+    {"gate": "RY", "wire": 3, "param": "out_ry_23"},
+    {"gate": "RY", "wire": 4, "param": "out_ry_14"},
+    {"gate": "RY", "wire": 5, "param": "out_ry_56"},
+    {"gate": "RY", "wire": 6, "param": "out_ry_56"},
+    {"gate": "RY", "wire": 7, "param": "out_ry_7"},
+    {"gate": "RY", "wire": 8, "param": "out_ry_8"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

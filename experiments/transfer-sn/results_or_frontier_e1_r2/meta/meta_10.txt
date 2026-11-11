@@ -1,0 +1,108 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit Variational Binary Classifier**  
+- **Implementation**: Uses an 8-qubit IsingZZ feature map to encode 28 binary features, interleaved with three uploads and two repeats of a six-block ansatz—each block containing 24 single-qubit rotations (RY plus pre/post RZ) and a linear CZ chain—for a total of 146 circuit parameters plus two readout parameters. All parameters are trained via backpropagation using the Adam optimizer.  
+- **Performance**: Achieved mean accuracies of 0.94 (train), 0.89 (validation), and 0.87 (test) with a combined raw score of 0.85, circuit depth 99, gate count 270, and generalization gap 0.07.  
+- **Feedback**: The extensive single-qubit rotation layers and repeated feature uploads drive strong predictive performance, but the large parameter count yields low parameter efficiency (0.01) and a modest overfitting gap, suggesting that pruning parameters or simplifying entanglement could improve generalization and resource efficiency.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name:** 8-Qubit Brickwork Reupload Classifier  
+- **Implementation:** Uses Pennylane to build a three-upload, two-repeat variational circuit with fixed IsingZZ feature maps on 28 binary features, a layered ansatz of RY–RZ–CZ brickwork, RX plus long-range CZ entanglement, and trainable gain/bias readout, optimized via Adam with L2 loss and early stopping.  
+- **Performance:** Achieved train/validation/test accuracies of 0.89/0.83/0.82 (combined_score_raw 0.76), depth 93, 300 gates, 146 parameters, and generalization gap 0.07.  
+- **Feedback:** The deep, parameter-heavy ansatz yields solid accuracy but very low parameter efficiency (~0.01), indicating potential overparameterization; moderate generalization suggests room to prune entangling layers or reduce repeats.
+**Program Identifier:** Generation 1 - Patch Name ring_cross_entanglement_3axis - Correct Program: True
+
+**Program Name: 8-Qubit Repeating RY-RZ Ansatz Classifier**  
+- **Implementation**: Each record’s 28 binary features are encoded via fixed two-qubit IsingZZ couplings, followed by three data re-uploads of a parameterized ansatz block—per-qubit RY and RZ rotations interleaved with CNOT entanglers—repeated twice per upload, yielding 98 circuit parameters plus a linear gain-bias readout. The model is built in Pennylane using a default.qubit simulator and trained with an Adam optimizer on mean squared error with early stopping and best-weight restoration.  
+- **Performance**: Combined score_raw 0.65 with train accuracy 0.80, validation/test accuracy 0.68, a generalization gap of 0.12, depth 81, gate count 228, and parameter efficiency 0.01.  
+- **Feedback**: The ansatz delivers moderate accuracy but shows overfitting and low parameter efficiency, suggesting limited expressivity; richer entanglement patterns or parameter sharing could improve generalization and reduce parameter count.
+**Program Identifier:** Generation 2 - Patch Name hardware_efficient_ansatz - Correct Program: True
+
+**Program Name:** 8-Qubit RY-CNOT Ansatz Binary Classifier  
+- **Implementation:** Builds an 8-qubit Pennylane QNode that encodes 28-dimensional binary inputs via three repeated IsingZZ feature‐map uploads, interleaved with six ansatz blocks of single-qubit RY rotations and CNOT entangling layers, yielding 98 trainable circuit parameters plus gain and bias; training uses Adam backpropagation on an L2 loss with early stopping.  
+- **Performance:** Combined_score_raw 0.65 with train/validation/test accuracies of 0.80/0.68/0.68, circuit depth 81, gate count 228, generalization gap 0.12, and parameter efficiency 0.01.  
+- **Feedback:** The deep, high-parameter ansatz achieves strong training fit but plateaus on validation and test, indicating over-parameterization and low generalization efficiency; lack of convergence before early stopping suggests the need for ansatz simplification or stronger regularization.
+**Program Identifier:** Generation 4 - Patch Name brick_layer_cnot_ansatz - Correct Program: True
+
+**Program Name: 8-Qubit Re-Uploading Ansatz Classifier**
+- **Implementation**: Defines an 8-qubit binary classifier that encodes 28 binary features via IsingZZ feature maps over three uploads, interleaved with two repeats of custom ansatz blocks—each block comprising per-qubit RY and RZ rotations and CZ entangling gates—totaling 146 trainable parameters plus gain and bias. Training is implemented as a Pennylane QNode with autograd backpropagation, Adam optimization, batch updates, and validation-based early stopping with best-weight restoration.
+- **Performance**: Achieved a combined_score_raw of 0.83 (train accuracy 0.93, validation 0.86, test 0.83) on a 93-depth, 300-gate circuit, with convergence around 450 steps.
+- **Feedback**: The heavy CZ entanglement and re-uploading scheme delivered strong expressivity and high training accuracy but incurred a 0.10 generalization gap and low parameter efficiency (0.01), suggesting overparameterization; validation-loss early stopping and weight restoration effectively stabilized performance.
+**Program Identifier:** Generation 6 - Patch Name ring_cross_cz_ry_post - Correct Program: True
+
+**Program Name: 8-Qubit Hypercube Ansatz Classifier**  
+- **Implementation**: Encodes 28 binary features through three re-uploadings of an IsingZZ feature map, interleaved with a parametric ansatz comprising two-channel RY preparations, CZ couplings along hypercube dimensions, RX mixing, and an RY “bridge” layer, repeated twice per upload, and finalized with an RX readout plus trainable gain and bias calibration. Training is implemented in PennyLane’s default.qubit backend using an Adam optimizer with L2 loss, early stopping, and batch updates.  
+- **Performance**: Achieved a combined raw score of 0.89 with train/validation/test accuracies of 0.95/0.90/0.90, circuit depth 99, gate count 348, 44 parameters, and parameter efficiency 0.02.  
+- **Feedback**: The bridge layers and multistage re-uploading yield a small generalization gap (~0.05) and stable convergence (mean step ~540), but the relatively high gate count versus low parameter count suggests potential to simplify the circuit for better parameter efficiency.
+**Program Identifier:** Generation 3 - Patch Name cube_echo_channels - Correct Program: True
+
+**Program Name: 8-qubit global-rotation classifier**  
+- **Implementation**: This classifier encodes 28-dimensional binary records via a fixed IsingZZ two-qubit feature map applied in 3 re-uploads, interleaved with 6 ansatz blocks each performing uniform RX and RY rotations on all qubits. The ansatz specification is validated at runtime, mapping 2 trainable parameters per block to a total of 14 circuit parameters plus 2 readout calibration parameters.  
+- **Performance**: Achieved a combined raw score of 0.87 with ≈87% train/validation accuracy, ≈88% test accuracy, a 0.01 generalization gap, circuit depth 65, and 180 gates using only 14 parameters.  
+- **Feedback**: The simple global-rotation-only ansatz delivers robust accuracy and fast convergence (~90 steps) but yields low parameter efficiency (0.06), suggesting that introducing trainable entangling gates could further improve expressivity and efficiency.
+**Program Identifier:** Generation 5 - Patch Name equivariant_global_mixers - Correct Program: True
+
+**Program Name: 8-Qubit Phase-Coupled Binary Classifier**  
+- **Implementation**: Encodes 28 binary features via fixed IsingZZ phase couplings on 8 qubits and applies a hand-crafted ansatz of alternating RY and RZ rotation layers with nearest- and next-nearest-neighbor CNOT rings, repeated across three feature uploads and two ansatz repeats (146 trainable circuit parameters plus gain and bias), optimized by Adam on an L2 output calibration loss.  
+- **Performance**: Achieved train accuracy 0.80, validation 0.75, test 0.71 with combined_score_raw 0.69, using a circuit depth of 142 and 324 gates.  
+- **Feedback**: The deep entangling structure yields moderate accuracy with a small generalization gap (~0.09) but very low parameter efficiency, indicating over-parameterization; simplifying the ansatz or pruning parameters could improve efficiency without degrading accuracy.
+**Program Identifier:** Generation 7 - Patch Name dual_stride_cnot - Correct Program: True
+
+**Program Name: 8-Qubit Re-uploading Ansatz Classifier**  
+- **Implementation**: Implements a three-stage data re-uploading pipeline on eight qubits using a fixed IsingZZ feature map followed by custom ansatz blocks composed of independent per-wire RY mixers, tied RZ phases, and a sparse CZ brickwork entangling layout, totaling 98 trainable parameters plus gain–bias readout. Training uses an Adam optimizer on an L2 loss with batch updates, early stopping on validation loss, and restoration of best weights.  
+- **Performance**: Achieved a combined raw score of 0.80 with 0.90 train, 0.85 validation, and 0.86 test accuracy and a 0.04 generalization gap.  
+- **Feedback**: The sparse entangling structure and phase parameter reuse yield stable high accuracy with minimal overfitting, but the low parameter efficiency (0.01) suggests the ansatz may be overparameterized relative to its performance. Early stopping effectively controlled training and preserved generalization.
+**Program Identifier:** Generation 9 - Patch Name tied_phase_brickline - Correct Program: True
+
+**Program Name: 8-Qubit Multi-Upload Re-Uploading Classifier**
+- **Implementation**: The circuit uses three rounds of fixed IsingZZ feature-map uploads interleaved with ansatz blocks—each block applying RX mixing, RZ phase rotations, and CZ brickwork entanglement twice—totaling 146 trainable parameters plus a gain and bias, all optimized via Pennylane’s Adam on an L2 loss.
+- **Performance**: Achieved train/validation/test accuracies of 0.94/0.89/0.87, combined raw score 0.85, generalization gap 0.07, circuit depth 87, gate count 270, and parameter efficiency 0.01.
+- **Feedback**: The layered entanglement and re-uploading yielded strong training performance and convergence by step 750, but the moderate generalization gap and low parameter efficiency suggest the ansatz may be over-parameterized relative to its performance.
+**Program Identifier:** Generation 10 - Patch Name rx_phase_chain - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Hypercube-structured entanglement plus two-channel RY “preparation” and “decode” layers drove the top score (0.89).  
+  • 8-Qubit Hypercube Ansatz Classifier (combined_score_raw = 0.89, test = 0.90) uses RY on two disjoint 4-qubit subsets (“prepare_a/b” and “decode_a/b”) around CZ couplings along the three binary-cube dimensions, outperforming the previous 6-block linear-CZ design (0.85).  
+- Shared “bridge” RY layer between CZ matchings prevented collapse into purely diagonal stages and narrowed the generalization gap to 0.05.  
+  • The bridge in the hypercube model maintained expressive mixing without overfitting, versus brickwork-only patterns (gap ≥ 0.07).  
+- Multistage data re-uploading (3 uploads × 2 repeats) combined with rich phase structure yields stable convergence (~540 steps) and high train/validation/test (0.95/0.90/0.90).  
+  • Reinforces that repeated IsingZZ feature maps plus interleaved ansätze offer expressivity gains over single upload or flat repeats.  
+- CZ-only entanglement, when aligned with problem geometry (hypercube), outperforms global-rotation-only mixers (0.87) and mixed CNOT brickworks (0.80–0.85), highlighting the value of problem-inspired coupling.  
+
+## Ineffective Approaches  
+- Pure global single-qubit rotations with no trainable entanglers plateaued at 0.87 (8-qubit global-rotation classifier), despite very low depth (65) and fast convergence (~90 steps). Lack of entanglement expressivity limited top accuracy.  
+- Deep, overparameterized RY–RZ–CNOT brickwork (8-Qubit Phase-Coupled Binary Classifier, 146 params) scored only 0.69 with depth 142; excessive two-qubit gates without structured mixing hurt both efficiency (0.005) and accuracy.  
+- Sparse CNOT brickwork with tied phases (8-Qubit Re-uploading Ansatz, 98 params) reached 0.80 (gap 0.04) but parameter efficiency (0.01) suffered, indicating redundant parameters in loosely connected layouts.  
+- Layered RX–RZ chains (8-Qubit Multi-Upload Re-Uploading Classifier, 146 params) yielded 0.85 but generalization gap remained 0.07—further evidence that unguided entanglement patterns require complementary phase layers or problem-specific couplings.  
+
+## Implementation Insights  
+- PARAMETER_KEYS_PER_BLOCK mapping and a consistent pre→CZ→mix→bridge→CZ→post layout simplify parameter indexing and support code-gen of evolved blocks; the hypercube program implements 11 unique keys/block × 4 wires each = 44 params total.  
+- The “bridge” RY layer across all qubits regularizes adjacent entanglers: in code, a single `"param": "bridge"` applied to wires 0–7 effectively adds inter-block phase diversity.  
+- Two-channel RY parameters (“prepare_a”/“prepare_b” and “decode_a”/“decode_b”) exploit natural bipartition of the hypercube, doubling mixing richness with only 4→4 wire reuse rather than per-wire unique parameters.  
+- Re-use of a fixed IsingZZ feature map (FEATURE_SCALE = π/2) across three uploads ensures nonlinearity is captured before hypercube-specific entanglement, as in all top-scoring designs.  
+
+## Performance Analysis  
+- The hypercube model’s combined raw score (0.89) exceeds the previous best (0.85) by 0.04, at the cost of ~50 additional gates (348 vs. 270) and modest depth increase (99 vs. 87).  
+- Generalization gaps across top performers cluster: 0.05 (hypercube), 0.07 (linear CZ 6-block), and 0.07–0.10 (other re-uploads), confirming that phase-rich layouts narrow train–test discrepancies.  
+- Parameter efficiency remains low (~0.02 for hypercube vs. 0.01–0.06 for others), underscoring that structural design (entanglement geometry + bridge) outweighs raw parameter count in driving accuracy gains.  
+- Convergence steps scale with ansatz richness: hypercube (≈540 steps) vs. linear CZ 6-block (≈750) vs. global-rotation (≈90), suggesting that structured entanglement accelerates learning compared to flat repeats of simple mixers.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Introduce a small number of trainable two-qubit phase gates within the hypercube couplings. For instance, in each of the three CZ matchings replace one representative CZ (e.g. wires [0,1], [0,2], [0,4]) with a CRZ whose angle is a new per-block parameter “crz_dimX”. This preserves the hypercube geometry while allowing the model to learn fine-grained two-qubit phases, building on the success of phase-rich single-qubit bridges without drastically increasing depth.
+
+2. Augment the global RY “bridge” with an alternating RZ bridge layer on every second block. After the existing RY “bridge” on wires 0–7 in blocks 2 and 4, insert an RZ(param_bridge_z_block) on all eight qubits. This complementary axis mixing can further prevent adjacent CZ layers from collapsing into diagonal stages, leveraging the bridge’s regularizing effect with added phase diversity.
+
+3. Rotate the two-channel preparation/decoder bipartition across uploads to diversify mixing. Rather than using the same hypercube “coloring” for all three uploads, cycle through the three 4-qubit colorings induced by slicing the hypercube along dimensions 0, 1, and 2. This mutation injects data into differently mixed subregisters on each upload, potentially enriching the feature interaction patterns observed by the ansatz.
+
+4. Make the FEATURE_SCALE of the IsingZZ data re-upload map trainable per upload stage. Replace the fixed π/2 multiplier with parameters scale_upload_0, scale_upload_1, scale_upload_2 that are optimized during training. By letting the circuit tune how strongly each re-upload injects nonlinearity, you can adaptively balance expressivity and convergence speed across the multistage feature embedding.
+
+5. Insert sparse long-range CZ edges aligned to non-adjacent hypercube vertices after select blocks. For example, add CZ(wires=[0,7]) and CZ(wires=[1,6]) immediately after block 2 and block 5. These occasional entanglers capture higher-order correlations beyond nearest-neighbor hypercube edges with minimal gate and depth overhead, complementing the core geometry-inspired couplings.

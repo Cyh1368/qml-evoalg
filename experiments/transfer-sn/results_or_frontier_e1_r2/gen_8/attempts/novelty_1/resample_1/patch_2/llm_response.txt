@@ -1,0 +1,45 @@
+<NAME>
+brick_layer_ring_cross_entanglement
+</NAME>
+
+<DESCRIPTION>
+A fundamentally different ansatz architecture using a "brick-layer" entanglement pattern with three distinct connectivity stages instead of the seed's simple linear CZ chain. The design uses:
+
+1. **Full SU(2) initial rotation** (RY+RZ) to optimally rotate each qubit before entanglement
+2. **Circular CNOT ring** (including wrap-around 7→0) for nearest-neighbor entanglement, unlike the seed's open linear chain which leaves qubit 0 and 7 weakly connected
+3. **Cross-entanglement CNOTs** connecting opposite qubits (0↔4, 1↔5, 2↔6, 3↔7) for long-range correlations, which is critical since the IsingZZ feature map encodes features on various qubit pairs across the register
+4. **Interleaved rotation layers** (RY between entanglement stages, final RZ) using different rotation axes for maximal expressibility
+
+This creates a log-diameter connectivity graph (any qubit reaches any other in ≤2 entanglement hops) compared to the seed's linear chain requiring up to 7 hops. The mixed RY/RZ/RY rotation layers span the full Bloch sphere when combined with entanglement. With 32 parameters per block × 6 blocks = 192 total parameters, the circuit is expressive but not excessively parameterized.
+</DESCRIPTION>
+
+<CODE>
+```python
+# EVOLVE-BLOCK-START
+
+ANSATZ_SPEC = []
+
+# Layer 1: Full single-qubit rotation with RY + RZ
+for i in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": i, "param": f"ry1_{i}"})
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": i, "param": f"rz1_{i}"})
+
+# Circular CNOT ring: nearest-neighbor entanglement with wrap-around
+for i in range(8):
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [i, (i + 1) % 8]})
+
+# Layer 2: RY rotation between entanglement stages
+for i in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": i, "param": f"ry2_{i}"})
+
+# Long-range cross entanglement: connect opposite qubits
+for i in range(4):
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [i, i + 4]})
+
+# Layer 3: Final RZ rotation
+for i in range(8):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": i, "param": f"rz2_{i}"})
+
+# EVOLVE-BLOCK-END
+```
+</CODE>

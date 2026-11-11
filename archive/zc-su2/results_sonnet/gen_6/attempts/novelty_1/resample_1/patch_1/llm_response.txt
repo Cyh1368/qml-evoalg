@@ -1,0 +1,67 @@
+<NAME>
+grouped_shared_entangled_ansatz
+
+<DESCRIPTION>
+Instead of giving every qubit its own independent rotation angle (the previous seed used 16–24 unique parameters per block), this design exploits deliberate parameter sharing across qubit groups to drastically cut the trainable parameter count while preserving expressive power through entanglement.
+
+Key ideas:
+1. **Grouped rotation sharing** – The 8 qubits are split into 4 groups of 2 (wire % 4), and each group shares a single RY parameter and a single RZ parameter. This cuts the single-qubit rotation parameter count from 16 to 8 per block while still letting different subsets of qubits behave differently (since encoding already gives each qubit distinct input data; the trainable layer only needs to provide a coarser correction).
+2. **Fixed CZ ring entangler** – A full ring of CZ gates (0-1,1-2,...,7-0) mixes information between all qubits with zero extra trainable parameters, providing the same entangling power as a linear chain but with full connectivity (i.e., wrap-around coupling).
+3. **Shared controlled-rotation ring** – A ring of CRZ gates, all sharing ONE trainable parameter, adds a global, tunable non-linear coupling strength between neighboring qubits. This lets the network learn a single "entanglement strength" knob that participates in all pairwise correlations, adding expressivity at the cost of just one more parameter.
+
+Total unique trainable parameter names per block: 4 (RY groups) + 4 (RZ groups) + 1 (shared CRZ) = 9, versus 16 in the current best program (98 total params) and 24 in the original seed (146 total params). This should preserve near-perfect accuracy (since problem is apparently easily separable given the fixed encoding) while substantially improving parameter economy, and likely converge in fewer optimization steps due to the smaller, better-conditioned parameter space.
+
+This is architecturally different from the seed's "independent-per-wire rotation" scheme: it fuses aggressive parameter tying with a topologically richer (ring, not chain) entangling structure and adds a single global trainable coupling term instead of per-wire trainable phases, testing whether shared coarse-grained control suffices for the underlying classification task.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 1. Grouped RY rotation layer: 8 qubits split into 4 groups of 2, sharing
+#    a single trainable parameter per group (4 unique params total).
+for wire in range(N_QUBITS):
+    group = wire % 4
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": f"ry_g{group}"})
+
+# 2. Fixed full-ring CZ entangler (zero extra trainable parameters), mixing
+#    all qubits including wrap-around coupling (7 -> 0).
+for i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 1) % N_QUBITS]})
+
+# 3. Grouped RZ rotation layer, again 4 unique params shared across groups.
+for wire in range(N_QUBITS):
+    group = wire % 4
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": f"rz_g{group}"})
+
+# 4. Shared controlled-rotation ring: a single trainable "entanglement
+#    strength" parameter used across every neighboring pair on the ring.
+for i in range(N_QUBITS):
+    ANSATZ_SPEC.append(
+        {"gate": "CRZ", "wires": [i, (i + 1) % N_QUBITS], "param": "crz_shared"}
+    )
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

@@ -1,0 +1,56 @@
+<NAME>
+interleaved_hypercube_mixer
+</NAME>
+
+<DESCRIPTION>
+The previous best configurations successfully utilized the full K8 entanglement graph to map perfectly to the 28 dataset features, but broke the commuting `CZ` sequences into two halves to increase expressivity. 
+
+This new algorithm pushes that concept further by maximally interleaving the entangling gates and the local mixers without increasing the parameter count. By splitting the 7 perfect matchings of K8 into four shallow chunks (M1+M2, M3+M4, M5+M6, M7) and inserting local `RY` and `RX` rotations between them, we prevent the state from lingering in the computational basis and rapidly accelerate entanglement spread. 
+
+To maintain high parameter efficiency (which heavily influences the overall score), we tie the parameters of the mixing layers in an alternating A-B-A-B pattern. Thus, the ansatz requires only 6 parameters per block (`ry_a`, `rx_a`, `ry_b`, `rx_b`, `rz_out`, `rx_out`), providing the expressiveness of a much deeper parametrized network while tightly constraining the optimization space to improve the train-test generalization gap.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program for ShinkaEvolve ansatz search: 8-qubit binary classifier.
+
+Records are 28-dimensional binary feature vectors from an external dataset.
+Each feature k is encoded by the fixed feature map as a two-qubit phase
+coupling on the qubit pair FEATURE_PAIRS[k]. Labels are +1/-1 and encode a
+property of the records determined by the dataset.
+
+Only ANSATZ_SPEC is inside the EVOLVE-BLOCK. The dataset, feature map,
+re-uploading layout, training loop, measurement and metric packaging are
+fixed so candidates are compared on the same task.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+
+import numpy as np
+import pennylane as qml
+from pennylane import numpy as pnp
+
+
+# Problem constants
+N_QUBITS = 8
+N_UPLOADS = 3
+N_REPEATS = 2
+FEATURE_SCALE = np.pi / 2
+
+_DATA_PATH = os.environ.get("TASK_DATA", str(Path(__file__).resolve().parent / "dataset.npz"))
+_DATA = np.load(_DATA_PATH)
+FEATURE_PAIRS = [tuple(int(w) for w in row) for row in _DATA["feature_pairs"]]
+N_FEATURES = len(FEATURE_PAIRS)
+
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # --- Layer 1 (Mix

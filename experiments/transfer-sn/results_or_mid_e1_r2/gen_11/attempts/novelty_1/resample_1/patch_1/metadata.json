@@ -1,0 +1,14 @@
+{
+  "generation": 11,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "collapsed_rz_param_sharing",
+  "patch_description": "The current program suffers from severe overfitting (train: 0.97, test: 0.86; generalization gap: 0.10) and excessive parameterization (218 params). Key observations from prior programs:\n\n1. **Second program (scored 0.00, best)**: 146 params, test accuracy 0.87, gap 0.07\n2. **Current program (scored -0.50, worst)**: 218 params, test accuracy 0.86, gap 0.10, overfitting\n\nThe current program unnecessarily adds:\n- RX layer (8 params per block) with no clear benefit\n- Per-qubit RZ pre/post gates (16 params per block) that may overparameterize phase shifts\n- Results in 36 params per block vs 24 in the better program\n\n**New strategy** (parameter collapse + selective entanglement):\n- Remove RX layer entirely (save 8 params/block)\n- Collapse RZ pre/post to **shared global parameters** (reduce 16 to 2 params/block)\n- Maintain per-qubit RY rotations (8 params/block) for single-qubit expressivity\n- Keep simple CZ ring for fixed entanglement\n- Add 4 strategically-placed CRY gates on cross-qubit pairs (0-4, 1-5, 2-6, 3-7) for controlled non-local interactions (4 params/block)\n- Total: 14 params per block \u2192 86 total circuit params (vs 218)\n\nThis dramatically reduces overfitting by cutting parameters to ~40%, while retaining expressivity through selective controlled rotations and per-qubit freedom. The simpler structure aligns with what worked best in prior runs.",
+  "error_msg": null,
+  "timestamp": "2026-08-16T11:18:39.525379",
+  "llm_cost": 0.062173,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

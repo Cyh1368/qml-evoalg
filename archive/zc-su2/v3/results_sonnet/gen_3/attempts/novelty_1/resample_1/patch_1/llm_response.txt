@@ -1,0 +1,134 @@
+<NAME>
+param_efficient_shared_ansatz
+
+<DESCRIPTION>
+The original ansatz used 24 distinct trainable parameters (one independent
+rotation per qubit for RY, RZ-pre and RZ-post), which is expensive in
+parameter count and clearly overfits: train accuracy 0.88 vs validation 0.63
+(gap 0.31), and the worst-group margin is tiny (0.03), meaning the classifier
+barely separates the hardest samples.
+
+Since parameter economy is scored aggressively (fewer distinct parameter
+names always scores higher, with no diminishing returns) and the training set
+is tiny (so overfitting to per-qubit idiosyncrasies hurts held-out
+performance), the redesign aggressively shares parameters across qubits while
+keeping enough structural expressivity via fixed entangling gates and
+repeated application of the block (the harness applies the same ansatz
+multiple times with the same parameters, so depth/expressivity still grows
+even though the parameter count stays low).
+
+New design (5 distinct parameters total):
+1. RX(a) applied to every qubit — one shared global parameter, acts as a
+   coarse global rotation of the input-encoded state.
+2. RY(b) applied to every qubit — second global rotation, orthogonal axis.
+3. A fixed CNOT ring across all 8 qubits (no parameters) to entangle
+   neighboring qubits and mix information for correlation-based features.
+4. RZ(c) applied to every qubit — third shared global parameter, breaks
+   any remaining symmetry along phase axis.
+5. CRZ(d) on two disjoint sets of neighboring pairs (0,1),(2,3),(4,5),(6,7)
+   sharing one parameter "d" — cheap parametrized entangling structure that
+   lets pairs communicate a tunable amount without blowing up parameter count.
+6. A second fixed CNOT ring (offset) further mixes qubits so information
+   from the CRZ step spreads.
+7. Final RY(e) applied to every qubit — a last shared rotation before
+   readout, giving the circuit one more degree of freedom to shape the
+   output distribution.
+
+This yields only 5 distinct trainable parameters, drastically reducing
+parameter count from 24, which should substantially improve parameter
+efficiency, generalization gap and stability across repeated applications of
+the block, while the fixed entangling gates preserve enough expressive power
+to separate difficult samples (helped by the fact that ansatz is applied
+multiple times with the SAME shared parameters, effectively deepening the
+circuit without adding trainable degrees of freedom).
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Global shared rotation 1: RX(a) on every qubit
+    {"gate": "RX", "wire": 0, "param": "a"},
+    {"gate": "RX", "wire": 1, "param": "a"},
+    {"gate": "RX", "wire": 2, "param": "a"},
+    {"gate": "RX", "wire": 3, "param": "a"},
+    {"gate": "RX", "wire": 4, "param": "a"},
+    {"gate": "RX", "wire": 5, "param": "a"},
+    {"gate": "RX", "wire": 6, "param": "a"},
+    {"gate": "RX", "wire": 7, "param": "a"},
+
+    # Global shared rotation 2: RY(b) on every qubit
+    {"gate": "RY", "wire": 0, "param": "b"},
+    {"gate": "RY", "wire": 1, "param": "b"},
+    {"gate": "RY", "wire": 2, "param": "b"},
+    {"gate": "RY", "wire": 3, "param": "b"},
+    {"gate": "RY", "wire": 4, "param": "b"},
+    {"gate": "RY", "wire": 5, "param": "b"},
+    {"gate": "RY", "wire": 6, "param": "b"},
+    {"gate": "RY", "wire": 7, "param": "b"},
+
+    # Fixed entangling ring 1 (no parameters)
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    {"gate": "CNOT", "wires": [7, 0]},
+
+    # Global shared rotation 3: RZ(c) on every qubit
+    {"gate": "RZ", "wire": 0, "param": "c"},
+    {"gate": "RZ", "wire": 1, "param": "c"},
+    {"gate": "RZ", "wire": 2, "param": "c"},
+    {"gate": "RZ", "wire": 3, "param": "c"},
+    {"gate": "RZ", "wire": 4, "param": "c"},
+    {"gate": "RZ", "wire": 5, "param": "c"},
+    {"gate": "RZ", "wire": 6, "param": "c"},
+    {"gate": "RZ", "wire": 7, "param": "c"},
+
+    # Cheap parametrized entangling structure: CRZ(d) shared across disjoint pairs
+    {"gate": "CRZ", "wires": [0, 1], "param": "d"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "d"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "d"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "d"},
+
+    # Fixed entangling ring 2, offset to spread information further
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [7, 0]},
+
+    # Final global shared rotation: RY(e) on every qubit
+    {"gate": "RY", "wire": 0, "param": "e"},
+    {"gate": "RY", "wire": 1, "param": "e"},
+    {"gate": "RY", "wire": 2, "param": "e"},
+    {"gate": "RY", "wire": 3, "param": "e"},
+    {"gate": "RY", "wire": 4, "param": "e"},
+    {"gate": "RY", "wire": 5, "param": "e"},
+    {"gate": "RY", "wire": 6, "param": "e"},
+    {"gate": "RY", "wire": 7, "param": "e"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

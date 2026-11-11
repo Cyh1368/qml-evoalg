@@ -1,0 +1,74 @@
+Looking at the performance metrics and the recommendation, I need to analyze what's happening:
+
+**Current situation:**
+- Combined score: 0.67 (down from 0.68 in prior versions)
+- n_distinct_params: 6 (using "ry_even" and "ry_odd" for initial rotations)
+- worst_group_margin_mean: 0.35 (needs improvement)
+- The current program has extra CRX gates with cyclic closure that may be hurting generalization
+
+**Key observations:**
+1. Prior programs without the cyclic CRX bridge achieved 0.68 score with the same 6 parameters
+2. The recommendation suggests merging "ry_even" and "ry_odd" into a single "ry" parameter to reduce distinct parameters from 6 to 5
+3. Leaner ansätze (≤5 params) could improve parameter efficiency and convergence
+4. The worst_group_margin has degraded slightly (0.36 → 0.35), suggesting the added CRX gates aren't helping
+
+**Strategy:**
+1. Remove the problematic CRX bridge layer (specifically the cyclic CRX [7, 0] that adds complexity without clear benefit)
+2. Merge "ry_even" and "ry_odd" into a unified "ry" parameter to reduce to 5 distinct parameters
+3. This extreme parameter sharing should improve the worst-group margin through better generalization from fewer degrees of freedom
+
+<NAME>
+merge_ry_params_remove_cyclic_crx
+</NAME>
+
+<DESCRIPTION>
+This change implements two complementary improvements:
+
+1. **Merge initial RY parameters**: Unify "ry_even" and "ry_odd" into a single "ry" parameter, reducing distinct parameters from 6 to 5. This extreme parameter sharing has been shown in literature to improve generalization on small datasets by reducing overfitting risk. With fewer degrees of freedom, the model is forced to learn more robust features that generalize better to harder samples (improving worst_group_margin).
+
+2. **Remove cyclic CRX bridge**: Remove the CRX gate pair [7, 0] that closes the cycle. This gate adds architectural complexity without corresponding benefit - it's the only CRX acting on qubit 7 and 0, breaking the pattern. Prior high-performing versions (0.68 score) didn't have this cyclic closure. Removing it reduces circuit depth and gate count while maintaining expressivity through the remaining XX, YY, and CRZ entanglement.
+
+Together, these changes drive toward the observation that leaner ansätze with extreme parameter sharing achieved better results. The combination should improve:
+- Parameter efficiency (5 vs 6 distinct parameters)
+- Worst-group margin through forced generalization
+- Convergence speed through simpler circuit
+- Overall combined score back toward 0.68+
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Initial rotation layer with efficient even/odd parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+=======
+    # Initial rotation layer with extreme parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry"},
+    {"gate": "RY", "wire": 1, "param": "ry"},
+    {"gate": "RY", "wire": 2, "param": "ry"},
+    {"gate": "RY", "wire": 3, "param": "ry"},
+    {"gate": "RY", "wire": 4, "param": "ry"},
+    {"gate": "RY", "wire": 5, "param": "ry"},
+    {"gate": "RY", "wire": 6, "param": "ry"},
+    {"gate": "RY", "wire": 7, "param": "ry"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    # CRX bridge layer: controlled rotation mixing between XX and YY, with cyclic closure
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [7, 0], "param": "ent_nn"},
+=======
+    # CRX bridge layer: controlled rotation mixing between XX and YY
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+>>>>>>> REPLACE
+
+</DIFF>

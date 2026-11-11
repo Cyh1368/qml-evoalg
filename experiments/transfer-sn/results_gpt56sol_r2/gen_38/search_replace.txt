@@ -1,0 +1,116 @@
+<NAME>
+symmetric_complete_pair_mixing
+</NAME>
+
+<DESCRIPTION>
+Replace the overparameterized, topology-biased skip-chain block with a permutation-symmetric block tailored to the dataset’s 28 pairwise features and mean-Z readout. Sharing each rotation angle across all qubits reduces the circuit from 146 to 20 total parameters, improving optimization speed, parameter efficiency, and regularization. A complete-graph CZ layer exposes every encoded qubit pair to the same entangling structure, avoiding arbitrary locality assumptions and matching the strongest prior result, which achieved 0.95 validation accuracy, 0.26 validation loss, and a 0.94 combined score.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Noncommuting local mixing after each diagonal feature upload.
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # Independent phase controls preserve feature-specific expressivity.
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+
+    # Connected skip-chain entanglement. The first six edges form even
+    # and odd next-nearest-neighbor chains; 6-7 joins the two chains.
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Complete readout-basis mixing layer; no qubit is omitted.
+    {"gate": "RY", "wire": 0, "param": "ry_post_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_post_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_post_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_post_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_post_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_post_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_post_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Global parameter sharing regularizes the model and aligns the local
+    # transformations with the permutation-invariant mean-Z readout.
+    {"gate": "RY", "wire": 0, "param": "ry_pre"},
+    {"gate": "RY", "wire": 1, "param": "ry_pre"},
+    {"gate": "RY", "wire": 2, "param": "ry_pre"},
+    {"gate": "RY", "wire": 3, "param": "ry_pre"},
+    {"gate": "RY", "wire": 4, "param": "ry_pre"},
+    {"gate": "RY", "wire": 5, "param": "ry_pre"},
+    {"gate": "RY", "wire": 6, "param": "ry_pre"},
+    {"gate": "RY", "wire": 7, "param": "ry_pre"},
+    {"gate": "RZ", "wire": 0, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 1, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 2, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 3, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 4, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 5, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 6, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 7, "param": "rz_phase"},
+
+    # Match the complete set of 28 pairwise feature couplings without
+    # privileging a ring, chain, or particular qubit labeling.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [0, 6]},
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [1, 7]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [2, 7]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [4, 7]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Shared noncommuting output mixing converts learned phases into the
+    # uniformly pooled Z signal while keeping only one additional parameter.
+    {"gate": "RY", "wire": 0, "param": "ry_post"},
+    {"gate": "RY", "wire": 1, "param": "ry_post"},
+    {"gate": "RY", "wire": 2, "param": "ry_post"},
+    {"gate": "RY", "wire": 3, "param": "ry_post"},
+    {"gate": "RY", "wire": 4, "param": "ry_post"},
+    {"gate": "RY", "wire": 5, "param": "ry_post"},
+    {"gate": "RY", "wire": 6, "param": "ry_post"},
+    {"gate": "RY", "wire": 7, "param": "ry_post"},
+]
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,67 @@
+<NAME>
+adaptive_entanglement_with_crz
+</NAME>
+
+<DESCRIPTION>
+The current design achieves excellent performance (0.90 test accuracy, 0.01 generalization gap) through symmetric collective parameter sharing, but the entanglement is fixed (unparameterized CZ gates).
+
+To improve further, I propose introducing parameterized controlled rotations (CRZ gates) in the entangling layers. This allows the circuit to:
+1. Learn adaptive coupling strengths between qubits
+2. Maintain symmetry through collective parameter sharing (all pairs in a matching layer share one parameter)
+3. Increase expressiveness while keeping parameter growth modest
+
+The key insight is that by making the entanglement adaptive while preserving symmetry, we can improve expressiveness without sacrificing parameter efficiency. Each matching layer will have one learnable CRZ parameter, adding only 3 parameters per block (one for each of the three matchings).
+
+This approach maintains the successful architectural components:
+- Collective mixers preserve gradient reinforcement
+- Symmetric parameter sharing keeps the parameter count low
+- Perfect matching structure ensures efficient connectivity
+
+The modification changes the three disjoint matchings from fixed CZ to parameterized CRZ gates with collective sharing.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Regular degree-three cube entangler. The edges are grouped into three
+    # disjoint perfect matchings, giving all qubits equal connectivity and a
+    # short entangling depth.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+=======
+    # Adaptive degree-three cube entangler with parameterized CRZ gates.
+    # The edges are grouped into three disjoint perfect matchings with
+    # shared parameters per matching layer, allowing the circuit to learn
+    # adaptive coupling strengths while maintaining symmetry.
+
+    # Matching 1 (parallel pairs)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_match_1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_match_1"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_match_1"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_match_1"},
+
+    # Matching 2 (offset pairs)
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_match_2"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_match_2"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "crz_match_2"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_match_2"},
+
+    # Matching 3 (hypercube diagonals)
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_match_3"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_match_3"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_match_3"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_match_3"},
+>>>>>>> REPLACE
+
+</DIFF>

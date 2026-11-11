@@ -1,0 +1,135 @@
+<NAME>
+ansatz_shift_entangler_pattern
+</NAME>
+
+<DESCRIPTION>
+The current program (score 0.46) is significantly underperforming compared to the second prior program (score 0.60). The key difference is that the second program uses a cleaner, more economical circuit structure with fewer distinct parameters and better generalization.
+
+The current program has:
+- 7 distinct parameters but lower test accuracy (0.82 vs 0.96)
+- Higher generalization gap (0.18 vs 0.04)
+- Worse worst_group_margin (0.25 vs 0.32)
+- Lower validation_margin (0.43 vs 0.64)
+
+The recommendation suggests introducing per-repeat entangler pattern shifts to diversify layer structure. This is a regularization technique that applies the same parameters but varies the wire indices across repeats, creating a lightweight symmetry-breaking effect that improves sample separation without adding new parameters.
+
+The implementation will:
+1. Modify `apply_ansatz_block` to accept and use `block_index` to compute wire shifts
+2. For each two-qubit gate, apply a cyclic permutation of wires based on `block_index % N_QUBITS`
+3. This tightens margins by creating diversity in the repeated applications without parameter inflation
+4. Should reduce the generalization gap and improve worst-group margin
+
+This approach is inspired by data augmentation in classical ML and layer-wise rotational symmetry breaking in quantum circuits.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC.
+
+    Parameters are shared across repetitions: every application of the block
+    reads the same values, so block_index is accepted only for API symmetry.
+    """
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    del block_index  # parameters are tied across repeats
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+            elif gate == "XX":
+                qml.IsingXX(angle, wires=wires)
+            elif gate == "YY":
+                qml.IsingYY(angle, wires=wires)
+            elif gate == "ZZ":
+                qml.IsingZZ(angle, wires=wires)
+=======
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC.
+
+    Parameters are shared across repetitions: every application of the block
+    reads the same values. Wire indices are shifted for two-qubit gates based
+    on block_index to implement lightweight symmetry breaking.
+    """
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    shift = block_index % N_QUBITS  # Compute shift for wire rotation
+    
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            # Apply wire shift for entangling layers
+            shifted_wires = [(w + shift) % N_QUBITS for w in wires]
+            if gate == "CNOT":
+                qml.CNOT(wires=shifted_wires)
+            elif gate == "CZ":
+                qml.CZ(wires=shifted_wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            # Apply wire shift for parametrized entangling layers
+            shifted_wires = [(w + shift) % N_QUBITS for w in wires]
+            if gate == "CRX":
+                qml.CRX(angle, wires=shifted_wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=shifted_wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=shifted_wires)
+            elif gate == "XX":
+                qml.IsingXX(angle, wires=shifted_wires)
+            elif gate == "YY":
+                qml.IsingYY(angle, wires=shifted_wires)
+            elif gate == "ZZ":
+                qml.IsingZZ(angle, wires=shifted_wires)
+>>>>>>> REPLACE
+</DIFF>
+
+**Rationale:**
+
+1. **Symmetry Breaking**: By rotating wire indices across repeats, the circuit applies the same transformation in different "frames," effectively implementing a lightweight data augmentation within the circuit itself.
+
+2. **No Parameter Inflation**: The shift is deterministic and depends only on `block_index`, so no new trainable parameters are introduced. The parameter count remains at 7 distinct parameters.
+
+3. **Improved Generalization**: This diversity in how the same parameters interact with the qubits should reduce overfitting and tighten margins on hard samples, which is the dominant scoring criterion.
+
+4. **Inspired by the Recommendation**: The approach directly implements the suggested "per-repeat entangler pattern shifts" with cyclic qubit relabeling, creating a regularizer that works for any ansatz structure.
+
+5. **Minimal Change**: Only the `apply_ansatz_block` function is modified; the ANSATZ_SPEC itself remains unchanged, preserving the relatively clean structure while adding the symmetry-breaking effect.
+
+The shift only applies to two-qubit gates (which define entanglement), not single-qubit rotations, because single-qubit rotations are parameter-dependent and shifting them would change their meaning. Two-qubit gates define the connectivity pattern, which benefits most from rotation-symmetric exploration.

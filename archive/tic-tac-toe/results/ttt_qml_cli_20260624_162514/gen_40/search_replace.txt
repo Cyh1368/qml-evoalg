@@ -1,0 +1,39 @@
+<NAME>
+diagonal_crx_entangler_motif
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses a very sparse fixed CZ entangler that lacks sufficient mixing between non-adjacent sectors of the board. This proposal introduces a "diagonal" entangling motif using CRX gates on pairs (0,3), (2,5), (4,7), and (6,1). These edges are physically adjacent on the 3x3 grid (corners to adjacent edges) and provide a stronger mixing pathway between the quadrants of the board.
+
+By sharing a single parameter `ent_rx` across these four CRX gates, we increase the expressive power of the circuit with minimal parameter overhead. This helps the model capture the diagonal and cross-sector correlations essential for identifying winning lines in tic-tac-toe, while maintaining a depth that fits within the successful 40–52 range.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Reduced fixed entangling pattern (CZ) to lower depth while keeping center links
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+
+    # Shared RX mixing (periphery vs center) to increase expressive but compactly
+=======
+    # Reduced fixed entangling pattern (CZ) to lower depth while keeping center links
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+
+    # Diagonal CRX entanglers to bridge quadrants (shared param for efficiency)
+    {"gate": "CRX", "wires": [0, 3], "param": "ent_rx"},
+    {"gate": "CRX", "wires": [2, 5], "param": "ent_rx"},
+    {"gate": "CRX", "wires": [4, 7], "param": "ent_rx"},
+    {"gate": "CRX", "wires": [6, 1], "param": "ent_rx"},
+
+    # Shared RX mixing (periphery vs center) to increase expressive but compactly
+>>>>>>> REPLACE
+</DIFF>

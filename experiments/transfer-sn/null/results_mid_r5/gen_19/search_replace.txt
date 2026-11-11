@@ -1,0 +1,95 @@
+<NAME>
+shared_ring_mixer
+</NAME>
+
+<DESCRIPTION>
+This edit replaces the current high-parameter block with a much more parameter-efficient, symmetry-aware ansatz. The fixed data uploads already inject rich feature-dependent phases, so the candidate block should focus on lightweight non-commuting mixing rather than many independent single-qubit angles.
+
+The new block:
+- shares parameters across even/odd qubits to cut redundancy and regularize,
+- keeps a full CZ ring for cheap global entanglement,
+- adds a small number of long-range CRY couplings to mix distant registers,
+- ends with shared RZ refinement to recover phase flexibility.
+
+This should reduce the number of trainable circuit parameters substantially, lower depth and gate count, and improve convergence speed while preserving enough expressivity for the repeated re-uploading layout.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Local data-adaptive rotations
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # Shared phase refinement to reduce overfitting while preserving expressivity
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_c"},
+    {"gate": "RZ", "wire": 6, "param": "rz_c"},
+    {"gate": "RZ", "wire": 3, "param": "rz_d"},
+    {"gate": "RZ", "wire": 7, "param": "rz_d"},
+
+    # Entangling backbone
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Long-range controlled phase mixing across the register halves
+    {"gate": "CRZ", "wires": [0, 5], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [2, 7], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "crz_3"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared local mixers: two parameters cover alternating qubit pairs
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # Lightweight global entanglement backbone
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Long-range non-diagonal mixing to couple opposite halves of the register
+    {"gate": "CRY", "wires": [0, 5], "param": "cry_a"},
+    {"gate": "CRY", "wires": [2, 7], "param": "cry_a"},
+    {"gate": "CRY", "wires": [1, 4], "param": "cry_b"},
+    {"gate": "CRY", "wires": [3, 6], "param": "cry_b"},
+
+    # Shared output-phase refinement
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+>>>>>>> REPLACE
+</DIFF>

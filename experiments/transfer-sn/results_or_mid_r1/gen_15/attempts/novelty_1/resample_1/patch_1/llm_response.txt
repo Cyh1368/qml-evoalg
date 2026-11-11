@@ -1,0 +1,71 @@
+<NAME>
+symmetric_mirrored_calibration_ansatz
+</NAME>
+
+<DESCRIPTION>
+This redesigned ansatz utilizes a symmetric, hardware-efficient structure with parameter sharing across mirrored qubit pairs (0-7, 1-6, 2-5, 3-4) to improve generalization and reduce the train-test gap. 
+
+Key structural features:
+1.  **Mirrored Parameter Sharing**: RX, RY, and RZ layers share parameters between qubits equidistant from the center of the 8-qubit chain. This enforces a symmetry that reflects common data patterns and improves parameter efficiency.
+2.  **Calibration RZ Layer**: Following the system recommendation, a trainable RZ layer is placed at the end of the block. In a re-uploading scheme, this acts as a corrective phase adjustment immediately preceding the next feature injection.
+3.  **Hybrid Entanglement**: Combines a fixed CNOT ring for robust state mixing with a parametrized CRZ ring (also using mirrored sharing) to provide fine-tuned control over entanglement strength.
+4.  **Diverse Rotation Bases**: Utilizes RX, RY, and RZ rotations within every block to ensure the ansatz can explore the full Bloch sphere effectively, translating the phase information from the IsingZZ feature map into measurable Z-expectations.
+</DESCRIPTION>
+
+<CODE>
+```python
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # 1. RY Mirrored Rotation Layer
+    {"gate": "RY", "wire": 0, "param": "ry_m0"},
+    {"gate": "RY", "wire": 7, "param": "ry_m0"},
+    {"gate": "RY", "wire": 1, "param": "ry_m1"},
+    {"gate": "RY", "wire": 6, "param": "ry_m1"},
+    {"gate": "RY", "wire": 2, "param": "ry_m2"},
+    {"gate": "RY", "wire": 5, "param": "ry_m2"},
+    {"gate": "RY", "wire": 3, "param": "ry_m3"},
+    {"gate": "RY", "wire": 4, "param": "ry_m3"},
+    
+    # 2. Fixed CNOT Ring Entanglement
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    {"gate": "CNOT", "wires": [7, 0]},
+    
+    # 3. RX Mirrored Rotation Layer
+    {"gate": "RX", "wire": 0, "param": "rx_m0"},
+    {"gate": "RX", "wire": 7, "param": "rx_m0"},
+    {"gate": "RX", "wire": 1, "param": "rx_m1"},
+    {"gate": "RX", "wire": 6, "param": "rx_m1"},
+    {"gate": "RX", "wire": 2, "param": "rx_m2"},
+    {"gate": "RX", "wire": 5, "param": "rx_m2"},
+    {"gate": "RX", "wire": 3, "param": "rx_m3"},
+    {"gate": "RX", "wire": 4, "param": "rx_m3"},
+    
+    # 4. Parametrized CRZ Ring (with partial mirroring)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_m0"},
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_m0"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_m1"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_m1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_m2"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_m2"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_m3"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_m4"},
+    
+    # 5. RZ Calibration Layer (Mirrored)
+    {"gate": "RZ", "wire": 0, "param": "rz_m0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_m0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_m1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_m1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_m2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_m2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_m3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_m3"},
+]
+# EVOLVE-BLOCK-END
+```
+</CODE>

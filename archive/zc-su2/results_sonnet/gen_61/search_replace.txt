@@ -1,0 +1,97 @@
+<NAME>
+skip2_parametrized_cry_shared_theta_e
+</NAME>
+
+<DESCRIPTION>
+Revert to the higher-scoring single-shared-parameter design (seed variant that reached combined score 0.80 with fast 30-step convergence), and enrich its zero-parameter skip-2 sub-ring with a parametrized CRY interaction that reuses a single new shared parameter "theta_e". This keeps parameter count minimal (2 unique names per block instead of the current program's 2 names but with worse-performing RY/RZ-only design) while adding a non-commuting tunable long-range interaction that should improve expressivity/generalization without hurting parameter economy. The design restores the alternating XX/CZ ring and antipodal CZ shortcuts from the best-performing prior candidate, and only changes the previously fixed CZ skip-2 links into CRY gates sharing "theta_e", per the recommendation.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+ANSATZ_SPEC = [
+    # Pre-entanglement rotations: ALL 8 qubits share a single global RY
+    # parameter. This is the most extreme reduction of the RY-sharing idea
+    # explored in earlier generations (group-of-2 -> group-of-8).
+    {"gate": "RY", "wire": 0, "param": "ry_global"},
+    {"gate": "RY", "wire": 1, "param": "ry_global"},
+    {"gate": "RY", "wire": 2, "param": "ry_global"},
+    {"gate": "RY", "wire": 3, "param": "ry_global"},
+    {"gate": "RY", "wire": 4, "param": "ry_global"},
+    {"gate": "RY", "wire": 5, "param": "ry_global"},
+    {"gate": "RY", "wire": 6, "param": "ry_global"},
+    {"gate": "RY", "wire": 7, "param": "ry_global"},
+
+    # Entangling layer: closed ring (nearest-neighbor chain + wrap-around
+    # edge) instead of an open chain. No extra parameters, but every qubit
+    # now has exactly two entangling neighbors, evening out expressivity
+    # that was lost by collapsing all rotation parameters to one.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Post-entanglement rotations: ALL 8 qubits share a single global RZ
+    # parameter, distinct from the RY one (different axis, so the two
+    # parameters together still let the block realize a non-trivial
+    # entangled transformation despite using only 2 unique names).
+    {"gate": "RZ", "wire": 0, "param": "rz_global"},
+    {"gate": "RZ", "wire": 1, "param": "rz_global"},
+    {"gate": "RZ", "wire": 2, "param": "rz_global"},
+    {"gate": "RZ", "wire": 3, "param": "rz_global"},
+    {"gate": "RZ", "wire": 4, "param": "rz_global"},
+    {"gate": "RZ", "wire": 5, "param": "rz_global"},
+    {"gate": "RZ", "wire": 6, "param": "rz_global"},
+    {"gate": "RZ", "wire": 7, "param": "rz_global"},
+]
+
+=======
+
+ANSATZ_SPEC = []
+
+# 0. Pre-entanglement rotation layer, axis RX: ALL 8 qubits share the SAME
+#    single trainable parameter "theta".
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+
+# 1. Pre-entanglement rotation layer, axis RY, reusing the SAME "theta".
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 2a. Nearest-neighbor ring, alternating between a fixed CZ and a
+#     parametrized XX interaction that REUSES the same shared "theta"
+#     parameter. Non-commuting, tunable entangling interaction without a
+#     new trainable parameter name.
+for i in range(N_QUBITS):
+    a, b = i, (i + 1) % N_QUBITS
+    if i % 2 == 0:
+        ANSATZ_SPEC.append({"gate": "XX", "wires": [a, b], "param": "theta"})
+    else:
+        ANSATZ_SPEC.append({"gate": "CZ", "wires": [a, b]})
+
+# 2b. Skip-2 sub-ring linking every other qubit (0-2, 2-4, 4-6, 6-0), now
+#     parametrized with a CRY gate sharing a SINGLE new parameter
+#     "theta_e" across all four links. This boosts local expressivity in
+#     the lightweight skip-2 topology while introducing only one extra
+#     trainable parameter name per block.
+for i in range(0, N_QUBITS, 2):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [i, (i + 2) % N_QUBITS], "param": "theta_e"})
+
+# 2c. Fixed, zero-parameter antipodal shortcuts (distance-4 on the
+#     8-cycle) for long-range connectivity.
+for i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + N_QUBITS // 2]})
+
+# 3. Post-entanglement rotation layer, axis RZ, reusing the SAME "theta"
+#    parameter, keeping the total unique parameter count per block at
+#    exactly 2 ("theta" and "theta_e").
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+
+>>>>>>> REPLACE
+
+</DIFF>

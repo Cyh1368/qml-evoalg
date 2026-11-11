@@ -242,3 +242,126 @@ the policy consequence of having consumed two splits, and the pre-declared remed
 The audit findings (`research/audit.md`), the mathematical preliminaries, and the refusal
 to claim quantum advantage are unchanged. The confirmatory 120-run search record is
 reanalysed, not re-run: its arms, budgets, prompts and seeds are frozen and untouched.
+
+## Addendum A5 (2026-11-11T22:32Z) --- second-round blockers, declared before new analysis
+
+Written after reading `research/paper/REVIEW_ROUND2.md` and **after verifying each of its
+code-level claims in the source** (all six were confirmed: the `verdict()` direction, the
+equality-based group-correctness metric, the missing deployed endpoint in
+`holdout_oneshot._search_run`, the cell-level headline inference at `eta > 0`, the
+`%.3f` Holm printing plus the mislabelled identity column, and the `fresh_v3` default in the
+reproduction path). Nothing below was run before this section was committed.
+
+### A5.1 Estimand-appropriate inference for `eta > 0` (replaces the cell-level headline)
+
+The `eta > 0` design crosses 8 breaking directions with 24 optimiser seeds, so a cell-level
+bootstrap resamples 192 quantities that reuse both directions and seeds. Three estimands,
+each with its own procedure, all reported:
+
+* **E-A (primary):** *average over the frozen direction set, generalise over optimiser
+  randomness.* For each (arm, seed) average the 8 direction cells into one vector, then
+  cluster-bootstrap the **24 seed vectors** and sign-flip them. Units = seeds.
+* **E-B (sensitivity):** *generalise over directions, condition on seeds.* Cluster-bootstrap
+  the 8 direction vectors. Units = directions.
+* **E-C (sensitivity, two-way):** resample **both** clusters (seed vectors outside, directions
+  inside) to expose the joint dependence; report as a wider interval, never as the headline.
+* **E-D (legacy, retained for traceability only):** the previous cell-level interval.
+
+All four condition on **one** dataset and **one** task family: no interval here quantifies
+variation over newly sampled training datasets or task families, and no table may imply it.
+The same rule is applied to the four-direction / eight-seed fresh-input analysis (units = 8
+seeds for E-A).
+
+### A5.2 Hypothesis status: soundness is not maximal-group recovery
+
+The previous `wrong_group_but_label_preserving` counter conflated two different failures.
+Every accepted hypothesis closure `H` is now classified against the declared task group `G`
+and the **empirically measured label-symmetry group** `L_probe` of the scored target (all
+`n!` site permutations tested on an independent probe panel, seed distinct from the gate's
+rows):
+
+| status | definition | reading |
+|---|---|---|
+| `exact_declared` | `H = G` | maximal-group recovery |
+| `valid_proper_subgroup` | `H < G` | sound but incomplete: a genuine symmetry, weaker than declared |
+| `valid_supergroup` | `G < H <= L_probe` | sound, stronger than declared, still label-preserving |
+| `invalid` | some `h in H` violates labels on the probe | a false accept of the gate |
+
+**False acceptance is reported only for `invalid`.** Exact recovery is reported separately and
+is *not* the task the implemented gate was built for; the proposal prompt asks for a symmetry
+under which labels are preserved, not for the maximal one, and the manuscript must say which
+objective it is scoring. A finite-sample label test is reported as a *screen*, never as a
+universal soundness certificate.
+
+### A5.3 Fixed-panel selectivity test (no LLM, no sealed data)
+
+The graphs-versus-breaking-ring comparison changes input domain, target, proposal
+distribution and search trajectory at once, so it cannot isolate the verifier. The replacement
+holds the inputs fixed and varies only the target:
+
+* inputs: the ring `n = 6` development rows, one fixed probe panel of 512 rows drawn with
+  seed 777 (never used by the gate, which reads training rows);
+* targets: `alpha_0` (declared-group invariant) and `alpha_2` (deliberately not
+  `D6`-invariant), same inputs;
+* panel of transformations, fixed in advance: identity; the `D6` rotation; the `D6`
+  reflection; the `C3` and `C2` subgroups; the full `S6`; 20 random permutations; 20
+  single transpositions; and the measured `L_probe` for each target;
+* metrics: sensitivity (fraction of true label symmetries accepted) and false-accept rate
+  (fraction of label-violating panel members accepted), each with its own denominator and a
+  Wilson 95% interval; `|L_probe|` reported per target.
+
+Recovering `D6` on a target that is not `D6`-invariant would be the wrong answer; the panel
+reports this as `exact_declared` versus `invalid` rather than as success or failure.
+
+### A5.4 Verification as a decision rule (new estimand; the only way to test "precondition")
+
+That declared-group averaging helps non-LLM pipelines does **not** show a verifier is
+necessary. The testable question is whether the gate is a *good decision rule* about when to
+repair. On development data only, for every candidate and every rule, the same Reynolds
+averaging is applied and the same dev endpoint is scored:
+
+| rule | fires when |
+|---|---|
+| `R0_supplied_group` | always (unconditional supplied-group averaging) |
+| `R1_label_gate` | label preservation holds on the gate's rows |
+| `R2_label_channel` | `R1` **and** channel residual below threshold (the implemented gate) |
+| `R3_predictor_defect` | measured predictor non-invariance on dev rows exceeds threshold |
+| `R4_invalid_group` | `R1` but averaging over a mismatched group (negative control) |
+
+Primary metric: **mean risk change over all candidates** (intention-to-treat at the decision
+level). Secondary: precision (share of fired repairs that helped), recall (share of
+beneficial repairs fired), mean harm among fired, mean missed gain among unfired. Thresholds
+come from development records only. No claim of optimality; the finding is the measured
+calibration failure of `R2`, whatever it turns out to be.
+
+### A5.5 Deployed endpoint on newly reserved inputs (one-shot, second fresh holdout)
+
+`holdout_oneshot._search_run` scored the candidate endpoint and left
+`test_risk_averaged_diagnostic = None`, so E-S7 validates candidates, not the deployed
+repaired pipeline. The replacement (`research/holdout_deployed.py`) evaluates, on **newly
+reserved** inputs (seed 20261205; the original sealed split stays consumed and is not
+re-read):
+
+* `test_risk_candidate` and `test_risk_deployed`, the latter applying the
+  **development-frozen** repair eligibility and group to the held-out inputs;
+* the same-tool non-LLM comparators on the same rows: declared-group twirl applied to the
+  `random` and `mutation-ea` candidates;
+* matched test-split baselines: the edge-count rule (threshold fitted on training rows only,
+  scored on these rows) and the constructive equivariant block (fit at the search protocol's
+  per-fit budget, scored on these rows);
+* the target-defining oracle, labelled a **reference value**, not a learned baseline.
+
+Equal *per-fit* budgets are reported as such; total search budget is reported separately and
+the two are never conflated.
+
+### A5.6 Reporting policy (enforced in code, not in prose)
+
+* `paired.verdict` takes the metric direction and the adjusted test: a wholly positive
+  a-minus-b risk interval reads **"a worse"**; a raw-CI direction may not be printed as a
+  protocol verdict when the multiplicity-adjusted `p > alpha`.
+* p-values below their resampling resolution print as bounds (`< 5e-05 (floor 5e-05)`), never
+  as `0.000`.
+* the two identity residuals are printed under their own names: `no-cross-term gap` and
+  `full A3 gap`.
+* "buys nothing", "equally", "did not move", "no effect" are banned; failure to detect is
+  written as failure to detect, and equivalence requires the prespecified margin test.

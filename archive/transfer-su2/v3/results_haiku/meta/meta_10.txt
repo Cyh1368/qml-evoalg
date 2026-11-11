@@ -1,0 +1,125 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-qubit CZ-Entangled RY-RZ Ansatz Classifier**  
+- **Implementation**: Defines a shared-parameter ansatz of 24 angles—per-qubit RY rotations, pre- and post-layer RZ rotations, and a linear chain of CZ gates—repeated three times, with StatePrep loading the input vectors and a trainable gain/bias calibrating the averaged two-qubit Hermitian measurements. Training uses an Adam optimizer on an L₂ loss with early stopping and few-shot subsampling.  
+- **Performance**: Combined score 0.29; train acc 0.88, val acc 0.63, test acc 0.56; generalization gap 0.31; parameter efficiency 0.02; circuit depth 20, gate count 93.  
+- **Feedback**: The model exhibits strong fit to training data but poor validation and test generalization, with low margins indicating overfitting and limited expressivity from tied parameters; richer entanglement patterns or additional parameter freedom may boost out-of-sample performance.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: 8-Qubit Entangled Classifier with Shared Rotations**  
+- **Implementation**: Defines a parameterized ansatz in Pennylane with shared RY/RZ rotations and learnable XX/YY entangling gates repeated three times, prepares inputs via StatePrep, measures fixed two-qubit correlators, and applies a trainable gain/bias calibration; training uses Adam with early stopping on a few-shot, class-balanced dataset.  
+- **Performance**: Achieved a combined score of 0.43 with perfect training accuracy (1.00), validation accuracy 0.82, test accuracy 0.78, and a generalization gap of 0.22 using just 11 parameters.  
+- **Feedback**: The shared-parameter, low-depth design delivered strong parameter efficiency and training fit but showed moderate overfitting and subgroup margin variability (worst-group margin ~0.25), suggesting opportunities to improve robustness.
+**Program Identifier:** Generation 2 - Patch Name sparse_entangling_shared_params - Correct Program: True
+
+**Program Name: Shared-Parameter XX/YY 8-Qubit Classifier**  
+- **Implementation**: Uses Pennylane to load precomputed 8-qubit states via StatePrep, applies an ansatz block—shared RY/​RZ rotations and parametrized Ising XX/YY/ZZ entanglers on neighboring and long-range pairs—repeated three times, then measures dataset-specified two-qubit observables averaged and calibrated by trainable gain and bias.  
+- **Performance**: Achieved perfect training accuracy but only 70% validation and test accuracy (combined score 0.34), with 14 total parameters, circuit depth 18, and 99 gates.  
+- **Feedback**: The shared-parameter design and small parameter count improved efficiency but led to a substantial generalization gap (0.30) and low parameter efficiency (0.05), indicating the ansatz may under-express dataset complexity despite deep entanglement layers.
+**Program Identifier:** Generation 3 - Patch Name shared_params_deep_entangle - Correct Program: True
+
+**Program Name: 8-Qubit Layered Ising Ansatz Classifier**  
+- **Implementation**: Defines a five-layer ansatz on eight qubits—shared RY/RZ rotations and parameterized XX, YY, ZZ Ising gates—repeated three times with tied parameters, uses Pennylane’s StatePrep for input, measures fixed two-qubit Hermitian observables, and trains with Adam on L2 loss using class-balanced few-shot batches and early stopping.  
+- **Performance**: Achieved a combined score of 0.36, with 0.75 train accuracy, 0.57 validation accuracy, 0.52 test accuracy, and a 0.23 generalization gap.  
+- **Feedback**: The minimal, tied-parameter design trained stably but showed limited expressivity and notable overfitting, indicating that richer parameterization or more diverse entangling patterns may be needed to improve generalization.
+**Program Identifier:** Generation 4 - Patch Name shared_param_alternating_ising - Correct Program: True
+
+**Program Name: Shared Global Rotations with Parametric Ising Couplings**  
+- **Implementation**: The ansatz applies shared RY/RZ rotations across eight qubits followed by parameterized Ising XX/YY/ZZ couplings on fixed pairs, repeated three times; inputs are loaded via `StatePrep`, and readout averages dataset‐provided two‐qubit Hermitian observables with a trainable gain/bias calibration. Training uses Pennylane’s `AdamOptimizer` with wide uniform initialization, L2 loss, early stopping on validation loss, and autograd backpropagation.  
+- **Performance**: Achieved a combined score of 0.33 with train/validation/test accuracies of 0.81/0.52/0.50, generalization gap 0.31, depth 15, gate count 81, seven parameters, and parameter efficiency 0.07.  
+- **Feedback**: The high parameter sharing yielded reasonable fitting but poor generalization and near-zero margins, indicating limited expressiveness; decoupling global rotations or adding richer entangling patterns could enhance performance.
+**Program Identifier:** Generation 5 - Patch Name aggressive_param_sharing_ising_couplings - Correct Program: True
+
+**Program Name: Shared-Param 8-Qubit State Classifier**  
+- **Implementation**: The program loads precomputed 8-qubit states, applies a three-repeat, parameter-shared ansatz composed of shared RY rotations, XX and YY entanglers, and a final RZ layer, then measures dataset-specified two-qubit correlators with a trainable gain/bias readout; training uses Pennylane’s Adam backpropagation, early stopping, class-balanced few-shot subsampling, and wide‐angle initialization to avoid identity dead zones.  
+- **Performance**: Perfect training accuracy, 0.89 validation accuracy, 0.85 test accuracy, and a 0.15 generalization gap using only 9 parameters in a depth-18, 96-gate circuit.  
+- **Feedback**: Shared-parameter design yielded high train accuracy and strong parameter efficiency but limited expressivity manifested in a moderate generalization gap; few-shot balancing and gain/bias calibration improved training stability.
+**Program Identifier:** Generation 1 - Patch Name parameter_sharing_entangling_layers - Correct Program: True
+
+**Program Name: Shared-parameter 8-qubit Ising ansatz classifier**  
+- **Implementation**: The ansatz applies a block of shared RY and RZ rotations on all 8 qubits, a fixed CZ entanglement line, and shared Ising XX/YY/ZZ couplings, repeated 3 times with tied parameters, followed by a two-parameter (gain, bias) linear readout. Training uses few-shot sampling, an Adam optimizer with backprop through a Pennylane qnode, and L2 loss on pre-prepared state inputs.  
+- **Performance**: Combined score 0.42; train/validation/test accuracies of 0.88/0.69/0.66; generalization gap 0.22; parameter efficiency 0.09.  
+- **Feedback**: The heavily parameter-tied design achieves strong in-sample fit but suffers notable overfitting and only moderate out-of-sample accuracy, indicating limited expressivity despite a shallow circuit (depth 34, 102 gates) and very low parameter count.
+**Program Identifier:** Generation 6 - Patch Name hybrid_shared_parametrization - Correct Program: True
+
+**Program Name: 8-Qubit Shared-Parameter Ansatz Classifier**  
+- **Implementation**: Uses a three-repeat ansatz tying 11 trainable parameters across shared RY and RZ rotations and structured Ising entanglers (XX on even pairs, YY bridges, ZZ diagonals) applied to pre-prepared 8-qubit states, with fixed two-qubit observable measurements averaged and calibrated by a learnable gain and bias. Training employs Pennylane’s backprop-based Adam optimizer, few-shot class-balanced batch sampling, wide‐range initialization, and early stopping on validation loss.  
+- **Performance**: Combined score 0.49 with perfect train accuracy (1.00), validation 0.89, test 0.85, a 0.15 generalization gap, only 13 parameters, depth 15, and 72 gates.  
+- **Feedback**: The parameter-tied entangling structure delivers high expressivity and parameter efficiency, achieving strong test performance despite limited parameters, while the generalization gap suggests some overfitting even with early stopping and wide‐angle initialization enhancing training stability.
+**Program Identifier:** Generation 7 - Patch Name enhanced_entanglement_with_diagonal_gates - Correct Program: True
+
+**Program Name: Hierarchical 8-Qubit Parametric Evolved Ansatz**  
+- **Implementation**: Applies a five‐layer ansatz repeated three times with shared parameters—global RY, parity‐split RZ, local XX entanglers, fixed CZ bridges, cross‐stripe YY, long‐range ZZ couplings, and final global RX—on preloaded 8-qubit states in PennyLane, measuring dataset-provided two-qubit observables averaged via a trainable gain and bias. Training uses Adam with full-period uniform initialization, L2 loss on the averaged correlators, and early stopping based on validation loss.  
+- **Performance**: Achieved a combined score of 0.36 with mean train/validation/test accuracies of 0.75/0.59/0.58 using just 9 parameters, a circuit depth of 21, and 117 gates.  
+- **Feedback**: The shared‐parameter, hierarchical structure succeeds in reducing parameter count and depth but results in a 0.17 generalization gap and low parameter efficiency (0.06), indicating constrained expressivity in few-shot classification.
+**Program Identifier:** Generation 8 - Patch Name hierarchical_paramshare_ansatz - Correct Program: True
+
+**Program Name: 8-Qubit Parity-Sharing Ansatz Classifier**  
+- **Implementation**: Uses a Pennylane QNode that prepares loaded 8-qubit states, applies a 5-layer ansatz block (shared even/odd RY and RZ rotations, nearest-neighbor XX entanglers, staggered YY and diagonal ZZ couplings) repeated three times with tied parameters, then measures dataset-provided two-qubit Hermitian correlators and calibrates the mean via a trainable gain and bias.  
+- **Performance**: Achieved a combined score of 0.54 with perfect train accuracy (1.00), 0.96 validation accuracy, 0.90 test accuracy, a 0.10 generalization gap, and parameter efficiency of 0.06 over 14 total (12 distinct) parameters.  
+- **Feedback**: Parity-sharing rotations and broad uniform initialization promoted stable training and avoided barren-plateau effects, yielding high validation performance despite minimal parameters; however, the modest worst-group margin (0.31) and parameter efficiency indicate room for improved robustness and compactness.
+**Program Identifier:** Generation 9 - Patch Name enhance_entanglement_and_parameter_sharing - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+- Parity‐based rotation sharing with mixed entanglers  
+  • Gen 9 (8-Qubit Parity-Sharing Ansatz Classifier, score 0.54) ties RY/RZ by even/odd parity (4 rotation keys) and layers nearest-neighbor XX, staggered YY, and long-range ZZ per block. This yielded perfect train (1.00), extremely high validation (0.96) and test accuracy (0.90), and a small gap (0.10) with only 12 distinct parameters and depth 15.  
+- Shallow, repeated shared-block structure  
+  • Applying the same 5-layer block 3 times (rather than deeper or distinct blocks) balanced expressivity and regularization. Gen 9 and Gen 7 (score 0.49) both used 3 repeats, achieving high train accuracy (1.00) and strong test performance (0.85–0.90).  
+- Trainable gain/bias readout calibration  
+  • All top performers (Gen 1, Gen 7, Gen 9) separated correlator measurement from readout calibration via two parameters (gain, bias), stabilizing margins (Gen 9 validation_margin 0.58, worst-group 0.31) without adding circuit complexity.  
+- Wide uniform initialization + early stopping  
+  • Full–π uniform init on circuit angles prevented identity dead zones. Coupled with Adam + early stopping, this initialization underpinned stable convergence across the best programs (e.g., Gen 9 converged by step 780).
+
+## Ineffective Approaches
+
+- Over‐tying parameters → under‐expressivity  
+  • Gen 6 (Shared-parameter Ising ansatz classifier, score 0.42) tied global rotations and entanglers too aggressively (only 8 distinct params) and suffered low test acc (0.66) and a large gap (0.22).  
+- Hierarchical parameter sharing without sufficient rotation variety  
+  • Gen 8 (Hierarchical Parametric Evolved Ansatz, score 0.36) used just 9 parameters across layered entanglers but achieved only 0.58 test accuracy and low parameter efficiency (0.06), indicating expressivity bottlenecks.  
+- Increasing depth without breaking symmetry fails to generalize  
+  • Attempts like Gen 6 (depth 34) and Gen 8 (depth 21) stacked more gates but plateaued at or below 0.60 test accuracy, whereas shallower designs in Gen 7/9 outperformed them.  
+- Sole reliance on linear CZ chains or global rotations  
+  • Previous programs using only CZ chains (e.g., Gen 0) or purely global RY/RZ rotations (akin to “aggressive_param_sharing_ising_couplings”) underfit key state features and achieved test acc ≲ 0.60.
+
+## Implementation Insights
+
+- Leveraging `validate_ansatz_spec` + `PARAMETER_KEYS_PER_BLOCK`  
+  • The mapping of param names to indices in Gen 9’s block simplifies tying shared parameters across repeats and reduces boilerplate in `apply_ansatz_block`.  
+- Direct use of `qml.IsingXX/YY/ZZ` gates  
+  • Gen 9 employs 4 XX, 3 YY, and 2 ZZ per block, cutting gate count (~75 total) compared to decomposed variants (∼96–117 gates) while preserving connectivity.  
+- Parity‐key abstraction for rotations  
+  • Using “ry_even,” “ry_odd,” “rz_even,” “rz_odd” preserves minimal qubit heterogeneity. In Gen 9, this 4-key scheme maintained expressivity with only 8 rotation operations per block.  
+- Modular separation of ansatz and readout  
+  • All high-performing programs (Gen 1, Gen 7, Gen 9) kept the gain/bias readout outside the ansatz loop, allowing the circuit to focus solely on feature extraction and the readout layer to handle calibration.
+
+## Performance Analysis
+
+- Peak combined score with ∼12–14 parameters and shallow depth  
+  • Gen 9’s score 0.54 (n_params 14, distinct 12, depth 15) outstrips Gen 7’s 0.49 (13 params, depth 15) and Gen 1’s test 0.85/val 0.89 (9 params, depth 18).  
+- Generalization gap shrinks with mixed, sparse entanglers  
+  • Transition from purely nearest-neighbor XX (Gen 1 gap 0.15) to adding staggered YY and diagonal ZZ (Gen 9 gap 0.10) tightened the gap by ~0.05.  
+- Validation and worst-group margins track with entangling diversity  
+  • Gen 9’s mixed entangler block delivered validation_margin 0.58 and worst_group_margin 0.31, a clear improvement over Gen 7 (validation_margin 0.49) and Gen 6 (0.30).  
+- Parameter efficiency optimal around 12 distinct keys  
+  • Efficiency (test_acc/ n_params) peaked near 0.06 in Gen 9; fewer keys (Gen 6, 8) under-expressed, while more keys (Gen 3, Gen 7) offered diminishing returns on gap reduction.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Introduce a sparse CRZ layer immediately after the YY entanglement in each block by adding two CRZ gates—e.g. between qubits (1, 3) and (5, 7)—both sharing a new parameter key “crz_cross”. This builds on Gen 2’s success mixing phase‐type entanglers at minimal depth (+2 gates) and should inject long-range phase correlations without blowing the parameter budget.  
+
+2. Break the strict 3-repeat symmetry by defining two block variants A and B that swap which diagonal pairs receive the ZZ coupling (e.g. A uses (0, 3)/(4, 7), B uses (1, 4)/(5, 0)), then apply them in an A–B–A sequence. This alternating pattern preserves ~12–14 total parameters but introduces heterogeneity across repeats, echoing the improved generalization seen in Gen 3 when symmetry was relaxed.  
+
+3. Refine rotation sharing from parity to quartet groups: replace “ry_even/ry_odd” and “rz_even/rz_odd” with four distinct RY keys for qubit pairs [0,1], [2,3], [4,5], [6,7], and likewise four RZ keys. This controlled increase from 4 to 8 rotation parameters per layer injects extra heterogeneity exactly where Gen 9 showed expressivity gains, likely lifting test accuracy and worst-group margins without exceeding ~16 params per block.  
+
+4. Reduce the four per-pair XX parameters to two by grouping edges: one key “xx_even” for (0-1, 4-5) and another “xx_odd” for (2-3, 6-7). This ties symmetric couplings—akin to Gen 6’s sharing but on a per-group basis to avoid under-expressivity—and frees up parameter budget that you can re-invest in new gate types (e.g. the CRZ or quartet rotations) while retaining nearest-neighbor entangling power.  
+
+5. Append a sparse “star” IsingXX layer at the end of each block: connect qubit 0 to qubits 2, 4, 6 with three IsingXX gates under a single new key “xx_star”. This non-local XX entanglement complements the existing diagonal ZZ links, extends Gen 9’s mixed-entangler diversity, and should capture global correlations with only +1 parameter and +3 gates.

@@ -1,0 +1,81 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit ZZ-Correlator Quantum Classifier**  
+- **Implementation**: Prepares 8-qubit input states with StatePrep, applies six repeats of an ansatz consisting of per-qubit RY and pre/post RZ rotations interleaved by a linear CZ entanglement chain, measures specified PauliZ–PauliZ correlators, and calibrates the averaged output via a trainable gain and bias. Training uses minibatch L2 loss, the Adam optimizer, validation-based early stopping, and convergence tracking.  
+- **Performance**: Achieved 100% accuracy and ~0.01 loss on train/validation/test sets with zero generalization gap, converging in ~30 steps using 146 parameters.  
+- **Feedback**: The rotation–CZ ansatz plus output calibration yields perfect classification but low parameter efficiency (~0.01); incorporating early stopping and gain/bias tuning ensured rapid, stable convergence.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Ring-CZ Repeated RY-RZ Ansatz Classifier**  
+- **Implementation**: Uses a 6-layer ansatz block of single-qubit RY rotations, a ring of CZ entangling gates, and post-rotation RZ gates with parameter reuse (12 parameters per block) on precomputed 8-qubit states prepared via StatePrep; measures dataset-specific two-qubit Z–Z correlators averaged into a scalar with trainable gain and bias, optimized with the Adam optimizer and early stopping.  
+- **Performance**: Achieved perfect (1.00) train, validation, and test accuracy with 0.01 test loss, zero generalization gap, 74 total parameters, depth 60, gate count 144, and convergence by step 30.  
+- **Feedback**: The ansatz provided ideal classification performance indicating sufficient expressivity, but its low parameter efficiency suggests potential for further parameter reduction, and the rapid convergence highlights a smoothly optimized landscape.
+**Program Identifier:** Generation 1 - Patch Name none - Correct Program: True
+
+**Program Name:** 8-Qubit Banded-Parity Ansatz Classifier  
+- **Implementation:** Employs 6 repeats of an 8-qubit ansatz with banded RY/RZ rotations shared across qubits by index mod 4, a fixed CZ ring entangler, and parity-shared CRZ layers, yielding only 10 distinct parameters per block (62 total including gain/bias), trained via Pennylane’s Adam optimizer with early stopping.  
+- **Performance:** Achieved perfect (1.00) train/validation/test accuracy with 0.01 losses, zero generalization gap, depth 72, 192 gates, and convergence in 30 steps.  
+- **Feedback:** Aggressive parameter sharing preserved full expressivity and enabled rapid convergence, though overall parameter efficiency was modest (0.02), demonstrating a strong balance of compactness and classification power.
+**Program Identifier:** Generation 2 - Patch Name none - Correct Program: True
+
+**Program Name:** Shared-parameter ring ansatz 8-qubit classifier  
+- **Implementation:** Precomputed 8-qubit states are loaded via qml.StatePrep and fed into a six-layer ansatz where each layer applies eight independent RY rotations, a single shared‐parameter ZZ entangler around an 8-qubit ring, and shared RZ phases (60 circuit parameters), followed by a trainable gain and bias on the mean of two-qubit Z–Z correlator measurements. Training uses the Adam optimizer on an L2 loss with mini-batch updates, early stopping, and restore-best-weights.  
+- **Performance:** Achieved perfect 1.00 accuracy and ~0.01 loss on train/validation/test splits with zero generalization gap, converging in ~30 steps for a combined score of 0.90 using 62 parameters, depth 60, and 144 gates (parameter efficiency 0.02).  
+- **Feedback:** The compact shared-parameter design delivered full expressivity and rapid convergence with minimal parameters, demonstrating robust generalization; however, the modest parameter efficiency suggests further ansatz compression could be explored.
+**Program Identifier:** Generation 5 - Patch Name none - Correct Program: True
+
+**Program Name: Shared-parameter ring ansatz classifier**  
+- **Implementation**: Uses an 8-qubit StatePrep input, followed by six repeats of a custom block with alternating RY rotations on even/odd qubits, a single shared ZZ entangler forming a closed ring, and a shared RZ phase gate (10 block parameters), plus two readout calibration parameters; training is done with Pennylane’s backpropagated Adam optimizer, mini-batches, and early stopping on MSE loss.  
+- **Performance**: Achieves perfect 1.00 ±0.00 train/validation/test accuracy with 0.05/0.04 validation/test loss, zero generalization gap, combined score ~0.99, 26 parameters, depth ~60, and gate count ~144.  
+- **Feedback**: The compact, shared-parameter design delivers full expressivity and flawless classification at minimal depth and parameter count, although parameter efficiency remains modest (~0.04); convergence reliably occurs by ~420 optimizer steps.
+**Program Identifier:** Generation 8 - Patch Name none - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Aggressive parameter sharing in the variational block preserved expressivity while cutting parameters in half:  
+  • Generation 2 (8-Qubit Banded-Parity, 62 params) and Generation 5 (Shared-parameter ring, 62 params) both hit 1.00/1.00/1.00 accuracies with ~0.01 losses and zero generalization gap, matching larger ansätze.  
+- Parity-modulated single-qubit rotations plus one shared ZZ entangler and one shared RZ phase per block yielded the most compact 26-param circuit (Generation 8) that still achieved perfect classification (1.00/1.00/1.00), boosting parameter efficiency to ~0.04.  
+- Consistent use of a trainable gain and bias to calibrate the mean of two-qubit Z–Z correlators stabilized output scaling and eliminated generalization error across all top performers.  
+- Validation-based early stopping (patience 75, min_delta 1e-4) combined with Adam optimization ensured rapid, stable convergence without overfitting in every high-scoring program.  
+
+## Ineffective Approaches  
+- Over-parameterized ansatzes delivered perfect accuracy but poor efficiency. Generation 0’s 146-param circuit converged in ~30 steps to ~0.01 loss yet parameter efficiency was only ~0.01.  
+- Simply increasing block count or reusing 12–16 unique parameters per repeat (as in Generation 1’s 74-param ring-CZ design) did not improve accuracy or loss over more compact 62-param versions.  
+- Parity-shared CRZ layers (Generation 2) matched performance of shared-ZZ designs but offered no additional gains in parameter efficiency or loss reduction, adding implementation complexity without benefit.  
+- Extreme compression (26 params in Generation 8) came at the cost of convergence speed—~420 optimizer steps versus ~30—indicating a trade-off between minimal parameter count and training efficiency.  
+
+## Implementation Insights  
+- Defining the ansatz as a formal ANSATZ_SPEC and running it through `validate_ansatz_spec` automates parameter ordering, consistency checks, and error reporting—key for safe, repeatable ansatz mutations.  
+- The `apply_ansatz_block` pattern with a parameter‐key→offset mapping enables seamless block repetition and shared-parameter schemes, simplifying the search over parameter-efficient designs.  
+- Leveraging `qml.StatePrep` to load precomputed input states decouples data encoding from variational layer design, focusing computational budget on ansatz expressivity.  
+- Using `qml.queuing.AnnotatedQueue` to extract circuit metadata (depth, gate_count) provides an automated, low-overhead way to track resource metrics alongside accuracy and loss.  
+
+## Performance Analysis  
+- Accuracy across all evaluated circuits plateaued at 1.00/1.00/1.00; the differentiator became test/validation loss and parameter efficiency.  
+- Circuits with 62–74 parameters achieved ~0.01 test loss and converged in ~30 steps; the ultra-compact 26-param circuit saw test loss rise to ~0.04 and required ~420 steps to converge.  
+- Parameter efficiency (test_accuracy / n_params) improved steadily from ~0.01 (146 params) → ~0.02 (74/62 params) → ~0.04 (26 params), showing diminishing returns on performance per parameter beyond a compact core design.  
+- Depth (≈60) and gate count (144) remained constant across designs, indicating that ansatz topology and parameter sharing, rather than circuit size, drove efficiency and convergence behavior.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Split the single shared ZZ entangler into two alternating “zz_even” and “zz_odd” parameters.  
+   In your ANSATZ_SPEC, assign “zz_even” to edges (0–1, 2–3, 4–5, 6–7) and “zz_odd” to edges (1–2, 3–4, 5–6, 7–0). This mutation only adds one extra parameter per block (from 10→11) but enriches the entanglement pattern, leveraging the same aggressive sharing principle to boost convergence speed without blowing up the parameter count.
+
+2. Introduce parity-modulated RZ rotations by replacing “rz_shared” with two parameters, “rz_even” and “rz_odd.”  
+   Map “rz_even” onto all even-indexed qubits and “rz_odd” onto all odd-indexed qubits in each block. This slight increase in local phase flexibility (11 params/block) is grounded in the success of parity-shared single-qubit rotations and should reduce the ~420-step convergence time while preserving parameter efficiency.
+
+3. Augment each block with a shared XX entangler alongside the shared ZZ layer.  
+   In ANSATZ_SPEC, add one “xx_shared” parameter for IsingXX gates on the same 8-qubit ring. Previous experiments with mixed‐axis entanglers (XX+ZZ) showed complementary expressivity per parameter; this mutation retains compactness (+1 param/block) and probes orthogonal correlations to accelerate training.
+
+4. Enhance local rotations by swapping single RY per qubit for a pair of shared RX/RY gates on even and odd qubits.  
+   Define four parameters “rx_even,” “ry_even,” “rx_odd,” “ry_odd” and apply them to alternating wires. This doubles per-qubit expressivity within the same sharing framework, leveraging proven benefits of multi-axis local rotations to improve feature learning and convergence speed at a modest parameter overhead.
+
+5. Implement block-grouped parameter sharing: treat the six repeats as two super-blocks of three.  
+   Build two independent parameter sets (each following the current 10-param block spec) and apply the first set to repeats 0–2 and the second to repeats 3–5. This mutation doubles total circuit parameters (from 62→122) but halves sharing granularity, striking a balance between expressivity and sharing—expected to achieve near–26-param efficiency with substantially faster convergence.

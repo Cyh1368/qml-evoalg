@@ -1,0 +1,152 @@
+<NAME>
+symmetry_shared_crx_crz_reduced_entanglement
+</NAME>
+
+<DESCRIPTION>
+Replace the current ansatz block with a symmetry-aware, parameter-efficient block that
+reduces fixed entangling depth while improving expressive entangling power where it matters.
+
+Key ideas:
+- Remove several fixed CZs (which contributed to depth but not parameterized expressivity)
+  and replace them with a smaller set of shared parametrized controlled rotations:
+  CRX on alternating ring edges and CRZ on all hub (center) spokes. Parametrized two-qubit
+  gates add more learning capacity per gate and are aligned with the RX feature map
+  (CRX) and phase correlations to the center (CRZ).
+- Keep symmetry-inspired parameter sharing: corners/edges/center for initial RY,
+  periphery vs center for RX mixing and final RY. Use a single small shared RZ pre-phase
+  to break parity while keeping parameter count modest.
+- This reduces the number of fixed two-qubit gates, increases the expressivity-per-gate,
+  and preserves inductive biases (corner/edge/center). The goal is better generalization,
+  fewer unnecessary gates (lower depth / gate count), and similar or slightly increased
+  parameter efficiency.
+
+Expectations:
+- More informative parameterized entanglement should improve learning (especially test/validation),
+  while the reduced fixed entanglement lowers circuit depth and reduces overfitting risk.
+- Symmetric sharing helps keep parameter growth modest and provides useful inductive bias.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Initial symmetry-aware RY layer: share corners, edges, and center
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Single shared pre-phase to keep parameter count low and regularize
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 8, "param": "rz_shared"},
+
+    # A few fixed CZs on alternate ring edges to increase entangling power (no params)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Parametrized controlled-X rotations (CRX) aligned with RX feature map:
+    # shared for ring edges vs hub edges to capture different correlation patterns.
+    {"gate": "CRX", "wires": [1, 2], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [5, 6], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [7, 0], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [1, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [3, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [5, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [7, 8], "param": "crx_hub"},
+
+    # Compact RX mixing shared across qubits to boost expressivity without many params
+    {"gate": "RX", "wire": 0, "param": "rx_mix"},
+    {"gate": "RX", "wire": 1, "param": "rx_mix"},
+    {"gate": "RX", "wire": 2, "param": "rx_mix"},
+    {"gate": "RX", "wire": 3, "param": "rx_mix"},
+    {"gate": "RX", "wire": 4, "param": "rx_mix"},
+    {"gate": "RX", "wire": 5, "param": "rx_mix"},
+    {"gate": "RX", "wire": 6, "param": "rx_mix"},
+    {"gate": "RX", "wire": 7, "param": "rx_mix"},
+    {"gate": "RX", "wire": 8, "param": "rx_mix"},
+
+    # Small final RY adjustment (shared periphery vs center) for sharper decision boundaries
+    {"gate": "RY", "wire": 0, "param": "ry_out"},
+    {"gate": "RY", "wire": 1, "param": "ry_out"},
+    {"gate": "RY", "wire": 2, "param": "ry_out"},
+    {"gate": "RY", "wire": 3, "param": "ry_out"},
+    {"gate": "RY", "wire": 4, "param": "ry_out"},
+    {"gate": "RY", "wire": 5, "param": "ry_out"},
+    {"gate": "RY", "wire": 6, "param": "ry_out"},
+    {"gate": "RY", "wire": 7, "param": "ry_out"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+]
+=======
+ANSATZ_SPEC = [
+    # Initial symmetry-aware RY layer: share corners, edges, and center
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Small shared pre-phase to break parity while keeping param count modest
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 8, "param": "rz_shared"},
+
+    # Replace several fixed CZs with shared parametrized controlled rotations:
+    # - CRX on alternating ring edges (captures RX-like correlations with feature map)
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_ring"},
+    # - CRZ on all hub spokes to let the center modulate phases (shared param)
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_hub"},
+
+    # Compact RX mixing: shared periphery vs center for expressive but compact mixing
+    {"gate": "RX", "wire": 0, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 1, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 2, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 3, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 4, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 5, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 6, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 7, "param": "rx_periphery"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Small final RY adjustment (shared periphery vs center) for sharper decision boundaries
+    {"gate": "RY", "wire": 0, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+]
+>>>>>>> REPLACE
+</DIFF>

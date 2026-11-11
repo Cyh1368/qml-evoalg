@@ -1,0 +1,80 @@
+<name>
+shared_crz_evenodd_and_final_rz
+</name>
+
+<description>
+This edits only the candidate ansatz block to improve training stability and generalization while reducing parameter count.
+
+Key changes:
+- Keep expressive single-qubit rotations but move to a more standard basis: RY (8 params) + RZ (8 params).
+- Replace the current 6 distinct controlled-phase parameters with only 2 shared CRZ parameters (odd-chain and even-chain). This reduces parameters per block and encourages smoother optimization across re-uploading blocks.
+- Use fixed CZ entanglers aligned with the CRZ connectivity to preserve circuit expressivity while not increasing trainable parameters.
+</description>
+
+<diff>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_7"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0_1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_2_3"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_4_5"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_6_7"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_1_2"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_3_4"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_5_6"},
+]
+=======
+ANSATZ_SPEC = [
+    # Input mixing: RY then RZ
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+
+    # Entangling layer: shared CRZ parameters on a chain partitioned into odd/even edges,
+    # with accompanying fixed CZ gates to keep depth/expressivity.
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_odd"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_odd"},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_odd"},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_odd"},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_even"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_even"},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_even"},
+    {"gate": "CZ", "wires": [5, 6]},
+]
+>>>>>>> REPLACE
+</diff>

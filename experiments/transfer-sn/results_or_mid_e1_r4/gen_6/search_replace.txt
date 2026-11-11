@@ -1,0 +1,91 @@
+<NAME>
+non_commuting_strongly_entangled_ansatz
+</NAME>
+
+<DESCRIPTION>
+The previous ansatz relied heavily on RZ and CZ gates, both of which commute with the IsingZZ feature map used for data encoding. This limits the non-trivial interference between the circuit and the feature-encoded data.
+
+I am proposing a "strongly entangling layer" style structure that uses RY rotations and CNOT gates. Since RY and the target of a CNOT do not commute with the Z-basis phase shifts of the feature map, this should significantly improve the expressivity and ability of the circuit to capture complex correlations between features.
+
+The new ANSATZ_SPEC follows a RY-CNOT(even)-RZ-CNOT(odd)-RY pattern:
+1. A layer of parametrized RY gates for initial basis mixing.
+2. An even-layered CNOT entanglement block ([0,1], [2,3], [4,5], [6,7]).
+3. A layer of parametrized RZ gates to allow for phase adjustments between entanglers.
+4. An odd-layered circular CNOT entanglement block ([1,2], [3,4], [5,6], [7,0]).
+5. A final layer of parametrized RY gates to ensure full single-qubit rotation coverage (Euler Y-Z-Y decomposition) and to prepare the state for Z-basis measurement.
+
+This design maintains the same parameter count (24 per block, 146 total) as the current version but focuses on gates that actively interact with the data encoding.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry1_0"},
+    {"gate": "RY", "wire": 1, "param": "ry1_1"},
+    {"gate": "RY", "wire": 2, "param": "ry1_2"},
+    {"gate": "RY", "wire": 3, "param": "ry1_3"},
+    {"gate": "RY", "wire": 4, "param": "ry1_4"},
+    {"gate": "RY", "wire": 5, "param": "ry1_5"},
+    {"gate": "RY", "wire": 6, "param": "ry1_6"},
+    {"gate": "RY", "wire": 7, "param": "ry1_7"},
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [7, 0]},
+    {"gate": "RY", "wire": 0, "param": "ry2_0"},
+    {"gate": "RY", "wire": 1, "param": "ry2_1"},
+    {"gate": "RY", "wire": 2, "param": "ry2_2"},
+    {"gate": "RY", "wire": 3, "param": "ry2_3"},
+    {"gate": "RY", "wire": 4, "param": "ry2_4"},
+    {"gate": "RY", "wire": 5, "param": "ry2_5"},
+    {"gate": "RY", "wire": 6, "param": "ry2_6"},
+    {"gate": "RY", "wire": 7, "param": "ry2_7"},
+]
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,61 @@
+Looking at the current design, I see several opportunities for improvement:
+
+1. **The CZ entanglement is only a line (0-1, 1-2, ..., 6-7)** — missing the ring closure (7-0) and any long-range connections. This limits information flow between distant qubits.
+
+2. **The final rotation layer is RZ** — but since we measure in the Z basis, RZ after entanglement only adjusts phases and cannot directly change measurement probabilities. A post-entanglement **RY** layer is far more useful because it converts entanglement-induced phase correlations into amplitude differences detectable by Z measurements.
+
+3. **No cross-qubit connections** — qubits like 0 and 4 can only communicate through a chain of nearest-neighbor gates, requiring many layers to mix. Adding CZ cross-connections (0-4, 1-5, 2-6, 3-7) enables direct long-range correlations.
+
+This design keeps the same 24 parameters per block (146 total) but dramatically improves entanglement structure and rotation composition.
+
+<NAME>
+ring_cross_cz_post_ry
+</NAME>
+
+<DESCRIPTION>
+Replace the linear CZ chain with a full CZ ring (including 7→0 wrap) plus 4 cross-connections (0-4, 1-5, 2-6, 3-7) for long-range entanglement. Replace the post-entanglement RZ layer with RY, which directly converts entanglement-created phase correlations into amplitude differences measurable by Z-basis readout. This keeps the same parameter count (24 per block, 146 total) but significantly improves both the entanglement topology and the rotation structure.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Pre-entanglement RY: breaks Z-diagonal structure from feature map
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 

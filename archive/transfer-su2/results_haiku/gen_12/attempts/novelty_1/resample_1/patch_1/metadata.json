@@ -1,0 +1,14 @@
+{
+  "generation": 12,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "add_rx_global_layer",
+  "patch_description": "The current program achieves excellent accuracy (1.00) but uses 38 parameters with a combined score of 0.99. The best prior program (score 1.00) uses only 26 parameters by employing strategic parameter sharing and a more compact gate structure.\n\nThe current program has:\n- 6 parameters per block (ry_shared, xx_0, xx_1, xx_2, xx_3, rz_shared) = 36 circuit params + 2 readout = 38 total\n- Depth of 18, gate count of 120\n\nThe recommendation to \"introduce a global RX layer with a single shared parameter\" is counterintuitive given we want to reduce parameters. However, the insight is that adding ONE global RX parameter per block (total +6 params = 44 params) could be strategically balanced by removing one of the existing four independent XX parameters, reducing back to 40 params while potentially improving expressivity through better mixing.\n\nActually, a better approach inspired by the best prior program's success: replace the current structure with a more economical design that uses fewer independent parameters. The best program used only 4 unique parameters (ry_even, rz_odd, zz_pair_01, zz_pair_23) by applying rotations selectively to even/odd qubits and limiting entanglement to specific pairs.\n\nLet me propose a hybrid approach: Keep the shared RY/RZ structure but add a single global RX parameter for enhanced mixing, and reduce the XX interactions from 4 independent to 2 shared parameters (one for even pairs, one for odd pairs). This gives us:\n- ry_shared (1 param)\n- rx_global (1 param) - NEW\n- xx_even (1 param) - replaces xx_0, xx_2\n- xx_odd (1 param) - replaces xx_1, xx_3\n- rz_shared (1 param)\nTotal: 5 params per block \u00d7 6 repeats \u00d7 1 upload + 2 readout = 32 params\n\nThis reduces parameters from 38 to 32 while maintaining the global mixing strategy and adding RX for better rotation axis diversity.",
+  "error_msg": null,
+  "timestamp": "2026-07-24T08:09:00.059126",
+  "llm_cost": 0.027240999999999998,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

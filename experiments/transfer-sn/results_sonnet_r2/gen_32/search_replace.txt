@@ -1,0 +1,82 @@
+<NAME>
+shared_ring_moderate_params
+
+<DESCRIPTION>
+The current candidate (170 params) shows overfitting (train 0.94 vs test 0.87, gap 0.08) compared to the second seed program (110 params, gap 0.06, better test accuracy 0.88). This suggests the fully-independent pre/post RZ+RY layers (32 params per block) are too expressive relative to the entangling ring's shared params (4). I propose reducing single-qubit parameter count by sharing RY and RZ angles across adjacent qubit pairs (similar to the first seed's compression strategy), while keeping a slightly richer entangling ring with distinct CRZ angles alternating with fixed CZ gates. This should reduce the train-test gap and improve parameter efficiency while retaining enough expressivity for good accuracy, targeting a params count around 60-70 (much closer to the best-performing seed's efficiency but with slightly more expressivity in the ring).
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_1"},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_2"},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_3"},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Pre-rotation RY shared per adjacent qubit pair (4 params instead of 8)
+    {"gate": "RY", "wire": 0, "param": "ry_p0"},
+    {"gate": "RY", "wire": 1, "param": "ry_p0"},
+    {"gate": "RY", "wire": 2, "param": "ry_p1"},
+    {"gate": "RY", "wire": 3, "param": "ry_p1"},
+    {"gate": "RY", "wire": 4, "param": "ry_p2"},
+    {"gate": "RY", "wire": 5, "param": "ry_p2"},
+    {"gate": "RY", "wire": 6, "param": "ry_p3"},
+    {"gate": "RY", "wire": 7, "param": "ry_p3"},
+    # Pre-rotation RZ independent per qubit (8 params) for phase diversity
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    # Entangling ring: 4 independent CRZ angles alternating with fixed CZ
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_1"},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_2"},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_3"},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Post-rotation RZ shared per adjacent pair (4 params instead of 8)
+    {"gate": "RZ", "wire": 0, "param": "rz_post_p0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_p0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_p1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_p1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_p2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_p2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_p3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_p3"},
+]
+>>>>>>> REPLACE

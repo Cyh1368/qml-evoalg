@@ -1,0 +1,106 @@
+# Analysis and Proposed Improvement
+
+## Current Performance Analysis
+
+The program achieves:
+- **Test accuracy**: 0.98 (excellent)
+- **Parameter efficiency**: 0.01 (0.98/146, lower than ideal)
+- **Combined score**: 1.25
+
+The model already has strong test accuracy and small generalization gap (0.01), but parameter efficiency is relatively low (146 parameters total). With `N_PARAMS_PER_BLOCK = 24` (8 RY + 8 RZ_pre + 8 RZ_post), across 3 uploads × 2 repeats, we get 144 circuit parameters.
+
+## Proposed Improvement: Strategic Parameter Sharing
+
+The key insight is that with such high accuracy, we can reduce the parameter count through **strategic sharing** while maintaining performance:
+
+1. **RY layer**: Instead of 8 independent RY parameters, use cyclic parameter assignment where adjacent or strategically-placed qubits share parameters. This reduces redundancy without sacrificing expressivity.
+
+2. **RZ post-layer**: Similarly, use fewer independent RZ parameters with repetition, reducing the post-measurement RZ layer from 8 to 4 unique parameters.
+
+3. **Maintain pre-RZ diversity**: Keep the 8 individual pre-RZ parameters for data encoding sensitivity but share some across the post-layer.
+
+This reduces from 24 params/block to 16 params/block, yielding:
+- **Circuit params**: 96 (was 144)
+- **Total params**: 98 (was 146)
+- **Parameter efficiency**: 0.0098 (was 0.0067) — ~50% improvement
+- **Expected**: Minimal accuracy loss with better generalization and efficiency
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_c"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_c"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_2"},
+]
+>>>>>>> REPLACE
+</DIFF>
+
+**Rationale:**
+- **RY layer** now uses 3 shared parameters (ry_a, ry_b, ry_c) instead of 8 independent ones, assigned with a symmetric pattern (alternating and mirrored placement enhances expressivity through structure).
+- **RZ_pre layer** remains at 8 independent parameters to preserve sensitivity to the 28-dimensional feature encoding.
+- **RZ_post layer** now uses 3 shared parameters (rz_post_0, rz_post_1, rz_post_2) instead of 8, following a mirrored pattern that reflects the qubit topology.
+- This reduces `N_PARAMS_PER_BLOCK` from 24 to **16** (3 + 8 + 3 + 0 shared overhead).
+- **New total**: 16 × 3 uploads × 2 repeats + 2 readout = **98 parameters** (vs 146).
+- **Parameter efficiency improvement**: ~48% reduction in parameters while expecting to maintain >96% test accuracy based on the redundancy in the original design.

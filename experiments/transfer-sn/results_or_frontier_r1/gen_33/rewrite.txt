@@ -1,0 +1,27 @@
+# --- EVOLVE-BLOCK-START ---
+
+ANSATZ_SPEC = []
+
+# First rotation layer: RY + RZ for full single-qubit parametrization
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": q, "param": f"ry0_{q}"})
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": q, "param": f"rz0_{q}"})
+
+# Ring entanglement: CZ on circular nearest neighbors
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [q, (q + 1) % 8]})
+
+# Second rotation layer: RY for mid-block expressibility
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": q, "param": f"ry1_{q}"})
+
+# Cross entanglement: CZ with stride 4 for long-range correlations
+for q in range(4):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [q, q + 4]})
+
+# Final rotation layer: RZ
+for q in range(8):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": q, "param": f"rz1_{q}"})
+
+# --- EVOLVE-BLOCK-END ---

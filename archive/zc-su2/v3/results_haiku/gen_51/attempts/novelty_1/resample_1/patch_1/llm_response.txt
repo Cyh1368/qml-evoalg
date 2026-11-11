@@ -1,0 +1,54 @@
+# Analysis
+
+Looking at the performance metrics across the three programs:
+
+1. **First program (score 0.57)**: 6 two-qubit gates, 10 distinct params, worst_group_margin: 0.37
+2. **Second program (score 0.59)**: 6 two-qubit gates, 10 distinct params, worst_group_margin: 0.31, but better test accuracy (0.95)
+3. **Current program (score 0.57)**: 6 two-qubit gates, 11 distinct params, worst_group_margin: 0.30
+
+The recommendation suggests adding two new Ising gates (`ZZ` on [0,3] and `XX` on [2,7]) to expand the entangler connectivity. The key insight is:
+
+- **Worst-group margin is the dominant score term** - the current program has 0.30, which is limiting performance
+- The second program achieved better test accuracy (0.95 vs 0.95 tied) with same parameter count but better generalization
+- Adding strategic two-qubit gates with **minimal parameter overhead** (reusing shared parameters where possible) can improve worst-case separation
+
+The current program has 11 distinct parameters but still underperforms. The issue is that with only 6 two-qubit gate types, the entanglement structure may not adequately connect all problem subgraphs, making worst-group samples harder to separate.
+
+**Strategy**: Add the two recommended Ising gates (ZZ on [0,3] and XX on [2,7]) to:
+1. Increase entanglement coverage (especially connecting qubit 0 and 3 which weren't previously directly connected)
+2. Keep the structure efficient by maintaining parameter economy
+3. Improve worst-group margin through better expressivity on difficult samples
+
+The depth will increase slightly, but the parameter count increase is minimal (2 new distinct params), which still satisfies the parameter efficiency priority.
+
+<NAME>
+expand_entangler_coverage_zz03_xx27
+</NAME>
+
+<DESCRIPTION>
+Add two new Ising entangler gates to expand qubit connectivity and improve worst-group margin separation:
+- ZZ gate on qubits [0,3] with param "zz_03" 
+- XX gate on qubits [2,7] with param "xx_27"
+
+These additions increase from 6 to 8 unique two-qubit gates, targeting previously unconnected qubit pairs (0-3 and 2-7). Historical data shows this expansion from Gen 31→36 tightened worst-group margins. The new gates are inserted in the entangler block after existing gates, maintaining the circuit structure while improving expressivity for hard-to-separate samples. Total distinct params increases from 11 to 13, but parameter efficiency gain from improved worst-group margin should outweigh the small overhead.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+=======
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz_03"},
+    {"gate": "XX", "wires": [2, 7], "param": "xx_27"},
+>>>>>>> REPLACE
+</DIFF>

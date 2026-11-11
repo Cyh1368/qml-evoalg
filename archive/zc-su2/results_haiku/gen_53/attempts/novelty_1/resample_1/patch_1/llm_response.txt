@@ -1,0 +1,98 @@
+<NAME>
+rx_init_yz_sandwich_minimal
+</NAME>
+
+<DESCRIPTION>
+Analysis of current approach:
+- Current program uses 20 parameters (rz_pre, rz_post, ry_shared) with combined score 0.68
+- Prior best used only 2 parameters (ry_shared, rz_shared) achieving combined score 0.72
+- The current program adds circular entanglement (CZ 7→0) and splits RZ into pre/post, increasing parameter count without improving accuracy but degrading parameter_efficiency_mean (0.05 vs 0.07)
+- Convergence is stable at 90 steps but generalization is flat (overfitting risk with more parameters on small dataset)
+
+Key insight: The prior two-parameter approach was optimal because:
+1. Shared parameters force the model to learn universal features
+2. Minimal parameterization maximizes parameter efficiency metric
+3. Linear chain entanglement (without wrap-around) matches data structure better
+
+New strategy:
+- Return to 2-3 parameter regime but add RX initialization layer as recommended
+- Use single shared RX to kickstart state diversity before RY/RZ sandwich
+- Keep linear CZ chain (better than circular for small data)
+- Consolidate all RZ rotations to one shared parameter (post-entanglement)
+- Result: 3 parameters (rx_init, ry_shared, rz_shared) vs current 20
+- Expected: parameter_efficiency_mean ≈ 0.10 (333% improvement), maintain accuracy, improve generalization
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Global RX initialization layer with shared parameter
+    {"gate": "RX", "wire": 0, "param": "rx_init"},
+    {"gate": "RX", "wire": 1, "param": "rx_init"},
+    {"gate": "RX", "wire": 2, "param": "rx_init"},
+    {"gate": "RX", "wire": 3, "param": "rx_init"},
+    {"gate": "RX", "wire": 4, "param": "rx_init"},
+    {"gate": "RX", "wire": 5, "param": "rx_init"},
+    {"gate": "RX", "wire": 6, "param": "rx_init"},
+    {"gate": "RX", "wire": 7, "param": "rx_init"},
+    # RY sandwich layer with shared parameter
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    # RZ pre-entanglement with shared parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # Linear chain CZ entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # RZ post-entanglement with shared parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

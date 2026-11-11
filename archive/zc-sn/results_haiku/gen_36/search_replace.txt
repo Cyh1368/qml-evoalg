@@ -1,0 +1,58 @@
+<NAME>
+mid_circuit_rz_sandwich
+</NAME>
+
+<DESCRIPTION>
+The current program achieves a combined score of 0.90 with excellent test accuracy (0.93) but shows room for improvement in validation loss (0.39) and the validation-test gap. The architecture uses a proven two-stage RZ sandwich pattern (pre-entanglement and post-entanglement RZ rotations bracketing the CZ/CRY entanglement layers).
+
+The recommendation to add a mid-circuit phase layer is well-motivated: by inserting additional RZ rotations between the forward CZ chain and the reverse CRY block, we can provide the circuit with more fine-grained phase control. This three-stage RZ sandwich allows:
+
+1. **Phase flexibility**: The first RZ stage (rz_pre) prepares phases, CZ entangles, second RZ stage (rz_mid) provides mid-circuit phase correction/modulation, CRY applies amplitude-based entanglement, and final RZ (rz_post) provides output phase tuning.
+
+2. **Minimal overhead**: Only 8 additional gates (+2 parameters using pair-sharing) are added, maintaining the low parameter efficiency that gives the current design an advantage over the first seed (44 vs 68 params).
+
+3. **Improved expressivity**: The mid-circuit adjustment can help capture non-trivial phase relationships that emerge after the CZ layer but before CRY application, potentially reducing validation loss and improving generalization.
+
+4. **Cost-benefit**: The depth increase is minimal (154 → 162), and the gate count increase is modest (312 → 320), while we gain expressivity without parameter explosion.
+
+I propose adding two shared RZ parameters applied to alternating qubit pairs:
+- "rz_mid_a" on qubits [0, 2, 4, 6] (even qubits)
+- "rz_mid_b" on qubits [1, 3, 5, 7] (odd qubits)
+
+This maintains the symmetry pattern used throughout the circuit and follows the proven parameter-sharing strategy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Reverse chain with shared CRY gate for amplitude-based entanglement
+    # All reverse connections use one trainable parameter
+    {"gate": "CRY", "wires": [7, 6], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [6, 5], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [5, 4], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [4, 3], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [3, 2], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [2, 1], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [1, 0], "param": "cry_rev"},
+=======
+    # Mid-circuit RZ phase layer for enhanced phase control
+    # Two shared parameters on alternating qubit pairs
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_b"},
+
+    # Reverse chain with shared CRY gate for amplitude-based entanglement
+    # All reverse connections use one trainable parameter
+    {"gate": "CRY", "wires": [7, 6], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [6, 5], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [5, 4], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [4, 3], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [3, 2], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [2, 1], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [1, 0], "param": "cry_rev"},
+>>>>>>> REPLACE
+</DIFF>

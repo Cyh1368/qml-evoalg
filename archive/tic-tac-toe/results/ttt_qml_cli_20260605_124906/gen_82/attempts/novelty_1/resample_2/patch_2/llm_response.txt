@@ -1,0 +1,141 @@
+<NAME>delta_repeat_docstring_update</NAME>
+<DESCRIPTION>Update the ANSATZ_SPEC docstring to reflect the introduction of a per-repeat scaling knob delta_repeat and its intended usage. This clarifies the architectural change and prepares the code for the subsequent parameter-registration and application changes.</DESCRIPTION>
+<DIFF>
+<<<<<<< SEARCH
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing.
+
+    Structural changes:
+    1) Pre-entanglement RZ on all qubits (shared by symmetry)
+    2) RY rotations on all qubits (shared by symmetry)
+    3) Ring entanglement: CZ gates around outer ring
+    4) Hub entanglement: CRZ gates from center to edges
+    5) Post-entanglement RZ on all qubits (shared by symmetry)
+    """
+    spec = []
+=======
+def _build_hierarchical_ansatz_spec() -> list[dict]:
+    """Build hierarchical entanglement ansatz with parameter sharing and
+    an explicit per-repeat scaling knob delta_repeat.
+
+    Structural changes (improved efficiency and symmetry with repeat scaling):
+    1) Pre-entanglement RZ on all qubits (shared by symmetry)
+    2) RY rotations on all qubits (shared by symmetry)
+    3) Ring entanglement: CRX gates around the outer ring with a single shared parameter
+    4) Hub entanglement: center-to-edge gates with two shared parameters
+       - hub_crx shared by edges (1 and 5)
+       - hub_cry shared by edges (3 and 7)
+    5) Post-entanglement RZ on all qubits (shared by symmetry)
+    6) delta_repeat per-repeat scaling parameter (applied to second repeat)
+    """
+    spec = []
+>>>>>>> REPLACE
+</DIFF>
+
+</DIFF>
+</DIFF>
+
+<NAME>delta_repeat_register_param</NAME>
+<DESCRIPTION>Register the new delta_repeat parameter by appending a benign gate to ANSATZ_SPEC. This ensures the parameter is allocated and participates in optimization without changing the circuit's nominal structure.</DESCRIPTION>
+<DIFF>
+<<<<<<< SEARCH
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_post_center"})
+    
+    return spec
+=======
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_post_center"})
+    spec.append({"gate": "RZ", "wire": 0, "param": "delta_repeat"})
+    
+    return spec
+>>>>>>> REPLACE
+</DIFF>
+
+</DIFF>
+</DIFF>
+
+<NAME>delta_repeat_apply_block</NAME>
+<DESCRIPTION>Implement the per-repeat scaling behavior by reading delta_repeat and applying a uniform scale of (1 + delta_repeat) to all gate angles on the second repeat (repeat_index == 1). The delta_repeat gate itself is treated as a no-op during execution to avoid altering the circuit directly, while its value drives the scaling. This preserves parameter efficiency and leverages delta_repeat to potentially improve learning dynamics.</DESCRIPTION>
+<DIFF>
+<<<<<<< SEARCH
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+=======
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    repeat_index = block_index % N_REPEATS
+    delta_repeat = None
+    if "delta_repeat" in key_to_position:
+        delta_repeat = params[offset + key_to_position["delta_repeat"]]
+
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            if item.get("param") == "delta_repeat":
+                continue
+            raw_angle = params[offset + key_to_position[item["param"]]]
+            angle = raw_angle
+            if repeat_index == 1 and delta_repeat is not None:
+                angle = raw_angle * (1.0 + float(delta_repeat))
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            raw_angle = params[offset + key_to_position[item["param"]]]
+            angle = raw_angle
+            if repeat_index == 1 and delta_repeat is not None:
+                angle = raw_angle * (1.0 + float(delta_repeat))
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+>>>>>>> REPLACE
+</DIFF>

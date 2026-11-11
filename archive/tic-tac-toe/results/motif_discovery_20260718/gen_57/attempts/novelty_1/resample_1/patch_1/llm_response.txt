@@ -1,0 +1,155 @@
+<NAME>
+add_rx_and_split_row_replace_ring_crz_with_cz
+</NAME>
+
+<DESCRIPTION>
+I propose a targeted ansatz modification that modestly increases expressivity where it matters and reduces optimization burden where parametrization is redundant.
+
+Changes:
+- Add shared RX rotations (rx_corner, rx_edge, rx_center) alongside the existing symmetry-grouped RY rotations. These give each symmetry group a second-axis rotation and increase single-qubit expressivity with only three extra parameters per block.
+- Replace the parametrized outer-ring CRZ entanglers with fixed CZ gates. This removes the shared crz_ring parameter (reducing a potentially noisy global phase parameter) while preserving entangling structure; fixed CZs often stabilize training and reduce parameter redundancy.
+- Split the single zzz_row grouped parameter into three separate per-row ZZZ parameters (zzz_row_0/1/2). This allows the ansatz to learn distinct 3-body motifs for each physical row (useful since the three row lines are geometrically distinct in the paper indexing), while keeping columns and diagonals grouped to limit parameter growth.
+- Keep the center-edge CRZ, CCRZ motifs, and post-RZ symmetry-grouped rotations as before.
+
+Rationale:
+- Adding RX complements existing RY/RZ flexibility and often improves trainability by allowing richer local rotations without exploding parameter counts.
+- Replacing ring CRZs with fixed CZs preserves entanglement connectivity but reduces the number of trainable parameters and the optimizer's burden over a repeated ring structure.
+- Splitting row ZZZs gives the circuit the ability to specialize to different row-winning motifs, a small, targeted increase in expressivity that is likely useful for tic-tac-toe motif detection.
+
+Net effect: modest increase in per-block parameters (from 13 to 17) and overall parameters (to 102), targeted expressive gains, and better parameter efficiency/stability that should improve validation/test performance without overfitting.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+# Lightweight symmetry-grouped local rotations (shared params)
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Trainable ring CRZ couplings (shared param for the outer-ring edges)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+
+    # Trainable center-edge CRZs (separate shared param to let center coupling differ)
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_center_edge"},
+
+    # ZZZ motifs split by geometric category (row / column / diagonal)
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_row"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_row"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_row"},
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_diag"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_diag"},
+
+    # Split CCRZ center interactions by geometry:
+    # - edge-edge-center triples share ccrz_edge_center
+    # - corner-corner-center triples share ccrz_diag_center
+    {"gate": "CCRZ", "wires": [1, 5, 8], "param": "ccrz_edge_center"},
+    {"gate": "CCRZ", "wires": [3, 7, 8], "param": "ccrz_edge_center"},
+    {"gate": "CCRZ", "wires": [0, 4, 8], "param": "ccrz_diag_center"},
+    {"gate": "CCRZ", "wires": [2, 6, 8], "param": "ccrz_diag_center"},
+
+    # Shared post-RZ by symmetry group (kept for phase flexibility)
+    {"gate": "RZ", "wire": 0, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_center"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Layer 1: Symmetry-grouped RY rotations (shared)
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Layer 1.5: Complementary symmetry-grouped RX rotations (adds richer local rotations)
+    {"gate": "RX", "wire": 0, "param": "rx_corner"},
+    {"gate": "RX", "wire": 2, "param": "rx_corner"},
+    {"gate": "RX", "wire": 4, "param": "rx_corner"},
+    {"gate": "RX", "wire": 6, "param": "rx_corner"},
+    {"gate": "RX", "wire": 1, "param": "rx_edge"},
+    {"gate": "RX", "wire": 3, "param": "rx_edge"},
+    {"gate": "RX", "wire": 5, "param": "rx_edge"},
+    {"gate": "RX", "wire": 7, "param": "rx_edge"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Layer 2: Fixed CZ entanglement around the outer ring (replace parametrized CRZ)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Layer 3: Parametrized center-edge CRZs (keep trainable center couplings)
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_center_edge"},
+
+    # Layer 4: ZZZ motifs focusing on winning lines.
+    # Split the row-group into three separate params so each physical row can specialize.
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_row_0"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_row_1"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_row_2"},
+    # Keep a shared param for the three column lines and for the two diagonals
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_diag"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_diag"},
+
+    # Layer 5: CCRZ center interactions (kept grouped by geometric role)
+    {"gate": "CCRZ", "wires": [1, 5, 8], "param": "ccrz_edge_center"},
+    {"gate": "CCRZ", "wires": [3, 7, 8], "param": "ccrz_edge_center"},
+    {"gate": "CCRZ", "wires": [0, 4, 8], "param": "ccrz_diag_center"},
+    {"gate": "CCRZ", "wires": [2, 6, 8], "param": "ccrz_diag_center"},
+
+    # Layer 6: Shared post-RZ by symmetry group (retain for phase flexibility)
+    {"gate": "RZ", "wire": 0, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_center"},
+]
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+</DIFF>

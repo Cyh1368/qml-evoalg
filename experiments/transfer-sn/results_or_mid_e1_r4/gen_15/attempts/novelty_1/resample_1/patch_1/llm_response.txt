@@ -1,0 +1,82 @@
+<NAME>
+pairwise_four_group_hardware_ansatz
+</NAME>
+
+<DESCRIPTION>
+This edit replaces the CRX-heavy, odd/even shared block with a more structured hardware-efficient ansatz. The new block uses four shared parameter groups aligned to adjacent qubit pairs for RY, RX, and RZ, which increases expressivity over the current pair-sharing while still keeping parameters tied and regularized. I also replace the controlled-rotation layer with two CZ entangling patterns: a local ring to propagate information across neighbors and a long-range cross layer to mix the two halves of the register.  
+
+The intent is to improve validation/test accuracy, lower the train-test gap, and make optimization easier for Adam by removing the more brittle controlled rotations and using symmetry-aligned parameter sharing.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_pair_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_pair_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_pair_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_pair_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_pair_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_pair_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_pair_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_pair_3"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CRX", "wires": [0, 4], "param": "crx_04"},
+    {"gate": "CRX", "wires": [1, 5], "param": "crx_15"},
+    {"gate": "CRX", "wires": [2, 6], "param": "crx_26"},
+    {"gate": "CRX", "wires": [3, 7], "param": "crx_37"},
+    {"gate": "RX", "wire": 0, "param": "rx_even"},
+    {"gate": "RX", "wire": 1, "param": "rx_odd"},
+    {"gate": "RX", "wire": 2, "param": "rx_even"},
+    {"gate": "RX", "wire": 3, "param": "rx_odd"},
+    {"gate": "RX", "wire": 4, "param": "rx_even"},
+    {"gate": "RX", "wire": 5, "param": "rx_odd"},
+    {"gate": "RX", "wire": 6, "param": "rx_even"},
+    {"gate": "RX", "wire": 7, "param": "rx_odd"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_01"},
+    {"gate": "RY", "wire": 1, "param": "ry_01"},
+    {"gate": "RY", "wire": 2, "param": "ry_23"},
+    {"gate": "RY", "wire": 3, "param": "ry_23"},
+    {"gate": "RY", "wire": 4, "param": "ry_45"},
+    {"gate": "RY", "wire": 5, "param": "ry_45"},
+    {"gate": "RY", "wire": 6, "param": "ry_67"},
+    {"gate": "RY", "wire": 7, "param": "ry_67"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "RX", "wire": 0, "param": "rx_01"},
+    {"gate": "RX", "wire": 1, "param": "rx_01"},
+    {"gate": "RX", "wire": 2, "param": "rx_23"},
+    {"gate": "RX", "wire": 3, "param": "rx_23"},
+    {"gate": "RX", "wire": 4, "param": "rx_45"},
+    {"gate": "RX", "wire": 5, "param": "rx_45"},
+    {"gate": "RX", "wire": 6, "param": "rx_67"},
+    {"gate": "RX", "wire": 7, "param": "rx_67"},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_01"},
+    {"gate": "RZ", "wire": 1, "param": "rz_01"},
+    {"gate": "RZ", "wire": 2, "param": "rz_23"},
+    {"gate": "RZ", "wire": 3, "param": "rz_23"},
+    {"gate": "RZ", "wire": 4, "param": "rz_45"},
+    {"gate": "RZ", "wire": 5, "param": "rz_45"},
+    {"gate": "RZ", "wire": 6, "param": "rz_67"},
+    {"gate": "RZ", "wire": 7, "param": "rz_67"},
+]
+>>>>>>> REPLACE
+</DIFF>

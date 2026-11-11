@@ -1,0 +1,64 @@
+<NAME>
+merge_rz_parameters
+</NAME>
+
+<DESCRIPTION>
+The current program has a score of 0.87 with 74 parameters and a significant generalization gap (0.04). The prior best program (score 0.91) achieved better accuracy with only 44 parameters by removing redundant parametrization.
+
+The key insight is that the current program separates pre- and post-entanglement RZ rotations into distinct parameters (rz_pre_a/b/c/d and rz_post_a/b/c/d), doubling the RZ parameter count to 8 per group. However, both layers serve the same role—local phase adjustment before and after entanglement.
+
+The recommendation is to merge these by using a single shared RZ parameter per qubit group (rz_a, rz_b, rz_c, rz_d) instead of separate pre/post versions. Each qubit will still receive two RZ rotations (maintaining expressivity), but they will share the same angle. This:
+
+1. Reduces n_params from 74 to 40 (by 46%), improving parameter efficiency
+2. Forces the optimizer to learn more general phase transformations, reducing overfitting
+3. Aligns with the structure of the best prior solution which achieved 0.91
+4. Maintains the local-pair grouping structure while simplifying the parameterization
+
+This targeted reduction should significantly improve the generalization gap and validation accuracy while maintaining or improving the overall score.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Shared pre-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_c"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_c"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_d"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_d"},
+=======
+    # Shared pre-entanglement RZ rotations (merged with post)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_c"},
+    {"gate": "RZ", "wire": 5, "param": "rz_c"},
+    {"gate": "RZ", "wire": 6, "param": "rz_d"},
+    {"gate": "RZ", "wire": 7, "param": "rz_d"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_c"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_c"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_d"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_d"},
+=======
+    # Shared post-entanglement RZ rotations (using same parameters as pre)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_c"},
+    {"gate": "RZ", "wire": 5, "param": "rz_c"},
+    {"gate": "RZ", "wire": 6, "param": "rz_d"},
+    {"gate": "RZ", "wire": 7, "param": "rz_d"},
+>>>>>>> REPLACE
+</DIFF>

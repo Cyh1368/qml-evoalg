@@ -1,0 +1,29 @@
+<NAME>
+shared_ring_crz_alternating
+
+<DESCRIPTION>
+The current ring-entangling layer uses 8 independent CRZ parameters (crz_ring_0..7), which likely contributes to the overfitting gap (train 0.97 vs val 0.89, gap 0.09) and adds unnecessary parameter count without proportional accuracy gain. Inspired by the tested skip-CRZ sharing pattern that cut convergence steps while preserving score, I apply the same sharing philosophy to the primary ring layer: alternate CRZ gates share one of two parameters (even-indexed edges share "crz_ring_even", odd-indexed edges share "crz_ring_odd"). This halves the entangling-layer parameter count from 8 to 2, acting as a stronger regularizer to reduce the train/val gap while retaining full connectivity and directional variation (even vs odd) needed for expressivity. This should reduce overfitting and parameter count with minimal expressivity loss, and may also speed convergence similar to the skip-CRZ precedent.
+
+<DIFF>
+<<<<<<< SEARCH
+    # --- Layer 2: nearest-neighbor ring entanglement with tunable strength ---
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring_0"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring_1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring_2"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring_3"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring_4"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring_5"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring_6"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring_7"},
+=======
+    # --- Layer 2: nearest-neighbor ring entanglement with shared alternating strength ---
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring_odd"},
+>>>>>>> REPLACE
+</DIFF>

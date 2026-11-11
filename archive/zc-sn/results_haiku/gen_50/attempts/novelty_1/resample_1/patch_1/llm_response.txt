@@ -1,0 +1,106 @@
+Looking at the performance metrics, I can see:
+
+1. **Prior program 1** (with mid-circuit RZ sandwich + CRZ): Score 0.91, 62 params, validation_accuracy 0.93
+2. **Prior program 2** (without mid-circuit sandwich, only CRZ): Score 0.91, 50 params, validation_accuracy 0.93
+3. **Current program** (fixed CZ gates instead of CRZ, parameter reuse): Score 0.87, 38 params, validation_accuracy 0.86
+
+The current program has degraded significantly. The key insight is that the prior programs achieved 0.91 score with parametrized CRZ gates in the reverse chain, which provide better expressivity than fixed CZ gates. Additionally, prior program 1 included a mid-circuit RZ sandwich that appeared beneficial.
+
+**Analysis:**
+- Replacing parametrized CRZ with fixed CZ gates removed critical parameters and expressivity
+- Reusing RY parameters after entanglement may create redundancy without sufficient additional expressivity
+- The validation accuracy dropped from 0.93 to 0.86, indicating underfitting
+
+**Proposed improvement:**
+Restore the parametrized CRZ reverse chain from the prior programs (which scored 0.91) and add a mid-circuit RZ phase flexibility stage using the existing "rz_pre_a"/"rz_pre_b" parameters reused after the entanglement chain. This combines:
+1. The proven CRZ reverse chain for expressivity
+2. An extra RZ pass to add phase flexibility without introducing new parameters
+3. Removal of the ineffective RY reuse at the end
+
+This should restore the 0.91 score while maintaining reasonable parameter efficiency.
+
+<NAME>
+restore_crz_add_mid_phase
+</NAME>
+
+<DESCRIPTION>
+The current program replaced parametrized CRZ gates with fixed CZ gates and added RY reuse, which degraded performance from 0.91 to 0.87. The prior high-scoring programs (0.91) used parametrized CRZ in the reverse chain for enhanced expressivity.
+
+This edit restores the proven CRZ reverse chain and adds a mid-circuit RZ phase flexibility stage immediately after the forward CZ chain by reusing the existing "rz_pre_a" and "rz_pre_b" parameters. This provides extra phase control without adding new parameters, bridging the expressivity gap without the computational cost of entirely new parameters.
+
+The RY reuse at the end is removed as it appears to create redundancy rather than meaningful additional expressivity.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Linear chain CZ gates
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Reverse chain CZ gates for enhanced entanglement
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CZ", "wires": [5, 4]},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CZ", "wires": [3, 2]},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CZ", "wires": [1, 0]},
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+    # Post-entanglement RY rotations reusing initial parameters for expressivity
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+=======
+    # Linear chain CZ gates
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Mid-circuit RZ phase flexibility using existing parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    # Reverse chain with parametrized CRZ gates for enhanced expressivity
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+>>>>>>> REPLACE
+</DIFF>

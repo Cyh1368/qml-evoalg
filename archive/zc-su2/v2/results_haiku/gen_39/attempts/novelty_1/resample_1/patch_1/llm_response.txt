@@ -1,0 +1,113 @@
+<NAME>
+decoupled_crx_hierarchy
+</NAME>
+
+<DESCRIPTION>
+The prior programs achieved 0.67 combined score with 7 distinct parameters. The current program regressed to 0.66, likely due to the additional CRZ gate and the shift in CZ gate patterns creating redundancy without improved expressivity.
+
+Key insight: The recommendation to decouple CRX into a distinct "ent_crx" parameter was not yet explored. Currently, CRX gates either don't exist or share parameters with other layers. By introducing a dedicated narrow-angle CRX sublayer with its own parameter, we can:
+
+1. **Decouple rotation axes**: CRX (controlled X-rotation) operates fundamentally differently from XX/YY Ising gates and CRZ controlled rotations. Giving it a unique parameter allows the optimizer to learn independent amplitude scales.
+
+2. **Maintain parameter economy**: We stay at 7-8 distinct parameters (similar to winning programs) while gaining fresh entanglement patterns.
+
+3. **Strategic placement**: Insert the CRX layer right after the first XX block to build asymmetric control-target relationships that complement the symmetric Ising gates.
+
+4. **Reduce gate bloat**: Remove the extra CRZ gate and revert to the more selective CZ pattern from the first winning program, reducing depth from 24 and gate count from 111.
+
+The circuit hierarchy becomes:
+- Initial RY (symmetry-breaking)
+- XX nearest-neighbor (symmetric pair entanglement)
+- CRX offset (asymmetric controlled entanglement with dedicated parameter)
+- YY offset (complementary symmetric entanglement)
+- Intermediate RY (expressivity boost)
+- Long-range CRZ (distance-2/3 control structures)
+- Fixed CZ skip-3 layer (hard-sample discrimination)
+- Final RZ (output rotation)
+
+This design respects the winning structure while testing whether decoupling CRX unlocks better worst-group margins through more diverse entanglement patterns.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial rotation layer with parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # Decoupled CRX layer: narrow-angle controlled X-rotations with dedicated parameter
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_crx"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_crx"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_crx"},
+
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+
+    # Intermediate rotations
+    {"gate": "RY", "wire": 1, "param": "ry_mid"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid"},
+
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Skip-3 CZ entangling layer for hard-sample discrimination
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [4, 7]},
+
+    # Final rotation layer with shared parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

@@ -1,0 +1,99 @@
+--- a/original.py
++++ b/original.py
+@@ -1,74 +1,82 @@
+ """Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+ 
+ Everything else about the task, that is how inputs are encoded, how the circuit
+ is measured, how training works and how metrics are computed, is fixed and lives
+ in a module that is not reproduced here. No information about the data is
+ available in this file.
+ """
+ 
+ from _backend import run_experiment as _run
+ 
+ N_QUBITS = 8
+ ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+ 
+ 
+ # EVOLVE-BLOCK-START
+ ANSATZ_SPEC = [
+     # RY pre-rotation layer: single fully-shared parameter across all 8
+     # qubits. Merging the previous two-group (ry_a/ry_b) split into one
+     # shared parameter frees up parameter budget for a more expressive
+     # entangling-ring structure below, while keeping total distinct
+     # trainable parameters at 4 (matching the best-scoring prior seed).
+     {"gate": "RY", "wire": 0, "param": "ry"},
+     {"gate": "RY", "wire": 1, "param": "ry"},
+     {"gate": "RY", "wire": 2, "param": "ry"},
+     {"gate": "RY", "wire": 3, "param": "ry"},
+     {"gate": "RY", "wire": 4, "param": "ry"},
+     {"gate": "RY", "wire": 5, "param": "ry"},
+     {"gate": "RY", "wire": 6, "param": "ry"},
+     {"gate": "RY", "wire": 7, "param": "ry"},
+ 
+     # RZ pre-entangling layer: fully shared single parameter.
+     {"gate": "RZ", "wire": 0, "param": "rz"},
+     {"gate": "RZ", "wire": 1, "param": "rz"},
+     {"gate": "RZ", "wire": 2, "param": "rz"},
+     {"gate": "RZ", "wire": 3, "param": "rz"},
+     {"gate": "RZ", "wire": 4, "param": "rz"},
+     {"gate": "RZ", "wire": 5, "param": "rz"},
+     {"gate": "RZ", "wire": 6, "param": "rz"},
+     {"gate": "RZ", "wire": 7, "param": "rz"},
+ 
+-    # Entangling ring split into two alternating-parameter sublayers:
+-    # even bonds (0-1, 2-3, 4-5, 6-7) share "zz_even", odd bonds
+-    # (1-2, 3-4, 5-6, 7-0) share "zz_odd". This closes the full 8-edge
+-    # cycle while allowing even/odd bond strengths to differ, which
+-    # increases expressivity of the entangling structure relative to a
+-    # single fully-shared zz_ring parameter.
+-    {"gate": "ZZ", "wires": [0, 1], "param": "zz_even"},
+-    {"gate": "ZZ", "wires": [2, 3], "param": "zz_even"},
+-    {"gate": "ZZ", "wires": [4, 5], "param": "zz_even"},
+-    {"gate": "ZZ", "wires": [6, 7], "param": "zz_even"},
++    # Entangling ring: single fully-shared "zz_ring" parameter across the
++    # full 8-edge nearest-neighbor cycle, merging the previous even/odd
++    # split to reduce distinct parameter count from 4 to 3.
++    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
++    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
++    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
++    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
++    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
++    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
++    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
++    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+ 
+-    {"gate": "ZZ", "wires": [1, 2], "param": "zz_odd"},
+-    {"gate": "ZZ", "wires": [3, 4], "param": "zz_odd"},
+-    {"gate": "ZZ", "wires": [5, 6], "param": "zz_odd"},
+-    {"gate": "ZZ", "wires": [7, 0], "param": "zz_odd"},
++    # Complementary XX nearest-neighbor ring reusing the SAME shared
++    # "zz_ring" parameter, adding orthogonal (off-diagonal) entangling
++    # terms on top of the ZZ ring at zero extra trainable-parameter cost.
++    {"gate": "XX", "wires": [0, 1], "param": "zz_ring"},
++    {"gate": "XX", "wires": [1, 2], "param": "zz_ring"},
++    {"gate": "XX", "wires": [2, 3], "param": "zz_ring"},
++    {"gate": "XX", "wires": [3, 4], "param": "zz_ring"},
++    {"gate": "XX", "wires": [4, 5], "param": "zz_ring"},
++    {"gate": "XX", "wires": [5, 6], "param": "zz_ring"},
++    {"gate": "XX", "wires": [6, 7], "param": "zz_ring"},
++    {"gate": "XX", "wires": [7, 0], "param": "zz_ring"},
+ 
+     # RZ post-entangling layer: reuse the same fully-shared "rz" parameter.
+     {"gate": "RZ", "wire": 0, "param": "rz"},
+     {"gate": "RZ", "wire": 1, "param": "rz"},
+     {"gate": "RZ", "wire": 2, "param": "rz"},
+     {"gate": "RZ", "wire": 3, "param": "rz"},
+     {"gate": "RZ", "wire": 4, "param": "rz"},
+     {"gate": "RZ", "wire": 5, "param": "rz"},
+     {"gate": "RZ", "wire": 6, "param": "rz"},
+     {"gate": "RZ", "wire": 7, "param": "rz"},
+ ]
+ # EVOLVE-BLOCK-END
+ 
+ 
+ def run_experiment(**kwargs):
+     return _run(ANSATZ_SPEC, **kwargs)

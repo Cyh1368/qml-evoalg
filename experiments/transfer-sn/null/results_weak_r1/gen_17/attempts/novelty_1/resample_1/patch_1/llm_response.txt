@@ -1,0 +1,78 @@
+<replace_with_cz_plus_crz4_and_rz>
+<DESCRIPTION>
+Replace the current “two RY layers + 7 CRZ couplers” block (23 params/block) with a more hardware-efficient pattern:
+- 1× RY layer on all 8 qubits (8 params)
+- fixed CZ entangling backbone (no trainable params)
+- 4× CRZ long-range couplers (4 params) to capture nonlocal correlations with fewer parameters than the current 7-CRZ scheme
+- 1× final RZ layer on all 8 qubits (8 params)
+
+This reduces parameters per block from 23 → 20 and typically improves trainability / generalization under re-uploading (fewer circuit parameters but still high expressivity via SU(2) axes + structured entanglement).
+</DESCRIPTION>
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "lyr0_ry0"},
+    {"gate": "RY", "wire": 1, "param": "lyr0_ry1"},
+    {"gate": "RY", "wire": 2, "param": "lyr0_ry2"},
+    {"gate": "RY", "wire": 3, "param": "lyr0_ry3"},
+    {"gate": "RY", "wire": 4, "param": "lyr0_ry4"},
+    {"gate": "RY", "wire": 5, "param": "lyr0_ry5"},
+    {"gate": "RY", "wire": 6, "param": "lyr0_ry6"},
+    {"gate": "RY", "wire": 7, "param": "lyr0_ry7"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_01"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_23"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_45"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_67"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_12"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_34"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_56"},
+    {"gate": "RY", "wire": 0, "param": "lyr1_ry0"},
+    {"gate": "RY", "wire": 1, "param": "lyr1_ry1"},
+    {"gate": "RY", "wire": 2, "param": "lyr1_ry2"},
+    {"gate": "RY", "wire": 3, "param": "lyr1_ry3"},
+    {"gate": "RY", "wire": 4, "param": "lyr1_ry4"},
+    {"gate": "RY", "wire": 5, "param": "lyr1_ry5"},
+    {"gate": "RY", "wire": 6, "param": "lyr1_ry6"},
+    {"gate": "RY", "wire": 7, "param": "lyr1_ry7"},
+]
+=======
+ANSATZ_SPEC = [
+    # RY rotation layer (8 params)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # CZ entangler backbone (fixed)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # CRZ long-range correlation layer (4 params)
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_3"},
+
+    # Final RZ rotation layer (8 params)
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+]
+>>>>>>> REPLACE
+</DIFF>
+</replace_with_cz_plus_crz4_and_rz>

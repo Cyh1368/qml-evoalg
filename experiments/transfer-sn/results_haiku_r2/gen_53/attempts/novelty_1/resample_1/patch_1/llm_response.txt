@@ -1,0 +1,33 @@
+<NAME>
+rebalance_upload_repeat_schedule
+</NAME>
+
+<DESCRIPTION>
+The current program uses N_UPLOADS=3 and N_REPEATS=2, yielding 6 variational blocks total with 26 parameters and a convergence_step_mean of 270. The prior programs show that the 3×2 schedule achieves a combined score of 0.91 with similar accuracy metrics.
+
+The recommendation suggests testing a 2×3 rebalancing: N_UPLOADS=2 and N_REPEATS=3. This keeps the total number of variational blocks at 6 (same N_PARAMS=26 and similar circuit depth) but redistributes the structure to apply deeper intra-upload entanglement (3 repeats per upload) rather than more frequent feature re-uploads.
+
+**Rationale:**
+- **Same parameter budget:** 4 unique params/block × 2 uploads × 3 repeats = 24 circuit params + 2 readout = 26 total (unchanged).
+- **Deeper per-upload processing:** Three consecutive ansatz blocks after each feature upload may allow richer feature-to-feature interactions and better gradient flow within each upload phase.
+- **Faster convergence potential:** Deeper intra-upload blocks could reduce the number of Adam steps needed to reach high accuracy, improving convergence_step_mean.
+- **Maintained accuracy:** The same parameter count and similar total depth should preserve or improve test accuracy while potentially reducing the train-test gap.
+
+This directly probes whether the circuit benefits more from depth-per-upload or frequency-of-upload, a key architectural trade-off in data re-uploading VQCs.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Problem constants
+N_QUBITS = 8
+N_UPLOADS = 3
+N_REPEATS = 2
+FEATURE_SCALE = np.pi / 2
+=======
+# Problem constants
+N_QUBITS = 8
+N_UPLOADS = 2
+N_REPEATS = 3
+FEATURE_SCALE = np.pi / 2
+>>>>>>> REPLACE
+</DIFF>

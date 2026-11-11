@@ -1,0 +1,76 @@
+<NAME>
+mid_rz_augmented_entangler
+
+<DESCRIPTION>
+Building on the best-performing prior candidate (mixed CRZ/CZ entangling ring achieving 0.60 combined score), this version follows the suggested lightweight augmentation: a mid-circuit RZ sublayer is inserted on the "odd" qubits [1, 3, 5, 7] between the entangling layer and the final RZ post-layer. This adds targeted phase flexibility to qubits that participate in multiple entangling connections (1-3, 1-8, 3-5, 5-7) without increasing two-qubit gate count or circuit depth significantly (+1 layer, +4 unique parameters per repetition). The core insight retained from prior generations is that a *mixed* entangling layer — some edges given independent CRZ rotation parameters, others fixed as plain CZ gates — outperforms either an all-parametrized or all-fixed entangling scheme, presumably by reducing the effective parameter count/overfitting while preserving enough expressivity for full 12-edge connectivity across all allowed qubit pairs. The new RZ_mid sublayer specifically targets the qubits with the highest entangling degree (1, 3, 5, 7), giving the ansatz extra local phase control right where entanglement is densest, which should help it better fit correlations across those channels while keeping generalization gap in check.
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 9
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_THREE_QUBIT_GATES = {"ZZZ", "CCRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # --- Local rotation encoding layer ---
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+
+    # --- Mixed entangling layer: independent CRZ on some edges, fixed CZ on others ---
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_2"},
+    {"gate": "CZ", "wires": [0, 8]},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+    {"gate": "CZ", "wires": [4, 8]},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_6"},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # --- Mid-circuit RZ sublayer targeting high-degree entangled qubits ---
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_3"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_5"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_7"},
+
+    # --- Final local phase layer ---
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_8"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

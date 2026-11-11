@@ -1,0 +1,93 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 8-Qubit RY/RZ-CZ Ansatz Classifier**  
+- **Implementation**: Encodes 28 binary features with fixed two-qubit IsingZZ couplings, then alternates three feature uploads with two ansatz blocks each; every block applies single-qubit RY rotations, pre- and post-RZ rotations around a linear CZ entangling chain. Circuit parameters (144) plus a trainable gain and bias (2) are optimized via Adam on an L2 loss of mean Pauli-Z expectations with early stopping.  
+- **Performance**: Achieves a combined score of 0.85 with train/validation/test accuracies ≈ 0.94/0.89/0.87, a generalization gap of 0.07, depth 99, gate count 270 and 146 total parameters.  
+- **Feedback**: The repeated RY-RZ-CZ layering delivers high training accuracy but exhibits slight overfitting and low parameter efficiency; introducing parameterized two-qubit gates or deeper entanglement patterns may improve generalization.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name:** Ring-CZ layered 8-qubit classifier  
+- **Implementation:** Encodes 28 binary features via IsingZZ phase couplings across 8 qubits in a fixed schedule of 3 feature uploads and 2 ansatz repeats, each block stacking trainable RY and pre/post RZ rotations around a ring of CZ entangling gates, with a final gain-and-bias calibrated readout. Training uses a Pennylane Autograd QNode with Adam optimization, L2 loss on mean Z-expectations, minibatching, and early-stopping on validation loss.  
+- **Performance:** Achieved mean train/validation/test accuracies of 0.94/0.87/0.84 (combined score ~0.78), with 146 parameters, depth 120, gate count 276, generalization gap 0.10, and parameter efficiency 0.01.  
+- **Feedback:** The dense ring-CZ ansatz delivers robust classification accuracy and stable convergence but at the cost of high circuit depth and parameter count, resulting in low parameter efficiency; the moderate generalization gap indicates potential for parameter pruning without degrading performance.
+**Program Identifier:** Generation 1 - Patch Name close_entangling_ring - Correct Program: True
+
+**Program Name: Reuploading Butterfly 8-Qubit Quantum Classifier**  
+- **Implementation**: Encodes 28 binary features via three rounds of IsingZZ feature maps interleaved with two repeats of a custom ansatz block—each block applies per-qubit RY basis rotations, paired RZ phase corrections, butterfly CNOT layers, shared CRY mixing, complementary CNOT couplings, and per-qubit RY readout angles—then calibrates the mean-Z output with a trainable gain and bias. Optimization uses Adam on an L2 loss with minibatch training and validation-loss early stopping.  
+- **Performance**: Achieved 0.92 train, 0.84 validation, and 0.85 test accuracy with a 0.07 generalization gap over 134 parameters (depth 93, 300 gates).  
+- **Feedback**: The structured butterfly mixing and repeated feature re-uploads provided strong expressivity and controlled overfitting, but low parameter efficiency (0.01 accuracy per parameter) and plateaued validation accuracy below the 0.90 convergence target suggest further ansatz or hyperparameter tuning could improve generalization.
+**Program Identifier:** Generation 2 - Patch Name butterfly_phase_mixer - Correct Program: True
+
+**Program Name: 8-Qubit Reuploading Variational Classifier**  
+- **Implementation**: Uses an 8-qubit feature-reuploading pipeline with N_UPLOADS=3 and N_REPEATS=2, where each ansatz block applies single-qubit RY/RZ rotations and a linear chain of CZ entanglers, and a trainable gain/bias calibrates the mean Pauli-Z output.  
+- **Performance**: Achieved a combined score of 0.86 with mean accuracies of 0.94 (train), 0.89 (validation), and 0.88 (test), generalization gap 0.06, at circuit depth 99 and 146 trainable parameters.  
+- **Feedback**: High accuracy and small generalization gap demonstrate robust classification, but the relatively large parameter count and circuit depth yield low parameter efficiency (0.01), indicating potential to simplify the ansatz without degrading performance.
+**Program Identifier:** Generation 4 - Patch Name trainable_measurement_basis - Correct Program: True
+
+**Program Name: 8-qubit Re-uploading CZ-RY Ansatz Classifier**  
+- **Implementation**: Interleaves a fixed IsingZZ feature map with three uploads and two ansatz repeats, each block applying per-qubit RY superpositions, RZ pre-phase rotations, a closed-ring of CZ couplings, and RX post-rotations; parameters are validated, indexed per block, and trained via a Pennylane autograd QNode using Adam and early stopping.  
+- **Performance**: Achieves mean train/validation/test accuracies of 0.92/0.85/0.81 (combined score 0.77) with circuit depth 120, 276 gates, and 146 parameters.  
+- **Feedback**: The expressive ansatz drives strong training accuracy but shows a 0.11 generalization gap and low parameter efficiency (~0.01), suggesting over-parameterization and room to simplify the circuit.
+**Program Identifier:** Generation 5 - Patch Name phase_to_population_rx_ring - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Linear CZ-chain entanglement interleaved with RY/RZ rotations (as in the current best “8-Qubit Reuploading Variational Classifier,” combined score 0.86, depth 99, gate 270) matches or slightly exceeds the initial RY/RZ-CZ ansatz (Gen 0 score 0.85) while preserving a low generalization gap (0.06 vs. 0.07).  
+- Three feature-map re-uploads paired with two ansatz repeats consistently deliver strong expressivity: both Gen 0 (score 0.85) and Gen 4 (score 0.86) use N_UPLOADS=3, N_REPEATS=2.  
+- Trainable output calibration (gain + bias) atop mean-Z readout appears crucial for stable convergence and high test accuracy (0.88 in the best program).  
+- Restricting to fixed two-qubit CZ gates rather than denser or parameterized two-qubit layers maintains parameter efficiency and reduces overfitting, as evidenced by the current best outperforming the CRY-heavy butterfly ansatz (Gen 2).
+
+## Ineffective Approaches  
+- Dense ring-CZ entanglement (Gen 1 “Ring-CZ layered,” score 0.78, gap 0.10, depth 120, gate 276) increased circuit depth and parameters without boosting accuracy.  
+- Custom butterfly mixing with additional CNOT layers and shared CRY (Gen 2 “Reuploading Butterfly,” score 0.85 train/test 0.92/0.85) plateaued below the 0.90 validation target and yielded lower parameter efficiency (0.01).  
+- Closed-ring CZ-RY layering (Gen 5, score 0.77, gap 0.11, depth 120) over-parameterized the ansatz, degrading generalization and test accuracy to 0.81.  
+- Simply reducing parameter count (e.g., Gen 2’s 134 vs. 146) did not guarantee better performance; targeted structural simplification (linear vs. ring entanglers) was more effective.
+
+## Implementation Insights  
+- Defining the ansatz via a reusable ANSATZ_SPEC and indexing parameters per block (using `key_to_position` and block offsets) streamlines experimentation with different gate sequences.  
+- The fixed feature map using qml.IsingZZ(FEATURE_SCALE·x, wires=[a,b]) across 28 feature pairs succinctly embeds binary inputs without adding trainable overhead.  
+- Alternation of pre- and post-entangling RZ rotations around a linear CZ chain (as in the best program) yields deep expressivity with fewer two-qubit gates than ring or butterfly patterns.  
+- Initializing gain to 1 and bias to 0, then optimizing alongside circuit parameters, consistently improves sign-based classification accuracy across multiple runs.
+
+## Performance Analysis  
+- Transition from the Gen 0 RY/RZ-CZ ansatz (score 0.85, test 0.87) to the Gen 4 reuploading variational ansatz (score 0.86, test 0.88) demonstrates a measurable gain (≈1 ppt in combined score) without increasing depth or gate count.  
+- Programs with higher depth (> 120) uniformly underperform despite similar parameter counts (146), confirming a negative correlation between depth and generalization when entanglement is over-dense (Gen 1 & Gen 5).  
+- The smallest generalization gap (0.06) and highest test accuracy (0.88) coincide in the current best program, underscoring the effectiveness of linear-chain CZ entanglement plus re-uploads over more complex mixers.  
+- Parameter efficiency (test accuracy / n_params) remains around 0.01 across all evaluated 146-parameter ansätze; breaking this plateau appears to require structural, not just parametric, innovations.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Replace each single “RY” pre‐rotation in ANSATZ_SPEC with a full SU(2) Euler block (RZ–RY–RZ):  
+   – In your EVOLVE‐BLOCK, wrap each `{"gate":"RY","wire":i}` in a trio  
+     `{"gate":"RZ","param":"rz_pre2_i"}`, `{"gate":"RY","param":"ry_i"}`,  
+     `{"gate":"RZ","param":"rz_pre3_i"}`.  
+   – Remove the original single RZ pre‐layer (or drop an RY post‐layer on half the qubits) so total parameters stay ≈146.  
+   Evidence: expanding local SU(2) expressivity around entanglers may boost performance without adding extra two‐qubit gates.  
+
+2. Swap the upload/repeat schedule to N_UPLOADS=2, N_REPEATS=3 (total blocks =6):  
+   – In the program header set `N_UPLOADS=2; N_REPEATS=3` and leave ANSATZ_SPEC unchanged.  
+   – This preserves depth and gate count but concentrates more ansatz depth per feature upload.  
+   Evidence: three re‐uploads + two repeats gave 0.86; testing two re‐uploads with three repeats explores whether deeper variational mixing per upload further improves the combined score.  
+
+3. Alternate the linear CZ chain direction between repeats:  
+   – Programmatically modify ANSATZ_SPEC for blocks with even `block_index`: replace CZ wires `[(0,1),(1,2),…,(6,7)]` with the reversed chain `[(7,6),(6,5),…,(1,0)]`.  
+   – Keep the same number of CZ gates and parameters.  
+   Evidence: preserving linear‐chain sparsity while varying entanglement direction diversifies mixing patterns, potentially increasing expressivity without over‐parameterizing.  
+
+4. Upgrade scalar output calibration to per‐qubit gains and biases:  
+   – Replace the two readout parameters with `gain_i, bias_i` for each qubit (total +16 params).  
+   – Compute `raw_i = gain_i*(⟨Z_i⟩ – bias_i)`, then average `mean_i(raw_i)` for prediction.  
+   – Initialize all gains to 1 and biases to 0.  
+   Evidence: trainable calibration was critical (gain+bias); a per‐qubit extension may further reduce bias and tighten the generalization gap.  
+
+5. Introduce two sparse next‐nearest‐neighbor CZ links after the main chain:  
+   – In ANSATZ_SPEC, append `{"gate":"CZ","wires":[0,2]}` and `{"gate":"CZ","wires":[5,7]}` immediately after the existing 7‐edge chain.  
+   – This adds only 2 gates (depth +1–2) but captures long‐range correlations.  
+   Evidence: maintaining CZ‐only entanglement was key; adding minimal non‐local links tests if a slight increase in connectivity can boost test accuracy without overfitting.

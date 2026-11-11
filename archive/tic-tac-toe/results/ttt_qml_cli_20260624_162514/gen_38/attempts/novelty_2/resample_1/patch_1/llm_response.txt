@@ -1,0 +1,120 @@
+<NAME>
+add_output_rz_sharpening
+</NAME>
+
+<DESCRIPTION>
+Append a small shared RZ "sharpening" layer after the existing per-qubit RY_out layer.
+This adds only two new parameters per ansatz block: "rz_out_periphery" (shared across qubits 0–7)
+and "rz_out_center" (qubit 8). Small end-of-circuit Z phases often improve class separability
+with negligible extra depth and very few additional parameters, breaking residual parity
+symmetries and sharpening decision boundaries. This is a low-cost, symmetry-aware change
+intended to boost validation/test accuracy without dramatically increasing gate count.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Compact symmetry-aware single-qubit layer:
+    # share rotations by class to regularize and reduce params
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Partial entangling layer (compact): choose 4 ring edges and 4 hub edges
+    # to provide mixing while keeping gate count low.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+
+    # Small final single-qubit adjustment (shared per class)
+    {"gate": "RY", "wire": 0, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 8, "param": "ry_center_out"},
+]
+=======
+ANSATZ_SPEC = [
+    # Compact symmetry-aware single-qubit layer:
+    # share rotations by class to regularize and reduce params
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Partial entangling layer (compact): choose 4 ring edges and 4 hub edges
+    # to provide mixing while keeping gate count low.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+
+    # Small final single-qubit adjustment (shared per class)
+    {"gate": "RY", "wire": 0, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 8, "param": "ry_center_out"},
+
+    # Small shared RZ sharpening layer after RY_out: periphery vs center.
+    # Two parameters only: rz_out_periphery (wires 0-7) and rz_out_center (wire 8).
+    {"gate": "RZ", "wire": 0, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 1, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 2, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 3, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 4, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 5, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 6, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 7, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 8, "param": "rz_out_center"},
+]
+>>>>>>> REPLACE
+</DIFF>

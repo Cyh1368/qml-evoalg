@@ -1,0 +1,79 @@
+<NAME>
+selective_per_qubit_phases
+</NAME>
+
+<DESCRIPTION>
+The current ansatz achieves excellent performance (test_accuracy=0.90, generalization_gap=0.01) with heavy parameter sharing using collective gates. To push accuracy higher while maintaining generalization, I propose adding selective per-qubit phase parameters after the collective input mixer.
+
+The key insight: the model has strong symmetry which aids generalization, but per-qubit RZ gates inserted after the collective RY input allow fine-grained control over individual qubit states before entanglement, without breaking the overall efficiency.
+
+This modification:
+1. Adds 8 per-qubit RZ parameters (per_rz_0 through per_rz_7) for individual phase calibration
+2. Maintains the highly efficient collective parameter structure (only modest increase from 26 to 34 params per block)
+3. Improves expressiveness while preserving the small generalization gap through controlled parameter growth
+4. Preserves convergence speed by keeping the fundamental circuit structure
+
+This is inspired by the success of hybrid architectures that use both collective and per-qubit parameters to balance expressiveness and efficiency.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Collective input mixer. Sharing preserves vertex symmetry and causes
+    # gradients from all eight wires to reinforce one another.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_in"},
+
+    # A trainable collective phase supplies an adjustable one-body component
+    # between the noncommuting mixer layers.
+    {"gate": "RZ", "wire": 0, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz"},
+=======
+ANSATZ_SPEC = [
+    # Collective input mixer. Sharing preserves vertex symmetry and causes
+    # gradients from all eight wires to reinforce one another.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_in"},
+
+    # Per-qubit phase fine-tuning after input mixer, allowing selective calibration
+    # while maintaining overall efficiency and generalization.
+    {"gate": "RZ", "wire": 0, "param": "per_rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "per_rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "per_rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "per_rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "per_rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "per_rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "per_rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "per_rz_7"},
+
+    # A trainable collective phase supplies an adjustable one-body component
+    # between the noncommuting mixer layers.
+    {"gate": "RZ", "wire": 0, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz"},
+>>>>>>> REPLACE
+
+</DIFF>
