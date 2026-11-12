@@ -133,6 +133,28 @@ budgets.
   (`research/HOLDOUT_ACCESS.json`).
 * `tictactoe_n9` remains sealed and unclaimed (dense `n = 9` simulation is ~30x the ring
   cost and is outside this revision's compute budget).
+* **Split ledger after the second review round** (machine-readable in
+  `research/HOLDOUT_ACCESS.json`, human-readable in `research/MANIFEST.md`):
+  v1 consumed (search E-S7 + the defective first E-R4 + the A5.5 graphs second read);
+  v2 consumed; v3 consumed by an aborted run, inputs-only so no label was exposed;
+  v4 consumed by the corrected E-R4'; v5 ring consumed once by the A5.5 deployed-endpoint
+  run, and its graphs half **does not exist** because exhaustive enumeration leaves 0
+  unseen isomorphism classes.
+* **Authorised second read (2026-11-12 02:03 UTC, job 33044945).** `graphs_v1` was read a
+  second time for the A5.5 deployed endpoint. This is not a silent exception: the run
+  command passes `--allow-reread graphs_v1` with the reason written into the command
+  itself, the module refuses any consumed split without that flag (verified by running it:
+  `REFUSING to read consumed split(s): graphs_v1`), the reason and digests are appended to
+  the shared ledger, and every table containing those numbers labels them *second read,
+  post hoc*. The justification is structural, not convenient: a first-and-only graphs read
+  is impossible on this benchmark.
+* **Aborted attempt, recorded (job 33042529, 2026-11-12 01:50 UTC).** The A5.5 module crashed
+  in its own digest helper (`hashlib.sha256` handed a `pathlib.Path` because
+  `hasattr(path, "read_bytes")` is true for `Path`). The crash occurred at the digest step,
+  *before* the first sealed `np.load`, so no held-out value was read; the fix and its lesson
+  are in the helper's docstring and in `research/core/test_paired.py`'s sibling audit notes.
+  We record it because an aborted one-shot attempt is exactly the kind of event a clean
+  provenance table tends to lose.
 
 ## 6. Reproduce / verify
 
