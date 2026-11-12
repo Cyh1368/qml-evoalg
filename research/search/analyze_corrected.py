@@ -148,6 +148,47 @@ def holm(rows):
     return rows
 
 
+
+def feedback_content(runs):
+    """DESCRIPTIVE, added after the primary rule was frozen: what the model was actually told.
+
+    A corrected-feedback study is only meaningful if the correction changes the feedback text
+    the model receives. This counts, per family and arm, the verifier reports by status and by
+    the label decision, which is the one field the correction touches. It carries no
+    inferential claim and no verdict; the primary contrasts are unchanged.
+    """
+    from collections import defaultdict
+    agg = defaultdict(lambda: {"proposals": 0, "reports": 0, "ok": 0, "label_pass": 0,
+                              "no_hypothesis": 0, "residuals": []})
+    for (fam, arm, seed), d in runs.items():
+        for pr in d.get("proposals", []):
+            a = agg[(fam, arm)]
+            a["proposals"] += 1
+            v = pr.get("verify")
+            if not v:
+                continue
+            a["reports"] += 1
+            if v.get("status") == "ok":
+                a["ok"] += 1
+                if v.get("label_violated_fraction") == 0.0:
+                    a["label_pass"] += 1
+                r = v.get("mean_channel_residual")
+                if isinstance(r, (int, float)):
+                    a["residuals"].append(float(r))
+            elif v.get("status") == "no_hypothesis":
+                a["no_hypothesis"] += 1
+    out = []
+    for (fam, arm), a in sorted(agg.items()):
+        out.append({"family": fam, "arm": arm, "proposals": a["proposals"],
+                    "reports": a["reports"], "status_ok": a["ok"],
+                    "no_hypothesis": a["no_hypothesis"],
+                    "label_pass_of_ok": a["label_pass"],
+                    "label_pass_fraction_of_ok": (a["label_pass"] / a["ok"]) if a["ok"] else None,
+                    "median_channel_residual": (sorted(a["residuals"])[len(a["residuals"]) // 2]
+                                                if a["residuals"] else None)})
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="research/search/analyze_corrected.py")
     ap.add_argument("--corrected", default="logs/runs_corrected/*.json")
