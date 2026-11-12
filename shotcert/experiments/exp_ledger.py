@@ -55,7 +55,13 @@ def run_point(task, menu_fn, n, S, eps, delta, reps, rng_seed, bound="normal"):
     menu = menu_fn(S, G)
     ledger = calib_ledger(menu, n)
     ledger["switches_per_prediction"] = int(sum(p.max_switches for p in menu))
-    ledger["deploy_shots"] = int(N_DEPLOY * min(p.shots_used for p in menu))
+    # A5: deployment cost must be charged at the policy that is actually deployed. Taking the
+    # minimum over the menu understated it, which is the same calibration-versus-deployment mismatch
+    # the third review identified: the ledger priced the cheapest candidate while the study deployed
+    # whichever candidate the selector chose. Charge the worst case over the menu and report it as
+    # such, so the budget is an upper bound on what deployment can cost.
+    ledger["deploy_shots"] = int(N_DEPLOY * max(p.shots_used for p in menu))
+    ledger["deploy_shots_basis"] = "worst case over menu (selector-dependent in deployment)"
     ledger["total_shots"] = int(ledger["shots_total"] + N_DEPLOY * S)
     ledger["total_preparations"] = int(ledger["preparations_total"] + N_DEPLOY)
 
