@@ -112,3 +112,90 @@ Stop the method claim if (i) the advantage vanishes when a baseline gets equal a
 valid certificate falls back at every feasible budget; (iii) the group-draw term collapses to
 classical stratified variance under relabelling; (iv) the best evidence would be another synthetic
 label perturbation of the kind already rejected; or (v) the only result is failure to reject a null.
+
+---
+
+## Addendum A2 (pre-declared 2026-11-12, before any A2 analysis was run)
+
+A sixth-round review identified six defects. All six were verified in source before being accepted,
+and all six are real. This addendum amends the protocol. Nothing below was chosen after seeing new
+results; the affected prior results are marked invalid rather than quietly replaced.
+
+**A2.0 Invalidated results.** `results/control.json` (Q2 coverage, Q3 frontier, switching/F2),
+`results/physics.json` (frontier), `results/variance.json` (eb_split columns) and `results/bound.json`
+are **invalid for any certificate claim**: the bound was wrong (A2.1), the calibration budget was
+understated by a factor of the menu size (A2.2), and the switching optimum charged circuits that do
+not exist (A2.3). The exact risk tables and the decomposition identity survive, with the caveat in
+A2.4 about what the identity check actually establishes.
+
+**A2.1 Correct simultaneous certificate.** For paired contrasts `D_i` in `[a,b]` (here `a=-4`,
+`b=+4`, width `b-a=8`, since each squared loss lies in `[0,4]`), Maurer-Pontil Corollary 5 with a
+union bound over the `m` candidates of a *fixed* menu gives, with probability at least `1-delta`,
+simultaneously for all candidates:
+
+    E[D] <= mean(D) + sqrt(2 * var(D) * ln / n) + 7 * (b-a) * ln / (3 * (n-1)),
+    ln = log(2 * m / delta).
+
+There is no `1/n` inside the logarithm. The previous `log(LOSS_RANGE/(delta*n))` shrank with `n` and
+went negative for `n > 4/(delta)`, which is why a negative range term appeared in the generated
+variance table; that term is not a confidence radius and the results built on it are withdrawn.
+`eb_bound` is replaced by `mp_bound(menu_size=m)`; the old function is kept as `eb_bound_broken`
+solely so the withdrawal is reproducible. Coverage and power are reported with Monte-Carlo
+uncertainty (Wilson intervals over the declared number of repetitions).
+
+**A2.2 Resource ledger, calibration included.** Five quantities are counted separately and never
+conflated: `instances` (independent labelled task inputs), `preparations` (physical state copies,
+counted per shot-batch executed), `shots`, `switches` (circuit-setting changes within one
+prediction's shot sequence), `compilations` (distinct circuits built once and reused). A calibration
+run evaluates the whole menu on every instance, so
+
+    shots_calib = n * sum over policies p of shots_used(p),
+
+which is `n*S*m`, not `n*S`. Because the menu depends on `S`, this is recomputed at every frontier
+point. The frontier is then swept at matched **total** cost
+`B_total = shots_calib + n_deploy * shots_deploy` for a declared deployment count, and every point
+reports the full five-tuple. Any comparison that is not at matched `B_total` is labelled as such.
+
+**A2.3 Circuits and switches are different resources, and both are bounded by the orbit.** With
+`|G| = 2` at most **two** distinct circuits exist; `min(k, 4|G|)` is retracted. `Policy.circuits`
+becomes `min(k, orbit_size)` for randomised draws and `orbit_size` for full averaging. Switching cost
+is charged from an explicit schedule: the shot sequence for one prediction is the sorted list of
+chosen orbit indices, and `switches` is the number of adjacent pairs that differ. The F2 question is
+re-asked as: *does a per-switch cost `c` produce an interior optimum in `k`?* with `circuits` charged
+at its true maximum. If the optimum is at the boundary under the corrected charge, that is the
+result.
+
+**A2.4 What the identity check does and does not establish.** `exact_risk` and `components` both
+consume `_estimator_moments`, so their agreement to 1e-17 is an algebraic consistency check between
+two related code paths, not an independent enumeration. A2.4 adds `reference_risk()`, written
+against the same task interface but *independently*: it enumerates every group-draw sequence and, for
+each, every binomial outcome count for genuinely small `(S,k)` (e.g. `S <= 8`, `k <= 4`), using
+multi-start integer compositions rather than the moment formulas. The paper must report
+`exact_risk` vs `reference_risk` as the verification, and the Monte-Carlo check as the second,
+independent-at-a-distance check, and must stop calling the closed-form agreement "brute-force
+enumeration".
+
+**A2.5 Physical action and confirmatory definitions.** The claim that `Delta -> -Delta` is *the chain
+mirror* is downgraded unless the operator relation
+`M H(Delta) M = H(-Delta)` holds for the **full** experiment, i.e. for the bond-alternating
+Hamiltonian, the N\'eel preparation *and* the site-0 observable. `physics.py` gains
+`mirror_relation_residual()` which evaluates the residual numerically; if it is nonzero the paper
+calls `Delta -> -Delta` a paired input transformation with a measured odd-component cancellation and
+makes no symmetry claim. Confirmatory definitions are aligned with the declared `epsilon`:
+`violation` = the certificate fires and the selected policy's true `Delta > epsilon` (not `> 0`);
+`power` = probability of selecting a policy with true `Delta <= epsilon` when at least one exists;
+`selection_rate`, the chosen policy's true risk, and `fallback_rate` are all reported. The physical
+`epsilon` is restored to the frozen `0.02 * Var(Y)`, computed and printed, and the `epsilon = 0.01`
+substitution is recorded here as a protocol deviation that had already occurred.
+
+**A2.6 Matched-resource comparison, and the reconciliation.** The comparison set is extended with
+`generic paired certification`: the *same* certificate and the *same* calibration protocol applied to
+a menu that contains no symmetry policy at all (raw plus a non-symmetry smoothing baseline), and with
+`symmetry menu + same certificate`, both at matched `B_total` per A2.2. Section 6's phrase
+"preparation-limited at fixed total budget" is reconciled with the Section 5.1 withdrawal by
+removing it; the surviving bound-independent statement is the law-of-total-variance split, and it is
+stated as such.
+
+**A2.7 Stop gate.** If, at matched `B_total`, the symmetry menu does not beat generic paired
+certification on both physical mechanisms, the paper reports a scoped negative as its operational
+finding and does not describe the study as demonstrating an advantage.
