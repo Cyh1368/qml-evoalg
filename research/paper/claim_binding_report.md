@@ -63,14 +63,14 @@ Artifacts: `research/CLAIMS.md`, `research/paper/REBUTTAL_ROUND3.md`
 | `ledger.deployed.ring.constructive` | 0.0002646928562826142 | `0.00026` | bound | [39] |
 | `ledger.deployed.graphs.edge_rule` | 0.578125 | `0.57812` | bound | [22] |
 | `ledger.semantics.ring.L_order` | 12 | `12` | bound | [35, 39] |
-| `rebuttal.corrected.ring.valid.realised` | -0.0034470483874137372 | `0.00345` | bound | [55, 57, 65] |
-| `rebuttal.corrected.ring.mismatch.harm` | 0.0026583593856042372 | `0.00266` | bound | [60] |
-| `rebuttal.corrected.ring.valid.gate_cost` | 0.0016642632894217969 | `0.0017` | bound | [57, 65, 66, 71, 163] |
-| `rebuttal.corrected.ring.defect.gate_cost` | 0.07554469448514282 | `0.0755` | bound | [58, 163] |
-| `rebuttal.accept.empirical` | 0.47 | `0.4700` | bound | [129] |
-| `rebuttal.accept.uniform_single` | 0.0225 | `0.0225` | bound | [126] |
-| `rebuttal.uniform_check.k2` | 0.00025 | `0.00025` | bound | [135] |
-| `rebuttal.panel.distinct` | 7 | `7` | bound | [203, 274, 278] |
+| `rebuttal.corrected.ring.valid.realised` | -0.0034470483874137372 | `0.00345` | bound | [59, 61, 69] |
+| `rebuttal.corrected.ring.mismatch.harm` | 0.0026583593856042372 | `0.00266` | bound | [64] |
+| `rebuttal.corrected.ring.valid.gate_cost` | 0.0016642632894217969 | `0.0017` | bound | [61, 69, 70, 75, 170] |
+| `rebuttal.corrected.ring.defect.gate_cost` | 0.07554469448514282 | `0.0755` | bound | [62, 170] |
+| `rebuttal.accept.empirical` | 0.47 | `0.4700` | bound | [136] |
+| `rebuttal.accept.uniform_single` | 0.0225 | `0.0225` | bound | [133] |
+| `rebuttal.uniform_check.k2` | 0.00025 | `0.00025` | bound | [142] |
+| `rebuttal.panel.distinct` | 7 | `7` | bound | [210, 281, 285] |
 
 **External bindings:** 15/15 bound. **External mutation detection:** 59/60 testable (0.983).
 

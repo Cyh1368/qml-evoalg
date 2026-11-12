@@ -105,8 +105,11 @@ Four things follow, and the first two are reversals of what we wrote before.
 **Corrected-feedback search runs (the second half of the requirement).** We agree that
 post-processing frozen candidates cannot recover the trajectories corrected feedback would have
 produced. We ran the matched study the referee asked for: `llm-fitness`, `llm-verify` and
-`llm-verify-repair` under corrected semantics, both families, 12 paired seeds, budget 32, 200
-steps, `max_train` 256 — 72 new runs in `logs/runs_corrected/`, each carrying
+`llm-verify-repair` under corrected semantics, both families, 12 paired seeds, and the budget
+and optimiser settings read off the frozen record itself (`budget=12`, `steps=120`,
+`max_train=256`, `reasoning_effort=none`, as recorded in all 120 confirmatory run JSONs — the
+job template's 32/200 defaults would not have been matched, and three arrays were cancelled
+before that was checked) — 72 new runs in `logs/runs_corrected/`, each carrying
 `label_mode="corrected"` so they cannot be pooled with the frozen runs by accident. The
 `llm-fitness` arm was re-run contemporaneously so the paired comparator is from the same model
 state rather than from a month earlier.
