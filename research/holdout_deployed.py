@@ -41,6 +41,7 @@ aborts without reading anything.
 import argparse
 import glob
 import hashlib
+from pathlib import Path
 import itertools
 import json
 import multiprocessing as mp
@@ -64,8 +65,15 @@ BANNER = ("*** ONE-SHOT HOLDOUT EVALUATION: sealed test arrays and the v5 fresh 
 
 
 def sha256(path):
-    return hashlib.sha256(path).hexdigest() if hasattr(path, "read_bytes") \
-        else hashlib.sha256(open(path, "rb").read()).hexdigest()
+    """Digest of a path given as str or pathlib.Path.
+
+    Read the bytes explicitly: hashlib accepts no Path object, and
+    hasattr(path, 'read_bytes') is True for pathlib.Path, so a hasattr-based
+    shortcut silently hands hashlib a Path and raises TypeError.  That bug cost
+    one aborted one-shot attempt (it fired before any sealed array was opened,
+    so no held-out data was read).
+    """
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 # ------------------------------------------------------------------ evaluation
@@ -206,6 +214,13 @@ def main(argv=None):
     ap.add_argument("--runs", default="logs/runs_confirm")
     ap.add_argument("--out", default="research/HOLDOUT_DEPLOYED.json")
     ap.add_argument("--access-log", default="research/HOLDOUT_DEPLOYED_ACCESS.json")
+    ap.add_argument("--ledger", default="research/HOLDOUT_ACCESS.json",
+                    help="shared one-shot consumption ledger; splits recorded here are "
+                         "refused unless listed in --allow-reread, with the reason logged")
+    ap.add_argument("--allow-reread", nargs="*", default=[], metavar="SPLIT",
+                    help="explicitly authorise a second read of an already-consumed split "
+                         "(recorded, with --reread-reason, in the ledger)")
+    ap.add_argument("--reread-reason", default="")
     ap.add_argument("--workers", type=int, default=24)
     ap.add_argument("--dry-run", action="store_true",
                     help="score development validation rows; open nothing sealed or fresh")
@@ -237,10 +252,31 @@ def main(argv=None):
             sources[fam] = "development validation (DRY RUN)"
     else:
         print(BANNER, flush=True)
-        sealed = {"ring_v1": _tasks.dataset_path("ring_n6", locked=True),
-                  "graphs_v1": _tasks.dataset_path("graphs_n6", locked=True)}
+        # ring_v1 is deliberately NOT opened: it is consumed and unused here, and a
+        # digest read would still touch a spent split.
+        sealed = {"graphs_v1": _tasks.dataset_path("graphs_n6", locked=True)}
         v5 = os.path.join(str(_tasks.DATASETS), "locked_holdout_v5", "ring_n6_x.npz")
         sealed["ring_v5"] = v5
+        # --- one-shot policy enforcement (Addendum A4): refuse consumed splits -----
+        ledger = {}
+        if os.path.exists(a.ledger):
+            with open(a.ledger) as fh:
+                ledger = json.load(fh)
+        consumed = set(ledger.get("files", {}))
+        for rec in ledger.get("reads", []):
+            consumed |= set(rec.get("files", []))
+        blocked = sorted(k for k in sealed if k in consumed and k not in set(a.allow_reread))
+        if blocked:
+            print("REFUSING to read consumed split(s): %s\n"
+                  "The one-shot policy allows one read per split. Re-run with "
+                  "--allow-reread %s --reread-reason '...' only for a deliberate, "
+                  "labelled post-hoc second read."
+                  % (", ".join(blocked), " ".join(blocked)), flush=True)
+            return 2
+        if a.allow_reread:
+            print("SECOND READ authorised for: %s\nreason: %s"
+                  % (", ".join(a.allow_reread), a.reread_reason or "(none given)"),
+                  flush=True)
         before = {k: sha256(v) for k, v in sealed.items()}
         with np.load(sealed["graphs_v1"]) as d:
             gx = np.asarray(d["x_test"])
@@ -289,6 +325,14 @@ def main(argv=None):
                   "digests": after}
         with open(a.access_log, "w") as fh:
             json.dump(access, fh, indent=1)
+        # append to the shared ledger so no later module can re-read these silently
+        ledger.setdefault("reads", []).append(dict(access,
+                                                   authorised_reread=list(a.allow_reread),
+                                                   reread_reason=a.reread_reason,
+                                                   out=a.out))
+        ledger.setdefault("read_files", {}).update(after)
+        with open(a.ledger, "w") as fh:
+            json.dump(ledger, fh, indent=1)
     with open(a.out, "w") as fh:
         json.dump(out, fh, indent=1, default=str)
     print(json.dumps({"sources": sources, "contrasts": out["contrasts"],

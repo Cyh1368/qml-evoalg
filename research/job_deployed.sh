@@ -20,5 +20,10 @@ if [ "${DRY_RUN:-0}" = "1" ]; then
 else
   python3 -m research.holdout_deployed --workers "${WORKERS:-24}" \
     --out "${OUT:-research/HOLDOUT_DEPLOYED.json}" \
-    --access-log "${ACCESS:-research/HOLDOUT_DEPLOYED_ACCESS.json}"
+    --access-log "${ACCESS:-research/HOLDOUT_DEPLOYED_ACCESS.json}" \
+    --allow-reread graphs_v1 \
+    --reread-reason "no fresh class-disjoint graphs_n6 inputs exist: generate_holdout_v5
+enumerated all 2^15 labeled 6-vertex graphs and found 0 isomorphism classes unused by
+development plus holdouts v1-v4, so a first-and-only graphs read is impossible; this second
+read is labelled post hoc in the paper, the manifest and the rebuttal"
 fi
