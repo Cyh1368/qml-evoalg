@@ -50,7 +50,9 @@ Undetected mutations, if any, are listed so the gap is visible rather than hidde
 
 ## External evaluation: the same instrument on a second artifact
 
-Artifact: `research/CLAIMS.md` (the project claim ledger). The bindings are the same record values with that document's own context tokens, which is the detection/false-alarm measurement requested beyond this manuscript. It also tests transfer honestly: a ledger row that does not carry the value at all is a *spec* gap, listed by status, not a checker failure.
+Artifact: `%s` (the project claim ledger). The bindings are the same record values with that document's own context tokens, which is the detection/false-alarm measurement requested beyond this manuscript. It also tests transfer honestly: a row that does not carry the value at all is a *spec* gap, listed by status, not a checker failure.
+
+Artifacts: `research/CLAIMS.md`, `research/paper/REBUTTAL_ROUND3.md`
 
 | id | record value | token | status | line(s) |
 |---|---|---|---|---|
@@ -61,7 +63,15 @@ Artifact: `research/CLAIMS.md` (the project claim ledger). The bindings are the 
 | `ledger.deployed.ring.constructive` | 0.0002646928562826142 | `0.00026` | bound | [39] |
 | `ledger.deployed.graphs.edge_rule` | 0.578125 | `0.57812` | bound | [22] |
 | `ledger.semantics.ring.L_order` | 12 | `12` | bound | [35, 39] |
+| `rebuttal.corrected.ring.valid.realised` | -0.0034470483874137372 | `0.00345` | bound | [55, 57, 65] |
+| `rebuttal.corrected.ring.mismatch.harm` | 0.0026583593856042372 | `0.00266` | bound | [60] |
+| `rebuttal.corrected.ring.valid.gate_cost` | 0.0016642632894217969 | `0.0017` | bound | [57, 65, 66, 71, 156] |
+| `rebuttal.corrected.ring.defect.gate_cost` | 0.07554469448514282 | `0.0755` | bound | [58, 156] |
+| `rebuttal.accept.empirical` | 0.47 | `0.4700` | bound | [122] |
+| `rebuttal.accept.uniform_single` | 0.0225 | `0.0225` | bound | [119] |
+| `rebuttal.uniform_check.k2` | 0.00025 | `0.00025` | bound | [128] |
+| `rebuttal.panel.distinct` | 7 | `7` | bound | [196, 267, 271] |
 
-**External bindings:** 7/7 bound. **External mutation detection:** 27/28 testable (0.964).
+**External bindings:** 15/15 bound. **External mutation detection:** 59/60 testable (0.983).
 
 * external: `exponent` on `ledger.semantics.ring.L_order` escaped detection (status `bound`)

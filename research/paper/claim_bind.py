@@ -126,8 +126,43 @@ SPEC_EXTERNAL_RAW = [
      "families.ring_n6.label_symmetry_groups.alpha_0.order", 0, ["alpha_0"]),
 ]
 
+SPEC_REBUTTAL_RAW = [
+    ("rebuttal.corrected.ring.valid.realised",
+     "research/search/decision_rules2.json",
+     "summary.ring_n6.declared.rules.R1_corrected.realised_mean_delta", 5,
+     ["60/60", "corrected label"]),
+    ("rebuttal.corrected.ring.mismatch.harm",
+     "research/search/decision_rules2.json",
+     "summary.ring_n6.mismatched.rules.R0_always.realised_mean_delta", 5,
+     ["58", "always"]),
+    ("rebuttal.corrected.ring.valid.gate_cost",
+     "research/search/decision_rules2.json",
+     "summary.ring_n6.declared.rules.R1_corrected.cost.gate_seconds_per_candidate", 4,
+     ["0.0017", "corrected label"]),
+    ("rebuttal.corrected.ring.defect.gate_cost",
+     "research/search/decision_rules2.json",
+     "summary.ring_n6.declared.rules.R3_defect.cost.gate_seconds_per_candidate", 4,
+     ["0.0755", "defect"]),
+    ("rebuttal.accept.empirical", "research/search/corrected_gate.json",
+     "families.ring_n6.accept.alpha_0.[Q=empirical_llm].accept_rate", 4, ["0.4700"]),
+    ("rebuttal.accept.uniform_single", "research/search/corrected_gate.json",
+     "families.ring_n6.accept.alpha_0.[Q=uniform_single,k=1].accept_rate", 4, ["0.0225"]),
+    ("rebuttal.uniform_check.k2", "research/search/uniform_model_check.json",
+     "families.ring_n6.cells.k=2.measured", 5, ["0.00025"]),
+    ("rebuttal.panel.distinct", "research/search/corrected_gate.json",
+     "families.ring_n6.panel.n_unique_subgroups", 0, ["generate distinct subgroups"]),
+]
+
 SPEC_EXTERNAL = [{"id": a, "file": b, "path": c, "decimals": d, "context": e}
                  for a, b, c, d, e in SPEC_EXTERNAL_RAW]
+SPEC_REBUTTAL = [{"id": a, "file": b, "path": c, "decimals": d, "context": e}
+                 for a, b, c, d, e in SPEC_REBUTTAL_RAW]
+# (artifact, spec) pairs for the beyond-the-manuscript evaluation
+EXTERNAL_DOCS = [("research/CLAIMS.md", SPEC_EXTERNAL),
+                 ("research/paper/REBUTTAL_ROUND3.md", SPEC_REBUTTAL)]
+
+
+# --- second external artifact: the round-3 response itself, which quotes the A6 numbers.
 
 CONTEXT_LINES = 6
 
@@ -372,16 +407,22 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="research/paper/claim_bind.py")
     ap.add_argument("--tex", default="research/paper/main.tex")
     ap.add_argument("--report", default="research/paper/claim_binding_report.md")
-    ap.add_argument("--extra-doc", default="research/CLAIMS.md",
-                    help="second artifact to evaluate the instrument on (empty to skip)")
+    ap.add_argument("--extra-doc", default="",
+                    help="override the artifact list (comma separated, uses SPEC_EXTERNAL); "
+                         "empty means the frozen EXTERNAL_DOCS pairs")
     a = ap.parse_args(argv)
     tex = [a.tex]
     rows = check_bindings(SPEC, tex)
     mut = check_mutations(SPEC, tex)
-    ext_rows = ext_mut = []
-    if a.extra_doc and os.path.exists(a.extra_doc):
-        ext_rows = check_bindings(SPEC_EXTERNAL, [a.extra_doc])
-        ext_mut = check_mutations(SPEC_EXTERNAL, [a.extra_doc])
+    ext = []            # (doc, rows, mutations)
+    pairs = EXTERNAL_DOCS if not a.extra_doc else \
+        [(d.strip(), SPEC_EXTERNAL) for d in a.extra_doc.split(",") if d.strip()]
+    for doc, spec_x in pairs:
+        if os.path.exists(doc):
+            ext.append((doc, check_bindings(spec_x, [doc]),
+                        check_mutations(spec_x, [doc])))
+    ext_rows = [r for _, rows, _ in ext for r in rows]
+    ext_mut = [m for _, _, ms in ext for m in ms]
     ok = [r for r in rows if r["status"] == "bound"]
     det = [m for m in mut if m["detected"] and not m.get("degenerate")]
     mut_tested = [m for m in mut if not m.get("degenerate")]
@@ -443,9 +484,9 @@ def main(argv=None):
                   "Artifact: `%s` (the project claim ledger). The bindings are the same "
                   "record values with that document's own context tokens, which is the "
                   "detection/false-alarm measurement requested beyond this manuscript. "
-                  "It also tests transfer honestly: a ledger row that does not carry the "
-                  "value at all is a *spec* gap, listed by status, not a checker failure.\n"
-                  % a.extra_doc,
+                  "It also tests transfer honestly: a row that does not carry the value at "
+                  "all is a *spec* gap, listed by status, not a checker failure.\n",
+                  "Artifacts: %s\n" % ", ".join("`%s`" % d for d, _, _ in ext),
                   "| id | record value | token | status | line(s) |",
                   "|---|---|---|---|---|"]
         for r in ext_rows:
@@ -470,8 +511,12 @@ def main(argv=None):
           % (a.report, len(ok), len(rows), len(det), len(mut_tested)))
     if ext_rows:
         eok = [r for r in ext_rows if r["status"] == "bound"]
-        print("  external (%s): %d/%d bound, %d/%d testable mutations detected"
-              % (a.extra_doc, len(eok), len(ext_rows), len(edet), len(etest)))
+        for doc, rows_d, mut_d in ext:
+            ok_d = [r for r in rows_d if r["status"] == "bound"]
+            det_d = [m for m in mut_d if m["detected"] and not m.get("degenerate")]
+            tst_d = [m for m in mut_d if not m.get("degenerate")]
+            print("    %-40s %d/%d bound, %d/%d testable mutations detected"
+                  % (doc, len(ok_d), len(rows_d), len(det_d), len(tst_d)))
     for r in rows:
         if r["status"] != "bound":
             print("  UNBOUND %-38s %s" % (r["id"], r["status"]))

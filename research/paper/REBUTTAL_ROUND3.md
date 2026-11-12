@@ -193,11 +193,12 @@ method property.
 
 ## 5. Sampling units: panel counts are descriptive, and decision inference bootstraps seeds
 
-- **Panel.** Reported as **9 generator sets, of which 6 generate distinct subgroups** on the
-  ring and on graphs (5 distinct at $n=9$, where three entries exceed the enumeration cap). Each
-  entry, its closure order and its closure digest are listed in
-  `research/search/corrected_gate.json`; the duplicate groups are explicit
-  (`full_symmetric`, `random_permutations` and `single_transpositions` all generate $S_6$).
+- **Panel.** Reported as **9 generator sets, of which 7 generate distinct subgroups** on the
+  ring and on graphs; at $n=9$ only 6 identities are established, because three entries exceed the
+  enumeration cap and are recorded as `>cap` rather than guessed. Each entry, its closure order and
+  its closure digest are listed in `research/search/corrected_gate.json`; the duplicate groups are
+  explicit (`full_symmetric`, `random_permutations` and `single_transpositions` all generate
+  $S_6$).
   Wilson intervals over panel entries are removed; the counts are descriptive coverage.
 - **A defect we found in ourselves while writing this.** `corrected_gate.py` carried its *own*
   copy of the panel whose docstring claimed it was the A5.3 panel. It was not: the reflection
@@ -260,10 +261,15 @@ would need new fitted candidates or a new task, and we say that.
 - **The instrument is tested against deliberate mutations** (sign flip, arm swap, split swap,
   order-of-magnitude, endpoint relabel) and reports its own error rates:
 
-| artifact | bindings resolved | testable mutations | detected | rate |
-|---|---|---|---|---|
-| `research/paper/main.tex` | 22/22 | 87 | 86 | 0.989 |
-| `research/CLAIMS.md` (external artifact) | 7/7 | 28 | 27 | 0.964 |
+| artifact | role | bindings resolved | testable mutations | detected | rate |
+|---|---|---|---|---|---|
+| `research/paper/main.tex` | the manuscript | 22/22 | 87 | 86 | 0.989 |
+| `research/CLAIMS.md` | external artifact 1 | 7/7 | 28 | 27 | 0.964 |
+| `research/paper/REBUTTAL_ROUND3.md` | external artifact 2 | 8/8 | 32 | 32 | 1.000 |
+
+The two external artifacts use their own context tokens (ledger phrasings such as "192 units",
+"7/12", and response phrasings such as "corrected label", "generate distinct subgroups"), so
+this is a transfer test rather than the same test run twice.
 
   23 mutations are excluded as **degenerate** — a sign flip or 10× change of an exact zero, which
   leaves the printed token unchanged and is undetectable by any token-based instrument; the
