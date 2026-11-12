@@ -1000,22 +1000,28 @@ Thresholds (development only): median 0.00385, q1 0.00326, q3 0.0044
 |---|---|---|---|---|---|---|
 | ring_n6 | llm-fitness/corrected | 12 | 0.00643 | 0/12 | 96 | 196296 |
 | ring_n6 | llm-verify/corrected | 12 | 0.00682 | 0/12 | 96 | 206645 |
-| ring_n6 | llm-verify-repair/corrected | 12 | 0.00692 | 0/12 | 97 | 207593 |
+| ring_n6 | llm-verify-repair/corrected | 12 | 0.00692 | 3/12 | 97 | 207593 |
 | graphs_n6 | llm-fitness/corrected | 12 | 0.55964 | 0/12 | 99 | 220277 |
 | graphs_n6 | llm-verify/corrected | 12 | 0.53662 | 0/12 | 96 | 225625 |
-| graphs_n6 | llm-verify-repair/corrected | 12 | 0.53714 | 0/12 | 97 | 227765 |
+| graphs_n6 | llm-verify-repair/corrected | 12 | 0.53714 | 9/12 | 97 | 227765 |
 
 | family | a | b | pairs | mean diff | 95% CI | sign-flip p | Holm p | a better | verdict |
 |---|---|---|---|---|---|---|---|---|---|
-| ring_n6 | llm-verify/corrected | llm-fitness/corrected | 12 | +0.00039 | [-0.00016, +0.00093] | 0.2031 | 1 | 0.33 | difference not detected |
-| ring_n6 | llm-verify-repair/corrected | llm-fitness/corrected | 12 | +0.00049 | [-0.00020, +0.00120] | 0.2197 | 1 | 0.42 | difference not detected |
-| ring_n6 | llm-verify-repair/corrected | llm-verify/corrected | 12 | +0.00010 | [-0.00051, +0.00068] | 0.7715 | 1 | 0.42 | difference not detected |
-| ring_n6 | llm-fitness/corrected | llm-fitness/implemented | 12 | -0.00008 | [-0.00058, +0.00043] | 0.7578 | 1 | 0.33 | difference not detected |
-| ring_n6 | llm-verify/corrected | llm-verify/implemented | 12 | -0.00027 | [-0.00100, +0.00046] | 0.4946 | 1 | 0.67 | difference not detected |
-| ring_n6 | llm-verify-repair/corrected | llm-verify-repair/implemented | 12 | +0.00028 | [-0.00026, +0.00092] | 0.4062 | 1 | 0.42 | difference not detected |
+| ring_n6 | llm-verify/corrected | llm-fitness/corrected | 12 | +0.00039 | [-0.00016, +0.00093] | 0.2031 | 1 | 0.33 | bounded within prespecified band (descriptive) |
+| ring_n6 | llm-verify/corrected | llm-fitness/corrected | 12 | +0.00039 | [-0.00016, +0.00093] | 0.2031 | 1 | 0.33 | bounded within prespecified band (descriptive) |
+| ring_n6 | llm-verify-repair/corrected | llm-fitness/corrected | 12 | +0.00049 | [-0.00020, +0.00120] | 0.2197 | 1 | 0.42 | bounded within prespecified band (descriptive) |
+| ring_n6 | llm-verify-repair/corrected | llm-fitness/corrected | 12 | -0.00026 | [-0.00121, +0.00060] | 0.5928 | 1 | 0.50 | bounded within prespecified band (descriptive) |
+| ring_n6 | llm-verify-repair/corrected | llm-verify/corrected | 12 | +0.00010 | [-0.00051, +0.00068] | 0.7715 | 1 | 0.42 | bounded within prespecified band (descriptive) |
+| ring_n6 | llm-verify-repair/corrected | llm-verify/corrected | 12 | -0.00065 | [-0.00163, +0.00027] | 0.2109 | 1 | 0.50 | bounded within prespecified band (descriptive) |
+| ring_n6 | llm-fitness/corrected | llm-fitness/implemented | 12 | -0.00008 | [-0.00058, +0.00043] | 0.7578 | 1 | 0.33 | bounded within prespecified band (descriptive) |
+| ring_n6 | llm-verify/corrected | llm-verify/implemented | 12 | -0.00027 | [-0.00100, +0.00046] | 0.4946 | 1 | 0.67 | bounded within prespecified band (descriptive) |
+| ring_n6 | llm-verify-repair/corrected | llm-verify-repair/implemented | 12 | +0.00028 | [-0.00026, +0.00092] | 0.4062 | 1 | 0.42 | bounded within prespecified band (descriptive) |
+| graphs_n6 | llm-verify/corrected | llm-fitness/corrected | 12 | -0.02302 | [-0.08802, +0.02815] | 0.625 | 1 | 0.17 | difference not detected |
 | graphs_n6 | llm-verify/corrected | llm-fitness/corrected | 12 | -0.02302 | [-0.08802, +0.02815] | 0.625 | 1 | 0.17 | difference not detected |
 | graphs_n6 | llm-verify-repair/corrected | llm-fitness/corrected | 12 | -0.02249 | [-0.07236, +0.01926] | 0.4062 | 1 | 0.25 | difference not detected |
+| graphs_n6 | llm-verify-repair/corrected | llm-fitness/corrected | 12 | -0.07269 | [-0.12931, -0.02313] | 0.01758 | 0.1582 | 0.75 | difference not detected |
 | graphs_n6 | llm-verify-repair/corrected | llm-verify/corrected | 12 | +0.00053 | [-0.06736, +0.07254] | 0.9688 | 1 | 0.25 | difference not detected |
+| graphs_n6 | llm-verify-repair/corrected | llm-verify/corrected | 12 | -0.04967 | [-0.11982, +0.01867] | 0.2129 | 1 | 0.67 | difference not detected |
 | graphs_n6 | llm-fitness/corrected | llm-fitness/implemented | 12 | -0.00608 | [-0.04119, +0.03183] | 0.8125 | 1 | 0.33 | difference not detected |
 | graphs_n6 | llm-verify/corrected | llm-verify/implemented | 12 | -0.01496 | [-0.05608, +0.01969] | 0.625 | 1 | 0.25 | difference not detected |
 | graphs_n6 | llm-verify-repair/corrected | llm-verify-repair/implemented | 12 | -0.01536 | [-0.06882, +0.03566] | 0.6562 | 1 | 0.25 | difference not detected |

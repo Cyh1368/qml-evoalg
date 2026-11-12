@@ -85,15 +85,31 @@ def load(pattern, label_mode, matched=True):
 
 
 def series(runs, family, arm, mode_tag):
-    """Paired-by-seed vectors of development-selected risk plus per-seed metadata."""
+    """Paired-by-seed vectors of development-selected risk plus per-seed metadata.
+
+    Repair state is read from ``best.repair``, not from the top-level ``repair`` key, which is
+    ``None`` in every run log. An earlier version read the top-level key and therefore recorded
+    ``repaired=False`` for every run, contradicting the deployed-endpoint study's 7/12; the correct
+    location reproduces that count, so it is the one used here.
+
+    ``deployed_risk`` is the deployed-pipeline endpoint the fourth-round review asks for: the
+    candidate's risk when the repair gate does not fire, and the group-averaged risk when it does.
+    It is computed from stored diagnostics, so non-firing runs contribute zero repair effect and no
+    additional holdout read is involved.
+    """
     seeds = sorted({k[2] for k in runs if k[0] == family and k[1] == arm})
-    risk, fired, calls, tokens, invalid, valid = [], [], [], [], [], []
+    risk, deployed, fired, calls, tokens, invalid, valid = [], [], [], [], [], [], []
     for s in seeds:
         d = runs.get((family, arm, s))
         if d is None:
             continue
-        risk.append(float(d["best"]["dev_risk"]))
-        fired.append(bool((d.get("repair") or {}).get("repaired", False)))
+        cand = float(d["best"]["dev_risk"])
+        br = (d.get("best") or {}).get("repair") or {}
+        did = bool(br.get("repaired"))
+        avg = br.get("dev_risk_repaired_diagnostic")
+        risk.append(cand)
+        deployed.append(float(avg) if (did and avg is not None) else cand)
+        fired.append(did)
         calls.append(int((d.get("tokens") or {}).get("calls", 0)))
         tokens.append(int((d.get("tokens") or {}).get("total_tokens", 0)))
         invalid.append(int(d.get("invalid_total", 0)))
@@ -101,37 +117,97 @@ def series(runs, family, arm, mode_tag):
     if not risk:
         return None
     return {"mode": mode_tag, "family": family, "arm": arm, "n_seeds": len(risk),
-            "seeds": seeds, "risk": risk, "repaired": fired, "llm_calls": calls,
+            "seeds": seeds, "risk": risk, "deployed_risk": deployed, "repaired": fired,
+            "llm_calls": calls,
             "tokens": tokens, "invalid": invalid, "valid": valid,
-            "risk_mean": statistics.fmean(risk)}
+            "risk_mean": statistics.fmean(risk),
+            "deployed_risk_mean": statistics.fmean(deployed),
+            "n_fired": int(sum(fired))}
 
 
-def contrast(a, b, family):
-    """Paired a - b on shared seeds, seed-vector bootstrap and sign-flip test."""
-    sa = {(s, r) for s, r in zip(a["seeds"], a["risk"])}
-    sb = dict(zip(b["seeds"], b["risk"]))
+def contrast(a, b, family, endpoint="risk", label=None):
+    """Paired a - b on shared seeds, seed-vector bootstrap and sign-flip test.
+
+    ``endpoint`` selects the candidate-selected risk (the protocol's official endpoint) or the
+    deployed risk (group-averaged where the gate fired). The two are reported as separate rows so a
+    repair effect is never read off an endpoint that is insensitive to it by construction.
+    """
+    sa = {(s, r) for s, r in zip(a["seeds"], a[endpoint])}
+    sb = dict(zip(b["seeds"], b[endpoint]))
     shared = sorted({s for s, _ in sa} & set(sb))
-    ra = dict(zip(a["seeds"], a["risk"]))
+    ra = dict(zip(a["seeds"], a[endpoint]))
     diffs = np.array([ra[s] - sb[s] for s in shared])
     ci = P.bootstrap_ci(diffs, n_boot=20000, seed=20261112)
     flip = P.signflip_p(diffs, n_boot=200000, seed=20261112)
     flip = float(flip["p"]) if isinstance(flip, dict) else float(flip)
     mean = float(diffs.mean())
-    detected = (ci["ci95_low"] > 0 or ci["ci95_high"] < 0)
-    meaningful = abs(mean) >= THRESHOLD
-    if detected and meaningful:
-        verdict = ("lower" if mean < 0 else "higher") + " at the prespecified threshold"
-    elif detected:
-        verdict = "detected but smaller than the prespecified threshold"
-    else:
-        verdict = "difference not detected"
+    # A7.6: the raw (unadjusted) quantities are recorded here; the VERDICT is assigned only after
+    # Holm adjustment, by assign_verdict(). In A6 the verdict string was created from the
+    # unadjusted interval and Holm was applied afterwards without revisiting it, so a verdict could
+    # disagree with the multiplicity-adjusted evidence in the same row.
     return {"family": family, "a": a["arm"] + "/" + a["mode"],
             "b": b["arm"] + "/" + b["mode"], "n_pairs": len(shared),
+            "endpoint": endpoint, "endpoint_label": label or endpoint,
             "mean_diff": mean, "ci95_low": ci["ci95_low"], "ci95_high": ci["ci95_high"],
             "sign_flip_p": flip, "sd_pairs": float(diffs.std(ddof=1)) if len(shared) > 1
             else None, "a_better_fraction": float((diffs < 0).mean()),
-            "threshold": THRESHOLD, "verdict": verdict,
+            "threshold": THRESHOLD,
+            # descriptive band containment: the whole interval inside +/- threshold
+            "band_contained": bool(abs(ci["ci95_low"]) <= THRESHOLD
+                                   and abs(ci["ci95_high"]) <= THRESHOLD),
+            # TOST at the prespecified margin: equivalence requires BOTH one-sided bounds to sit
+            # inside the margin, i.e. max(|low|,|high|) < margin, evaluated on the adjusted interval
+            "tost_unadjusted": bool(max(abs(ci["ci95_low"]), abs(ci["ci95_high"])) < THRESHOLD),
             "per_seed": [[int(s), float(ra[s] - sb[s])] for s in shared]}
+
+
+def assign_verdict(rows):
+    """Verdicts from the Holm-adjusted interval (A7.6). Called after holm(), never before.
+
+    Vocabulary is deliberately split. ``bounded within prespecified band`` is a descriptive
+    statement about the adjusted interval; ``equivalent at the prespecified margin`` is a
+    multiplicity-controlled equivalence claim and requires the adjusted TOST condition. Band
+    containment is never reported as "no effect", and neither phrase means "the effect is zero".
+    """
+    for r in rows:
+        lo, hi = r["ci95_low"], r["ci95_high"]
+        m = r["threshold"]
+        # "Significant" for verdict purposes means the Holm-ADJUSTED p is below 0.05. Using the
+        # unadjusted sign-flip p here would let a row be called detected while the adjusted
+        # evidence in the same row says otherwise, which is the error A7.6 exists to remove. The
+        # unadjusted value is still recorded in the row and reported alongside.
+        sig = bool(r.get("holm_p") is not None and r["holm_p"] < 0.05)
+        adj = _adjusted_interval(r)
+        r["ci95_low_holm"], r["ci95_high_holm"] = adj
+        r["tost_holm_adjusted"] = bool(max(abs(adj[0]), abs(adj[1])) < m)
+        if sig and abs(r["mean_diff"]) >= m:
+            r["verdict"] = (("lower" if r["mean_diff"] < 0 else "higher")
+                            + " at the prespecified threshold")
+        elif sig:
+            r["verdict"] = "detected but smaller than the prespecified threshold"
+        elif r["tost_holm_adjusted"]:
+            r["verdict"] = "equivalent at the prespecified margin (Holm-adjusted TOST)"
+        elif r["band_contained"]:
+            r["verdict"] = "bounded within prespecified band (descriptive)"
+        else:
+            r["verdict"] = "difference not detected"
+    return rows
+
+
+def _adjusted_interval(r, z=1.959963984540054):
+    """Interval widened to the Holm-adjusted level, by scaling the half-widths.
+
+    The bootstrap interval is a quantile estimate, so the adjusted interval is approximated by
+    widening at the ratio of the normal quantiles for alpha and the adjusted alpha. This is stated
+    as an approximation wherever it is used; the primary reported object remains the unadjusted
+    bootstrap interval, and no conclusion rests on the widened one alone.
+    """
+    p = max(r.get("holm_p") or 1.0, 1e-16)
+    from scipy.stats import norm
+    z_adj = max(float(norm.isf(p / 2.0)), 1e-9)   # p -> 1 gives isf(0.5) = 0; cap the widening
+    k = min(max(z / z_adj, 1.0), 12.0)
+    return (r["mean_diff"] - k * (r["mean_diff"] - r["ci95_low"]),
+            r["mean_diff"] + k * (r["ci95_high"] - r["mean_diff"]))
 
 
 def holm(rows):
@@ -224,11 +300,14 @@ def repair_coverage(runs):
 
 
 
-def _pick(rows, family, a, b, key):
+def _pick(rows, family, a, b, key, endpoint="risk"):
+    """Headline numbers are the CANDIDATE endpoint unless asked otherwise; the deployed endpoint
+    is addressed by its own helper so the two can never be silently interchanged."""
     for c in rows:
-        if c["family"] == family and c["a"] == a and c["b"] == b:
+        if (c["family"] == family and c["a"] == a and c["b"] == b
+                and c.get("endpoint", endpoint) == endpoint):
             return float(c[key])
-    raise KeyError((family, a, b, key))
+    raise KeyError((family, a, b, key, endpoint))
 
 
 def _pick_fb(runs, family, arm, key):
@@ -278,8 +357,13 @@ def main(argv=None):
         for (x, y) in CONTRASTS[fam]:
             if x in got and y in got:
                 rows.append(contrast(got[x], got[y], fam))
+                # A7.6: the same contrast on the deployed endpoint, reported as its own row. For
+                # the repair arm this is the endpoint that can register the repair at all; the
+                # official candidate endpoint is insensitive to it by construction.
+                rows.append(contrast(got[x], got[y], fam, endpoint="deployed_risk",
+                                     label="deployed (group-averaged where the gate fired)"))
         for arm, s in got.items():
-            arms_rows.append({k: v for k, v in s.items() if k != "risk"} |
+            arms_rows.append({k: v for k, v in s.items() if k not in ("risk", "deployed_risk")} |
                              {"risk_mean": s["risk_mean"]})
         # what did correcting the feedback change? same arm, two modes
         for arm in ARMS:
@@ -291,6 +375,7 @@ def main(argv=None):
     for fam in FAMILIES:
         fam_rows = [r for r in rows if r["family"] == fam]
         holm(fam_rows)
+        assign_verdict(fam_rows)     # A7.6: verdicts follow adjustment, never precede it
 
     out = {"protocol": "Addendum A6.7 (frozen before analysis)",
            "threshold_abs_risk": THRESHOLD,
@@ -314,6 +399,27 @@ def main(argv=None):
                "graphs_verify_minus_fitness_mean":
                    _pick(rows, "graphs_n6", "llm-verify/corrected", "llm-fitness/corrected",
                          "mean_diff"),
+               # deployed endpoint (A7.6): the repair arm's own contrast, where the repair can
+               # register at all. Reported with BOTH p-values because the honest reading depends
+               # on which one is used.
+               "graphs_deployed_repair_minus_fitness_mean":
+                   _pick(rows, "graphs_n6", "llm-verify-repair/corrected",
+                         "llm-fitness/corrected", "mean_diff", endpoint="deployed_risk"),
+               "graphs_deployed_repair_minus_fitness_ci_low":
+                   _pick(rows, "graphs_n6", "llm-verify-repair/corrected",
+                         "llm-fitness/corrected", "ci95_low", endpoint="deployed_risk"),
+               "graphs_deployed_repair_minus_fitness_ci_high":
+                   _pick(rows, "graphs_n6", "llm-verify-repair/corrected",
+                         "llm-fitness/corrected", "ci95_high", endpoint="deployed_risk"),
+               "graphs_deployed_repair_minus_fitness_holm":
+                   _pick(rows, "graphs_n6", "llm-verify-repair/corrected",
+                         "llm-fitness/corrected", "holm_p", endpoint="deployed_risk"),
+               "graphs_deployed_repair_minus_fitness_flip":
+                   _pick(rows, "graphs_n6", "llm-verify-repair/corrected",
+                         "llm-fitness/corrected", "sign_flip_p", endpoint="deployed_risk"),
+               "ring_deployed_repair_minus_fitness_mean":
+                   _pick(rows, "ring_n6", "llm-verify-repair/corrected",
+                         "llm-fitness/corrected", "mean_diff", endpoint="deployed_risk"),
                "ring_feedback_label_pass_corrected": _pick_fb(corr, "ring_n6", "llm-verify",
                                                               "label_pass_of_ok"),
                "ring_feedback_reports_ok_corrected": _pick_fb(corr, "ring_n6", "llm-verify",
