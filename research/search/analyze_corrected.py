@@ -51,17 +51,36 @@ CONTRASTS = {
 }
 
 
-def load(pattern, label_mode):
+MATCH = {"budget": 12, "steps": 120, "max_train": 256}
+
+
+def load(pattern, label_mode, matched=True):
+    """Read run logs, keeping only the protocol-matched configuration.
+
+    Three earlier A6.7 arrays were submitted with the job template's budget 32 / steps 200
+    instead of the frozen study's 12 / 120 and were cancelled; a cancelled task can still
+    finish and write its log, so the filter is applied here rather than trusted to the
+    submission. Skipped records are counted and reported, never silently dropped.
+    """
     out = {}
+    skipped = {"wrong_mode": 0, "wrong_config": 0, "mock": 0, "arm": 0}
     for path in sorted(glob.glob(pattern)):
         with open(path) as fh:
             d = json.load(fh)
-        if d.get("arm") not in ARMS or d.get("mock_llm"):
+        if d.get("arm") not in ARMS:
+            skipped["arm"] += 1
             continue
-        mode = d.get("label_mode", "implemented")
-        if mode != label_mode:
+        if d.get("mock_llm"):
+            skipped["mock"] += 1
+            continue
+        if d.get("label_mode", "implemented") != label_mode:
+            skipped["wrong_mode"] += 1
+            continue
+        if matched and any(d.get(k) != v for k, v in MATCH.items()):
+            skipped["wrong_config"] += 1
             continue
         out[(d["family"], d["arm"], int(d["seed"]))] = d
+    load.last_skipped = skipped
     return out
 
 
@@ -134,10 +153,13 @@ def main(argv=None):
     ap.add_argument("--corrected", default="logs/runs_corrected/*.json")
     ap.add_argument("--frozen", default="logs/runs_confirm/*.json")
     ap.add_argument("--out", default="research/search/corrected_search.json")
+    ap.add_argument("--allow-unmatched", action="store_true",
+                    help="accept corrected-mode runs at budgets other than the frozen 12/120 "
+                         "(off by default: unmatched runs are not the matched study A6.7 asks for)")
     a = ap.parse_args(argv)
 
-    corr = load(a.corrected, "corrected")
-    froz = load(a.frozen, "implemented")
+    corr = load(a.corrected, "corrected", matched=not a.allow_unmatched)
+    froz = load(a.frozen, "implemented", matched=False)
     if not corr:
         raise SystemExit("no corrected runs found at %s" % a.corrected)
 
@@ -173,6 +195,9 @@ def main(argv=None):
 
     out = {"protocol": "Addendum A6.7 (frozen before analysis)",
            "threshold_abs_risk": THRESHOLD,
+           "matched_configuration": MATCH,
+           "skipped_records": {"corrected": getattr(load, "last_skipped", {}),
+                               "frozen": getattr(load, "last_skipped", {})},
            "arms_present_in_corrected_runs": arms_present,
            "runs_per_cell": n_by, "arms": arms_rows, "contrasts": rows,
            "note": ("Unit is the paired seed. 'difference not detected' means the interval "
