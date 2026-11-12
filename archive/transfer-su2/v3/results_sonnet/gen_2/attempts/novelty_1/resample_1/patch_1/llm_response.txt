@@ -1,0 +1,77 @@
+<NAME>
+parity_shared_entangling_ansatz
+
+<DESCRIPTION>
+The seed spec uses 24 independent parameters (one RY, one pre-RZ, one post-RZ per qubit), which is far too many for a tiny training set and leads to a large train/validation/test gap (0.88/0.63/0.56) and near-zero worst-group margin. Since fewer distinct parameter names strictly improve the score, and generalization on held-out hard samples is what matters, I replace the per-qubit independent rotation layers with a parity-shared parameterization: qubits are split into "even" and "odd" roles, and every RY/RZ layer uses only two distinct angles (one for even-indexed qubits, one for odd-indexed qubits) instead of eight. I also replace the fixed CZ ring with a parametrized CRZ ring that shares a single entangling angle across all edges (plus a closing edge to make it a full ring), so the circuit can learn how much correlation to inject between neighboring qubits — this is a much more targeted lever for shaping the pairwise correlators that the fixed readout measures, at the cost of only one more parameter.
+
+This drops the parameter count from 24 distinct names down to 5 (ry_even, ry_odd, rz_even, rz_odd, ent_theta), a >4x reduction, while retaining enough structural asymmetry (even vs odd qubit roles, plus a trainable entangling ring) to shape the correlators used by the readout. Fewer parameters directly reduces overfitting risk on the small training set, should shrink the train/test gap, and (per the stated scoring rule) improves the score on parameter economy grounds alone, while the tunable entangling ring gives the optimizer a direct handle on the two-qubit correlations that determine the readout — plausibly helping the worst-case validation-group margin as well.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Parity-shared RY layer: only two distinct angles (even / odd qubits).
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Parity-shared RZ layer before entangling.
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    # Trainable entangling ring: a single shared angle controls how much
+    # correlation is injected between every pair of neighboring qubits.
+    {"gate": "CRZ", "wires": [0, 1], "param": "ent_theta"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "ent_theta"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "ent_theta"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "ent_theta"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "ent_theta"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "ent_theta"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "ent_theta"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "ent_theta"},
+]
+>>>>>>> REPLACE
+</DIFF>

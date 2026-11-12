@@ -1,0 +1,14 @@
+{
+  "generation": 65,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "reduce_params_revert_to_simpler_ansatz",
+  "patch_description": "Analysis of the performance metrics shows:\n\n**Current program (being improved):**\n- Combined score: 0.54\n- n_params: 13 (vs 9 in prior)\n- n_distinct_params: 11 (vs 7 in prior)\n- validation_accuracy: 0.91 (vs 0.97 in prior)\n- worst_group_margin: 0.30 (vs 0.32 in prior)\n- generalization_gap: 0.14 (vs 0.04 in prior)\n\n**Problem:** The addition of the mid-circuit rotation layer (_build_mid_rotation_layer) increased parameter count from 7 to 11 distinct parameters, but degraded performance significantly:\n- Validation accuracy dropped from 97% to 91%\n- Worst-group margin barely changed (0.32 \u2192 0.30)\n- Generalization gap worsened from 0.04 to 0.14\n- The scoring penalty for extra parameters (-4 distinct params) outweighs any theoretical expressivity gain\n\n**Root cause:** The metric explicitly states \"Parameter economy matters at every count: fewer distinct trainable parameter names ALWAYS scores higher, with no point of diminishing returns.\" The mid-block rotation introduced 4 new parameter keys (ry_mid_even, ry_mid_odd, rz_mid_even, rz_mid_odd) that increased complexity without improving the worst-group separation.\n\n**Solution:** Revert to a simpler, leaner architecture that maintains parameter economy while keeping proven entanglement structure:\n1. Remove the mid-rotation layer entirely\n2. Keep the initial RY, first entanglement (XX), cross-entanglement (YY), long-range (ZZ), and final RZ\n3. Revert parameter naming to match the prior successful approach (ry_even/ry_odd naming without prefixes)\n4. This restores the 7-parameter baseline that scored 0.60\n\nThe prior program with 7 distinct parameters achieved better validation accuracy (0.97 vs 0.91), better worst-group margin (0.32 vs 0.30), and lower generalization gap (0.04 vs 0.14), confirming that parameter economy is the dominant scoring factor.",
+  "error_msg": null,
+  "timestamp": "2026-08-03T07:38:55.405399",
+  "llm_cost": 0.03647,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

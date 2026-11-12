@@ -1,0 +1,14 @@
+{
+  "generation": 8,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "none",
+  "patch_description": "This candidate keeps the well-performing structure of the seed (per-qubit RY/RZ rotations followed by nearest-neighbor entanglement) but improves connectivity and expressivity while keeping the parameter budget essentially unchanged.\n\nKey changes vs. the seed:\n1. Entanglement topology is upgraded from an open chain of CZ gates to a full **ring** of CNOT gates (adds the wrap-around edge 7\u21920), giving every qubit at least two entangling neighbors instead of the two end qubits having only one. This increases the entangling power/depth-efficiency ratio without adding any new parameters (CNOT is unparametrized).\n2. A single trainable **CRZ** gate layer is inserted along the same ring topology, with **one shared parameter** across the whole ring. This lets the circuit learn an entanglement strength (rather than being fixed at CZ-strength) while paying only 1 extra parameter for the whole block \u2014 a very parameter-efficient way to make entanglement trainable.\n3. The final RZ\u2192RZ (pre/post) double phase-rotation pattern in the seed (which is largely redundant since CZ is diagonal and commutes with RZ) is replaced by a single closing RY layer, which changes basis in a way that is not redundant with the initial RY/RZ layer and should help expressivity per parameter used.\n4. Gate count and circuit depth per block are reduced slightly relative to the seed (one fewer redundant RZ layer, one shared CRZ instead of many independent params), which should help convergence speed and reduce the train/validation gap, while the ring topology preserves/improves expressive power.\n\nOverall this aims to: keep parameter count close to the seed's 146 (actually slightly fewer amortized per block due to sharing), improve entanglement structure (ring > chain), add one cheap trainable entangling parameter, and trim redundant phase gates \u2014 targeting better validation accuracy and a smaller generalization gap while keeping/improving convergence speed.",
+  "error_msg": null,
+  "timestamp": "2026-07-25T10:57:00.107136",
+  "llm_cost": 0.054084,
+  "llm_model": "anthropic/claude-sonnet-5"
+}

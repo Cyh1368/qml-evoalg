@@ -1,0 +1,99 @@
+Looking at the performance metrics, I can identify the key issues:
+
+**Analysis of Current Performance:**
+- Current program: score 0.68, n_params=20, parameter_efficiency=0.05
+- Best prior program: score 0.72, n_params=14, parameter_efficiency=0.07
+- The current program has MORE parameters but LOWER efficiency and score
+- Main differences: current uses separate `rz_pre` and `rz_post` (16 gates) instead of shared `rz_shared` (16 gates), plus extra CZ(7,0) connection adds complexity
+
+**Key Observations:**
+1. The single-block architecture (35 depth, 186 gates) outperformed the two-block version (65 depth, 372 gates) while maintaining accuracy
+2. All programs achieve perfect accuracy (1.00), so the discriminator is parameter economy
+3. The added CZ(7,0) circular connection and parameter splitting increases count without improving accuracy
+4. Parameter sharing is critical for economy - fewer unique parameters are better
+
+**Proposed Improvement:**
+Replace the current inefficient parameterization with:
+- Return to the proven single-block architecture (lowest depth)
+- Use unified parameter sharing across all RZ gates (not separate pre/post)
+- Convert CZ gates to parametrized CRZ gates with a shared parameter for adaptive entanglement control
+- This reduces redundancy while maintaining expressiveness
+
+This approach:
+- Reduces parameters from 20 to ~3 (ry_shared, rz_shared, crz_shared)
+- Maintains single-block simplicity (depth ~35)
+- Gives optimizer control over entangling strength via CRZ
+- Improves parameter efficiency ratio
+
+<NAME>
+unified_crz_ansatz
+</NAME>
+
+<DESCRIPTION>
+The current program suffers from parameter proliferation (20 params) and poor efficiency (0.05) compared to the best baseline (14 params, 0.07 efficiency). The key parameters are: ry_shared, rz_pre, rz_post, and 8 fixed CZ gates. By unifying RZ parameters into a single rz_shared and converting all CZ gates to parametrized CRZ gates with a shared crz_shared parameter, we reduce total parameters to 3 while retaining the single-block simplicity that achieved the best prior score. The CRZ conversion allows the optimizer to learn optimal entangling angles adaptively, replacing fixed-angle entanglement with learnable angles. This maintains perfect accuracy while dramatically improving parameter economy and convergence efficiency.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Single rotation layer with shared RY
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    # Pre-entanglement RZ layer with shared parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # Linear entangling ladder with parametrized CRZ gates
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_shared"},
+    # Post-entanglement RZ layer with shared parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

@@ -1,0 +1,14 @@
+{
+  "generation": 71,
+  "novelty_attempt": 2,
+  "resample_attempt": 1,
+  "patch_attempt": 2,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "simplify_ansatz_reduce_params",
+  "patch_description": "The current program performs worse than the prior art (0.54 vs 0.60) due to:\n\n1. **Parameter explosion**: 13 total params (11 distinct) vs. prior's 9 (7 distinct)\n2. **Overfitting signal**: Convergence step dropped from 780\u219260, validation accuracy 0.97\u21920.91\n3. **Worse generalization**: generalization_gap increased from 0.04\u21920.14\n\nThe added mid-circuit rotation layer (_build_mid_rotation_layer) with separate ry_mid_even/odd and rz_mid_even/odd parameters is the culprit. While intended to improve expressivity, it actually introduces redundancy and parameter waste.\n\n**Solution**: Remove the mid-circuit rotation layer entirely and revert entanglement parameter names to the simpler scheme that worked. This reduces distinct params from 11 to 7, matching the prior. The simpler ansatz:\n- Avoids barren plateaus from over-parameterization\n- Allows longer, more stable convergence (~780 steps vs. 60)\n- Preserves the key structural patterns (parity sharing, nearest-neighbor XX, diagonal YY, long-range ZZ)\n- Recovers the ~96% test accuracy of the prior\n\nThis is a direct simplification back to the proven baseline structure.",
+  "error_msg": null,
+  "timestamp": "2026-08-03T07:45:02.249154",
+  "llm_cost": 0.036725,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

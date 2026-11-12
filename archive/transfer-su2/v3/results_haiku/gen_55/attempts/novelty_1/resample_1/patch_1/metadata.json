@@ -1,0 +1,14 @@
+{
+  "generation": 55,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": false,
+  "num_applied": 0,
+  "patch_name": "rotate_entangler_across_repeats",
+  "patch_description": "The current program has a performance degradation compared to the prior best (0.46 vs 0.60 combined score), with notably worse validation accuracy (0.83 vs 0.97) and worst_group_margin (0.25 vs 0.32). The key issue is that the ansatz applies the same fixed entanglement pattern three times identically, which may overfit the training data while failing to generalize to hard validation samples.\n\nThe recommendation suggests rotating the entangling connectivity across repeats via a circular shift indexed by block_index. This lightweight regularization diversifies the physical action of shared gates without adding parameters, helping the circuit learn more robust features that generalize better to held-out samples\u2014exactly what the worst_group_margin metric demands.\n\nThe implementation modifies `apply_ansatz_block` to shift two-qubit gate wires by `(block_index % N_QUBITS)` before applying them. This changes the entanglement topology on each repeat while keeping parameter sharing intact and gate count identical. For an 8-qubit system with 3 repeats, the shift pattern is: repeat 0 (shift 0), repeat 1 (shift 1), repeat 2 (shift 2), creating three different connectivity patterns from the same ANSATZ_SPEC, acting as implicit regularization against memorization.",
+  "error_msg": "Attempted to edit outside EVOLVE-BLOCK regions\n\nFound text: 'def apply_ansatz_block(params, block_index: int) -> None:'\nAt position: 7234\n\nContext around found text:\n     Line 158: N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS\n     Line 159: \n     Line 160: \n >>> Line 161: def apply_ansatz_block(params, block_index: int) -> None:\n     Line 162:     \"\"\"Apply one candidate ansatz block from the formal ANSATZ_SPEC.\n     Line 163: \n     Line 164:     Parameters are shared across repetitions: every application of the block\n\nThis text was found in an immutable (non-editable) region.\n\nAvailable editable regions (EVOLVE-BLOCK content):\n  Region 1 (chars 1907-3653):\n    ANSATZ_SPEC = [\n        # Layer 1: Initial RY rotations with binary parity sharing (2 distinct params)\n        {\"gate\": \"RY\", \"wire\": 0, \"param\": \"ry_even\"},\n    ... (30 more lines)\n\nSuggestions:\n1. Move your edit to within an EVOLVE-BLOCK region\n2. Check if similar code exists in the editable regions above\n3. Ensure your search text targets code within # EVOLVE-BLOCK-START/END markers",
+  "timestamp": "2026-08-03T07:27:58.724962",
+  "llm_cost": 0.029337000000000002,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

@@ -1,0 +1,58 @@
+<NAME>
+shared_two_angle_chain
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses 24 distinct trainable parameters per repeated block: eight RY angles and sixteen RZ angles. The two RZ layers are separated only by diagonal CZ gates, so much of their flexibility is redundant. This produces 146 total parameters and 186 gates despite already achieving perfect accuracy.
+
+The replacement uses two shared parameters per block: one global RY angle and one global RZ angle. A nearest-neighbor CZ chain retains full eight-qubit connectivity without adding trainable parameters. Because repetitions receive independent parameter copies, the overall circuit can still learn a sequence of distinct transformations while using roughly one-twelfth as many ansatz parameters. The reduced hypothesis space should preserve performance on this apparently simple task while improving parameter efficiency, convergence, depth, and few-example generalization. Learning rate, iteration count, stopping thresholds, and optimizer selection are fixed by the external training loop and therefore cannot be changed here.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Parameter-efficient shared-angle quantum ansatz."""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "shared_ry"},
+    {"gate": "RY", "wire": 1, "param": "shared_ry"},
+    {"gate": "RY", "wire": 2, "param": "shared_ry"},
+    {"gate": "RY", "wire": 3, "param": "shared_ry"},
+    {"gate": "RY", "wire": 4, "param": "shared_ry"},
+    {"gate": "RY", "wire": 5, "param": "shared_ry"},
+    {"gate": "RY", "wire": 6, "param": "shared_ry"},
+    {"gate": "RY", "wire": 7, "param": "shared_ry"},
+
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "RZ", "wire": 0, "param": "shared_rz"},
+    {"gate": "RZ", "wire": 1, "param": "shared_rz"},
+    {"gate": "RZ", "wire": 2, "param": "shared_rz"},
+    {"gate": "RZ", "wire": 3, "param": "shared_rz"},
+    {"gate": "RZ", "wire": 4, "param": "shared_rz"},
+    {"gate": "RZ", "wire": 5, "param": "shared_rz"},
+    {"gate": "RZ", "wire": 6, "param": "shared_rz"},
+    {"gate": "RZ", "wire": 7, "param": "shared_rz"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

@@ -1,0 +1,21 @@
+<NAME>
+skip2_entangling_ring
+
+<DESCRIPTION>
+Replace the fixed nearest-neighbor CNOT backbone with a "skip-2" double-ring topology (0→2→4→6→0 and 1→3→5→7→1). This creates longer-range entanglement across the register while still using no extra parameters, which prior experiments suggest improves separation/generalization compared to purely local nearest-neighbor connectivity. The parametrized CRZ entangling layer is left on the original nearest-neighbor chain to keep local correlations captured by the trainable part, while the fixed backbone now provides the longer-range mixing.
+
+<DIFF>
+<<<<<<< SEARCH
+# Fixed (parameter-free) nearest-neighbor entangling backbone.
+for _i in range(N_QUBITS - 1):
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [_i, _i + 1]})
+=======
+# Fixed (parameter-free) skip-2 entangling backbone: two interleaved rings
+# that connect qubits two apart, giving longer-range mixing than a simple
+# nearest-neighbor chain while remaining parameter-free.
+for _i in [0, 2, 4, 6]:
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [_i, (_i + 2) % N_QUBITS]})
+for _i in [1, 3, 5, 7]:
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [_i, (_i + 2) % N_QUBITS]})
+>>>>>>> REPLACE
+</DIFF>

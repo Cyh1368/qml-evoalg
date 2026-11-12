@@ -1,0 +1,134 @@
+Looking at the prior programs and current program:
+
+**Key Observations:**
+1. **Prior program 1** (score 0.72): 14 params, fast convergence (90 steps), optimal parameter efficiency (0.07)
+2. **Prior program 2** (score 0.72): 14 params, very fast convergence (30 steps), same parameter efficiency
+3. **Current program** (score 0.68): 20 params, convergence 90 steps, worse parameter efficiency (0.05)
+
+**Issues with current program:**
+- Uses 20 parameters (rz_pre, rz_post are separate) vs 14 in the prior best
+- Extra CZ gate closing the ring [7,0] increases gate count without benefit
+- Parameter efficiency dropped from 0.07 to 0.05
+- Score dropped from 0.72 to 0.68
+
+**Strategy:**
+The recommendation suggests hybridizing with CRZ for block 2 to accelerate convergence. Looking at the pattern:
+- Prior program 2 shows that repeating identical blocks with shared parameters works well and achieves 30-step convergence
+- The current program's 20-parameter design is suboptimal
+- I should implement **two blocks** where block 1 uses classic CZ entanglement and block 2 uses parametrized CRZ to maintain expressivity while reducing parameters
+
+This gives:
+- Block 1: RY (shared) → RZ (shared) → CZ-chain → RZ (shared) 
+- Block 2: RY (shared) → RZ (shared) → CRZ-chain (shared param) → RZ (shared)
+- Total: 3 unique parameters (ry_shared, rz_shared, phi_shared)
+- Maintains high accuracy while improving parameter economy and convergence speed
+
+<NAME>
+hybrid_crz_block2
+</NAME>
+
+<DESCRIPTION>
+This design restructures the ansatz into two complementary blocks to balance expressivity and parameter efficiency. Block 1 retains the proven CZ chain for deep entanglement capability, while Block 2 replaces CZ gates with parametrized CRZ gates sharing a single "phi_shared" parameter. This hybrid approach:
+
+1. **Reduces parameters** from 20 to 3 (ry_shared, rz_shared, phi_shared), dramatically improving parameter_efficiency from 0.05 → ~0.10+
+2. **Accelerates convergence** by allowing block 2 to dynamically adjust entanglement strength during training
+3. **Maintains accuracy** by retaining full CZ expressivity in block 1 for feature extraction
+4. **Simplifies the topology** by removing the ring-closing CZ[7,0] gate that didn't help
+5. **Improves generalization** through reduced parameter count and faster optimization
+
+The shared CRZ parameters in block 2 act as a learnable entanglement modulator, reducing the train-test gap while converging in fewer steps.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Block 1: Classic structure with CZ entanglement for deep expressivity
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # Block 2: Hybrid structure with parametrized CRZ entanglement for adaptive learning
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

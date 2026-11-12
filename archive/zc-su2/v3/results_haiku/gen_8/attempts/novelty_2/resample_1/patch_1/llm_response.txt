@@ -1,0 +1,114 @@
+Let me analyze the performance metrics of the three programs:
+
+1. **Seed program (3 params)**: Score 0.42 - Very parameter-efficient but poor performance
+2. **Second program (10 params)**: Score 0.58 - Best performance with good generalization, but uses more parameters
+3. **Current program (5 params)**: Score 0.43 - Moderate parameter efficiency but underperforming
+
+**Key observations:**
+
+- The second program achieves much better performance (0.58 vs 0.43) with better validation accuracy (0.97 vs 0.64) and crucially, a much better worst_group_margin (0.28 vs 0.05)
+- The second program uses different gate types (XX, YY, ZZ) strategically rather than the same gate
+- The current program uses CZ gates (which are fixed, not parametrized) - these don't contribute to expressiveness relative to their computational cost
+- The current program has high depth (18) but lower worst_group_margin (0.05), indicating it's struggling with hard samples
+- Parameter efficiency is a strong tiebreaker, but the worst_group_margin (0.05 vs 0.28) shows the current approach is fundamentally weaker
+
+**Strategy for improvement:**
+
+1. Replace the fixed CZ gates with parametrized interactions (like the second program did with XX, YY, ZZ)
+2. Keep parameter sharing to maintain efficiency but use varied gate types for better expressiveness
+3. Reduce depth while improving worst-group separation
+4. Focus on the key finding: varying gate types (XX, YY, ZZ) in the second program achieved much better worst_group_margin
+
+The second program's approach with alternating gate types and strategic entanglement is superior. I'll adapt it with parameter sharing to improve efficiency while maintaining expressiveness.
+
+<NAME>
+mixed_ising_entanglement_param_sharing
+</NAME>
+
+<DESCRIPTION>
+The second program achieved significantly better worst_group_margin (0.28 vs 0.05) by using mixed Ising gates (XX, YY, ZZ) rather than repeated XX gates or fixed CZ gates. The key insight is that gate type diversity enables better separation of hard samples.
+
+Current program issues:
+- Uses fixed CZ gates (wasteful - no parameters, no expressiveness benefit)
+- Replaces them with parametrized XX gates but lacks gate-type diversity
+- Low worst_group_margin (0.05) indicates poor handling of hard samples
+- High depth (18) with modest performance
+
+Strategy:
+1. Replace fixed CZ + parametrized XX with a mix of XX, YY, ZZ gates
+2. Use aggressive parameter sharing to keep distinct param count low (target: 6-8)
+3. Reduce overall depth while maintaining expressiveness
+4. Focus on robust entanglement that separates hard samples better
+
+The second program's structure showed that mixing XX, YY, ZZ with shared parameters across multiple qubits achieves both good generalization and robustness. I'll implement a compressed version.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "XX", "wires": [0, 3], "param": "xx_a"},
+    {"gate": "XX", "wires": [1, 4], "param": "xx_a"},
+    {"gate": "XX", "wires": [2, 5], "param": "xx_a"},
+    {"gate": "XX", "wires": [3, 6], "param": "xx_a"},
+    {"gate": "XX", "wires": [4, 7], "param": "xx_a"},
+    {"gate": "YY", "wires": [0, 5], "param": "yy_a"},
+    {"gate": "YY", "wires": [1, 6], "param": "yy_a"},
+    {"gate": "YY", "wires": [2, 7], "param": "yy_a"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_a"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_a"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_a"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_a"},
+    {"gate": "YY", "wires": [0, 4], "param": "yy_b"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "zz_a"},
+    {"gate": "XX", "wires": [2, 6], "param": "xx_a"},
+    {"gate": "YY", "wires": [3, 7], "param": "yy_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+</DIFF>

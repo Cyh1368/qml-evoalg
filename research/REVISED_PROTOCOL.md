@@ -365,3 +365,137 @@ the two are never conflated.
   `full A3 gap`.
 * "buys nothing", "equally", "did not move", "no effect" are banned; failure to detect is
   written as failure to detect, and equivalence requires the prespecified margin test.
+
+---
+
+## Addendum A6 — corrected verifier as comparator, costed decision objective,
+## distribution-aware diagnostic (added 2026-11-12, after the third-round report,
+## **before** any of the analyses below were run)
+
+Third-round review verified in source: `verifier_bridge.label_preservation` defaults to
+`tolerance=0.0` and calls `task.label_oracle(rows)` with **no** `target=`, so the deployed
+label test demands that a hypothesis preserve *every* target column at exact floating-point
+equality. Both defects are real. Therefore no conclusion about *verification* may be drawn
+from the defective gate alone; the corrected gate is added as a first-class comparator, and
+the mismatched-group control is re-specified so that each rule is scored under its own
+decision.
+
+### A6.1 Corrected label test (settings frozen here, before evaluation)
+
+`label_preservation_corrected(task, hypothesis, n_rows, target, tol_rule)` differs from the
+implemented test in exactly two ways, both named in A6: it scores **the scored target
+column** (`task.label_oracle(rows, target=target)`), and it treats a `(row, permutation)`
+entry as violated iff
+
+    |y_t(g x) - y_t(x)| > tol,   tol = ATOL_ABS + ATOL_REL * |y_t(x)|
+    ATOL_ABS = 1e-12, ATOL_REL = 1e-9            # frozen here
+
+`ATOL_REL = 1e-9` is the probe tolerance already used for truth determination, so the gate
+cannot be more demanding than the instrument that defines soundness; `ATOL_ABS = 1e-12` is
+two orders above the largest roundoff discrepancy observed for an exact symmetry in this
+codebase. Accept iff `violated_fraction == 0`. Row count is the harness value
+(`LABEL_ROWS = 64`), so gate cost is comparable to the implemented gate.
+
+Because a single frozen tolerance could itself be load-bearing, every corrected-gate result
+is reported over the **tolerance sweep** `{0, 1e-15, 1e-12, 1e-9, 1e-6, 1e-3}` with the
+frozen point marked, and the sensitivity of each conclusion to the sweep is stated.
+
+### A6.2 Rule set, scored under each rule's own decision
+
+All rules are applied to the **same frozen predictors, same rows, same averaging operation**.
+Each rule is evaluated in four supplied-group regimes, and in every regime the rule's **own**
+firing mask selects which candidates are averaged (this is the correction to the previous
+`R4`, which averaged the mismatched-group delta over all candidates while being described as
+"R2's decision"):
+
+| rule | decision |
+|---|---|
+| `R0_always` | average unconditionally |
+| `R1_defective` | implemented label test (all columns, tol 0) |
+| `R2_defective` | implemented label test AND channel residual > `REPAIR_RESIDUAL_FLOOR` |
+| `R1_corrected` | corrected label test (A6.1) |
+| `R2_corrected` | corrected label test AND channel residual > floor |
+| `R3_defect` | predictor non-invariance statistic below the frozen `q1` threshold |
+| `R_rand75` | random selection at the same firing count as `R3_defect` (seeded) |
+
+Regimes: `declared` (the task's group, valid), `subgroup` (a valid proper subgroup),
+`mismatched` (a group that is not a label symmetry of the scored target), `approximate`
+(a group that is a symmetry of a perturbed target, A6.4). Reported per rule per regime:
+fired, realised mean risk change, risk change if always applied, **harmful interventions
+rejected**, **beneficial interventions missed**, paired intervals, and cost.
+
+### A6.3 Cost model and decision objective (replaces "saves computation" talk)
+
+Costs are **measured**, not assumed, in seconds per candidate on the evaluation hardware:
+label test, channel test, defect statistic, and averaging. The defect statistic is charged
+for what it actually costs: it needs the averaged predictions on its own sample, so
+`cost(R3) = cost(averaging on m rows)`, and this is deducted in the objective.
+
+Objective (frozen): for a deployment horizon of `H` predictions and a cost weight `w`,
+
+    J(rule) = mean risk after the rule + w * (gate cost + one-off averaging + H * per-prediction averaging overhead)
+
+reported for `H in {1, 10, 100, 1000}` and `w` spanning the measured cost/risk exchange rate.
+A rule is reported as **dominated** if another rule is at least as good in risk and cost for
+all `(H, w)` considered. No rule may be described as efficient without this table.
+
+### A6.4 Approximate-symmetry regime (separates implementation defect from gate limitation)
+
+Ring labels are perturbed, `y_eps = alpha_0 + eps * xi` with `xi` fixed by seed `20261207`, for
+`eps in {0, 1e-12, 1e-9, 1e-6, 1e-3, 1e-2}`. The declared group is an exact symmetry only at
+`eps = 0`. This regime is where a zero-tolerance test and a tolerance-aware test must differ;
+if the corrected gate behaves like the defective one here too, the finding is about gates,
+not about our bug.
+
+### A6.5 Diagnostic restated as a distribution-aware, estimable quantity
+
+The A5 statement `|L_t| / |S_n|` is **retracted as a predictor of gate behaviour** and
+replaced by an explicitly distribution-aware quantity:
+
+    accept(Q, t) = Pr_{H ~ Q}[ H is a label symmetry of t ]
+
+for a stated proposal distribution `Q`. It is estimated by Monte Carlo under three declared
+`Q`s: (i) one uniform permutation; (ii) closures of `k` independent uniform permutations,
+`k in {1,2,3}`; (iii) the **empirical** proposal distribution of the 491 recorded search
+hypotheses. Enumeration cost is reported (`n!` grows as 720 at `n=6`, 362880 at `n=9`), and
+`n = 9` is computed by sampling only. Predictions are validated against observed gate
+decisions per family, and the boundary cases are stated as boundary cases: `accept = 1` means
+the predicate cannot discriminate, `accept = 0` means it always rejects; neither is an
+information claim, and a small `accept` is useless if `Q` is concentrated.
+
+### A6.6 Panel units, intervals, and what may be called replication
+
+* The fixed panel is **nine generator-set entries**, and three of them (`full_symmetric`,
+  `random_permutations`, `single_transpositions`) generate the **same** subgroup of order 720.
+  Panel results are therefore **descriptive coverage over a hand-chosen panel**: report the
+  unique subgroups, and do not attach binomial/Wilson interpretation to panel counts.
+* Proposal-level and decision-level rates keep their dependence structure: report counts, and
+  for any interval use the seed-vector bootstrap over the 12 paired seeds; Wilson intervals
+  are reserved for genuinely independent Bernoulli trials, of which this design has few.
+* `crossed_bootstrap_ci` may **not** be described as wider by construction; the observed
+  ordering is a sensitivity result.
+* Fresh prediction inputs with a **development-frozen** decision validate the *risks* of the
+  frozen policies. They cannot replicate a *firing rate*, which is fixed by construction. Any
+  firing-rate replication needs new fitted candidates.
+
+### A6.7 Corrected-feedback search rerun (needed for any behavioural claim about feedback)
+
+Post-processing frozen candidates cannot recover the trajectories that corrected feedback
+would have produced, so behavioural claims require new matched runs: same initial population,
+same budget, same seeds, same prompt structure, arms
+`llm-fitness`, `llm-verify-defective`, `llm-verify-corrected`, both families, 12 paired seeds.
+Primary contrast `llm-verify-corrected - llm-fitness` on development-selected risk, Holm within
+the family, with a **prespecified practically meaningful threshold** frozen here at
+`0.002` absolute risk (the ring invariant floor gap between arms and the constructive block is
+`0.006`; half of it is the smallest effect this study is designed to care about). If the
+corrected feedback does not clear it, the feedback conclusion stays "difference not detected".
+
+### A6.8 Numeric checker: scope, and what would make it a claim-level instrument
+
+`research/paper/check_numbers.py` is a **numeric-token lint**: it confirms that a decimal
+token appearing in the manuscript also appears somewhere in the generated summary. It does
+not bind values to endpoints, arms, splits or table cells, so a valid number in the wrong
+place passes. It may be described only as such. To support a claim-level statement it must
+(i) bind each manuscript value to a structured result key, (ii) generate table cells from
+those keys, and (iii) pass a **mutation test** (sign flips, arm swaps, split swaps, exponent
+changes, endpoint relabels) with reported detection and false-alarm rates.

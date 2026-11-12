@@ -1,0 +1,62 @@
+<NAME>
+split_zz_diag_parameters
+</NAME>
+
+<DESCRIPTION>
+The current program (score 0.43) has a moderate combined score with concerning metrics:
+- Validation margin: 0.42 (compared to 0.58 in the second prior program)
+- Worst group margin: 0.25 (compared to 0.31 in the second prior program)
+- Large generalization gap: 0.22 (compared to 0.10 in the second prior program)
+- Lower test accuracy: 0.78 (compared to 0.90 in the second prior program)
+
+The current ANSATZ_SPEC has only 9 distinct parameters across 22 gate operations, which is highly aggressive parameter sharing. While parameter economy is important, the current design may be under-parameterized and unable to express the complexity needed to separate hard validation samples.
+
+Looking at the second prior program (score 0.54), it had:
+- 12 distinct parameters with careful allocation
+- Dedicated parameters for cross-layer entanglement (yy_12, yy_34, yy_56)
+- Separate per-pair XX entanglement control (xx_01, xx_23, xx_45, xx_67)
+- Worst group margin of 0.31 (higher than current 0.25)
+
+The recommendation to split the shared `zz_diag` parameter into two distinct keys—`zz_03` for wires [0,3] and `zz_47` for wires [4,7]—adds only one extra distinct parameter (bringing the block from 9 to 10 distinct params, and total from 11 to 12) while providing finer control over diagonal coupling. This should:
+
+1. Improve margin separation on difficult samples through more nuanced entanglement control
+2. Maintain parameter economy (only +1 distinct param)
+3. Enable the circuit to learn differentiated couplings for different diagonal pairs
+4. Match the parameter count (12 total) of the higher-performing second prior program
+
+This is a conservative, targeted improvement that increases expressiveness while preserving the efficiency principle.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Additional cross-layer entanglement: bridge even qubits
+    {"gate": "YY", "wires": [0, 2], "param": "cross_a"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross_a"},
+    # Final rotation layer (1 shared param per qubit parity)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+=======
+    # Additional cross-layer entanglement: bridge even qubits
+    {"gate": "YY", "wires": [0, 2], "param": "cross_a"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross_a"},
+    # Diagonal coupling with finer control: separate parameters for each pair
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz_03"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "zz_47"},
+    # Final rotation layer (1 shared param per qubit parity)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+>>>>>>> REPLACE
+
+</DIFF>

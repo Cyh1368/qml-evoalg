@@ -1,0 +1,48 @@
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # One globally shared angle strongly regularizes the small-data model.
+    # Alternating axes retain parity-sensitive local transformations.
+    {"gate": "RY", "wire": 0, "param": "shared_mix"},
+    {"gate": "RX", "wire": 1, "param": "shared_mix"},
+    {"gate": "RY", "wire": 2, "param": "shared_mix"},
+    {"gate": "RX", "wire": 3, "param": "shared_mix"},
+    {"gate": "RY", "wire": 4, "param": "shared_mix"},
+    {"gate": "RX", "wire": 5, "param": "shared_mix"},
+    {"gate": "RY", "wire": 6, "param": "shared_mix"},
+    {"gate": "RX", "wire": 7, "param": "shared_mix"},
+
+    # First level: pair opposite regions of the register.
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Second level: merge the four antipodal components into two.
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+
+    # Final bridge yields a connected multiscale spanning tree.
+    {"gate": "CZ", "wires": [0, 1]},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

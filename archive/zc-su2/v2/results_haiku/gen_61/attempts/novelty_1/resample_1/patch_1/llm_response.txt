@@ -1,0 +1,91 @@
+<NAME>
+efficient_entangle_crossover
+</NAME>
+
+<DESCRIPTION>
+Analysis of the three programs shows they all achieve identical combined scores (0.68) and similar accuracy metrics. The key differences are:
+
+1. **Current program** (102 gates, depth 23): Adds CRX gates (3 gates) to the baseline, increasing gate count and depth without improving score.
+
+2. **Inspiration program** (81 gates, depth 20): Uses selective RZ on even qubits only (4 gates instead of 8), reducing parameter count while maintaining performance.
+
+3. **Second prior** (93 gates, depth 20): Uses all-qubit RZ final layer (8 gates), slightly higher gate count than inspiration.
+
+The scoring heavily penalizes parameter count and gate efficiency. The inspiration program achieves the best gate efficiency (81 gates) while maintaining all performance metrics. 
+
+The crossover strategy:
+- **Keep** the efficient final layer from the inspiration program (RZ on even qubits: 0,2,4,6)
+- **Keep** the base entanglement structure (XX, YY, CRZ blocks) which is proven and efficient
+- **Remove** the CRX layer added in the current program, as it increases depth/gates without improving worst_group_margin (0.36 vs 0.35)
+- **Maintain** the parameter sharing scheme (6 distinct parameters)
+
+This returns to the inspiration program's lean architecture while preserving the proven structure that achieves 0.68 score with minimal gate overhead.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial rotation layer with parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_nn"},
+
+    # Intermediate rotations
+    {"gate": "RY", "wire": 1, "param": "ry_mid"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid"},
+
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Final rotation layer on even qubits only (efficient)
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

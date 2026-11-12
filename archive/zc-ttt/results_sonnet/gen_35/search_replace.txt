@@ -1,0 +1,32 @@
+<NAME>
+remove_zzz_add_ry_mid
+</NAME>
+
+<DESCRIPTION>
+The previous experiment (0.63 score) without the three-body ZZZ layer outperformed the current version (0.58) that added it, indicating the ZZZ layer increases depth/params without benefit and likely causes overfitting/harder optimization. This edit removes the ZZZ correlation layer (reverting to the better-performing entangling structure) and instead inserts a lightweight RY mid-layer on qubits [1,3,5,7] between the CRZ block and the final RZ layer. This "RY→CRZ→RY→RZ" sandwich adds only 4 new parameters/gates, giving a cheap, targeted amplitude refresh on a subset of qubits that may help convergence and expressivity without the depth/parameter cost of the ZZZ interactions.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+
+    # Lightweight three-body correlation layer on disjoint qubit triples,
+    # sharing a single parameter to add third-order expressivity with
+    # minimal depth/parameter overhead.
+    {"gate": "ZZZ", "wires": [0, 4, 8], "param": "zzz_0"},
+    {"gate": "ZZZ", "wires": [1, 3, 6], "param": "zzz_0"},
+    {"gate": "ZZZ", "wires": [2, 5, 7], "param": "zzz_0"},
+
+    # Final single-qubit phase layer
+=======
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+
+    # Lightweight mid-layer amplitude refresh on high-centrality qubits
+    {"gate": "RY", "wire": 1, "param": "ry_mid_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid_2"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid_3"},
+
+    # Final single-qubit phase layer
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,95 @@
+<NAME>
+bidirectional_cz_entanglement
+</NAME>
+
+<DESCRIPTION>
+The prior programs achieved excellent accuracy (100%) with minimal parameters (14), but the current program degraded by using separate rz_pre and rz_post parameters (20 params), which increased parameter count without improving accuracy and reduced the parameter efficiency score from 0.07 to 0.05.
+
+This redesigned program implements the recommendation to double entanglement depth with bidirectional CZ chains. The key structural change is:
+
+1. **Bidirectional Entanglement Blocks**: Each block now contains a reverse CZ chain ([7,6], [6,5], ..., [1,0]) immediately followed by a forward CZ chain ([0,1], [1,2], ..., [6,7]). This adds zero trainable parameters while doubling the entangling circuit depth.
+
+2. **Simplified Parameter Sharing**: Return to the minimal 14-parameter structure that achieved score 0.72, using only `ry_shared` and `rz_shared` parameters (not separate pre/post).
+
+3. **Structural Clarity**: The ansatz now has a single, repeatable block pattern that maximizes entanglement mixing without parameter bloat.
+
+**Expected improvements:**
+- **Parameter efficiency** restored from 0.05 back to 0.07 by reducing to 14 parameters
+- **Bidirectional mixing** improves generalization and convergence by exploring the entanglement landscape more thoroughly
+- **Depth increase** (zero-parameter overhead) should improve learning capacity while maintaining convergence speed
+- Maintains 100% accuracy on all datasets while achieving the best parameter economy
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Block 1: RY rotation layer (shared across all qubits)
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    # Pre-entanglement RZ phase (shared)
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # Bidirectional CZ chains for enhanced entanglement
+    # Reverse CZ chain (right-to-left)
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CZ", "wires": [5, 4]},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CZ", "wires": [3, 2]},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CZ", "wires": [1, 0]},
+    # Forward CZ chain (left-to-right)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Post-entanglement RZ phase (shared)
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

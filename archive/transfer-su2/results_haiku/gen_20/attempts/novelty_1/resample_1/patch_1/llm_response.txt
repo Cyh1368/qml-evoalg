@@ -1,0 +1,80 @@
+<NAME>
+split_readout_gains
+</NAME>
+
+<DESCRIPTION>
+The current readout uses a single global gain parameter that scales all ZZ correlators uniformly before applying the bias. The recommendation suggests splitting this into two group-wise gains: one for even-starting qubit pairs and one for odd-starting pairs.
+
+**Rationale:**
+1. **Differential Information Content**: Even-indexed pairs (0,1), (2,3), (4,5), (6,7) and odd-indexed pairs (1,2), (3,4), (5,6) may carry different amounts of discriminative information about the quantum state property being classified.
+2. **Minimal Parameter Overhead**: Adding one extra parameter (from 2 to 3 readout parameters) is negligible compared to the circuit parameters, but allows the model to learn which correlator subset is more informative.
+3. **Improved Calibration**: By learning separate gains for even and odd pairs, the readout layer can better adapt to the actual signal distribution in the dataset, potentially reducing loss and improving generalization.
+4. **Consistency with Prior Success**: The prior programs achieved perfect accuracy with 26 parameters; this change adds only 1 parameter (to 21 total) while providing more expressive readout calibration.
+
+**Implementation:**
+- Modify `predict_batch()` to compute the mean of even-starting and odd-starting pairs separately.
+- Apply separate trainable gains to each group before combining and applying the bias.
+- Update initialization to set both gains to 1.0 and bias to 0.0.
+- This preserves the zero-gap calibration property while allowing differential weighting.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per state: calibrated mean of the fixed correlators."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    states = pnp.array(np.asarray(x_batch, dtype=complex), requires_grad=False)
+    z = pnp.stack(circuit_pair_expectations(states, circuit_params))  # (n_pairs, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+=======
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per state: calibrated mean of the fixed correlators with group-wise gains."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain_even = params[N_CIRCUIT_PARAMS]
+    gain_odd = params[N_CIRCUIT_PARAMS + 1]
+    bias = params[N_CIRCUIT_PARAMS + 2]
+    states = pnp.array(np.asarray(x_batch, dtype=complex), requires_grad=False)
+    z = pnp.stack(circuit_pair_expectations(states, circuit_params))  # (n_pairs, B)
+    
+    # Separate even-starting and odd-starting qubit pairs
+    even_pairs = [i for i, (a, b) in enumerate(READOUT_PAIRS) if a % 2 == 0]
+    odd_pairs = [i for i, (a, b) in enumerate(READOUT_PAIRS) if a % 2 == 1]
+    
+    # Compute group-wise means and apply separate gains
+    mean_even = pnp.mean(z[even_pairs], axis=0) if even_pairs else 0.0
+    mean_odd = pnp.mean(z[odd_pairs], axis=0) if odd_pairs else 0.0
+    
+    # Combine with group-wise gains and apply bias
+    combined = (gain_even * mean_even + gain_odd * mean_odd) / 2.0
+    return combined - bias
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+=======
+N_READOUT_PARAMS = 3  # trainable output calibration: gain_even, gain_odd, bias
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+=======
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain_even starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 1.0   # gain_odd starts at 1
+    init[N_CIRCUIT_PARAMS + 2] = 0.0   # bias starts at 0
+>>>>>>> REPLACE
+
+</DIFF>

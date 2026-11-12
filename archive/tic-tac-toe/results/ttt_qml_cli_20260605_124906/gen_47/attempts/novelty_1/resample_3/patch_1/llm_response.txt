@@ -1,0 +1,63 @@
+<NAME>
+split-ring-params-hybrid-ansatz
+</NAME>
+
+<DESCRIPTION>
+Introduce a modest increase in expressivity by spliting the ring entanglement gate parameters into two parameter groups. The outer-ring CRY gates will be assigned to two distinct parameter keys (cry_ring_A for the first half of the ring, cry_ring_B for the second half). This preserves the overall architecture and adjacency constraints while providing per-edge flexibility in the ring entanglement. The hub (CRX) and other layers remain unchanged, keeping parameter budget largely controlled. This targeted change aims to improve validation/test performance by enabling the optimizer to explore a richer entangling pattern without a large parameter explosion.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_hybrid_ansatz_spec() -> list[dict]:
+    """Build hybrid ansatz combining parametrized ring (CRY) and shared hub (CRX).
+    
+    Structure:
+    1. Pre-entanglement RZ on corners/edges/center (shared per group)
+    2. RY rotations (shared per group)
+    3. Ring entanglement: parametrized CRY gates with shared parameter
+    4. Hub entanglement: CRX gates from center to edges with shared parameter
+    5. Post-entanglement RZ on corners/edges/center (shared per group)
+    
+    This explores axis-swapped ring/hub motif while preserving parameter budget.
+    """
+    spec: list[dict] = []
+=======
+def _build_hybrid_ansatz_spec() -> list[dict]:
+    """Build hybrid ansatz combining parametrized ring (CRY) with two-ring groups and shared hub (CRX).
+    
+    Structure:
+    1. Pre-entanglement RZ on corners/edges/center (shared per group)
+    2. RY rotations (shared per group)
+    3. Ring entanglement: CRY gates split into two parameter groups across the outer ring
+    4. Hub entanglement: CRX gates center-to-edges with shared parameter
+    5. Post-entanglement RZ on corners/edges/center (shared per group)
+    
+    This explores axis-swapped ring/hub motif while preserving parameter budget.
+    """
+    spec: list[dict] = []
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 3: Ring entanglement (outer ring) - CRY with shared parameter
+    spec.append({"gate": "CRY", "wires": [0, 1], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [1, 2], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [2, 3], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [3, 4], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [4, 5], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [5, 6], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [6, 7], "param": "cry_ring"})
+    spec.append({"gate": "CRY", "wires": [7, 0], "param": "cry_ring"})
+=======
+    # Layer 3: Ring entanglement (outer ring) - CRY with two parameter groups
+    spec.append({"gate": "CRY", "wires": [0, 1], "param": "cry_ring_A"})
+    spec.append({"gate": "CRY", "wires": [1, 2], "param": "cry_ring_A"})
+    spec.append({"gate": "CRY", "wires": [2, 3], "param": "cry_ring_A"})
+    spec.append({"gate": "CRY", "wires": [3, 4], "param": "cry_ring_A"})
+    spec.append({"gate": "CRY", "wires": [4, 5], "param": "cry_ring_B"})
+    spec.append({"gate": "CRY", "wires": [5, 6], "param": "cry_ring_B"})
+    spec.append({"gate": "CRY", "wires": [6, 7], "param": "cry_ring_B"})
+    spec.append({"gate": "CRY", "wires": [7, 0], "param": "cry_ring_B"})
+>>>>>>> REPLACE
+</DIFF>

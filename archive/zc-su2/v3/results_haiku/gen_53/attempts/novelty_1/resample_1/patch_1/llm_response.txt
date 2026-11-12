@@ -1,0 +1,53 @@
+<NAME>
+add_long_range_crz_diagonal
+</NAME>
+
+<DESCRIPTION>
+Analysis of the current program reveals:
+1. **Current score (0.56)** is lower than prior best (0.59), indicating recent changes hurt performance
+2. **Worst-group margin (0.32)** is the critical bottleneck—this drives the combined score via robust separation
+3. **High convergence_step_mean (630)** vs prior (90) suggests the circuit struggles to optimize efficiently
+4. **Generalization gap increased** from 0.05 to 0.10, indicating overfitting on training set
+
+The key insight from the recommendation and prior work: adding long-range entanglement with a single shared parameter can improve worst-group margin without sacrificing parameter efficiency.
+
+Current circuit has local nearest-neighbor interactions (0-1, 2-3, 4-5, 6-7) but lacks diagonal long-range coupling. The proposal adds CRZ gates on diagonal pairs [(0,5), (1,6), (2,7), (3,4)], all sharing a single parameter `crz_diag`. This:
+- Creates long-range connectivity that helps the circuit distinguish hard samples
+- Uses only ONE additional distinct parameter (maintaining efficiency)
+- Improves worst-group margin by providing complementary entanglement structure
+- Should reduce convergence time by enabling richer feature space with minimal parameter overhead
+
+The CRZ gates are inserted after `rz_mid` (middle of circuit) to provide mid-depth entanglement that can improve separation without early-circuit interference.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Mid-circuit shared RZ
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+    # Post-interaction RZ layer
+=======
+    # Mid-circuit shared RZ
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+    # Long-range diagonal CRZ entangler layer (parameter-efficient coupling)
+    {"gate": "CRZ", "wires": [0, 5], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [1, 6], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [2, 7], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_diag"},
+    # Post-interaction RZ layer
+>>>>>>> REPLACE
+
+</DIFF>

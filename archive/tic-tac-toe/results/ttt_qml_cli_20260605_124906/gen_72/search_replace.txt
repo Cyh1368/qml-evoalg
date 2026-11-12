@@ -1,0 +1,50 @@
+<NAME>
+crx_ring_and_hub_shared
+</NAME>
+
+<DESCRIPTION>
+Refactor ANSATZ_SPEC to share parameters across ring CRX gates and hub-edge CRX gates.
+- Replace the perimeter CZ gates with CRX gates sharing a single parameter crx_ring.
+- Replace the per-edge hub CRX gates with a single shared parameter crx_hub_edge across all hub connections.
+This reduces the per-block parameter count from 13 to 11 (11 per block), improving parameter efficiency and potentially aiding training stability and generalization while preserving connectivity and symmetry.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 3: Ring entanglement (outer 8 qubits)
+    # CZ gates around the perimeter
+    spec.append({"gate": "CZ", "wires": [0, 1]})
+    spec.append({"gate": "CZ", "wires": [1, 2]})
+    spec.append({"gate": "CZ", "wires": [2, 3]})
+    spec.append({"gate": "CZ", "wires": [3, 4]})
+    spec.append({"gate": "CZ", "wires": [4, 5]})
+    spec.append({"gate": "CZ", "wires": [5, 6]})
+    spec.append({"gate": "CZ", "wires": [6, 7]})
+    spec.append({"gate": "CZ", "wires": [7, 0]})
+
+    # Layer 4: Hub entanglement (center to edges with per-edge parameters)
+    # Use CRX for edge-specific couplings between center and edges
+    spec.append({"gate": "CRX", "wires": [8, 1], "param": "crx_hub_edge_1"})
+    spec.append({"gate": "CRX", "wires": [8, 3], "param": "crx_hub_edge_2"})
+    spec.append({"gate": "CRX", "wires": [8, 5], "param": "crx_hub_edge_3"})
+    spec.append({"gate": "CRX", "wires": [8, 7], "param": "crx_hub_edge_4"})
+=======
+    # Layer 3: Ring entanglement (outer 8 qubits)
+    # Ring CRX entanglement with shared parameter
+    spec.append({"gate": "CRX", "wires": [0, 1], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [1, 2], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [2, 3], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [3, 4], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [4, 5], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [5, 6], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [6, 7], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [7, 0], "param": "crx_ring"})
+
+    # Layer 4: Hub entanglement (center to edges) with single shared parameter
+    # Use CRX for edge-specific couplings between center and edges
+    spec.append({"gate": "CRX", "wires": [8, 1], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [8, 3], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [8, 5], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [8, 7], "param": "crx_hub_edge"})
+>>>>>>> REPLACE
+</DIFF>

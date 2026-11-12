@@ -1,0 +1,99 @@
+<NAME>
+zz_split_rowcoldiag_motif
+</NAME>
+
+<DESCRIPTION>
+Key ideas:
+- Increase expressive, domain-aligned three-qubit motifs while keeping per-block parameters moderate by splitting the previous single shared ZZZ parameter into three targeted keys: zzz_row, zzz_col, and zzz_diag. This gives the circuit flexibility to treat horizontal, vertical and diagonal winning triples differently, which should help line detection and class separation.
+- Preserve the stable CZ lattice backbone for information propagation and keep lightweight symmetry-grouped local rotations (pre/post RZ and RY) to regularize and reduce overfitting.
+- Keep a single shared CRZ coupling from center to edges (crz_center_edge) to let the center modulate surrounding qubits while remaining parameter-efficient.
+- Add a separate CCRZ for diagonals (ccrz_diag) to provide controlled diagonal-phase sensitivity.
+- Target parameter budget per block to a moderate level (14 parameters per block), giving an overall parameter count that balances expressivity and trainability across the repeated / re-uploaded blocks.
+
+Expected improvement mechanisms:
+- Splitting ZZZ into row/col/diag allows the optimizer to emphasize features useful for different winning patterns rather than force all lines to use the same phase.
+- CCRZ on diagonals complements ZZZ diagonal rotations, giving a complementary controlled-phase mechanism for diagonals (helps discriminate diagonal wins).
+- Maintaining symmetry-grouped local rotations preserves inductive bias for the board geometry while keeping parameter count small to reduce overfitting and improve generalization.
+- The CZ lattice keeps entanglement capacity high without excessive additional parameters.
+
+Hyperparameters and training-related choices remain unchanged (Adam stepsize, epochs, early stopping). The ansatz changes are confined to ANSATZ_SPEC.
+</DESCRIPTION>
+
+<CODE>
+```python
+# EVOLVE-BLOCK-START
+# Split ZZZ motif into row/column/diagonal parameters, keep symmetry-grouped
+# local rotations and a CZ lattice backbone. Add a diagonal CCRZ and a shared
+# center-edge CRZ for center-modulated interactions. This balances expressivity
+# with parameter efficiency (14 params per block -> 84 total parameters).
+ANSATZ_SPEC = [
+    # Pre-phase RZ rotations grouped by symmetry (corner/edge/center)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre_center"},
+
+    # Lightweight local rotations (RY) grouped by symmetry
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # CZ lattice backbone for stable entanglement propagation
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+
+    # Center-edge parametric control (shared param across four center edges)
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_center_edge"},
+
+    # ZZZ motifs split by geometric category to allow differentiated line detection
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_row"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_row"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_row"},
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_diag"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_diag"},
+
+    # Doubly-controlled diagonal phase to complement diagonal ZZZs
+    {"gate": "CCRZ", "wires": [0, 8, 4], "param": "ccrz_diag"},
+    {"gate": "CCRZ", "wires": [2, 8, 6], "param": "ccrz_diag"},
+
+    # Shared post-phase RZ grouped by symmetry
+    {"gate": "RZ", "wire": 0, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_center"},
+]
+# EVOLVE-BLOCK-END
+```
+</CODE>

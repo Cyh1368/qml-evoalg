@@ -1,0 +1,146 @@
+I'll analyze the current performance and propose targeted improvements to the quantum circuit ansatz.
+
+## Analysis
+
+Current metrics show:
+- **Combined score: 0.29** (poor)
+- **Train accuracy: 0.88** (good fitting) but **test accuracy: 0.56** (poor generalization)
+- **Generalization gap: 0.31** (very large - severe overfitting)
+- **Worst group margin: 0.03** (extremely low - failing on hard samples)
+- **Parameters: 26 total, 24 distinct** (redundant - inefficient)
+
+The main issues are:
+1. **Severe overfitting** (0.31 gap) with poor test performance despite training well
+2. **Worst-group margin is terrible** (0.03) - the classifier fails catastrophically on harder samples
+3. **Parameter inefficiency** - 24 distinct parameters for 8 qubits is excessive; this suggests poor generalization
+
+The seed ansatz uses:
+- 8 RY gates (ry_0...ry_7) - individual per qubit
+- 8 RZ pre-gates (rz_pre_0...rz_pre_7) - individual per qubit  
+- 7 CZ gates (linear chain)
+- 8 RZ post-gates (rz_post_0...rz_post_7) - individual per qubit
+
+**Total: 24 distinct parameters**
+
+## Strategy
+
+To fix generalization and worst-group margin:
+1. **Drastically reduce parameters** through aggressive parameter sharing - this forces the circuit to learn more general features
+2. **Increase entanglement connectivity** beyond linear chain to better capture correlations
+3. **Use parametrized two-qubit gates** (XX, YY, ZZ) instead of just fixed CZ gates - these provide more expressive entanglement at the same parameter cost
+4. **Replace independent per-qubit rotations** with shared parameters to reduce overfitting
+
+Target: ~12-14 distinct parameters (50% reduction) with better entanglement structure.
+
+<NAME>
+shared_params_deep_entangle
+</NAME>
+
+<DESCRIPTION>
+Radically reduce parameter count through aggressive sharing while increasing entanglement:
+
+1. Replace 8 independent RY gates with 2 shared RY parameters (even/odd qubits)
+2. Replace 16 independent RZ gates with 2 shared RZ parameters (pre/post layers, all qubits)
+3. Replace linear CZ chain with parametrized XX/YY gates on all neighbor pairs
+4. Add a few strategic cross-chain gates for better long-range entanglement
+
+This reduces distinct parameters from 24 to ~10-12, forcing the circuit to learn more generalizable patterns rather than memorizing training data. The parameter sharing acts as strong regularization. Parametrized two-qubit gates (XX, YY) replace fixed CZ gates, giving us more expressive power per parameter.
+
+Expected impact:
+- Reduced overfitting (smaller train-test gap)
+- Better worst-group margin (regularization helps hard samples)
+- Better parameter efficiency
+- Improved combined score through better generalization
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared RY rotations: even and odd qubits share one parameter each
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Shared RZ pre-rotation: all qubits share one parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    # Parametrized entanglement: XX gates on neighbor pairs (more expressive than CZ)
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_23"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    # YY gates on offset pairs for cross-chain entanglement
+    {"gate": "YY", "wires": [1, 2], "param": "yy_12"},
+    {"gate": "YY", "wires": [3, 4], "param": "yy_34"},
+    {"gate": "YY", "wires": [5, 6], "param": "yy_56"},
+    # Long-range coupling (diagonal)
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz_long"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "zz_long"},
+    # Shared RZ post-rotation: all qubits share one parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+
+</DIFF>
+
+This edit reduces distinct parameters from 24 to 12:
+- `ry_even`, `ry_odd` (2 params, shared across 4 qubits each)
+- `rz_pre`, `rz_post` (2 params, shared across all 8 qubits each)
+- `xx_01`, `xx_23`, `xx_45`, `xx_67` (4 params for local XX entanglement)
+- `yy_12`, `yy_34`, `yy_56` (3 params for cross-chain YY entanglement)
+- `zz_long` (1 param for long-range ZZ coupling, shared by two pairs)
+
+**Total: 12 distinct parameters** (50% reduction from 24)
+
+The aggressive parameter sharing acts as L2 regularization, forcing the circuit to learn more general patterns. The mixed XX/YY/ZZ entanglement provides diverse interaction types. Fewer parameters should dramatically improve generalization and worst-group margin.

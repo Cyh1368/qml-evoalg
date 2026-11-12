@@ -1,0 +1,38 @@
+<NAME>
+add_shared_rx_tilt
+
+<DESCRIPTION>
+The current best-performing candidate (20 params, perfect train/val/test accuracy, convergence_step_mean=90) uses a compact RY-ZZ-RZ pattern per block, covering only Y and Z rotation axes plus entangling ZZ interactions. Adding a single shared RX rotation (one additional parameter per block, applied identically to all 8 qubits) completes the local single-qubit rotation basis (X, Y, Z axes), enriching the reachable single-qubit unitary group per block from a 2-parameter subgroup to a full 3-parameter SU(2)-like rotation while adding only 6 extra trainable parameters total (1 per block × 6 blocks). This should not increase circuit depth much (single extra layer of single-qubit gates) but may accelerate convergence by allowing the model to rotate along the X-axis directly, rather than requiring compositions of Y and Z rotations to reach equivalent state changes indirectly. Since ZZ commutes with RZ but not with RX, inserting RX before the RY layer (or after RZ) provides a new non-commuting generator each block, increasing expressivity for a small parameter cost. We place the shared RX gates at the very start of the block (before RY) so all three fundamental rotation generators appear early in the pipeline.
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+=======
+ANSATZ_SPEC = [
+    {"gate": "RX", "wire": 0, "param": "tilt_x"},
+    {"gate": "RX", "wire": 1, "param": "tilt_x"},
+    {"gate": "RX", "wire": 2, "param": "tilt_x"},
+    {"gate": "RX", "wire": 3, "param": "tilt_x"},
+    {"gate": "RX", "wire": 4, "param": "tilt_x"},
+    {"gate": "RX", "wire": 5, "param": "tilt_x"},
+    {"gate": "RX", "wire": 6, "param": "tilt_x"},
+    {"gate": "RX", "wire": 7, "param": "tilt_x"},
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+>>>>>>> REPLACE
+
+</DIFF>

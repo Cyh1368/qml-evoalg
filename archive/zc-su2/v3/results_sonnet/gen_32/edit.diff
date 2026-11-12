@@ -1,0 +1,70 @@
+--- a/original.py
++++ b/original.py
+@@ -1,65 +1,66 @@
+ """Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+ 
+ Everything else about the task, that is how inputs are encoded, how the circuit
+ is measured, how training works and how metrics are computed, is fixed and lives
+ in a module that is not reproduced here. No information about the data is
+ available in this file.
+ """
+ 
+ from _backend import run_experiment as _run
+ 
+ N_QUBITS = 8
+ ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+ 
+ 
+ # EVOLVE-BLOCK-START
+ ANSATZ_SPEC = []
+ 
+ # Layer 1: shared two-axis single-qubit rotation (RX then RY) with the SAME
+ # scalar parameter "a" reused across both rotation axes. This produces a
+ # richer effective single-qubit unitary at zero extra parameter cost, since
+ # the trainable value is shared between the two gates.
+ for _i in range(N_QUBITS):
+     ANSATZ_SPEC.append({"gate": "RX", "wire": _i, "param": "a"})
+ for _i in range(N_QUBITS):
+     ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "a"})
+ 
+ # Fixed (parameter-free) forward entangling chain to seed connectivity
+ # before the parametrized entangler acts. This mirrors the higher-scoring
+ # seed structure and costs nothing in parameter budget.
+ for _i in range(N_QUBITS - 1):
+     ANSATZ_SPEC.append({"gate": "CNOT", "wires": [_i, _i + 1]})
+ 
+ # Layer 2: dual-generator ring entangler. A full ring (including the
+ # wrap-around edge 7 -> 0) of CRZ gates is followed by a full ring of CRX
+ # gates, both sharing the SAME parameter "b". This gives two independent
+ # entangling generators (phase-type via CRZ, amplitude-type via CRX)
+ # driven by a single trainable angle, substantially increasing
+ # expressivity-per-parameter and improving robustness on hard groups,
+ # without adding to the distinct parameter count.
+ for _i in range(N_QUBITS):
+     _j = (_i + 1) % N_QUBITS
+-    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, _j], "param": "b"})
++    _p = "b" if _i % 2 == 0 else "d"
++    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, _j], "param": _p})
+ for _i in range(N_QUBITS):
+     _j = (_i + 1) % N_QUBITS
+     ANSATZ_SPEC.append({"gate": "CRX", "wires": [_i, _j], "param": "b"})
+ 
+ # Layer 3: second shared two-axis single-qubit rotation with a different
+ # scalar "c", again reused across both RX and RY axes.
+ for _i in range(N_QUBITS):
+     ANSATZ_SPEC.append({"gate": "RX", "wire": _i, "param": "c"})
+ for _i in range(N_QUBITS):
+     ANSATZ_SPEC.append({"gate": "RY", "wire": _i, "param": "c"})
+ 
+ # Fixed reversed-direction entangling chain after the rotation layer, to
+ # further mix amplitudes without adding any trainable parameters.
+ for _i in range(N_QUBITS - 1, 0, -1):
+     ANSATZ_SPEC.append({"gate": "CNOT", "wires": [_i, _i - 1]})
+ # EVOLVE-BLOCK-END
+ 
+ 
+ def run_experiment(**kwargs):
+     return _run(ANSATZ_SPEC, **kwargs)

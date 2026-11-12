@@ -1,0 +1,93 @@
+<NAME> add-mid-ry-and-merge-rz-keys</NAME>
+<DESCRIPTION>Introduce a mid-block RY layer and merge corner/edge pre/post RZ keys into shared keys to increase expressivity while reducing parameter duplication. Specifically:
+- Merge rz_pre_corner/rz_post_corner into a single rz_corner and rz_pre_edge/rz_post_edge into rz_edge (center keys unchanged).
+- Add a new mid-block RY layer before the CRX ring with new keys: ry_mid_corner, ry_mid_edge, ry_mid_center.
+- Maintain existing ry_corner/ry_edge/ry_center for the initial RY layer and keep crx_ring and crz_hub_edge as shared per-block parameters.
+- Post-entanglement RZ continues to share rz_corner/rz_edge for corners/edges and rz_post_center for the center.
+This increases the parameter count per block to 12 (72 total), potentially improving expressivity and validation performance while preserving symmetry benefits. Ensure ANSATZ_SPEC reflects these new keys and ordering. </DESCRIPTION>
+<DIFF>
+<<<<<<< SEARCH
+def _build_hybrid_ansatz_spec() -> list[dict]:
+    """Build hybrid ansatz combining parametrized ring (CRX) and shared hub (CRZ).
+
+    Structure:
+    1. Pre-entanglement RZ on corners/edges/center (shared per group)
+    2. RY rotations on corners/edges/center (shared per group)
+    3. Ring entanglement: parametrized CRX gates with shared parameter
+    4. Hub entanglement: CRZ gates from center to edges with shared parameter
+    5. Post-entanglement RZ on corners/edges/center (shared per group)
+
+    This combines:
+    - Parametrized ring from program 2 (improved validation accuracy to 0.65)
+    - Shared hub parameter from program 1 (reduced parameter count)
+    """
+    spec: list[dict] = []
+=======
+def _build_hybrid_ansatz_spec() -> list[dict]:
+    """Build enhanced hybrid ansatz combining parametrized ring (CRX) and shared hub (CRZ).
+
+    Structural changes:
+    1) Pre-entanglement RZ on corners/edges/center (shared per group)
+    2) RY rotations on corners/edges/center (shared per group)
+    3) Mid-block RY layer (new) before the CRX ring
+    4) Ring entanglement: parametrized CRX gates with shared parameter
+    5) Hub entanglement: CRZ gates from center to edges with shared parameter
+    6) Post-entanglement RZ on corners/edges/center (shared per group)
+
+    This combines:
+    - Parametrized ring from program 2 (improved validation accuracy to 0.65)
+    - Shared hub parameter from program 1 (reduced parameter count)
+    """
+    spec: list[dict] = []
+>>>>>>> REPLACE
+>>>>>>> SEARCH
+    # Group indices by board symmetry
+    corners = (0, 2, 4, 6)
+    edges = (1, 3, 5, 7)
+    center = 8
+
+    # Layer 1: Pre-entanglement RZ (shared per group)
+    for w in corners:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_pre_corner"})
+    for w in edges:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_pre_edge"})
+    spec.append({"gate": "RZ", "wire": center, "param": "rz_pre_center"})
+
+    # Layer 2: RY rotations (shared per group)
+    for w in corners:
+        spec.append({"gate": "RY", "wire": w, "param": "ry_corner"})
+    for w in edges:
+        spec.append({"gate": "RY", "wire": w, "param": "ry_edge"})
+    spec.append({"gate": "RY", "wire": center, "param": "ry_center"})
+
+    # Layer 3: Ring entanglement (outer ring CRX with shared parameter)
+    # Parametrized ring entanglement from program 2
+    spec.append({"gate": "CRX", "wires": [0, 1], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [1, 2], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [2, 3], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [3, 4], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [4, 5], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [5, 6], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [6, 7], "param": "crx_ring"})
+    spec.append({"gate": "CRX", "wires": [7, 0], "param": "crx_ring"})
+
+    # Layer 4: Hub entanglement (center to edges) with shared parameter
+    # Shared hub parameter from program 1
+    spec.append({"gate": "CRZ", "wires": [center, 1], "param": "crz_hub_edge"})
+    spec.append({"gate": "CRZ", "wires": [center, 3], "param": "crz_hub_edge"})
+    spec.append({"gate": "CRZ", "wires": [center, 5], "param": "crz_hub_edge"})
+    spec.append({"gate": "CRZ", "wires": [center, 7], "param": "crz_hub_edge"})
+
+    # Layer 5: Post-entanglement RZ rotations with parameter sharing
+    spec.append({"gate": "RZ", "wire": 0, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 2, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 4, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 6, "param": "rz_post_corner"})
+    spec.append({"gate": "RZ", "wire": 1, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 3, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 5, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 7, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": 8, "param": "rz_post_center"})
+
+    return spec
+</DIFF>

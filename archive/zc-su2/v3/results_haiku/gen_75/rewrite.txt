@@ -1,0 +1,85 @@
+"""Enhanced quantum circuit with improved entanglement expressiveness.
+
+Combines proven parity parameter sharing with flexible parametrized two-qubit gates
+to balance parameter economy with validation margin recovery.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Layer 1: Parity-based RY (2 distinct params: ry_even, ry_odd)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Shared RZ pre-layer (1 distinct param: rz_pre)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    # First entangling layer: mix of Ising and parametrized gates (4 distinct params)
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_23"},
+    {"gate": "YY", "wires": [4, 5], "param": "yy_45"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_67"},
+    # Middle parity-swapped RY layer (reuses ry_even, ry_odd: 0 new params)
+    {"gate": "RY", "wire": 0, "param": "ry_odd"},
+    {"gate": "RY", "wire": 1, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_even"},
+    # Shared RZ mid-layer (1 distinct param: rz_mid)
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+    # Second entangling layer: cross-qubit couplings (2 distinct params)
+    {"gate": "CRY", "wires": [1, 4], "param": "cry_14"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    # Final parity-based RY layer (reuses ry_even, ry_odd: 0 new params)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Final shared RZ post-layer (1 distinct param: rz_post)
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

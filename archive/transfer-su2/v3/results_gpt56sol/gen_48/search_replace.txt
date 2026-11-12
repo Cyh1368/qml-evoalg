@@ -1,0 +1,68 @@
+<NAME>
+split_local_nonlocal_zz
+</NAME>
+
+<DESCRIPTION>
+Decouple nearest-neighbor and opposite-wire correlation scales while preserving strong symmetry-based parameter sharing. The ring ZZ gates receive one shared local parameter, while four Möbius cross-chord ZZ gates retain the collective parameter already used by the global RY layer. This replaces the redundant same-edge YY interactions with explicit long-range correlations, keeps the model compact at only two circuit parameters, lowers gate count, and should improve worst-group separation by allowing short- and long-range structure to be optimized independently.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# A single circuit parameter controls every adaptive operation. This restores
+# maximal parameter economy while retaining a nonlinear, noncommuting circuit
+# trajectory through the three tied block repetitions.
+_COLLECTIVE_PARAM = "collective_orthogonal_angle"
+=======
+# Two symmetry-shared parameters distinguish short-range correlations from
+# collective basis mixing and nonlocal correlations. This small separation of
+# scales adds only one trainable scalar while retaining strong regularization.
+_COLLECTIVE_PARAM = "collective_correlation"
+_LOCAL_PARAM = "local_correlation"
+>>>>>>> REPLACE
+
+</DIFF>
+<DIFF>
+<<<<<<< SEARCH
+    # Edgewise orthogonal Ising pairs. Every YY interaction immediately
+    # follows the matching ZZ interaction and uses exactly the same angle.
+    # Neighboring edges overlap, so cross-axis terms become noncommuting even
+    # though each same-edge ZZ/YY pair is parameter economical.
+    + [
+        gate
+        for a, b in _RING_EDGES
+        for gate in (
+            {
+                "gate": "ZZ",
+                "wires": [a, b],
+                "param": _COLLECTIVE_PARAM,
+            },
+            {
+                "gate": "YY",
+                "wires": [a, b],
+                "param": _COLLECTIVE_PARAM,
+            },
+        )
+    ]
+=======
+    # Nearest-neighbor correlations share a dedicated local scale.
+    + [
+        {
+            "gate": "ZZ",
+            "wires": [a, b],
+            "param": _LOCAL_PARAM,
+        }
+        for a, b in _RING_EDGES
+    ]
+    # Opposite-wire chords share the collective scale with the global basis
+    # change, providing economical long-range correlation processing.
+    + [
+        {
+            "gate": "ZZ",
+            "wires": [wire, wire + N_QUBITS // 2],
+            "param": _COLLECTIVE_PARAM,
+        }
+        for wire in range(N_QUBITS // 2)
+    ]
+>>>>>>> REPLACE
+
+</DIFF>

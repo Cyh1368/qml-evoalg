@@ -1,0 +1,122 @@
+<NAME>
+symmetry_aware_output_mixing
+</NAME>
+
+<DESCRIPTION>
+Analysis of prior programs and current performance:
+
+**Prior Gen 1 (score 0.45):** 90 params, used fully independent RY/RZ/RX on all qubits plus parametrized CRX entanglement. High param count but moderate accuracy (0.37 test).
+
+**Prior Gen 2 (score 0.48):** 54 params, compact symmetry-aware design with shared rotations by class (corners/edges/center) and fixed CZ entanglement. Better generalization (0.02 gap) but lower test accuracy (0.33).
+
+**Current (score 0.40):** 84 params, uses parametrized CRZ on all edges (ring + hub) with independent RZ per qubit. High validation (0.47) but large generalization gap (0.22) and moderate test (0.53). The issue: validation accuracy is high but test accuracy is only 0.53, suggesting overfitting or poor transfer.
+
+**Key observation:** Gen 2's symmetry-aware output mixing (shared `ry_out` and `rz_out` across all qubits) achieved the best combined score (0.48) with minimal parameters. The recommendation in the prompt suggests splitting the final output layer into periphery (corners+edges) and center subgroups to sharpen the draw-vs-win decision boundary.
+
+**Proposed improvement:** Adopt Gen 2's compact symmetry structure but enhance it with the recommended split output mixing:
+- Keep the symmetry-grouped initial RY rotations (corners/edges/center)
+- Keep the symmetry-grouped initial RZ rotations (corners/edges/center)  
+- Use fixed CZ entanglement on selective edges (as in Gen 2) for efficiency
+- **NEW:** Split the final output layer into two parameter pairs:
+  - `ry_out_periphery` / `rz_out_periphery` for corners (0,2,4,6) and edges (1,3,5,7)
+  - `ry_out_center` / `rz_out_center` for center (8)
+  
+This costs only 4 parameters (2 extra vs Gen 2's 2 shared params) but allows the center measurement to have independent fine-tuning for the draw classification, which is critical since draw is encoded on qubit 8. This should improve the draw-vs-win boundary while maintaining Gen 2's parameter efficiency and regularization.
+
+Expected outcome: Better test accuracy and reduced generalization gap by giving the center qubit (which directly measures draw) its own output tuning, while keeping the periphery (which measures cross/circle) shared for regularization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Symmetry-grouped initial rotations
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+    # Parametrized entanglement on grid edges
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_hub"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_hub"},
+    # Local phase adjustments
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_8"},
+]
+=======
+ANSATZ_SPEC = [
+    # Compact symmetry-grouped initial rotations
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Local pre-phases shared by symmetry class
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Selective fixed entangling layer (compact): 4 ring edges + 4 hub edges
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+
+    # Split final output mixing: periphery vs center for sharper decision boundary
+    {"gate": "RY", "wire": 0, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+    {"gate": "RZ", "wire": 0, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 1, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 2, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 3, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 4, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 5, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 6, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 7, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 8, "param": "rz_out_center"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,32 @@
+<NAME>
+replace_second_cnot_chain_with_shared_crz
+</NAME>
+
+<DESCRIPTION>
+The current ansatz contains two full linear CNOT chains (7 gates each) sandwiching the parametrized rotations, giving high depth (54) and gate count (126) but poor generalization (train 0.62 vs test 0.45, gap 0.17). This suggests the second reversed CNOT chain adds entangling depth without contributing useful trainable expressivity, likely encouraging overfitting to the small training set.
+
+I replace the second reversed linear CNOT chain (7 gates, wires 7->0) with a compact long-range entangling layer using CRZ gates on the same disjoint qubit pairs used by the initial ZZ layer ([0,4],[1,5],[2,6],[3,7]), reusing the existing shared parameter "g" instead of introducing a new one. This:
+- Reduces gate count and depth (4 gates instead of 7 in that block, lower depth contribution than a full chain),
+- Adds no new trainable parameter (keeps n_distinct_params at 4, satisfying the "fewer parameters always better" bias),
+- Reintroduces the same long-range coupling structure as the first entangling layer, creating a more symmetric, parameter-efficient circuit that should generalize better because the same parameter governs both long-range entangling layers, effectively regularizing the entangling structure,
+- Preserves local nearest-neighbor mixing from the first CNOT chain and the ry_a/rz_a/ry_c rotations, retaining expressivity where it matters most.
+
+This targets the stated goals of reducing depth, reducing train/validation gap, and keeping parameter count minimal while retaining meaningful entangling capacity.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CNOT", "wires": [7, 6]},
+    {"gate": "CNOT", "wires": [6, 5]},
+    {"gate": "CNOT", "wires": [5, 4]},
+    {"gate": "CNOT", "wires": [4, 3]},
+    {"gate": "CNOT", "wires": [3, 2]},
+    {"gate": "CNOT", "wires": [2, 1]},
+    {"gate": "CNOT", "wires": [1, 0]},
+=======
+    {"gate": "CRZ", "wires": [0, 4], "param": "g"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "g"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "g"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "g"},
+>>>>>>> REPLACE
+</DIFF>

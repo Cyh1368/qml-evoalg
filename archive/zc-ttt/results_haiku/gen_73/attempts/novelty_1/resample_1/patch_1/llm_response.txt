@@ -1,0 +1,178 @@
+Looking at the performance trends:
+
+1. **Program 1** (score 0.60): 114 params, shallow depth 75, good train/val accuracy (0.67/0.65)
+2. **Program 2** (score 0.61): 174 params, moderate depth 63, better accuracy (0.71/0.68) - **best so far**
+3. **Current** (score 0.57): 144 params, deep 81, worse performance (0.66/0.62)
+
+The current program is **regressing** compared to Program 2. Analysis:
+
+- Program 2's success comes from: individual RY encoding + shared RZ phase + diverse parametrized 2-qubit gates (CRZ, CRY mix) + final RY output layer
+- Current program adds too much (extra RX global layer, extra CCRZ gates, intermediate RZ layers) → depth 81 and gate_count 393 → overfitting
+- The extra gates increase circuit depth without improving expressivity - they're creating noise rather than useful correlations
+
+**Strategy**: Return to Program 2's successful structure but add one high-value enhancement inspired by the recommendation: a **second global RZ phase layer after the three-qubit block** to capture deeper phase correlations. This adds only 1 parameter while potentially capturing important phase relationships that emerge after high-order interactions.
+
+<NAME>
+restore_and_phase_enhance
+</NAME>
+
+<DESCRIPTION>
+The current program has regressed to a score of 0.57 from Program 2's better score of 0.61. The main issues are:
+1. Extra RX global layer adds unnecessary depth without proportional benefit
+2. Excessive intermediate RZ layers (rz_mid) increase complexity
+3. Too many three-qubit gates (2 ZZZ + 2 CCRZ) creates overparameterization
+4. Overall depth (81) and gate count (393) are too high
+
+The solution: Return to Program 2's proven successful structure (which had individual RY, shared RZ phase, mixed parametrized 2-qubit gates, and final RY output) and add a second shared RZ phase layer immediately after the three-qubit block. This follows the recommendation to capture deeper phase correlations at minimal cost (1 parameter).
+
+Expected improvements:
+- Reduce depth and gate count closer to Program 2 levels
+- Restore the good train/val accuracy balance from Program 2
+- Add one parameter for a targeted improvement in phase correlations after high-order interactions
+- Better generalization through simpler, more interpretable circuit structure
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 1: Initial RY rotations with individual parameters for input encoding flexibility
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+
+    # Layer 1b: RZ rotations with shared parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre"},
+
+    # Layer 1c: Global RX rotation on all qubits for basis diversity before entanglement
+    {"gate": "RX", "wire": 0, "param": "rx_global"},
+    {"gate": "RX", "wire": 1, "param": "rx_global"},
+    {"gate": "RX", "wire": 2, "param": "rx_global"},
+    {"gate": "RX", "wire": 3, "param": "rx_global"},
+    {"gate": "RX", "wire": 4, "param": "rx_global"},
+    {"gate": "RX", "wire": 5, "param": "rx_global"},
+    {"gate": "RX", "wire": 6, "param": "rx_global"},
+    {"gate": "RX", "wire": 7, "param": "rx_global"},
+    {"gate": "RX", "wire": 8, "param": "rx_global"},
+
+    # Layer 1: Parametrized entanglement on allowed pairs
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+    {"gate": "CZ", "wires": [4, 8]},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_6"},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Layer 2: Shared RZ layer before three-qubit interactions
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 8, "param": "rz_mid"},
+
+    # Layer 2: Three-qubit interactions for expressivity
+    {"gate": "ZZZ", "wires": [0, 4, 8], "param": "zzz_0"},
+    {"gate": "ZZZ", "wires": [1, 5, 6], "param": "zzz_1"},
+
+    # Layer 2: Controlled-controlled rotations
+    {"gate": "CCRZ", "wires": [0, 1, 4], "param": "ccrz_0"},
+    {"gate": "CCRZ", "wires": [2, 3, 7], "param": "ccrz_1"},
+
+    # Layer 3: Final RZ rotations with shared parameter
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post"},
+=======
+    # Layer 1: Individual RY encoding on all qubits for better input expressivity
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+
+    # Layer 1: Shared RZ phase layer for global coherence
+    {"gate": "RZ", "wire": 0, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 1, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 2, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 3, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 4, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 5, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 6, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 7, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 8, "param": "rz_phase"},
+
+    # Layer 2: Mixed entanglement with parametrized and fixed gates
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CRY", "wires": [0, 7], "param": "cry_1"},
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CNOT", "wires": [2, 6]},
+    {"gate": "CRY", "wires": [3, 5], "param": "cry_5"},
+    {"gate": "CZ", "wires": [4, 8]},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_6"},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Layer 3: Three-qubit interactions for enhanced expressivity
+    {"gate": "ZZZ", "wires": [0, 4, 8], "param": "zzz_0"},
+    {"gate": "ZZZ", "wires": [2, 5, 7], "param": "zzz_1"},
+    {"gate": "CCRZ", "wires": [1, 3, 6], "param": "ccrz_0"},
+
+    # Layer 3b: Second global RZ phase layer after three-qubit interactions
+    {"gate": "RZ", "wire": 0, "param": "rz_phase2"},
+    {"gate": "RZ", "wire": 1, "param": "rz_phase2"},
+    {"gate": "RZ", "wire": 2, "param": "rz_phase2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_phase2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_phase2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_phase2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_phase2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_phase2"},
+    {"gate": "RZ", "wire": 8, "param": "rz_phase2"},
+
+    # Layer 4: Final RY rotations for output preparation
+    {"gate": "RY", "wire": 0, "param": "ry_out_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_8"},
+>>>>>>> REPLACE
+
+</DIFF>

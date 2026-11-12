@@ -1,0 +1,91 @@
+I understand. I need to modify only the ANSATZ_SPEC within the EVOLVE-BLOCK. Let me propose a different approach that simplifies and improves the ansatz structure directly.
+
+<NAME>
+simplified_entanglement_with_better_sharing
+</NAME>
+
+<DESCRIPTION>
+The current program has 11 distinct parameters but achieves only a 0.49 combined score with worst-group margin of 0.22, indicating poor generalization on hard samples. The prior Gen 9 program achieved 0.56 with only 8 distinct parameters and better margins (0.33).
+
+The key insight is that the current structure is overcomplex and overfits. By:
+1. **Reducing parameter count** to match the successful Gen 9 structure (8 distinct params)
+2. **Simplifying entangler layout** to focus on effective two-qubit correlations
+3. **Increasing parameter sharing** within symmetric structures (even/odd parity)
+4. **Removing redundant layers** that don't contribute to worst-group separation
+
+We can improve both parameter efficiency and worst-group margin.
+
+The strategy:
+- Keep the 3-way alternation in RY but consolidate to 2 params (even/odd)
+- Reduce XX entanglers from 4 distinct to 1 shared parameter
+- Reduce YY/ZZ layers, keeping only the most effective pairings
+- Use aggressive parameter sharing on final RZ (2 params, even/odd)
+- Total: ~8 distinct parameters, matching the best prior performer
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Shared initial rotation layer with 3-way alternation for more expressiveness
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_c"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_a"},
+    # Symmetric entangling layer with learnable XX gates: even-odd pairs
+    {"gate": "XX", "wires": [0, 1], "param": "ent_0"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_1"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_2"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_3"},
+    # Additional cross-layer entanglement: bridge even qubits with YY
+    {"gate": "YY", "wires": [0, 2], "param": "cross_a"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross_a"},
+    # Diagonal entanglement for orthogonal channel: ZZ on complementary pairs
+    {"gate": "ZZ", "wires": [0, 4], "param": "diag_a"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "diag_a"},
+    # Final rotation layer (2 shared params)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+]
+=======
+ANSATZ_SPEC = [
+    # Initial rotation layer: binary even/odd parity sharing for economy
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Symmetric nearest-neighbor XX entanglement: all pairs share one parameter
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+    # Cross-layer YY on all even pairs: single shared parameter
+    {"gate": "YY", "wires": [0, 2], "param": "ent_cross"},
+    {"gate": "YY", "wires": [2, 4], "param": "ent_cross"},
+    {"gate": "YY", "wires": [4, 6], "param": "ent_cross"},
+    # Final rotation layer: binary parity sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

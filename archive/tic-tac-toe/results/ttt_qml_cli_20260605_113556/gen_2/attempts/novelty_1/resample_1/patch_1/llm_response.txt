@@ -1,0 +1,95 @@
+<NAME>
+enhanced_ansatz_with_rx_and_crz
+</NAME>
+
+<DESCRIPTION>
+The current program has 18 parameters and achieves a combined score of 0.50 with test accuracy of 0.43. Analysis of the performance metrics shows:
+
+1. **Current strengths**: The simplified ansatz (removing the CRX gates from the prior version) improved parameter efficiency and reduced gate count, leading to better test accuracy (0.43 vs 0.35).
+
+2. **Identified limitations**:
+   - Test accuracy is still modest at 0.43, suggesting the ansatz lacks sufficient expressivity
+   - The current design uses only RY rotations and CZ entanglers, which is relatively restrictive
+   - No parametrized two-qubit gates are present, limiting the circuit's ability to learn complex correlations
+   - The feature map uses only RX, and the ansatz uses only RY—adding RZ rotations can provide additional degrees of freedom
+
+3. **Proposed improvements**:
+   - **Add RZ rotations** on select qubits (corners and edges) to increase expressivity without excessive parameter growth
+   - **Reintroduce parametrized controlled rotations** but use CRZ (instead of CRX) on center-connected edges, as CRZ provides better phase-space coverage for tic-tac-toe classification
+   - **Maintain parameter efficiency** by using selective parameter sharing: corners share one RZ parameter, edges share another
+   - This adds ~6-8 new parameters while maintaining circuit depth efficiency
+
+4. **Rationale**:
+   - RZ gates complement RY gates and the RX feature map, providing full SU(2) coverage per qubit
+   - CRZ entanglers on center connections (1-8, 3-8, 5-8, 7-8) are geometrically meaningful for tic-tac-toe structure
+   - Selective sharing keeps parameter count low while allowing the circuit to learn class-specific rotations
+   - This design balances expressivity (to improve accuracy) with parameter efficiency (to maintain generalization)
+
+Expected outcome: Test accuracy should improve toward 0.50+, with combined score potentially reaching 0.55+.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_center"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_center"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_center"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_center"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

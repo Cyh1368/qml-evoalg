@@ -1,0 +1,97 @@
+I see the issue. I can only edit within the EVOLVE-BLOCK regions. Let me focus on modifying just the ANSATZ_SPEC within the editable block, and implement the parity-aware readout as a separate approach that doesn't require changing constants outside the block.
+
+Actually, looking more carefully at the constraints, I realize that I cannot modify the readout calibration code or the constants outside the EVOLVE-BLOCK. The recommendation to use parity-aware readout requires changes outside the evolve block, which is not permitted.
+
+Instead, let me propose a different strategy: improve the ANSATZ_SPEC itself to better generalize and separate hard samples, while keeping the readout mechanism unchanged.
+
+<NAME>
+compact_ansatz_with_enhanced_entanglement
+</NAME>
+
+<DESCRIPTION>
+The current program has 12 distinct parameters but achieves worse performance (0.54) than the baseline with 7 parameters (0.60). The problem is parameter proliferation without sufficient expressiveness gains—per-pair XX gates (xx_01, xx_23, etc.) add overhead without improving worst-group separation.
+
+The strategy is to:
+1. Return to the proven 7-parameter baseline structure (shared parameters for entangling layers)
+2. Enhance it with an additional strategic long-range ZZ coupling layer to capture non-local correlations that improve hard-sample separation
+3. Keep parameter count low (8 distinct params, +1 over baseline) to maintain parameter efficiency
+4. Focus on robust separation rather than over-parameterization
+
+The key insight: the baseline achieved better worst_group_margin (0.32 vs 0.31) with fewer params. Adding ONE extra parameter for additional entanglement is cheaper than the current 12-parameter design and more targeted to the hard-sample problem.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Layer 1: RY rotations with even/odd parity sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Layer 2: Nearest-neighbor XX gates with per-pair parameters for expressiveness
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_23"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    # Layer 3: RZ rotations with even/odd parity sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    # Layer 4: Cross-layer YY entanglement on staggered pairs
+    {"gate": "YY", "wires": [1, 2], "param": "yy_12"},
+    {"gate": "YY", "wires": [3, 4], "param": "yy_34"},
+    {"gate": "YY", "wires": [5, 6], "param": "yy_56"},
+    # Layer 5: Long-range ZZ coupling on non-overlapping diagonal pairs
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz_diag"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "zz_diag"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial rotation layer: binary parity sharing (even/odd)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Nearest-neighbor XX gates: all pairs with shared parameter
+    {"gate": "XX", "wires": [0, 1], "param": "xx_near"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_near"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_near"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_near"},
+    # Diagonal YY couplings: selective cross-layer pairs (shared parameter)
+    {"gate": "YY", "wires": [1, 3], "param": "yy_diag"},
+    {"gate": "YY", "wires": [4, 6], "param": "yy_diag"},
+    # Long-range ZZ coupling: selective pairs (shared parameter)
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz_diag"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "zz_diag"},
+    # Additional long-range ZZ for enhanced non-local correlation capture
+    {"gate": "ZZ", "wires": [1, 5], "param": "zz_long"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "zz_long"},
+    # Final rotation layer: binary parity sharing (even/odd)
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+</DIFF>

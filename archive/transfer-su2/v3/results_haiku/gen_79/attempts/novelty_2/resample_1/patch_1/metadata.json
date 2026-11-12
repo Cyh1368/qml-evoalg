@@ -1,0 +1,14 @@
+{
+  "generation": 79,
+  "novelty_attempt": 2,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "parity_midblock_rotation_injection",
+  "patch_description": "Analysis of the performance metrics shows:\n\n**Current state:** The current program scores 0.51 with:\n- validation_accuracy: 0.89 (down from 0.97)\n- test_accuracy: 0.85 (down from 0.96)\n- worst_group_margin_mean: 0.36 (slightly up from 0.32)\n- generalization_gap: 0.15 (up from 0.04) \u2014 critical issue\n- gate_count: 96 (up from 72) \u2014 more parameters but worse performance\n\n**Root cause:** The current ANSATZ_SPEC has aggressive all-to-all entanglement (8 XX gates + 8 YY gates = 16 two-qubit operations), which overfits on the small training set. The dense connectivity creates too many degrees of freedom, especially with only 7 distinct parameters shared across 32 gates in one block.\n\n**Proposed fix:** Return to a proven baseline pattern (7 distinct parameters, minimal gate count) but inject a **parity-shared mid-block rotation layer** between entanglement and final phase layers. This pattern from Gen 65/68/69 provided:\n- Tighter margins on worst-group samples (robust separation)\n- Better generalization with fewer parameters\n- Parameter economy without sacrificing expressivity\n\nThe key insight: binary parity sharing (even/odd) maximizes intra-block expressivity at zero parameter overhead. By applying parity-shared RY and RZ rotations *between* entanglement blocks, we create a lightweight secondary rotation layer that helps the circuit learn non-linear feature interactions without adding parameters.\n\n**Expected improvements:**\n1. Reduce overfitting via sparser gate structure (72 \u2192 72 gates, same as baseline)\n2. Maintain 7 distinct parameters for maximum parameter efficiency\n3. Inject additional rotation degrees of freedom without new parameters\n4. Tighten worst_group_margin by improving robustness on hard validation samples\n5. Reduce generalization_gap from 0.15 to near 0.04",
+  "error_msg": null,
+  "timestamp": "2026-08-03T07:53:05.390670",
+  "llm_cost": 0.034189,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

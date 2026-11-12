@@ -1,0 +1,92 @@
+<NAME>
+symmetric_shared_params_ansatz
+
+<DESCRIPTION>
+The current ansatz uses 24 independent parameters (one RY/RZ per qubit plus a second independent RZ layer), which massively overfits on the tiny training set (train acc 0.88 vs test acc 0.56, a 0.31 generalization gap) and scores poorly on parameter economy, which the metric rewards monotonically. 
+
+I propose replacing the per-qubit independent rotation layers with heavily parameter-shared rotations (a single shared RY angle and a single shared RZ angle applied identically to all 8 qubits), an entangling ring of parametrized ZZ interactions sharing a single angle, and a final shared RZ layer. This reduces the circuit's distinct trainable parameters from 24 down to just 4 (ry, rz, zz, rz2), for a total of 6 parameters including gain/bias — a >4x reduction.
+
+The rationale: 
+1. Since the circuit block is repeated 3 times with tied parameters, even a small number of shared angles produces a non-trivial (non-commuting, Trotter-like) effective unitary with real expressive power, while drastically cutting the parameter count that the score explicitly rewards without diminishing returns.
+2. Full permutation-symmetric rotation layers act as a strong inductive bias / regularizer appropriate for a tiny training set, directly targeting the observed large train-test generalization gap.
+3. Keeping one tunable entangling parameter (shared ZZ angle around a ring) retains the ability to correlate qubits (needed for the two-qubit readout pairs) without qubit-specific overfitting, and avoids the fixed-CZ option which offers no tunability at all.
+
+This trades some raw fitting capacity for much better held-out and worst-group robustness, which the scoring function weights most heavily.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared RY layer: one parameter applied identically to every qubit.
+    {"gate": "RY", "wire": 0, "param": "ry"},
+    {"gate": "RY", "wire": 1, "param": "ry"},
+    {"gate": "RY", "wire": 2, "param": "ry"},
+    {"gate": "RY", "wire": 3, "param": "ry"},
+    {"gate": "RY", "wire": 4, "param": "ry"},
+    {"gate": "RY", "wire": 5, "param": "ry"},
+    {"gate": "RY", "wire": 6, "param": "ry"},
+    {"gate": "RY", "wire": 7, "param": "ry"},
+    # Shared RZ layer.
+    {"gate": "RZ", "wire": 0, "param": "rz"},
+    {"gate": "RZ", "wire": 1, "param": "rz"},
+    {"gate": "RZ", "wire": 2, "param": "rz"},
+    {"gate": "RZ", "wire": 3, "param": "rz"},
+    {"gate": "RZ", "wire": 4, "param": "rz"},
+    {"gate": "RZ", "wire": 5, "param": "rz"},
+    {"gate": "RZ", "wire": 6, "param": "rz"},
+    {"gate": "RZ", "wire": 7, "param": "rz"},
+    # Entangling ring with a single shared tunable ZZ angle.
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz"},
+    # Final shared RZ layer.
+    {"gate": "RZ", "wire": 0, "param": "rz2"},
+    {"gate": "RZ", "wire": 1, "param": "rz2"},
+    {"gate": "RZ", "wire": 2, "param": "rz2"},
+    {"gate": "RZ", "wire": 3, "param": "rz2"},
+    {"gate": "RZ", "wire": 4, "param": "rz2"},
+    {"gate": "RZ", "wire": 5, "param": "rz2"},
+    {"gate": "RZ", "wire": 6, "param": "rz2"},
+    {"gate": "RZ", "wire": 7, "param": "rz2"},
+]
+>>>>>>> REPLACE
+</DIFF>

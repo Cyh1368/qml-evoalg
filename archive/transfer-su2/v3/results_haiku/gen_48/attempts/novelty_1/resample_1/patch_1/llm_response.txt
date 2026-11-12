@@ -1,0 +1,60 @@
+<NAME>
+narrow_entangler_initialization
+</NAME>
+
+<DESCRIPTION>
+The recommendation suggests refining parameter initialization per gate class. The key insight is that entangling gates (XX/YY/ZZ) should start with smaller couplings to avoid barren plateaus and converge more reliably, while rotation gates (RY/RZ) can use the full [-π, π] range.
+
+Evidence from prior runs shows:
+- Second program (score 0.60) has better generalization gap (0.04 vs 0.14) and faster convergence (780 vs 360 steps), suggesting more stable learning dynamics.
+- The worst_group_margin is still the limiting factor (0.32), indicating hard sample separation needs more stable early training.
+- Narrow initialization of entanglers ([–π/4, π/4]) is a well-established technique to prevent barren plateaus and improve reproducibility without changing the optimizer pipeline.
+
+The current code initializes all parameters uniformly in [-π, π]. This proposal will:
+1. Keep rotation angles (RY, RZ) in the full [-π, π] range
+2. Initialize entangler parameters (XX, YY, ZZ) in a narrower [-π/4, π/4] window
+3. Maintain the gain/bias initialization as-is
+
+This targeted change should improve:
+- Convergence stability and speed (fewer steps to good solutions)
+- Generalization gap (more robust training trajectories)
+- Worst-group margin (better separation of hard samples)
+- Parameter efficiency (faster learning per unit)
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    # Angles are initialised across the full period rather than near zero. A
+    # near-identity start is a dead zone for some candidate structures, and the
+    # ranking noise that produces is an optimiser artifact rather than a
+    # property of the circuit. The wide init applies to every candidate alike.
+    init_scale = float(os.environ.get("INIT_SCALE", str(np.pi)))
+    init = rng.uniform(-init_scale, init_scale, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+=======
+    rng = np.random.default_rng(seed)
+    # Angles are initialised across the full period rather than near zero. A
+    # near-identity start is a dead zone for some candidate structures, and the
+    # ranking noise that produces is an optimiser artifact rather than a
+    # property of the circuit. The wide init applies to every candidate alike.
+    # However, entangler gates (XX/YY/ZZ) use a narrower window to avoid barren plateaus.
+    init_scale = float(os.environ.get("INIT_SCALE", str(np.pi)))
+    narrow_scale = float(os.environ.get("NARROW_INIT_SCALE", str(np.pi / 4)))
+    init = rng.uniform(-init_scale, init_scale, size=N_PARAMS)
+    
+    # Identify entangler parameter indices and apply narrow initialization
+    entangler_params = {"xx_near", "yy_mid", "zz_diag"}  # Entangling gate parameter names
+    for param_name in entangler_params:
+        if param_name in PARAMETER_KEYS_PER_BLOCK:
+            idx = PARAMETER_KEYS_PER_BLOCK.index(param_name)
+            init[idx] = rng.uniform(-narrow_scale, narrow_scale)
+    
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+>>>>>>> REPLACE
+
+</DIFF>

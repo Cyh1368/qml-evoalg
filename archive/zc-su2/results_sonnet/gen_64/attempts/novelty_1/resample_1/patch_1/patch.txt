@@ -1,0 +1,118 @@
+--- a/original.py
++++ b/original.py
+@@ -1,62 +1,81 @@
+ """Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+ 
+ Everything else about the task, that is how inputs are encoded, how the circuit
+ is measured, how training works and how metrics are computed, is fixed and lives
+ in a module that is not reproduced here. No information about the data is
+ available in this file.
+ """
+ 
+ from _backend import run_experiment as _run
+ 
+ N_QUBITS = 8
+ ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+ 
+ 
+ # EVOLVE-BLOCK-START
+-ANSATZ_SPEC = []
++def _shared_rotation_layer(gate, param, wires=range(N_QUBITS)):
++    """Return gate dicts applying `gate` on every wire, all sharing `param`.
+ 
+-# 0. Pre-entanglement rotation layer, axis RX: ALL 8 qubits share the SAME
+-#    single trainable parameter "theta". Combined with the RY layer below
+-#    (different, non-commuting axis, no entangler in between) this gives a
+-#    richer per-qubit rotation while keeping only ONE trainable parameter
+-#    for the entire block.
+-for wire in range(N_QUBITS):
+-    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
++    Using a single shared parameter per axis keeps the parameter count for
++    the whole rotation layer at exactly 1, regardless of qubit count.
++    """
++    return [{"gate": gate, "wire": w, "param": param} for w in wires]
+ 
+-# 1. Pre-entanglement rotation layer, axis RY, reusing the SAME "theta".
+-for wire in range(N_QUBITS):
+-    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+ 
+-# 2. Nearest-neighbor ring, alternating between a parametrized XX
+-#    interaction (reusing the SAME shared "theta" parameter, no new
+-#    trainable name introduced) and a fixed, zero-parameter CZ gate. This
+-#    non-commuting tunable interaction directly inside the entangling
+-#    ring is the key ingredient behind the fastest observed convergence
+-#    (30 steps) among prior single-parameter, perfect-accuracy designs.
+-for i in range(N_QUBITS):
+-    a, b = i, (i + 1) % N_QUBITS
+-    if i % 2 == 0:
+-        ANSATZ_SPEC.append({"gate": "XX", "wires": [a, b], "param": "theta"})
+-    else:
+-        ANSATZ_SPEC.append({"gate": "CZ", "wires": [a, b]})
++def _ring_entangler(ising_gate, param, fixed_gate, n_qubits=N_QUBITS):
++    """Nearest-neighbor ring alternating a parametrized Ising interaction
++    (shared single parameter `param`) with a fixed, zero-parameter gate.
+ 
+-# 3. Fixed, zero-parameter antipodal shortcuts (distance-4 on the
+-#    8-cycle) for long-range connectivity. Kept lightweight (only 4
+-#    gates, no extra skip-2 sub-ring) to minimize depth/gate-count while
+-#    preserving global connectivity across the register.
+-for i in range(N_QUBITS // 2):
+-    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + N_QUBITS // 2]})
++    This mixes a tunable, non-commuting entangling term into the ring
++    while keeping the fixed gate cheap (no trainable parameters), which
++    was the key ingredient behind fast convergence in prior designs.
++    """
++    ops = []
++    for i in range(n_qubits):
++        a, b = i, (i + 1) % n_qubits
++        if i % 2 == 0:
++            ops.append({"gate": ising_gate, "wires": [a, b], "param": param})
++        else:
++            ops.append({"gate": fixed_gate, "wires": [a, b]})
++    return ops
+ 
+-# 4. Post-entanglement rotation layer, axis RZ, reusing the SAME "theta"
+-#    parameter, keeping the total unique parameter count per block at
+-#    exactly 1.
+-for wire in range(N_QUBITS):
+-    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
++
++def _antipodal_shortcuts(fixed_gate, n_qubits=N_QUBITS):
++    """Fixed, zero-parameter long-range links connecting antipodal qubits
++    on the n-cycle (distance n/2), giving global connectivity cheaply.
++    """
++    half = n_qubits // 2
++    return [{"gate": fixed_gate, "wires": [i, i + half]} for i in range(half)]
++
++
++def build_ansatz():
++    """Compose the ansatz block from small, reusable layer builders.
++
++    Parameter budget per block: exactly 4 shared scalars —
++      - "theta_rx": pre-entanglement RX layer (all qubits)
++      - "theta_ry": pre-entanglement RY layer (all qubits)
++      - "theta_e" : entangling XX interactions inside the ring
++      - "theta_rz": post-entanglement RZ layer (all qubits)
++    Fixed gates (CZ ring links, antipodal CZ shortcuts) contribute zero
++    trainable parameters, preserving the depth/gate-count profile of the
++    best-performing single-parameter ancestor while giving each rotation
++    axis and the entangler independent, bespoke tunability.
++    """
++    spec = []
++    spec += _shared_rotation_layer("RX", "theta_rx")
++    spec += _shared_rotation_layer("RY", "theta_ry")
++    spec += _ring_entangler("XX", "theta_e", fixed_gate="CZ")
++    spec += _antipodal_shortcuts("CZ")
++    spec += _shared_rotation_layer("RZ", "theta_rz")
++    return spec
++
++
++ANSATZ_SPEC = build_ansatz()
+ # EVOLVE-BLOCK-END
+ 
+ 
+ def run_experiment(**kwargs):
+     return _run(ANSATZ_SPEC, **kwargs)

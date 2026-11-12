@@ -1,0 +1,83 @@
+<NAME>
+alternating_rz_ising_ansatz
+</NAME>
+
+<DESCRIPTION>
+The current program (score: 0.40) severely underperforms compared to prior successful candidates (scores: 0.55–0.58). The key issues are:
+
+1. **Excessive parameter sharing**: Only 3 distinct parameters (ry, rz_pre, rz_post) provides insufficient expressiveness. The prior best candidate used 10 distinct parameters and achieved 0.58.
+
+2. **Poor margin separation**: worst_group_margin_mean is 0.02 (vs. 0.28 in the best prior), indicating the classifier fails on hard samples—the exact opposite of the stated optimization goal.
+
+3. **Fixed two-qubit gates only**: The current design uses only CZ gates. The prior successful candidates used parametrized Ising gates (XX, YY, ZZ), which provide learnable interaction strengths critical for robust classification.
+
+4. **Uniform RZ application**: All qubits receive the same rz_pre and rz_post, eliminating phase heterogeneity that helps distinguish hard samples.
+
+**Proposed solution**: Restore the high-performing Ising-gate architecture from the second prior program, but apply the alternating RZ recommendation to add phase heterogeneity:
+- Restore alternating RY structure (ry_0, ry_1) for amplitude modulation
+- Split RZ pre-block into rz_pre_even (qubits 0,2,4,6) and rz_pre_odd (qubits 1,3,5,7) for phase heterogeneity
+- Restore parametrized Ising gates (XX, YY, ZZ) with independent parameters for learnable two-qubit interactions
+- Keep single RZ post-block for simplicity
+
+This gives **11 distinct parameters** (within the empirically optimal 10–12 range), maintains the proven Ising topology, and adds phase heterogeneity. Expected outcome: worst_group_margin should improve dramatically, validation_accuracy and test_accuracy should approach 0.96+, and score should exceed 0.58.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_odd"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

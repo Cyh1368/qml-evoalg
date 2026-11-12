@@ -1,0 +1,100 @@
+<NAME>
+sandwich_dual_diagonal_block
+</NAME>
+
+<DESCRIPTION>
+Duplicate the entire RY→CNOT→RZ→ZZ(ring+cross)→CNOT→RZ sequence as a second block appended after the first, reusing all four existing parameter names (ry_a, ry_b, rz_p, zz_ring) so n_distinct_params stays at 4. In the second block, replace the long-range cross-coupling pattern ([0,4],[1,5],[2,6],[3,7]) with the complementary diagonal set ([0,5],[1,6],[2,7],[3,4]), giving the circuit richer non-local entanglement coverage across both diagonal directions of the qubit register. This increases expressive power and connectivity (helping separate the worst-margin group) while keeping the parameter count fixed, following the proven "sandwich" motif that previously improved margins without harming convergence speed.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Reuse the same global phase parameter after the entangling ring,
+    # reinforcing the encoding without adding a new trainable name.
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+]
+# EVOLVE-BLOCK-END
+=======
+    # Reuse the same global phase parameter after the entangling ring,
+    # reinforcing the encoding without adding a new trainable name.
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+
+    # ---- Second sandwich block: same structure, same shared params, but
+    # with complementary diagonal cross-couplings to cover the opposite
+    # long-range connectivity pattern. Adds depth/expressiveness with zero
+    # new trainable parameter names.
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+
+    # Complementary diagonal cross couplings (opposite of the first block's
+    # [0,4],[1,5],[2,6],[3,7] pattern), still sharing zz_ring.
+    {"gate": "ZZ", "wires": [0, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+
+    {"gate": "CNOT", "wires": [7, 6]},
+    {"gate": "CNOT", "wires": [6, 5]},
+    {"gate": "CNOT", "wires": [5, 4]},
+    {"gate": "CNOT", "wires": [4, 3]},
+    {"gate": "CNOT", "wires": [3, 2]},
+    {"gate": "CNOT", "wires": [2, 1]},
+    {"gate": "CNOT", "wires": [1, 0]},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_p"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p"},
+]
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,99 @@
+Looking at the performance metrics, I can see that:
+
+1. **Prior program 2** achieves the best score (0.58) with:
+   - Validation accuracy: 0.97 (vs current 0.79)
+   - Worst group margin: 0.28 (vs current 0.21)
+   - 10 distinct parameters (slightly higher flexibility)
+   - Better generalization gap (0.04 vs 0.17)
+
+2. **Current program** has regressed with over-aggressive parameter sharing:
+   - All RZ gates share one parameter (too much compression)
+   - Combined XX gates and YY gates each share parameters across distant qubits
+   - This is hurting both training (0.94 vs 1.00) and generalization
+
+3. **Key insight from Prior 2**: Separation of pre/post RZ layers with distinct parameters (`rz_pre` and `rz_post`) is crucial. The current program merges these, losing expressivity.
+
+The recommendation suggests moderate parameter tying in the entanglement layer. I'll implement a strategy that:
+- Restore pre and post RZ layer separation (like Prior 2)
+- Apply moderate sharing in XX/YY gates: share xx_01 and xx_67 as `xx_nn`, and tie yy_23 and yy_14 as `yy_shared`, keeping zz_45 and zz_36 distinct
+- Keep RY parameters with alternating pattern (ry_0, ry_1)
+- This reduces distinct parameters from 10 to 8, improving efficiency while maintaining expressivity
+
+<NAME>
+moderate_entangle_share_restore_rz
+</NAME>
+
+<DESCRIPTION>
+Restore the pre/post RZ layer separation that was critical in Prior 2, which achieved 0.58 score. Over-aggressive RZ parameter sharing in the current program (merging all RZ into one parameter) has degraded performance to 0.46. Additionally, implement moderate parameter sharing in the entanglement layer: share XX gate parameters between positions (0,1) and (6,7) as a single parameter, share YY gate parameters between (2,3) and (1,4) as a single parameter, while keeping the two ZZ parameters distinct. This balances expressivity with parameter efficiency (8 distinct params vs current 6), targeting the sweet spot that Prior 2 found.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "RZ", "wire": 0, "param": "rz_param"},
+    {"gate": "RZ", "wire": 1, "param": "rz_param"},
+    {"gate": "RZ", "wire": 2, "param": "rz_param"},
+    {"gate": "RZ", "wire": 3, "param": "rz_param"},
+    {"gate": "RZ", "wire": 4, "param": "rz_param"},
+    {"gate": "RZ", "wire": 5, "param": "rz_param"},
+    {"gate": "RZ", "wire": 6, "param": "rz_param"},
+    {"gate": "RZ", "wire": 7, "param": "rz_param"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_param"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_param"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_param"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_param"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_param"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_param"},
+    {"gate": "RZ", "wire": 0, "param": "rz_param"},
+    {"gate": "RZ", "wire": 1, "param": "rz_param"},
+    {"gate": "RZ", "wire": 2, "param": "rz_param"},
+    {"gate": "RZ", "wire": 3, "param": "rz_param"},
+    {"gate": "RZ", "wire": 4, "param": "rz_param"},
+    {"gate": "RZ", "wire": 5, "param": "rz_param"},
+    {"gate": "RZ", "wire": 6, "param": "rz_param"},
+    {"gate": "RZ", "wire": 7, "param": "rz_param"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_nn"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_shared"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_nn"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_shared"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

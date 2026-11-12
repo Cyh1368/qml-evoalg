@@ -1,0 +1,99 @@
+<NAME>
+revert_to_shell_entangler_plus_final_ry
+</NAME>
+
+<DESCRIPTION>
+The fully-connected ZZ entangler (distance-1,2,3,4, 28 edges) underperformed badly (score 0.41) compared to the earlier 3-shell CRZ entangler (distance-1,2,4, score 0.60): too much entanglement with a single shared angle apparently washes out the signal and hurts trainability/generalization. Revert the entangling layer to the proven 3-shell CRZ topology (nearest-neighbor ring, skip-2 ring, antipodal pairs) which achieved better validation/test accuracy and margin with the same tiny parameter budget. Additionally, per the recommendation, append a final global RY layer with a new shared parameter "theta_ry_out" after the entangling shells. This acts as a QAOA-style mixer stage that can rotate the Bloch vectors into better alignment with the fixed two-qubit readout observable after the phase/entangling operations, potentially sharpening class separation without adding much parameter risk (only +1 param, keeping total distinct params low at 4).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Fully-connected symmetric entangler: every one of the 28 distinct
+    # qubit pairs on the 8-qubit register gets exactly one IsingZZ
+    # interaction, all sharing a single angle. Covering the complete graph
+    # (distance-1, distance-2, distance-3 rings plus the 4 antipodal pairs)
+    # means every possible dataset-chosen readout pair is directly coupled
+    # by this layer, without adding any extra trainable parameters. IsingZZ
+    # is symmetric under qubit exchange (unlike CRZ), which should generalize
+    # better across the a-priori-unknown pair structure.
+    # Distance-1 ring.
+    {"gate": "ZZ", "wires": [0, 1], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "theta_ent"},
+    # Distance-2 ring.
+    {"gate": "ZZ", "wires": [0, 2], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [1, 3], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [2, 4], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [3, 5], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [4, 6], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [5, 7], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [6, 0], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [7, 1], "param": "theta_ent"},
+    # Distance-3 ring.
+    {"gate": "ZZ", "wires": [0, 3], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [1, 4], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [2, 5], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [5, 0], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [6, 1], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [7, 2], "param": "theta_ent"},
+    # Distance-4 antipodal pairs (only 4 unique edges).
+    {"gate": "ZZ", "wires": [0, 4], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "theta_ent"},
+]
+=======
+    # 3-shell entangler: nearest-neighbor ring (distance 1), skip ring
+    # (distance 2), and antipodal long-range pairs (distance 4), all sharing
+    # a single angle "theta_ent". This proved more trainable and better
+    # generalizing than the fully-connected 28-edge graph (which diluted the
+    # per-edge effective rotation and hurt both training and validation
+    # accuracy). Every qubit still has a path of length <= 2 to every other
+    # qubit through this graph, giving broad correlation coverage with only
+    # 3 distinct circuit parameters total.
+    # Shell 1: nearest-neighbor ring (distance 1).
+    {"gate": "CRZ", "wires": [0, 1], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "theta_ent"},
+    # Shell 2: skip ring (distance 2).
+    {"gate": "CRZ", "wires": [0, 2], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [6, 0], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "theta_ent"},
+    # Shell 3: long-range antipodal pairing (distance 4).
+    {"gate": "CRZ", "wires": [0, 4], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "theta_ent"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "theta_ent"},
+    # Final global mixer-style RY layer: one shared angle for all 8 qubits,
+    # applied after the entangling shells. Acts like a QAOA mixer, giving
+    # the circuit one more degree of freedom to align the resulting Bloch
+    # vectors with the fixed two-qubit readout observable before
+    # measurement, without introducing per-qubit parameters.
+    {"gate": "RY", "wire": 0, "param": "theta_ry_out"},
+    {"gate": "RY", "wire": 1, "param": "theta_ry_out"},
+    {"gate": "RY", "wire": 2, "param": "theta_ry_out"},
+    {"gate": "RY", "wire": 3, "param": "theta_ry_out"},
+    {"gate": "RY", "wire": 4, "param": "theta_ry_out"},
+    {"gate": "RY", "wire": 5, "param": "theta_ry_out"},
+    {"gate": "RY", "wire": 6, "param": "theta_ry_out"},
+    {"gate": "RY", "wire": 7, "param": "theta_ry_out"},
+]
+>>>>>>> REPLACE
+</DIFF>

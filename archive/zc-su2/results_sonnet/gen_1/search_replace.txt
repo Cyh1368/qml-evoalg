@@ -1,0 +1,71 @@
+<NAME>
+paired_param_sharing_reduce_params
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses 24 independent single-qubit rotation parameters per block (8 RY + 8 RZ_pre + 8 RZ_post), giving 146 total trainable parameters while already achieving perfect train/val/test accuracy. Since the score heavily rewards parameter economy, we can cut the parameter count substantially without losing expressivity by (1) removing the redundant RZ_pre layer — a single RY followed by an RZ after entangling already provides a real single-qubit rotation with 2 free parameters per qubit, matching what is needed after the fixed CZ chain, and (2) sharing rotation parameters across nearest-neighbor qubit pairs (0,1),(2,3),(4,5),(6,7), which aligns naturally with the CZ entangling topology (each CZ connects adjacent qubits, and pairing matches the first four CZ gates). This reduces the number of unique single-qubit parameters per block from 24 to 8 (a 3x reduction), which should proportionally reduce total trainable parameters (from 146 toward roughly 49), directly improving parameter_efficiency and the combined score, while the shared structure still allows each pair of qubits to be jointly tuned to preserve classification accuracy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_01"},
+    {"gate": "RY", "wire": 1, "param": "ry_01"},
+    {"gate": "RY", "wire": 2, "param": "ry_23"},
+    {"gate": "RY", "wire": 3, "param": "ry_23"},
+    {"gate": "RY", "wire": 4, "param": "ry_45"},
+    {"gate": "RY", "wire": 5, "param": "ry_45"},
+    {"gate": "RY", "wire": 6, "param": "ry_67"},
+    {"gate": "RY", "wire": 7, "param": "ry_67"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_01"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_01"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_23"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_23"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_45"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_45"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_67"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_67"},
+]
+>>>>>>> REPLACE
+</DIFF>
