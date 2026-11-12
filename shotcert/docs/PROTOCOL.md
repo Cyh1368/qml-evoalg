@@ -267,3 +267,54 @@ useful policies frequently in these simulations, never as a certificate. The `n_
 described as the cost of that particular conservative bound, not as a lower bound for the statistical
 problem or a measurement-complexity result. The first term of Eq. (1) is renamed integrated squared
 discrepancy, and the access section states the preparation convention used by the ledger.
+
+---
+
+## Addendum A4 (pre-declared 2026-11-13, before any A4 analysis was run)
+
+A third review accepted the corrections and found six remaining problems. All six were verified before
+being accepted; the two numerical ones reproduce exactly (menu sizes 2 vs 9; the two cluster tasks
+identical to six decimals). A4 defines the experiments the review asks for and fixes the claims they
+will be allowed to support.
+
+**A4.1 Matched certification comparison.** The A3 "what certification buys" comparison is withdrawn as
+a result and re-run as a pre-specified one. Defects found: the two arms were deployed at different
+total shots (16 vs 8 per prediction); the generic menu's best shrinkage level moved with `s`, so "the
+same candidate set" was not the same set across arms; and the plug-in rule carries no `delta`, so a
+comparison of it against a `delta`-valid rule is not an equal-confidence comparison. The corrected
+experiment holds fixed: one common candidate menu, the same menu size and therefore the same
+multiplicity `m` for every selector, the same total shots per prediction `S`, the same calibration
+instances, the same total calibration shots. Selectors: plug-in, Studentised, simultaneous
+Maurer-Pontil, and a split-sample calibrated rule (pick on one half, certify on the other, so
+multiplicity is paid once). Reported for every cell: selection rate, near-optimality
+`Pr[R(sel) - min_R <= eps]`, non-degradation `Pr[R(sel) - R(a0) <= eps]`, fallback rate, mean excess
+risk `E[R(sel) - min_R]`, and failure rate `Pr[R(sel) - R(a0) > eps]`. Confidence statements are made
+only between rules with comparable guarantees, and the guarantee of each rule is named.
+
+**A4.2 Equal multiplicity and a non-trivial group menu.** The A3 group arm contained two candidates
+(`a0`, `strat`) against nine group-free candidates. Every comparison in A4 uses menus of equal size and
+equal deployment cost. The group arm is `{a0, strat, mix25, mix50, mix75, orbit2, orbit4}` and the
+group-free arm is `{a0, shrink at six levels}`: seven candidates each, every policy costing exactly `S`
+shots per prediction, calibration cost `n * sum_p shots_used(p)` identical across arms. Sharing is not
+used here because these policies differ in shot *allocation*, which is the resource under study; the
+shared-record experiment is kept, labelled as the case where policies are deterministic functions of one
+record.
+
+**A4.3 Mechanism counting.** The two Heisenberg tasks differ only by a target weight and the two
+cluster tasks are numerically identical, so the physical evidence is one mechanism with three target
+settings plus one degenerate task. A4 reports physical mechanisms separately, never as a pooled count,
+and a task whose even and raw targets coincide is reported as degenerate and excluded from any
+cross-mechanism claim. A second mechanism with genuine odd content is constructed and verified to have
+a non-zero odd component before it is used.
+
+**A4.4 Scope of the certification-cost claim.** "The valid rule almost never fires" is replaced by a
+measured firing surface over `(n, S, |Delta|, m)` with the tested region stated, plus the closed-form
+sufficient radius. No claim is made outside the sampled region.
+
+**A4.5 Switching.** The retraction is about the earlier *deployment-cost and optimisation* claim. The
+mathematical fact that a grouped and an interleaved schedule give different risk at fixed total shots
+stands and is stated as such.
+
+**A4.6 Scope of the negative.** The negative result is scoped to the tested menus, mechanisms, shot
+ranges and the two-circuit case. "The second circuit is not worth buying" is replaced by a statement
+about the tested group actions at the tested budgets.
