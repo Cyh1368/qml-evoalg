@@ -787,7 +787,7 @@ def uniform_model_check_section(path, out):
     out.append("|---|---|---|---|---|---|---|---|---|")
     for fam, e in d["families"].items():
         for key, c in e["cells"].items():
-            out.append("| %s | %s | %s | %d | %s | %d | %.5f | [%.5f, %.5f] | %.6f |"
+            out.append("| %s | %s | %s | %d | %s | %d | %.5f | [%.5f, %.5f] | %s |"
                        % (fam, e["target"], e["exact_L_order"], e["factorial_n"],
                           "%.6f" % e["ratio"], c["k"], c["measured"], c["ci95_low"],
                           c["ci95_high"], "%.3g" % c["model"]))
