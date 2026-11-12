@@ -19,7 +19,11 @@ Every change below is traceable to an artifact named in the text. Addendum A6 wa
 the frozen protocol (`research/REVISED_PROTOCOL.md`, commit `4ab15f81`) **before** any of the new
 analyses were run; the analysis of the new search runs
 (`research/search/analyze_corrected.py`) was committed **before** those runs finished, with its
-decision rule and the 0.002 threshold already in the file.
+decision rule and the 0.002 threshold already in the file. One later commit touched that file, and
+it is worth naming: `signflip_p` returns a dict in this codebase and the module treated it as a
+number, which crashed the Holm step. That is a crash fix. The threshold, the contrast set, the
+inference unit and the wording rules were not touched after the protocol commit, and `git log -p`
+on the file shows exactly that.
 
 ---
 

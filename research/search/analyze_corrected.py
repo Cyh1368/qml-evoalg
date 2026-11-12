@@ -9,7 +9,10 @@ every run JSON, so they cannot be confused with the frozen confirmatory runs in
 Frozen design (Addendum A6.7, committed before these runs were analysed):
 
 * arms ``llm-fitness``, ``llm-verify``, ``llm-verify-repair`` under corrected semantics, on
-  both families, 12 paired seeds, budget 32, 200 steps, ``max_train`` 256;
+  both families, 12 paired seeds, and the budget/optimiser settings of the frozen record itself
+  (``budget=12``, ``steps=120``, ``max_train=256``, ``reasoning_effort=none`` — read from the 120
+  confirmatory run JSONs, not from the job template's 32/200 defaults, which would not have been
+  matched);
 * the frozen defective-semantics runs of the same arms and seeds are the matched comparator
   for "what did correcting the feedback change";
 * primary contrast ``llm-verify-corrected - llm-fitness-corrected`` on development-selected

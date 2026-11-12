@@ -35,8 +35,13 @@ ARM="${ARMS[$(( SUB / 12 ))]}"
 BASE_SEED=20261110
 OUT=logs/runs_corrected
 MODEL=ycrc-local
-BUDGET=32
-STEPS=200
+# Matched to the frozen confirmatory study, which records budget=12, steps=120,
+# max_train=256, reasoning_effort=none in all 120 run JSONs. A6.7 requires the same budget
+# and seeds, so these are read from that record rather than from the template defaults in
+# job_search.sh (whose 32/200 defaults are for a different, larger study and produced three
+# cancelled A6.7 submissions before this was checked against the run JSONs).
+BUDGET=12
+STEPS=120
 MAX_TRAIN=256
 
 module reset

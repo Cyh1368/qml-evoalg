@@ -221,3 +221,13 @@ minutes in) were both cancelled on a wrong diagnosis. Neither wrote run logs, so
 consumed and no result depends on them; the live submission is **33058032** at 24-way
 concurrency. The lesson is recorded in the job script itself, where the wrong inference was
 originally written down.
+
+**A matched-design error caught before it produced data.** The A6.7 job script requested
+`--budget 32 --steps 200`, inherited from `job_search.sh`'s template defaults. The frozen
+confirmatory study records `budget=12, steps=120, max_train=256, reasoning_effort=none` in all
+120 of its run JSONs, and A6.7 requires *the same budget and seeds* — so those runs would not
+have been matched to the study they are meant to extend. Arrays 33053054-9, 33054417 and 33058032
+were all submitted with the wrong configuration; none wrote a run log, so nothing was consumed
+and no reported number depends on them. The live submission is **33058123**, with the budget and
+step count read off the frozen run JSONs. The general lesson — take the matched configuration
+from the record being extended, not from a template — is now written in the job script.

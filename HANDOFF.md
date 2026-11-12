@@ -19,7 +19,7 @@ verifier is the indispensable comparator**; acting on it reversed one of our hea
 | A6.8 claim binding with mutation testing | done — `research/paper/claim_bind.py`, report `claim_binding_report.md` |
 | Manuscript: new `sec:corrected`, accept table, de-Wilsoned panel table, rewritten Discussion, review narrative moved to `app:audit` | done, preview clean (25 pp, job 33054054) |
 | `REBUTTAL_ROUND3.md` | written, **one block pending**: the A6.7 numbers at the `<!--A67-->` marker |
-| A6.7 matched corrected-feedback search runs | **running** — job array `33058032`, 72 runs, `--array=0-71%24` (earlier arrays 33053054-9 and 33054417 were cancelled on a misdiagnosis; they wrote nothing) |
+| A6.7 matched corrected-feedback search runs | **running** — job array `33058123`, 72 runs, `--array=0-71%24`, budget 12 / steps 120 / max_train 256 (matched to the frozen record). Earlier arrays 33053054-9, 33054417, 33058032 were cancelled — two on a misdiagnosis of Slurm CPU accounting, one because it carried the wrong budget — and none wrote a run log |
 | CLAIMS / PROVENANCE / MANIFEST / README reconciliation | done |
 
 ## The one unfinished thing, and exactly how to finish it
@@ -86,6 +86,9 @@ sbatch research/paper/job_preview.sh           # PDF build; check the .out for e
   A 32-candidate run genuinely takes tens of minutes on a contended 1-CPU task; judge progress by
   files appearing in the output directory, not by `sacct` CPU.
 - **Module version is `ycrc-llm/1.0`**, not `1.0.0` (that typo failed 72 tasks in 4 s).
+- **Take matched settings from the record you are extending.** The A6.7 script inherited budget 32 /
+  steps 200 from a template while the frozen study it extends is budget 12 / steps 120; three
+  arrays went out wrong before the run JSONs were checked.
 - `sound_on_probe`/`panel_reanalysis` take a **probe index array** (`probe_indices(...)`), not rows.
 - Shell calls are isolated: `module reset` + loads + command must be in one invocation.
 - `module reset`, never `module purge`.
