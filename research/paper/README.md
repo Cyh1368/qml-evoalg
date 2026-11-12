@@ -34,7 +34,7 @@ verify that body/tables/math/references are valid LaTeX when the NeurIPS style i
 unavailable. It is **not** the submission format. Rebuild it with
 `sbatch --output logs/preview-%j.out research/paper/job_preview.sh` (a short `devel` job that
 loads `texlive/20240312-GCC-13.3.0`, substitutes an `article` preamble, and compiles twice).
-Last verified preview: 26 pages, zero errors, zero undefined references, no overfull box (job 33064324).
+Last verified preview: 28 pages, zero errors, zero undefined references, no overfull box (job 33076100).
 
 ## Numbers
 `python3 -m research.compile_results2 --out research/results_summary2.md` regenerates every
@@ -82,3 +82,10 @@ table from the result JSONs; the manuscript transcribes that file, and
 Claims are scoped by the ledger; negative and null results are reported as "difference not
 detected" with intervals, and equivalence is claimed only against a prespecified margin.
 Do not add a claim that outruns the paired evidence.
+
+Round 4 (Addendum A7): `REBUTTAL_ROUND4.md` answers the fourth-round review. New artifacts:
+`decision_rules3.json` / `decision_rules3_analysis.json` (gate parity, never-repair baseline,
+mixture objective, calibrated tolerances), `decision_model.json` (measured q* per regime),
+`corrected_gate_a7.json` (defined Q pools, exact enumeration, CP bounds). The A6 records
+`decision_rules2.json` and `corrected_gate.json` are retained unchanged as the audited artifacts of
+what was previously run; the numbers they produced that are superseded are listed in PROVENANCE.

@@ -1,5 +1,33 @@
 # HANDOFF — round-3 revision (third referee report)
 
+## Round 4 status (Addendum A7 / A7.5a) — complete
+
+`REBUTTAL_ROUND4.md` answers all seven fourth-round blockers. Nothing is pending.
+
+| item | state |
+|---|---|
+| A7 protocol (A7.1–A7.7) + A7.5a amendment | committed `73a95d77` **before** any A7 analysis |
+| A7.1 subgroup-word fallback, three-level certification | `corrected_gate.closure_capped`, `scope`, `cp_upper_95`; 25 tests |
+| A7.2 defined $Q$ pools, exact enumeration | `empirical_pool`, `accept_pool_exact`; ring **0.6250** (120/192) replaces 0.47 |
+| A7.3/A7.4 gate parity, never-repair, mixture, measured timings | `decision_rules3.py` (job 33073899), `analyze_decision3.py` |
+| A7.5 calibrated screen | pre-declared **scoped negative** in both families |
+| A7 decision model + counterexample | `decision_model.py`, 11 tests, `decision_model.json` |
+| A7.6 Holm-before-verdict, deployed endpoint | `analyze_corrected.py`; deployed graphs −0.07269 (flip 0.0176, Holm 0.158) |
+| A7.7 manuscript coherence | abstract 79% removed, A5 material to appendix, Discussion contradiction fixed, checker scope paragraph |
+
+Checkers: manuscript 22/22 bound (86/87 mutations), CLAIMS 21/21 (82/83), rebuttal 3 18/18 (71/71),
+**rebuttal 4 11/11 (44/44)**. `check_numbers` OK. Tests: search 59, core 51, repair 13.
+
+New traps found this round (details in `research/PROVENANCE.md`):
+- **A source patch must be verified by re-reading the target.** A heredoc died on quote escaping
+  before writing, and the resulting record looked complete but still held the old row.
+- **Never let `min()` over names break an exact tie.** It reported a calibrated policy as optimal
+  when it fired nothing and equalled never-repair. Use strict improvement + simplicity tie-break.
+- **`claim_bind` paths into a dict-of-lists must name the key first**: `accept.alpha_0.[Q=...]`,
+  not `accept.[Q=...]`; the dict branch treats the whole selector as a literal key.
+- **Parity changes our own numbers downward.** With regime-specific groups the defect rule rejects
+  only 4/58 harmful repairs; the 79% recovery figure is superseded, not merely re-labelled.
+
 Working directory: `/home/cpsc4710_ch2499/qml-evoalg`
 Last commit at the time of writing: see `git log --oneline -1`.
 
