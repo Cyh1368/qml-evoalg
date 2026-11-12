@@ -318,3 +318,96 @@ stands and is stated as such.
 **A4.6 Scope of the negative.** The negative result is scoped to the tested menus, mechanisms, shot
 ranges and the two-circuit case. "The second circuit is not worth buying" is replaced by a statement
 about the tested group actions at the tested budgets.
+
+---
+
+## Addendum A6 -- common estimand, equal-total-budget frontiers, and the orbit variance profile
+
+Written and committed before any A6 analysis was run. Addresses the third review. Every defect below
+was first reproduced in source and in numbers before being accepted.
+
+### A6.0 Confirmed principal defect (verified before repair)
+
+`experiments/exp_matched.py` set `S = s * G` for the group arm (line 203) while `shared_record()`
+collected `s` shots per orbit point and `losses_from_record()` scored the raw baseline from
+`record[:, 0]`, i.e. from `s` identity shots. The calibration contrast therefore estimated
+
+    E[D_cal] = R_{2s}(strat) - R_s(raw) = Delta_{2s} - E[sigma_0^2(X)] / (2s),
+
+not the `Delta_{2s}` used as truth. On `heisenberg_raw_n6` at `s = 8` the predicted offset is
+`sigma_0^2/(2s) = 0.05258` and the measured difference between the two quantities is `-0.05258`,
+against a reported group gain of `+0.00160`. The calibration record therefore favoured the group
+policy by roughly thirty times the effect under study. The group-free arm has no such mismatch, so the
+asymmetry contaminated every group-versus-group-free selection and every group-arm power figure. The
+group-free arm's *cheaper* finding is conservative with respect to this bug (the bug helped the group
+arm), but no group-arm power number survives it.
+
+### A6.1 One stochastic predictor per policy: common-estimand calibration
+
+Both arms define every candidate at a common total deployment budget `S`. The group arm's stratified
+policy spends `S/G` shots at each of the `G` orbit points; the raw baseline spends `S` shots at the
+identity circuit. The identity circuit is itself an orbit point that receives only `S/G` shots in the
+orbit record, so the raw baseline additionally requires `S - S/G` identity shots. The group arm's
+calibration record therefore costs `S + (S - S/G) = S(2 - 1/G)` preparations per instance, which for
+`G = 2` is `3s` with `s = S/2`, exactly the reviewer's bound. The first `S/G` identity outcomes are
+reused inside the raw baseline, so the paired difference has within-instance dependence; that is
+permitted because the Maurer-Pontil certificate requires only boundedness of the paired difference,
+not independence between its two terms, and the reuse is stated rather than hidden. No policy may be
+scored from a record that gives it more shots than its own ledger charges.
+
+### A6.2 Audit of the estimand equality before any power study (stop gate (a))
+
+For every policy in every arm and several small budgets, the calibration evaluator's expected loss
+contrast must equal the deployed-risk difference of that same policy. The equality is checked two ways:
+analytically, from the closed-form risk `D + Sigma/S`; and by independent enumeration of the predictor
+over draw sequences and binomial outcomes (`reference.py`), which was written without reference to the
+evaluator. Any disagreement stops the study; no power number is produced until this gate passes.
+
+### A6.3 Equal-total-budget optimized frontiers
+
+The previous frontier fixed shots per circuit and let each arm's total follow, which built the
+factor-of-two into the arm definitions. A6 instead fixes the **total** budget
+`B = calibration preparations + deployment preparations` and the deployment horizon, and lets each arm
+choose its instance count `n`, its per-circuit shots, and its admissible policies subject to `B`. The
+reported quantities are absolute realised deployed risk, probability of useful selection, violation
+probability and fallback rate, each with uncertainty, at the declared risk threshold. Risk differences
+against arm-specific baselines are not used for cross-arm comparison; oracle risks are reported for
+interpretation only and are never used for selection or as a free comparator.
+
+### A6.4 Two mechanisms that are actually distinct
+
+`cluster_even` and `cluster_raw` were verified numerically identical (`R_a0 = 0.011375`,
+`strat = 0.009340` for both), so they are one mechanism, not two. A6 requires two mechanisms whose odd
+components and shot variances differ materially, and states the measured odd component and shot
+variance of each alongside the result. Where a mechanism cannot be made distinct, the paper says one
+mechanism was tested rather than claiming transfer.
+
+### A6.5 Structural target: the orbit variance profile decides how much symmetrisation can recover
+
+The third review asked for a result that uses the structure of symmetry-related measurements to change
+attainable risk under identical access, and for a general boundary rather than a local null. A5
+established that the mixture family is the full class of allocations that split `S` shots between the
+raw circuit and the orbit circuits, with unique optimum `w*(S) = (dD_ideal + A)/(2A) - V/(2AS)`, hence
+`w* = 0` below `S_on = V/(dD_ideal + A)`: a calculable threshold below which no policy in the class
+repays its shots. A6 sharpens `V`. Uniform allocation over the orbit charges
+`V_uniform = mean_g sigma_g^2 - sigma_0^2`. Allocating the orbit share by Neyman weights
+`n_g proportional to sigma_g` charges `(mean_g sigma_g)^2 - sigma_0^2` instead, and by Cauchy-Schwarz
+`(mean_g sigma_g)^2 <= mean_g sigma_g^2`, with the gap equal to the variance of `sigma_g` across the
+orbit. So the structure of the orbit -- not the group order, and not the existence of a symmetry --
+sets how much of the symmetrisation cost is recoverable, and the recoverable part is exactly the
+orbit's shot-variance dispersion. A6 verifies this identity against the enumerated risk and measures
+whether Neyman allocation beats uniform allocation at matched total shots on the physical tasks.
+
+### A6.6 Stop gate (the reviewer's item 5, adopted verbatim in force)
+
+Before any large confirmatory run: (a) calibrated and deployed estimands agree exactly; (b) at least
+one nonvacuous finite-sample-valid decision at a feasible cost exists; (c) either a material
+matched-budget gain or a substantive lower-bound explanation of why such a gain is impossible. If all
+three fail, this selector is stopped and the result archived rather than revised again.
+
+### A6.7 Presentation and verification
+
+Duplicate section labels in the historical appendix are removed; the reproducibility paragraph is
+regenerated from the actual test count rather than the pre-A2 set; and the number-presence checker is
+supplemented by semantic claim binding, which pins each headline sentence to a named artifact, task,
+budget and statistic, so a value cannot be paired with the wrong quantity.
