@@ -1,11 +1,22 @@
-# Paper — NeurIPS format (revised after two referee rounds, 12 Nov 2026)
+# Paper — NeurIPS format (revised after three referee rounds, 12 Nov 2026)
 
 `main.tex` is the revised paper in **NeurIPS 2024 format**
-(`\documentclass{neurips_2024}`). `REVIEW.md` is the first-round report and
-`REVIEW_ROUND2.md` the second; **`REBUTTAL.md`** and **`REBUTTAL_ROUND2.md`** are the
-point-by-point author responses. Every number in the manuscript and in either response is
-generated, not hand-typed, and `research/paper/check_numbers.py` fails if a manuscript
-number has no generated counterpart.
+(`\documentclass{neurips_2024}`). `REVIEW.md`, `REVIEW_ROUND2.md` and `REVIEW_ROUND3.md` are the
+referee reports; **`REBUTTAL.md`**, **`REBUTTAL_ROUND2.md`** and **`REBUTTAL_ROUND3.md`** are the
+point-by-point author responses. Every number in the manuscript and in any response is generated,
+not hand-typed. Two instruments enforce that, at different strengths, and the difference between
+them matters:
+
+* `python3 -m research.paper.check_numbers` is a **numeric-token lint**: every manuscript number
+  of at least four digits must appear in the generated summary at its own precision. A green run
+  shows no number was invented; it does **not** show a number sits in the right claim, because the
+  check does not bind value to arm, endpoint or split.
+* `python3 -m research.paper.claim_bind` is the **claim-level** layer: headline values are
+  recomputed from structured result keys and must appear in a context window carrying that claim's
+  arm/endpoint/split tokens. The instrument tests itself against deliberate mutations (sign, arm,
+  split, order-of-magnitude, endpoint) and reports its own rates, on the manuscript and on a second
+  artifact (`research/CLAIMS.md`); degenerate mutations, which leave the printed token unchanged,
+  are excluded from the rate and listed. See `claim_binding_report.md`.
 
 ## Build (final, official style)
 1. Download the official **NeurIPS 2024 author kit** from the NeurIPS 2024
@@ -23,7 +34,7 @@ verify that body/tables/math/references are valid LaTeX when the NeurIPS style i
 unavailable. It is **not** the submission format. Rebuild it with
 `sbatch --output logs/preview-%j.out research/paper/job_preview.sh` (a short `devel` job that
 loads `texlive/20240312-GCC-13.3.0`, substitutes an `article` preamble, and compiles twice).
-Last verified preview: 21 pages, zero errors, zero undefined references.
+Last verified preview: 25 pages, zero errors, zero undefined references, no overfull box (job 33054054).
 
 ## Numbers
 `python3 -m research.compile_results2 --out research/results_summary2.md` regenerates every
@@ -43,6 +54,10 @@ table from the result JSONs; the manuscript transcribes that file, and
 | E-R4' corrected untouched-input repair evaluation | `research/HOLDOUT_RESULTS_v4.json` |
 | E-S7 vs-random contrast matrix | `research/holdout_search_contrasts.py` (from the stored record) |
 | deployed endpoint + matched-split baselines (A5.5) | `research/HOLDOUT_DEPLOYED.json` + `HOLDOUT_DEPLOYED_ACCESS.json` |
+| corrected-gate decision comparison, 7 rules x 5 regimes (A6.2/A6.3/A6.4) | `research/search/decision_rules2.json` |
+| accept probability by proposal distribution, exact label groups, tolerance sweep, n=9 case (A6.5/A6.6) | `research/search/corrected_gate.json` |
+| corrected-feedback matched search runs (A6.7) | `research/search/corrected_search.json` |
+| claim-binding and mutation-detection report (A6.8) | `python3 -m research.paper.claim_bind` -> `claim_binding_report.md` |
 | bibliography corrections | `paper/REFERENCES_AUDIT.md` (arXiv API / Crossref / PMLR / APS) |
 | artifact manifest, split-consumption ledger | `python3 -m research.build_manifest` → `research/MANIFEST.md` |
 
