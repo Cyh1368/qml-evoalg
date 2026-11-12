@@ -424,14 +424,30 @@ statistic on one dataset per family); any quantum advantage; any LLM advantage o
 constructive or classical baselines on these tasks; identification of maximal symmetry groups;
 or that the negative results hold beyond these two families, one model, and one short budget.
 
+**The five "immediate acceptance blockers" named in the report, item by item.**
+(i)~*true held-out deployed endpoint* — \S1, `research/HOLDOUT_DEPLOYED.json`, gate-before-read,
+ring on fresh inputs; (ii)~*correct subgroup semantics* — \S2, taxonomy plus the measured
+label-symmetry group; (iii)~*estimand-appropriate inference* — \S5, four procedures with E-A as
+headline; (iv)~*consistent reporting* — \S6, five bugs plus a build-failing number checker;
+(v)~*fair test baselines* — \S7, matched rows, per-fit/total budget distinction, oracle demoted,
+MC twirl disclosed, and one of our own baseline claims reversed. All five are resolved with a
+named artifact. Where we cannot supply what the blocker implies — a *first* graphs read — the
+reason is structural (0 unseen isomorphism classes) and is stated in the paper rather than
+worked around.
+
 **On the three paths the referee offered.** Path 2 (a decisive negative study) is not what we
 have: exposure is sparse and margins wide, and we say so. Path 3 (a field-level audit with a
 reusable remedy) is partially served by the number checker and the `|L_t|` diagnostic, but our
 audit is of one in-house study, and we have removed any implication that it indicts an
 influential published claim. Path 1 (a new verification/repair decision method) is the one we
 advanced, and only as far as a measured decision rule plus the diagnostic and the negative
-control — not a validated method across unseen task families, which would need the task-family
-variation we do not have.
+control. We state plainly what Path 1 would still require and we do not have: **reduced risk or
+cost on unseen task families** against supplied-group averaging, constructive models and
+non-LLM search with identical tools. Our evidence covers two 6-qubit families, one model, one
+short budget; the wrong-group negative control the referee asks for is included (R4, +0.00399,
+and the breaking-target experiment), and the identical-tools comparison is included (R0 versus
+R1–R4, declared twirl on every arm, constructive block on matched rows) — but on unseen
+families we have nothing, and we do not claim it.
 
 We therefore agree with the referee's own closing assessment: **the present evidence supports
 a narrow technical report, and that is how we have rewritten the paper.** Its contribution
@@ -448,7 +464,7 @@ we do not believe this submission meets it, and we would rather say that than in
 | artifact | what it adds |
 |---|---|
 | `research/REVISED_PROTOCOL.md` Addendum A5 | pre-declaration (22:32Z) of A5.1 estimands, A5.2 taxonomy, A5.3 panel, A5.4 decision rules, A5.5 deployed endpoint, A5.6 reporting policy |
-| `research/core/paired.py` | direction-correct `verdict`, adjusted-p enforcement, `seed_vector_bootstrap_ci`, `crossed_bootstrap_ci`, `wilson_ci` (+ 5 new unit tests) |
+| `research/core/paired.py` | direction-correct `verdict`, adjusted-p enforcement, `seed_vector_bootstrap_ci`, `crossed_bootstrap_ci`, `wilson_ci` (+ 15 unit tests) |
 | `research/search/verify_semantics.py` (+ 9 unit tests) | label-symmetry groups, taxonomy, fixed panel, gate cross-tabulation |
 | `research/search/decision_rules.py` | R0–R4 decision ablation with cost measurement |
 | `research/holdout_deployed.py` | candidate / deployed / declared-twirl endpoints, matched baselines, gate-before-read |
@@ -457,8 +473,12 @@ we do not believe this submission meets it, and we would rather say that than in
 | `research/paper/check_numbers.py` | manuscript-vs-record number check (currently OK: 801 generated, 381 manuscript) |
 | `research/build_manifest.py` → `research/MANIFEST.md` | artifact manifest and split-consumption ledger |
 
-Test suites: `research/core` (20), `research/search` (including the two new files),
-`research/experiments/repair` — all green. Jobs: `33033493`/`33034704`/`33039560`
+Test suites, all green: `research/core` (51 tests, of which 15 in `test_paired.py` pin the
+verdict direction, the `lower_is_better` flip, the adjusted-p downgrade, the three new
+bootstrap estimands and the Wilson interval), `research/search` (23, of which 9 in
+`test_verify_semantics.py` pin the taxonomy including the `sound_noncomparable` case, the
+probe-panel truth determination and the vacuity measurement), `research/experiments/repair`
+(13). Jobs: `33033493`/`33034704`/`33039560`
 (decision rules, final `33039560`), `33039574`/`33040509`/`33041014`/`33041668` (deployed dry
 runs, final gate 120/120 exact), `33042529` (aborted at a `Path`-vs-`hashlib` digest bug *before*
 any sealed array was opened, recorded in the module docstring), `33044945` (A5.5 one-shot, result

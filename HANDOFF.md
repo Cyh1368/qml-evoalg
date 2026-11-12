@@ -105,5 +105,5 @@ python3 -m research.compile_results2 --out research/results_summary2.md
 python3 -m research.paper.check_numbers
 python3 -m research.build_manifest --out research/MANIFEST.md
 ```
-Tests: `python3 -m unittest discover -s research/core -p 'test_*.py'` (also
-`research/search`, `research/experiments/repair`) — all green.
+Tests, all green: `research/core` 51, `research/search` 23, `research/experiments/repair` 13
+(`python3 -m unittest discover -s <dir> -p 'test_*.py'`).
