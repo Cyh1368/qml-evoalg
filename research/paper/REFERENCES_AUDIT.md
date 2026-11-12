@@ -52,3 +52,51 @@ for d in 10.1103/PRXQuantum.4.010328 10.1103/PRXQuantum.5.020328 10.1103/PRXQuan
 done
 curl -sS https://proceedings.mlr.press/v139/elesedy21a.html | grep -i "<title>"
 ```
+
+## Round-2 re-check (2026-11-11T22:40Z): one of *my own* audit corrections was wrong
+
+The second-round referee wrote that "Meyer et al. explicitly discuss invariant reuploading
+constructions; the rebuttal's blanket assertion that this attribution was unsupported should
+be revisited against the primary text." **They are right and my round-1 audit line was
+wrong.** I re-read the primary text, not an abstract: the open-access accepted manuscript
+retrieved from APS (`http://harvest.aps.org/v2/journals/articles/10.1103/PRXQuantum.4.010328/fulltext`,
+doi:10.1103/PRXQuantum.4.010328, Crossref-confirmed as Meyer, Mularski, Gil-Fuster, Mele,
+Arzani, Wilms & Eisert, *Exploiting Symmetry in Variational Quantum Machine Learning*, PRX
+Quantum 4, 010328 (2023), published 2023-03-17). Verbatim, from that file:
+
+> "we show how these building blocks can be combined to construct variational quantum **data
+> re-uploading models that make invariant predictions** and thus include a meaningful
+> inductive bias" (Sec. IV, opening)
+
+> "Because of the no-cloning theorem, it is important for the expressivity of quantum
+> learning models to embed the data into the quantum circuit multiple times, a process
+> dubbed **data re-uploading** [35–37]."
+
+> "**Definition 1 (Equivariant embedding).** We call a data encoding unitary U(x) equivariant
+> with respect to the data symmetry V_s if U(V_s[x]) = U_s U(x) U_s†."
+
+> "**Proposition 2 (Twirling formula).** … T_U[X] = (1/|S|) Σ_{s∈S} U_s X U_s† defines a
+> projector onto the set of operators commuting with all elements of the representation",
+> applied to give the equivariant gateset T_U[G] = {T_U[G] | G ∈ G}.
+
+> "As our main contribution, we show how to embed data in a way that enables us to build
+> **invariant learning models** for which we give both a general blueprint and mathematical
+> tools for their design."
+
+Consequences, applied in the manuscript:
+
+1. The audit row for `meyer2023` above is **superseded** on this point: the bibliographic
+   correction (title, authors, article number) stands, but the claim that the source does not
+   support invariant re-uploading is withdrawn. It was wrong, and it was the kind of error a
+   citation-only check produces: I verified the *record*, then reasoned about the *content*
+   from memory.
+2. The related-work text now states plainly that Meyer et al. already provide (i) equivariant
+   data encodings, (ii) the twirling/Reynolds projector onto the commutant as a gate- and
+   ansatz-symmetrisation tool, and (iii) a blueprint for invariant prediction with re-uploading
+   models. Our constructive equivariant baseline is an instance of their blueprint, and our
+   inference-time average is the **output-side** specialisation of their Proposition 2.
+3. That narrows what this paper may claim. The averaging operator, the projection identity and
+   the invariant-model blueprint are not our contributions. What is left, and what the revised
+   contribution table now says, is the **measurement**: how much of the benefit a
+   label-preservation verifier actually gates, on which targets it is vacuous, and what a
+   verifier-free defect gate achieves instead (Addendum A5.2–A5.4).
