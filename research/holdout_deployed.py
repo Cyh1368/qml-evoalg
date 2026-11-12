@@ -103,9 +103,10 @@ def evaluate_run(path):
     task = _W["tasks"][fam]
     ev_x, ev_y = _W["eval_x"][fam], _W["eval_y"][fam]
     fit, _, _, _, check = _refit.refit_best(log, task=task)
+    # NOTE: evaluation rows (and their labels) are fixed once, subsampled and paired, by
+    # _set_eval_rows(); evaluate_run must not re-derive them or the endpoints would be
+    # scored on different row counts.
     key = log.get("target") or task.primary_target
-    if _W["dry_run"]:
-        ev_y = np.asarray(task.targets[key])[np.asarray(task.splits["validation"], bool)]
 
     candidate_risk = float(np.mean((_refit.predictions(fit, task, ev_x) - ev_y) ** 2))
     rep = log["best"].get("repair") or {}

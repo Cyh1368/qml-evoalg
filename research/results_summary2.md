@@ -460,6 +460,74 @@ Family `ring_n6`, target `alpha_1` (the declared group is **not** a label symmet
 | graphs_n6 | triangle | target_specific | 9/9 = 1.00 [0.701, 1.000] | 0/0 = n/a [n/a] |
 | graphs_n6 | triangle | target_specific_tol | 9/9 = 1.00 [0.701, 1.000] | 0/0 = n/a [n/a] |
 
+### Panel members: truth, gate decision under each variant, and margin
+
+| family | target | member | closure order | sound on probe | accepted (implemented) | accepted (scored, tol 0) | accepted (scored, tol 1e-9) | gate margin (implemented) | worst violated fraction (probe) |
+|---|---|---|---|---|---|---|---|---|---|
+| graphs_n6 | connected | cyclic_rotation | 6 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | connected | dihedral_declared | 12 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | connected | full_symmetric | 720 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | connected | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | connected | random_permutations | 720 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | connected | reflection | 2 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | connected | rotation_subgroup_c2 | 2 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | connected | rotation_subgroup_c3 | 3 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | connected | single_transpositions | 720 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | cyclic_rotation | 6 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | dihedral_declared | 12 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | full_symmetric | 720 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | random_permutations | 720 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | reflection | 2 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | rotation_subgroup_c2 | 2 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | rotation_subgroup_c3 | 3 | True | True | True | True | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | single_transpositions | 720 | True | True | True | True | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0 | cyclic_rotation | 6 | True | False | False | True | 1.95018 | 0.00000 |
+| ring_n6 | alpha_0 | dihedral_declared | 12 | True | False | False | True | 1.95018 | 0.00000 |
+| ring_n6 | alpha_0 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_0 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_0 | reflection | 2 | True | False | False | True | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0 | rotation_subgroup_c2 | 2 | True | False | False | True | 1.93358 | 0.00000 |
+| ring_n6 | alpha_0 | rotation_subgroup_c3 | 3 | True | False | False | True | 1.95018 | 0.00000 |
+| ring_n6 | alpha_0 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_0.1 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_0.1 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_0.1 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_0.1 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.1 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_0.1 | reflection | 2 | True | False | False | True | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.1 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 |
+| ring_n6 | alpha_0.1 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_0.1 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_0.25 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_0.25 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_0.25 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_0.25 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.25 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_0.25 | reflection | 2 | True | False | False | True | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.25 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 |
+| ring_n6 | alpha_0.25 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_0.25 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_0.5 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_0.5 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_0.5 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_0.5 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.5 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_0.5 | reflection | 2 | True | False | False | True | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.5 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 |
+| ring_n6 | alpha_0.5 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_0.5 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_1 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_1 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_1 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_1 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
+| ring_n6 | alpha_1 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| ring_n6 | alpha_1 | reflection | 2 | True | False | False | True | 0.00000 | 0.00000 |
+| ring_n6 | alpha_1 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 |
+| ring_n6 | alpha_1 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 |
+| ring_n6 | alpha_1 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 |
+
 ### Search-generated hypotheses: status and recorded gate decisions
 
 | family | target | exact declared | valid proper subgroup | valid supergroup | sound non-comparable | invalid |

@@ -657,27 +657,40 @@ question is answered by E-S2, which is underpowered at $12$ seeds.
 arm's selected predictor (E-S5b) lowers development risk for \emph{all} arms, including
 the non-LLM ones: graphs $-0.0639$ (\texttt{llm-fitness}) to $-0.1114$ (\texttt{random});
 ring $-0.0031$ to $-0.0039$; all intervals exclude $0$. Whatever the averaging buys, it
-does not require an LLM to buy it.
+does not require an LLM to buy it. \textbf{Approximation, stated plainly:} the declared
+group of \texttt{graphs\_n6} is $S_6$ with $720$ elements, so every graphs twirl in this
+paper is a \emph{Monte-Carlo} average over $24$ sampled group elements, not the exact
+Reynolds projection --- the MC share is $1.00$ on graphs and $0.00$ on the ring, where
+$|D_6| = 12$ is enumerated exactly. Guarantees that hold for the exact projector
+(equivariance of the averaged predictor, the projection identity) do \emph{not} transfer to
+a $24$-element average; what we report for graphs is the measured risk change of that
+approximation, and its cost is $12.5$\,s per candidate against $0.18$\,s on the ring.
 
 \subsection{Verification does not identify the group}
 \label{sec:selectivity}
 
-For every proposal that carried a hypothesis we recomputed, on the trusted side, whether
-its group equals the task's group and whether it passes the label-preservation gate that
-the verifier uses. On \texttt{graphs\_n6}, $299$ proposals carried a hypothesis: $10$
-carried $S_6$, and $289$ wrong-group proposals \emph{passed} the gate. On
-\texttt{ring\_n6}, $192$ carried a hypothesis: $0$ carried $D_6$, and $7$ passed.
+For every proposal that carried a hypothesis we recomputed, on the trusted side, its status
+against the declared group and against the measured label-symmetry group of the scored
+target (\S\ref{sec:semantics}). On \texttt{graphs\_n6}, of $299$ proposals carrying a
+hypothesis, $10$ are \texttt{exact\_declared} ($S_6$) and $289$ are
+\texttt{valid\_proper\_subgroup}: genuine label symmetries, weaker than declared, and
+\textbf{no} invalid hypothesis at all --- which is not a surprise once $|L_t| = 720$ is
+measured, because on that target no permutation hypothesis can fail the test. On
+\texttt{ring\_n6}, of $192$ proposals, $0$ are \texttt{exact\_declared}, $120$ are valid
+proper subgroups of $D_6$, and $72$ are genuinely invalid for the scored target; the gate
+accepted $7$ of them and rejected $95$ that \emph{were} symmetries of the scored target.
 
-This is not an implementation bug; it is the test's logic. Label preservation tests
-$y(gx)=y(x)$ on sampled rows for the \emph{proposed} group. If the true label symmetry is
-$G$ and the proposal is a subgroup $H\le G$, every element of $H$ preserves labels by
-construction, so the gate accepts. It is a \emph{soundness filter} (it can refute a group
-that visibly breaks labels, as on the ring where $185/192$ are rejected) and not an
-\emph{identification} test. The behavioural consequence is exactly what the search results
-show: repair fires on candidates whose group is wrong, and the averaged predictor still
-improves, because averaging over a subgroup of the true symmetry still removes variance.
-Establishing identification would need a different instrument (counterexample search over
-the group, or a symmetry-breaking probe distribution), which we did not build.
+This is a structural property of validity tests, not an implementation bug and not a
+discovered fact about LLM reasoning: testing that a proposed group preserves labels cannot
+distinguish a group from its valid subgroups, because every element of a subgroup of a label
+symmetry preserves labels by construction. A finite-sample label test is a \emph{screen}, not
+a universal soundness certificate. Read correctly, the implemented gate is sound (measured
+false-accept rate $0/7$ on the ring, $0/144$ on graphs) and severely under-sensitive (it
+rejected $95$ of $95$ sound ring hypotheses, CI $[0.961,1.000]$). Establishing
+\emph{identification} of the maximal group would need a different instrument (counterexample
+search over the group, or a symmetry-breaking probe distribution), which we did not build;
+\S\ref{sec:semantics} measures what the existing gate does decide, and \S\ref{sec:decision}
+measures what that costs.
 
 \subsection{Does the verifier's effect track the target's symmetry? (Addendum A1)}
 \label{sec:breaking}
@@ -847,6 +860,132 @@ CI $[-0.00176,+0.00028]$; we do not claim the two are equal), and enforcing it c
 the target variance when the target is not. The file digests before and after the read are identical
 (\texttt{research/HOLDOUT\_ACCESS\_v4.json}), and the evaluator now refuses to open the two
 splits consumed by the defective run.
+
+\subsection{What a label-preservation verifier can decide (A5.2, A5.3)}
+\label{sec:semantics}
+
+The referee's second point is correct as a matter of definition, and checking it changed
+what we report. A hypothesis closure $H$ is now classified against the declared group $G$
+and the \emph{measured} label-symmetry group $L_t$ of the scored target (every one of the
+$n!$ site permutations tested on an independent probe panel of 512 development rows that the
+gate never reads). Counting $H \ne G$ as a wrong group was wrong: $H < G$ is a genuine
+symmetry that is merely weaker than declared.
+
+\begin{table}[t]
+\centering
+\caption{Measured label-symmetry groups. $|L_t|/|S_n|$ is the fraction of the permutation
+hypothesis space that the label test can \emph{not} reject for target $t$; it is computable
+before any model is trained, and it decides whether a label-preservation verifier can carry
+information at all. $\textsc{all}$ is the conjunction the implemented gate actually checks.}
+\label{tab:semantics}
+\small
+\begin{tabular}{llrrll}
+\toprule
+family & target & $|L_t|$ & $|L_t|/|S_n|$ & contains $G$ & $=S_n$ \\
+\midrule
+graphs & connected & 720 & 1.0000 & yes & \textbf{yes} \\
+graphs & triangle  & 720 & 1.0000 & yes & \textbf{yes} \\
+graphs & \textsc{all} & 720 & 1.0000 & yes & yes \\
+ring & alpha\_0 & 12 & 0.0167 & yes & no \\
+ring & alpha\_0.1 / 0.25 / 0.5 / 1 & 2 & 0.0028 & no & no \\
+ring & \textsc{all} & 2 & 0.0028 & no & no \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two consequences. First, on \texttt{graphs\_n6} the label gate is \emph{vacuous by
+construction}: connectedness is invariant under every relabelling of the vertices, so no
+permutation hypothesis can violate it, and the observed $144/144$ acceptances say nothing
+about the quality of the proposals. The $289$ hypotheses we previously called ``wrong group''
+are \texttt{valid\_proper\_subgroup}: sound, incomplete, and \textbf{zero} false accepts.
+Second, on the ring the scored target $\alpha_0$ admits $12$ of $720$ permutations, but the
+implemented gate checks \emph{every} target column in the dataset, whose conjunction admits
+only $2$ of $720$ --- six times stricter than the scored target requires.
+
+\begin{table}[t]
+\centering
+\caption{Fixed-panel selectivity (A5.3): identical ring inputs, only the target varies. The
+panel is fixed in advance (identity, rotation, reflection, the declared dihedral group, its
+$C_3$ and $C_2$ subgroups, the full symmetric group, 20 random permutations, all 15 single
+transpositions). Wilson intervals; denominators are panel members, not elements.}
+\label{tab:panel}
+\small
+\begin{tabular}{llccc}
+\toprule
+target & gate variant & sensitivity & false-accept & $|L_t|$ \\
+\midrule
+$\alpha_0$ & implemented (all columns, tol.\ $0$) & $1/6 = 0.167$ $[0.030,0.564]$ & $0/3$ $[0.000,0.561]$ & 12 \\
+$\alpha_0$ & scored target, tol.\ $0$ & $1/6 = 0.167$ $[0.030,0.564]$ & $0/3$ $[0.000,0.561]$ & 12 \\
+$\alpha_0$ & scored target, tol.\ $10^{-9}$ & $\mathbf{6/6 = 1.000}$ $[0.610,1.000]$ & $0/3$ $[0.000,0.561]$ & 12 \\
+$\alpha_1$ & implemented & $1/2 = 0.500$ $[0.095,0.905]$ & $0/7$ $[0.000,0.354]$ & 2 \\
+connected & implemented & $9/9 = 1.000$ $[0.701,1.000]$ & $0/0$ (no violator exists) & 720 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The sensitivity loss has two separable causes, each measured: the all-columns conjunction,
+and a zero tolerance applied to a continuous target. The declared rotation is a genuine
+symmetry of $\alpha_0$ --- its worst violated fraction on the probe is $0.0$ at the probe's
+$10^{-9}$ tolerance --- yet at a tolerance of exactly $0$ the gate records a violated fraction
+of $0.53125$ across the rotation's closure ($34$ of its $64$ gate rows) and rejects it. With
+both causes corrected, panel sensitivity on the invariant target goes from $1/6$ to $6/6$
+with no false accepts. On the search-generated hypotheses the recorded decisions give
+$0$ false accepts out of $7$ accepted on the ring (CI $[0.000,0.354]$) and $95$ of $95$
+rejected hypotheses \emph{sound} for the scored target (CI $[0.961,1.000]$): the implemented
+gate's failure mode is missed sound hypotheses, not accepted unsound ones. Recovering $D_6$
+on a target that is deliberately not $D_6$-invariant would be the wrong answer, and we no
+longer score it as a failure.
+
+\subsection{Verification as a decision rule (A5.4)}
+\label{sec:decision}
+
+That declared-group averaging helps non-LLM pipelines does not show a verifier is necessary,
+so we stopped asserting it and measured the decision instead. For each of the $120$ frozen
+candidates we applied the same averaging and scored the same rows under five rules. The
+outcome is paired per candidate ($\Delta = $ risk after $-$ risk before; negative helps), and
+a rule's \emph{realised} change counts a non-firing candidate as $0$.
+
+\begin{table}[t]
+\centering
+\caption{Decision-rule comparison on the $120$ frozen candidates ($60$ per family).
+Precision is the share of fired repairs that helped; recall the share of beneficial repairs
+that fired; both with Wilson intervals in \texttt{research/results\_summary2.md}. The
+mismatched-group control is undefined on graphs because no mismatched group exists there.}
+\label{tab:decision}
+\small
+\begin{tabular}{llrrrrr}
+\toprule
+family & rule & fired & realised $\Delta$ & if always applied & precision & missed beneficial \\
+\midrule
+graphs & R0 supplied group (always) & 60/60 & $-0.08705$ & $-0.08705$ & 60/60 & 0 \\
+graphs & R1 label gate & 60/60 & $-0.08705$ & $-0.08705$ & 60/60 & 0 \\
+graphs & R2 deployed gate & 60/60 & $-0.08705$ & $-0.08705$ & 60/60 & 0 \\
+graphs & R3 defect gate ($q_1$) & 45/60 & $-0.07544$ & $-0.08705$ & 45/45 & 15 \\
+graphs & R4 mismatched group & --- & \multicolumn{4}{l}{undefined: $L_t$ is the whole space} \\
+\midrule
+ring & R0 supplied group (always) & 60/60 & $-0.00345$ & $-0.00345$ & 60/60 & 0 \\
+ring & R1 label gate & $\mathbf{0/60}$ & $\mathbf{0.00000}$ & $-0.00345$ & 0/0 & 60 \\
+ring & R2 deployed gate & $\mathbf{0/60}$ & $\mathbf{0.00000}$ & $-0.00345$ & 0/0 & 60 \\
+ring & R3 defect gate ($q_1$) & 45/60 & $-0.00274$ & $-0.00345$ & 45/45 & 15 \\
+ring & R4 mismatched group & 60 & $+0.00399$ & --- & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Four things follow. (i)~Averaging over the supplied group never hurt a single one of the
+$120$ candidates, so on these targets unconditional averaging is the better policy and the
+verifier is \emph{not} a precondition for the benefit. (ii)~The implemented gate forfeits
+$100\%$ of the available benefit on the ring (realised $0.00000$ against $-0.00345$), which
+is the operational cost of the sensitivity loss measured above. (iii)~A verifier-free gate on
+the predictor's own measured non-invariance captures $79\%$ of it ($-0.00274$) at precision
+$45/45$ with no candidate harmed. (iv)~The negative control is where verification would earn
+its keep: averaging over a mismatched group costs $+0.00399$, so a rule that fires blindly is
+unsafe exactly on targets whose symmetry differs from the supplied group. Two further
+mechanical facts matter for design: the channel condition in the deployed gate is satisfied by
+$60/60$ candidates in both families, so it contributes no discrimination, and on graphs the
+label test costs $0.45$\,s while the averaging it gates costs $12.5$\,s --- the filter is
+$3.6\%$ of the work it is supposed to save, and it filters nothing.
+
 
 \section{Discussion}
 \label{sec:discussion}

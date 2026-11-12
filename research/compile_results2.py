@@ -440,6 +440,28 @@ def semantics_section(path, out):
                       wil(se), fa["k"], fa["n"],
                       "n/a" if fa["rate"] is None else "%.2f" % fa["rate"], wil(fa)))
     out.append("")
+    out.append("### Panel members: truth, gate decision under each variant, and margin\n")
+    out.append("| family | target | member | closure order | sound on probe | accepted "
+               "(implemented) | accepted (scored, tol 0) | accepted (scored, tol 1e-9) | "
+               "gate margin (implemented) | worst violated fraction (probe) |")
+    out.append("|---|---|---|---|---|---|---|---|---|---|")
+    members = {}
+    for key, v in d["panel"].items():
+        fam, tgt, gate = key.split("|")
+        for name, m in v["members"].items():
+            row = members.setdefault((fam, tgt, name),
+                                     {"order": m["closure_order"],
+                                      "sound": m["sound_on_probe"],
+                                      "worst": m["worst_violated_fraction"]})
+            row["acc_" + gate] = m["accepted"]
+            row["margin_" + gate] = m["gate_margin"]
+    for (fam, tgt, name), r in sorted(members.items()):
+        out.append("| %s | %s | %s | %d | %s | %s | %s | %s | %.5f | %.5f |"
+                   % (fam, tgt, name, r["order"], r["sound"],
+                      r.get("acc_implemented"), r.get("acc_target_specific"),
+                      r.get("acc_target_specific_tol"),
+                      r.get("margin_implemented", float("nan")), r["worst"]))
+    out.append("")
     out.append("### Search-generated hypotheses: status and recorded gate decisions\n")
     out.append("| family | target | exact declared | valid proper subgroup | valid supergroup | sound non-comparable | invalid |")
     out.append("|---|---|---|---|---|---|---|")
