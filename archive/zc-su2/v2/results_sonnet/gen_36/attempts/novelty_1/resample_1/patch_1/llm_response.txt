@@ -1,0 +1,47 @@
+<NAME>
+zz_nn_lr_split
+</NAME>
+
+<DESCRIPTION>
+Replace the even/odd ZZ ring split with a physically motivated distinction between nearest-neighbor ring couplings and long-range cross-link couplings. All 8 ring edges (0-1,1-2,...,7-0) share a single "zz_nn" parameter, and 4 diagonal cross-links (0-4,1-5,2-6,3-7) share a single "zz_lr" parameter. This keeps the same 4 distinct trainable parameter names (ry, rz, zz_nn, zz_lr) but gives the optimizer independent control over local adjacency structure versus long-range entanglement, which should improve the worst-group margin (as previously observed with the full ring + cross-link seed scoring 0.71) while retaining the shallower/parameter-economic circuit style of the current best variant.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Entangling ring split into two alternating-parameter sublayers:
+    # even bonds (0-1, 2-3, 4-5, 6-7) share "zz_even", odd bonds
+    # (1-2, 3-4, 5-6, 7-0) share "zz_odd". This closes the full 8-edge
+    # cycle while allowing even/odd bond strengths to differ, which
+    # increases expressivity of the entangling structure relative to a
+    # single fully-shared zz_ring parameter.
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_even"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_even"},
+
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_odd"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_odd"},
+=======
+    # Entangling structure split by topology rather than parity: all 8
+    # nearest-neighbor ring bonds share "zz_nn" (local adjacency coupling),
+    # while the 4 long-range diagonal cross-links share "zz_lr" (global
+    # coupling). This differentiates local vs. long-range interaction
+    # strength, giving the optimizer targeted control that helps separate
+    # the hardest validation groups, at no extra parameter cost.
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_nn"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_nn"},
+
+    {"gate": "ZZ", "wires": [0, 4], "param": "zz_lr"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "zz_lr"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "zz_lr"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "zz_lr"},
+>>>>>>> REPLACE
+</DIFF>

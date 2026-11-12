@@ -1,0 +1,107 @@
+<NAME>
+cyclic_ising_mixer
+</NAME>
+
+<DESCRIPTION>
+The prior programs achieved strong performance (0.65-0.66 combined score) with efficient parameter sharing and structured entanglement patterns. Key observations:
+
+1. The second program (score 0.66) outperformed the others by using only 7 distinct parameters and achieving faster convergence (30 steps vs 60-90), suggesting that aggressive parameter reuse is rewarded.
+
+2. The current program (score 0.65) has 8 distinct parameters and slower convergence (90 steps), indicating over-parameterization despite good accuracy metrics.
+
+3. The worst_group_margin (0.35) is the bottleneck—we need stronger separation on hard samples without just adding parameters.
+
+Novel approach: I'll combine the parameter efficiency of the best performer with a cyclic ring topology (as suggested) using Ising gates instead of controlled rotations. Ising gates (XX, YY, ZZ) naturally create symmetric entanglement and are known to be efficient mixers in QAOA. The ring closure adds long-range connectivity at zero parameter cost.
+
+Strategy:
+- Use a 3-layer structure: initial rotations → Ising entanglement rings → final rotations
+- Aggressive parameter sharing: reuse the same few parameters across multiple gates
+- Employ alternating Ising types (XX, then YY) for richer correlation structure
+- Close the 8-qubit chain into a ring with a CZ gate on [7,0]
+- Reduce distinct parameters to 4-5 for better generalization
+- Replace CRZ with simpler XX/YY/ZZ for faster training convergence
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial rotation layer with even/odd parameter sharing
+    {"gate": "RY", "wire": 0, "param": "rot_init_a"},
+    {"gate": "RY", "wire": 1, "param": "rot_init_b"},
+    {"gate": "RY", "wire": 2, "param": "rot_init_a"},
+    {"gate": "RY", "wire": 3, "param": "rot_init_b"},
+    {"gate": "RY", "wire": 4, "param": "rot_init_a"},
+    {"gate": "RY", "wire": 5, "param": "rot_init_b"},
+    {"gate": "RY", "wire": 6, "param": "rot_init_a"},
+    {"gate": "RY", "wire": 7, "param": "rot_init_b"},
+
+    # First Ising layer: nearest-neighbor XX gates forming a ring structure
+    {"gate": "XX", "wires": [0, 1], "param": "ent_xx"},
+    {"gate": "XX", "wires": [1, 2], "param": "ent_xx"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_xx"},
+    {"gate": "XX", "wires": [3, 4], "param": "ent_xx"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_xx"},
+    {"gate": "XX", "wires": [5, 6], "param": "ent_xx"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_xx"},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Second Ising layer: offset YY gates for complementary entanglement
+    {"gate": "YY", "wires": [0, 2], "param": "ent_yy"},
+    {"gate": "YY", "wires": [2, 4], "param": "ent_yy"},
+    {"gate": "YY", "wires": [4, 6], "param": "ent_yy"},
+    {"gate": "YY", "wires": [1, 3], "param": "ent_yy"},
+    {"gate": "YY", "wires": [3, 5], "param": "ent_yy"},
+    {"gate": "YY", "wires": [5, 7], "param": "ent_yy"},
+
+    # Intermediate rotation layer
+    {"gate": "RZ", "wire": 0, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rot_mid"},
+
+    # Third Ising layer: ZZ gates with longer range connectivity
+    {"gate": "ZZ", "wires": [0, 3], "param": "ent_zz"},
+    {"gate": "ZZ", "wires": [1, 4], "param": "ent_zz"},
+    {"gate": "ZZ", "wires": [2, 5], "param": "ent_zz"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "ent_zz"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "ent_zz"},
+
+    # Final rotation layer
+    {"gate": "RY", "wire": 0, "param": "rot_final"},
+    {"gate": "RY", "wire": 1, "param": "rot_final"},
+    {"gate": "RY", "wire": 2, "param": "rot_final"},
+    {"gate": "RY", "wire": 3, "param": "rot_final"},
+    {"gate": "RY", "wire": 4, "param": "rot_final"},
+    {"gate": "RY", "wire": 5, "param": "rot_final"},
+    {"gate": "RY", "wire": 6, "param": "rot_final"},
+    {"gate": "RY", "wire": 7, "param": "rot_final"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

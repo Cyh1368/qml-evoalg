@@ -1,0 +1,89 @@
+<NAME>
+hybridize_forward_entanglement
+</NAME>
+
+<DESCRIPTION>
+Analysis of prior programs shows:
+1. Program 2 (score 0.91) performs best with only 44 parameters, achieving 92% validation accuracy with excellent efficiency and faster convergence (180 steps).
+2. The current program (score 0.90) has regressed to 62 parameters and 270 convergence steps, while maintaining only 90% validation accuracy.
+3. The key difference: Program 2 uses a pure CZ forward chain, then a shared-parameter CRZ reverse chain. The current program adds a CRY bridge and extra RX/RY global mixing layers that increase complexity without improving performance.
+
+The recommendation to "hybridize the forward entanglement block by replacing every other CZ with a shared-parameter CRZ gate" directly aligns with Program 2's successful pattern, but takes it further: instead of pure CZ gates, we'll alternate CZ and CRZ in the forward pass. This provides:
+- Minimal parameter overhead (1 additional parameter for crz_fwd vs pure CZ)
+- Light tuning of forward entanglement to complement the reverse CRZ chain
+- Better parameter efficiency than the current approach
+- Maintains the proven lean architecture of Program 2
+
+The strategy:
+1. Remove the ineffective CRY bridge (which added parameters without boosting accuracy)
+2. Remove the global RX/RY mixing layers (expensive and didn't help)
+3. Hybridize the forward CZ chain: CZ, CRZ, CZ, CRZ, CZ, CRZ, CZ pattern
+4. Keep the rest of Program 2's lean structure
+5. Expected outcome: ~50-52 parameters, better accuracy, faster convergence, and improved parameter efficiency
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Linear chain CZ gates for low-depth entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Lightweight parametrized bridge between even and odd qubits
+    {"gate": "CRY", "wires": [0, 3], "param": "cry_bridge"},
+    {"gate": "CRY", "wires": [4, 7], "param": "cry_bridge"},
+=======
+    # Hybridized forward chain: alternating CZ and parametrized CRZ gates
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_fwd"},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_fwd"},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_fwd"},
+    {"gate": "CZ", "wires": [6, 7]},
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+    # Global mixing layer for Hilbert-space coverage before measurement
+    {"gate": "RX", "wire": 0, "param": "rx_global"},
+    {"gate": "RX", "wire": 1, "param": "rx_global"},
+    {"gate": "RX", "wire": 2, "param": "rx_global"},
+    {"gate": "RX", "wire": 3, "param": "rx_global"},
+    {"gate": "RX", "wire": 4, "param": "rx_global"},
+    {"gate": "RX", "wire": 5, "param": "rx_global"},
+    {"gate": "RX", "wire": 6, "param": "rx_global"},
+    {"gate": "RX", "wire": 7, "param": "rx_global"},
+    {"gate": "RY", "wire": 0, "param": "ry_global"},
+    {"gate": "RY", "wire": 1, "param": "ry_global"},
+    {"gate": "RY", "wire": 2, "param": "ry_global"},
+    {"gate": "RY", "wire": 3, "param": "ry_global"},
+    {"gate": "RY", "wire": 4, "param": "ry_global"},
+    {"gate": "RY", "wire": 5, "param": "ry_global"},
+    {"gate": "RY", "wire": 6, "param": "ry_global"},
+    {"gate": "RY", "wire": 7, "param": "ry_global"},
+=======
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,109 @@
+Looking at the performance data:
+
+1. **Prior program 1** (RY + RZ_pre/post sandwich + CZ chain): Score 0.68, n_params=20, convergence_step=60
+2. **Prior program 2** (RY + single RZ + CZ chain): Score 0.72, n_params=14, convergence_step=90
+3. **Current program** (RY + RZ_pre/post sandwich + CRZ chain): Score 0.66, n_params=26, convergence_step=90
+
+**Key observations:**
+- The current program has the **worst score (0.66)** despite using CRZ gates (parametrized two-qubit gates)
+- Prior program 2 achieved the **best score (0.72)** with minimal parameters (n_params=14) and faster convergence (step 60→90 trade-off)
+- The current program uses 26 parameters and still underperforms, suggesting the CRZ entangling layer is not beneficial for this task
+- All three programs achieve perfect accuracy (train/val/test = 1.0), so the differentiator is **parameter economy** and **convergence speed**
+
+**Analysis:**
+The recommendation in the prompt suggests swapping RY for RX. However, the data shows that prior program 2's structure (single shared RZ instead of pre/post sandwich) was superior. Let me test the axis-swap hypothesis while maintaining the more efficient single-RZ structure:
+
+The idea is to replace RY with RX in a minimal, efficient configuration that combines:
+- The parameter-efficient single-RZ design from prior program 2
+- The axis-swap hypothesis (RX instead of RY) to explore expressivity
+- The CZ chain (which was reliable in prior programs)
+
+This gives n_params=2 (rx_shared, rz_shared) with potential for better or equal accuracy while maintaining parameter efficiency.
+
+<NAME>
+rx_single_rz_cz
+</NAME>
+
+<DESCRIPTION>
+Replace the current parametrized two-qubit CRZ gates with fixed CZ gates, and swap the RY rotation to RX. This combines:
+1. The parameter-efficient single-RZ design from prior program 2 (which scored 0.72, best score)
+2. The axis-swap hypothesis from the recommendation (RX instead of RY)
+3. The fixed CZ chain (reliable in prior programs)
+
+The current program wastes parameters with 26 parameters and CRZ gates but scores only 0.66. Prior program 2 achieved 0.72 with just 14 parameters using CZ instead. This edit reduces to 2 parameters while exploring whether RX/RZ/CZ combo matches or exceeds RY/RZ/CZ performance on this task.
+
+Expected outcome: Match or exceed prior program 2's score (0.72) with minimal parameters and faster convergence.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_shared"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_ent"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_ent"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RX", "wire": 0, "param": "rx_shared"},
+    {"gate": "RX", "wire": 1, "param": "rx_shared"},
+    {"gate": "RX", "wire": 2, "param": "rx_shared"},
+    {"gate": "RX", "wire": 3, "param": "rx_shared"},
+    {"gate": "RX", "wire": 4, "param": "rx_shared"},
+    {"gate": "RX", "wire": 5, "param": "rx_shared"},
+    {"gate": "RX", "wire": 6, "param": "rx_shared"},
+    {"gate": "RX", "wire": 7, "param": "rx_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

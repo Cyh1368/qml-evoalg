@@ -1,0 +1,147 @@
+<NAME>
+interleaved_two_param_shells
+
+<DESCRIPTION>
+Replace the current 5-parameter ansatz (ry_even/ry_odd/zz_ring/crz_long/rz_all, which scored only 0.52) with a restructured version of the best-performing prior candidate (2 distinct params: theta_ry, theta_z; score 0.61). Per the evolution guidance that fewer distinct parameter names always score higher, and per the specific recommendation to interleave the RZ layer between entangling shells rather than applying all rotations before or after the entangling shells in one block, this candidate:
+1) Drops back to exactly 2 distinct trainable circuit parameters (theta_ry, theta_z) plus gain/bias (4 total), which was empirically both higher-scoring and had a smaller train/validation loss than the 4-5 parameter variants tried so far.
+2) Keeps the rich 3-shell CRZ entangling graph (distance 1, 2, 4 rings) that gives near-complete qubit connectivity with tied parameters.
+3) Moves the global RZ layer (reusing theta_z) from before all entangling shells to between Shell 1 (nearest-neighbor ring) and Shell 2 (skip ring), so that within one block the sequence is RY -> Shell1 -> RZ -> Shell2 -> Shell3. This gives an extra local-phase mixing point between entangling stages, which combined with 3x block repetition, should improve gradient propagation and worst-case margin without increasing the parameter count.
+
+This directly follows both hard constraints (parameter economy dominates score) and the qualitative recommendation about interleaving rotation layers between entangling shells.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Alternating local rotations: even/odd qubits share one parameter each.
+    # This asymmetric split (vs. a single shared angle for all 8 qubits) was
+    # empirically the key ingredient that lifted validation/test accuracy
+    # from ~0.5 to ~0.85+ in prior generations, so it is kept unchanged here.
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # Entangling layer covering EVERY pairwise qubit distance on the ring
+    # (1, 2, 3, 4), i.e. the complete graph K8, split into just two shared
+    # parameter groups by distance. Distances 1 and 2 (short-range, local
+    # mixing) share a single IsingZZ angle "zz_ring"; distances 3 and 4
+    # (long-range, global mixing) share a single CRZ angle "crz_long". This
+    # gives maximal fixed connectivity -- every qubit pair interacts directly
+    # at least once per block -- while the trainable parameter count stays
+    # exactly the same as the previous best candidate (5 distinct circuit
+    # parameters). Denser, symmetric connectivity should make the learned
+    # correlations more robust across held-out/hard validation groups instead
+    # of relying on diffusion through a sparse ring.
+
+    # Distance 1 (nearest neighbor ring).
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+    # Distance 2 (next-nearest neighbor).
+    {"gate": "ZZ", "wires": [0, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 0], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 1], "param": "zz_ring"},
+
+    # Distance 3.
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [5, 0], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [6, 1], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [7, 2], "param": "crz_long"},
+    # Distance 4 (antipodal).
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_long"},
+
+    # Global phase-shaping layer, one shared angle for all qubits.
+    {"gate": "RZ", "wire": 0, "param": "rz_all"},
+    {"gate": "RZ", "wire": 1, "param": "rz_all"},
+    {"gate": "RZ", "wire": 2, "param": "rz_all"},
+    {"gate": "RZ", "wire": 3, "param": "rz_all"},
+    {"gate": "RZ", "wire": 4, "param": "rz_all"},
+    {"gate": "RZ", "wire": 5, "param": "rz_all"},
+    {"gate": "RZ", "wire": 6, "param": "rz_all"},
+    {"gate": "RZ", "wire": 7, "param": "rz_all"},
+]
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Global single-qubit layer: one shared RY angle for all 8 qubits. This
+    # 2-distinct-parameter design (theta_ry, theta_z) was the best-scoring
+    # prior candidate; parameter economy dominates the score, so it is kept
+    # minimal here and only the intra-block ordering is changed.
+    {"gate": "RY", "wire": 0, "param": "theta_ry"},
+    {"gate": "RY", "wire": 1, "param": "theta_ry"},
+    {"gate": "RY", "wire": 2, "param": "theta_ry"},
+    {"gate": "RY", "wire": 3, "param": "theta_ry"},
+    {"gate": "RY", "wire": 4, "param": "theta_ry"},
+    {"gate": "RY", "wire": 5, "param": "theta_ry"},
+    {"gate": "RY", "wire": 6, "param": "theta_ry"},
+    {"gate": "RY", "wire": 7, "param": "theta_ry"},
+
+    # Shell 1: nearest-neighbor ring (distance 1), shared angle "theta_z"
+    # reused as the CRZ entangling generator.
+    {"gate": "CRZ", "wires": [0, 1], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "theta_z"},
+
+    # Interleaved global RZ layer (same shared angle "theta_z"), inserted
+    # between Shell 1 and Shell 2 instead of only before all entangling
+    # shells. Splitting the local phase mixing across the entangling stages
+    # gives the optimizer an extra point where local and non-local
+    # information mix, without adding any new trainable parameter.
+    {"gate": "RZ", "wire": 0, "param": "theta_z"},
+    {"gate": "RZ", "wire": 1, "param": "theta_z"},
+    {"gate": "RZ", "wire": 2, "param": "theta_z"},
+    {"gate": "RZ", "wire": 3, "param": "theta_z"},
+    {"gate": "RZ", "wire": 4, "param": "theta_z"},
+    {"gate": "RZ", "wire": 5, "param": "theta_z"},
+    {"gate": "RZ", "wire": 6, "param": "theta_z"},
+    {"gate": "RZ", "wire": 7, "param": "theta_z"},
+
+    # Shell 2: skip ring (distance 2), same shared angle.
+    {"gate": "CRZ", "wires": [0, 2], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [6, 0], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "theta_z"},
+
+    # Shell 3: long-range antipodal pairing (distance 4), same shared angle.
+    {"gate": "CRZ", "wires": [0, 4], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "theta_z"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "theta_z"},
+]
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+
+</DIFF>

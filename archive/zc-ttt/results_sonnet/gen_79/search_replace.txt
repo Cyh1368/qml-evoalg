@@ -1,0 +1,27 @@
+<NAME>
+add_shared_ccrz_triples
+
+<DESCRIPTION>
+The current ansatz only captures pairwise correlations between qubits (via CRZ on the 12 allowed edges). To let the circuit model higher-order (three-body) correlations that no single two-qubit gate pair can express, I insert three disjoint CCRZ (controlled-controlled-RZ) gates on triples of qubits: (0,4,6), (1,5,7), (2,3,8). These three triples partition all 9 qubits and are mutually disjoint in wires, so they can be executed in parallel, adding essentially only one extra layer of depth rather than three. All three CCRZ gates share a single parameter name ("ccrz_0"), so only one new trainable parameter is introduced (162→163), keeping the parameter budget essentially unchanged while enriching the expressivity of the ansatz. This is placed after the two-qubit entangling sublayers and before the final local RZ phases, so the newly created three-body correlations are read out through the following single-qubit rotations. This should help close the generalization gap and lift both validation and test accuracy without meaningfully increasing circuit depth or parameter count.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_10"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+
+    # Post-entangling local phases
+=======
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_10"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+
+    # Higher-order (three-body) correlations across disjoint qubit triples,
+    # executed in parallel and sharing a single parameter to add
+    # expressivity at negligible parameter/depth cost.
+    {"gate": "CCRZ", "wires": [0, 4, 6], "param": "ccrz_0"},
+    {"gate": "CCRZ", "wires": [1, 5, 7], "param": "ccrz_0"},
+    {"gate": "CCRZ", "wires": [2, 3, 8], "param": "ccrz_0"},
+
+    # Post-entangling local phases
+>>>>>>> REPLACE
+</DIFF>

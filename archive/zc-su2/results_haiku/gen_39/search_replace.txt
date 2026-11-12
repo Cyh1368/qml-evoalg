@@ -1,0 +1,64 @@
+Looking at the current program and the recommendation, I can see that:
+
+1. **Current state**: The program has 14 parameters (only `ry_shared` and `rz_shared`), perfect accuracy, but a combined score of 0.72
+2. **Issue**: The CZ gates are fixed (unparametrized), which limits the optimizer's flexibility in controlling entanglement strength
+3. **Opportunity**: The recommendation suggests replacing CZ gates with parametrized CRZ gates using a shared parameter `phi_shared`
+
+**Analysis of the recommendation:**
+- CZ gates apply a fixed π phase on the |11⟩ state
+- CRZ gates allow the entangling angle to be learned
+- This gives the optimizer direct control over entanglement strength while maintaining parameter economy (adding just 1 new parameter)
+- Faster convergence and better generalization are expected because the entanglement can be tuned to the specific problem
+
+**Why this helps:**
+- The current 0.72 score suggests room for improvement despite perfect accuracy on train/validation/test
+- Adding parametrized entanglement (while sharing the parameter) provides expressive power with minimal parameter overhead
+- This addresses the convergence_step_mean of 90, which could potentially be reduced with better-tuned entanglement
+
+Let me implement this change:
+
+<NAME>
+parametrize_cz_to_crz
+</NAME>
+
+<DESCRIPTION>
+Replace all CZ gates with parametrized CRZ gates using a shared parameter `phi_shared`. This gives the optimizer direct control over entanglement angles while maintaining parameter economy (adding just 1 new parameter total). CRZ gates have been shown to converge faster than fixed CZ gates and allow the entangling strength to be tuned to the problem structure. The shared parameter across all CRZ gates preserves the linear entangling ladder structure while enabling adaptive entanglement.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+=======
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_shared"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+=======
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "phi_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi_shared"},
+>>>>>>> REPLACE
+</DIFF>

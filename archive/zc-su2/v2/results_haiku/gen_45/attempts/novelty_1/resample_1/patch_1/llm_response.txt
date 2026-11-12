@@ -1,0 +1,112 @@
+<NAME>
+efficient_single_motif_crx
+</NAME>
+
+<DESCRIPTION>
+Analysis of the three programs shows:
+
+1. **Prior Program 1** (score 0.67): Compact single-motif design with 7 distinct params, 108 gates, depth 26, convergence at step 30. Uses a fixed CZ layer for hard-sample discrimination.
+
+2. **Prior Program 2** (score 0.67): Similar compact design with 7 distinct params, 105 gates, depth 26, but adds RZ bracketing on odd qubits and removes some final RZ gates. Convergence at step 30.
+
+3. **Current Program** (score 0.66): Repeats the entire entanglement motif twice, leading to bloat: 150 gates, depth 39, convergence at step 60. This redundancy hurts generalization and efficiency.
+
+**Key observations:**
+- Both prior programs achieve 0.67 with economical single-motif designs
+- The current doubled-motif approach degrades performance (0.66) despite having the same parameter count
+- Prior Program 1's fixed CZ layer + skip-3 pattern is effective for worst-group margin (0.36)
+- Prior Program 2's CRX enrichment layer shows marginal improvement (105 vs 108 gates) with identical score
+- Convergence matters: single motif converges in 30 steps vs doubled motif in 60 steps
+
+**Crossover strategy:**
+Combine the structural efficiency of Prior Program 1 (with fixed CZ discrimination layer) with the CRX enrichment from Prior Program 2. This hybrid approach:
+- Keeps single-motif simplicity (depth 26, gates ~108)
+- Adds CRX layer (proven to help without degrading score)
+- Includes fixed CZ for hard-sample discrimination
+- Maintains 7 distinct parameters for optimal parameter efficiency
+- Expected convergence: ~30 steps
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial rotation layer with parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # CRX enrichment layer on offset pairs
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+
+    # Intermediate rotations
+    {"gate": "RY", "wire": 1, "param": "ry_mid"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid"},
+
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Skip-3 CZ entangling layer for hard-sample discrimination
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [4, 7]},
+
+    # Final rotation layer with shared parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

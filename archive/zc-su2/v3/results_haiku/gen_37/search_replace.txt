@@ -1,0 +1,74 @@
+## Analysis
+
+Looking at the metrics:
+
+**Prior programs:**
+- Program 1: Combined score 0.57, worst_group_margin 0.37, 10 distinct params
+- Program 2: Combined score 0.58 (best), worst_group_margin 0.28, 10 distinct params
+
+**Current program:**
+- Combined score 0.56, worst_group_margin 0.32, 10 distinct params
+- Slower convergence (480 steps vs 150-180)
+- Larger gate count (114 vs 90)
+- Worse worst_group_margin than Program 1
+
+The key observation from the recommendation is that **long-range shared-parameter two-qubit entanglers** show strong test-accuracy gains. The current program has added more RY gates but hasn't introduced diagonal CRZ entanglers on long-range pairs.
+
+The recommendation suggests adding CRZ gates on diagonal pairs `[(0,5),(1,6),(2,7),(3,4)]` with a single shared parameter `crz_diag` just before the final `rz_post` layer. This would:
+
+1. **Improve worst_group_margin** - long-range entanglement helps with the hardest samples
+2. **Keep parameter count low** - one shared parameter for all diagonal CRZ gates
+3. **Enhance expressivity** - diagonal interactions complement the nearest-neighbor and mid-range couplings already present
+4. **Maintain efficiency** - adds only 1 new parameter while improving robustness
+
+Let me implement this targeted improvement:
+
+<NAME>
+add_diagonal_crz_entangler
+</NAME>
+
+<DESCRIPTION>
+Add a long-range shared-parameter CRZ entangler layer on diagonal qubit pairs immediately before the final rz_post layer. This implements the recommendation to use diagonal CRZ gates [(0,5),(1,6),(2,7),(3,4)] with a single shared parameter.
+
+The rationale:
+- Diagonal pairs create long-range entanglement that complements existing nearest-neighbor and mid-range interactions
+- Sharing one parameter keeps the trainable parameter count at 11 distinct params, improving parameter efficiency
+- Long-range entanglers have shown empirically strong gains for separating difficult samples (worst_group_margin)
+- Positioned before rz_post allows final RZ rotations to process the entangled state
+- Prior experiments showed these couplings improve test accuracy without overfitting
+
+Expected improvements:
+- Better worst_group_margin (currently 0.32, should approach 0.37+ from Program 1)
+- Maintained or improved generalization despite slightly increased expressivity
+- Lower convergence steps due to better circuit structure
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+=======
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "CRZ", "wires": [0, 5], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [1, 6], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [2, 7], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_diag"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+>>>>>>> REPLACE
+</DIFF>

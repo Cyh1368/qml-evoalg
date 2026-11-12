@@ -1,0 +1,118 @@
+<NAME>
+adaptive_phase_fusion
+</NAME>
+
+<DESCRIPTION>
+Inspired by the previous programs' success with parameter sharing and linear chain topologies, I identified key patterns:
+
+1. **From prior programs**: Linear chain CZ entanglement (0-1-2-3-4-5-6-7) consistently delivers ~0.91 score with good parameter efficiency.
+2. **Current program weakness**: Score dropped to 0.90 despite 62 parameters and longer convergence (450 steps vs 150-330), suggesting overfitting or inefficient parameter utilization. The mixed CRZ/CRX reverse chain may introduce spectral noise without sufficient benefit.
+3. **Novel insight**: Instead of separate rz_post_a/rz_post_b parameters (16 gates, 2 parameters), reuse rz_pre_a/rz_pre_b for the final layer. This creates a "fusion" point where pre- and post-rotation logic share parameters, reducing total unique parameters while testing whether a tighter 2-parameter phase sandwich still captures essential dynamics.
+
+**Key differences from prior work**:
+- Eliminate mixed CRZ/CRX and return to pure CRZ reverse chain (better learned pattern from prior programs at 50-62 parameters)
+- Merge pre/post RZ phases by reusing rz_pre_a and rz_pre_b at the end
+- Reduce parameter count from 62 to 54, improving efficiency and convergence speed
+- Maintain proven linear chain CZ topology
+- Simplify mid-circuit phase by using single unified even/odd split (rz_mid_a/rz_mid_b instead of rz_mid_even/rz_mid_odd for consistency with binary parameter naming)
+
+This is fundamentally different from prior approaches because it fuses architectural stages through parameter reuse rather than eliminating gates, preserving expressivity while reducing overfitting risk.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Shared initial RY rotations - pairs of qubits share parameters
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    # Shared pre-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+
+    # Forward linear chain CZ gates for proven low-depth entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Mid-circuit selective RZ rotations on even/odd qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_b"},
+
+    # Reverse chain with parametrized CRZ gates (proven pattern from prior)
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+
+    # Fused post-entanglement RZ rotations: reuse rz_pre_a and rz_pre_b
+    # This merges pre and post phase logic, reducing unique parameter count
+    # while maintaining phase flexibility through dual-parameter modulation
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>
+
+**Rationale for improvements:**
+
+1. **Parameter reduction** (62 → 54 unique parameters): Eliminates rz_post_a/rz_post_b by fusing them with rz_pre_a/rz_pre_b. This addresses overfitting seen in the current program's drop from 0.91 to 0.90.
+
+2. **Convergence speedup**: Fewer parameters should reduce convergence time from 450 steps closer to the proven 150-330 range of prior programs.
+
+3. **Maintained proven topology**: Keeps linear chain CZ and pure CRZ reverse chain (proven at 50-62 parameters with 0.91 score) rather than the mixed CRZ/CRX of the current program.
+
+4. **Novel fusion principle**: Parameter reuse at different circuit stages is rarely explored systematically; this tests whether binding pre and post phases improves generalization by forcing the optimizer to find a unified phase strategy.

@@ -1,0 +1,63 @@
+<NAME>
+revert_order_add_ry_refresh
+</NAME>
+
+<DESCRIPTION>
+The reordered entangling-layer variant (grouped into "parallel" sublayers) underperformed the original sequential CRZ ordering (0.58 vs 0.63 combined score), despite identical parameter count and gate set — indicating that the specific gate ordering affects optimization dynamics (likely due to how correlated rotations interact before commuting structure was enforced). We revert to the original, higher-performing CRZ ordering from the seed and then add a lightweight RY "refresh" layer on the four highest-centrality qubits (0, 2, 3, 7 — each participates in 3+ two-qubit gates in the entangling block) inserted between the entangling block and the final RZ phase layer. This introduces only 4 new parameters and 4 new gates (small depth increase), giving the circuit an extra chance to locally remix amplitudes on the most heavily entangled qubits before the final phase encoding, which may improve expressivity without significantly harming the train-test gap.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Entangling layer: parametrized CRZ on informative edges, with
+    # deliberate parameter sharing across symmetric edges to control
+    # parameter growth while retaining full connectivity. Gates are
+    # scheduled into two maximally-commuting sublayers (disjoint wires
+    # within each sublayer) to reduce circuit depth via parallel execution.
+
+    # Sublayer A: mutually disjoint wires -> executes in parallel
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_10"},
+
+    # Sublayer B: mutually disjoint wires -> executes in parallel
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [4, 8], "param": "crz_9"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_2"},
+
+    # Final single-qubit phase layer
+=======
+    # Entangling layer: parametrized CRZ on informative edges, with
+    # deliberate parameter sharing across symmetric edges to control
+    # parameter growth while retaining full connectivity.
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_2"},
+
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [4, 8], "param": "crz_9"},
+
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_10"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+
+    # Mid-circuit RY refresh layer on the highest-centrality qubits
+    # (0, 2, 3, 7), providing a small amount of local amplitude
+    # rejuvenation before the final phase-encoding layer.
+    {"gate": "RY", "wire": 0, "param": "ry_mid_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_mid_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid_2"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid_3"},
+
+    # Final single-qubit phase layer
+>>>>>>> REPLACE
+</DIFF>

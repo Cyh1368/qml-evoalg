@@ -1,0 +1,80 @@
+<NAME>
+shared_mid_ry_mixer
+</NAME>
+
+<DESCRIPTION>
+Adds a lightweight, globally shared RY mixing layer directly after the CZ ring and before the post-entanglement RZ layer. Because RY does not commute with the surrounding phase operations, this converts entangled phase information into trainable amplitude changes and increases useful expressivity. Sharing one mixer parameter across all eight qubits limits parameter growth, supports generalization, and preserves the efficient symmetric structure of the current circuit.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_odd"},
+
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    {"gate": "RY", "wire": 0, "param": "ry_mix"},
+    {"gate": "RY", "wire": 1, "param": "ry_mix"},
+    {"gate": "RY", "wire": 2, "param": "ry_mix"},
+    {"gate": "RY", "wire": 3, "param": "ry_mix"},
+    {"gate": "RY", "wire": 4, "param": "ry_mix"},
+    {"gate": "RY", "wire": 5, "param": "ry_mix"},
+    {"gate": "RY", "wire": 6, "param": "ry_mix"},
+    {"gate": "RY", "wire": 7, "param": "ry_mix"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_odd"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

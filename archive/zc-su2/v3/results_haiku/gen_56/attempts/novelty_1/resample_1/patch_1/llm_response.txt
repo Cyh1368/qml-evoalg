@@ -1,0 +1,163 @@
+Looking at the performance metrics, I can see that:
+
+1. **Prior program 2** (score: 0.59) performs better than the current program (score: 0.57)
+2. The current program has **too many parameters** (16 distinct params vs 10 in the best prior), which hurts parameter_efficiency (0.05 vs 0.08)
+3. The current program is **deeper** (30 vs 15 depth), which adds complexity without proportional benefit
+4. The worst_group_margin is similar (0.33), but validation_margin and overall generalization suffer from over-parameterization
+
+The key insight from the recommendation is that **adding an initial global RZ layer** can improve phase flexibility with minimal overhead. Currently, the program lacks an initial phase layer that can be applied uniformly across all qubits before the RY rotations.
+
+Strategy:
+1. Add an initial RZ layer on all qubits with a shared parameter `rz_init` (8 gates, but only 1 new distinct parameter)
+2. Remove one of the RY rotation patterns to reduce depth and parameters, since we now have better phase control
+3. Simplify the entangling layer to use only the most effective two-qubit gates from prior success
+4. Keep the parameter-sharing strategy tight to maximize parameter_efficiency
+
+The best prior (score 0.59) used a simpler structure with better parameter economy. Let me propose a modification that:
+- Adds the initial RZ layer as recommended
+- Reduces to a single block of entangling operations (not duplicated)
+- Uses parameter sharing aggressively to keep distinct_params low
+- Maintains good expressivity while improving generalization
+
+<NAME>
+add_init_rz_simplify_blocks
+</NAME>
+
+<DESCRIPTION>
+The current program has 16 distinct parameters and a combined score of 0.57, while a prior simpler program achieved 0.59 with only 10 distinct parameters. The recommendation to add an initial global RZ layer aligns with improving phase flexibility without parameter explosion.
+
+Key improvements:
+1. Prepend 8 RZ gates with a shared parameter "rz_init" on all qubits - this provides global phase control at the start with only 1 new distinct parameter
+2. Consolidate to a single, well-tuned entangling block instead of two similar blocks - reduces depth and parameters while maintaining expressivity
+3. Use aggressive parameter sharing: keep ry_0 and ry_1 alternating pattern, and reuse the same entangling parameter names across structured positions
+4. This follows the successful structure from prior program 2 but enhances it with initial phase flexibility
+
+The initial RZ layer gives the optimizer extra degrees of freedom to tune global phases at low cost, improving convergence and robustness on hard samples (worst_group_margin). Fewer distinct parameters directly improves the score through parameter_efficiency metric.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # === FIRST BLOCK ===
+    # RY rotations
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    # RZ pre-phase (shared across both blocks)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    # Ising + Controlled rotations (first stage)
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_67"},
+    {"gate": "CRY", "wires": [1, 4], "param": "cry_14"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "crz_36"},
+    # RZ post-phase (shared across both blocks)
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+    
+    # === SECOND BLOCK (replicates first with shared rz_pre and rz_post) ===
+    # RY rotations (alternated pattern for expressivity)
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_0"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_0"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_0"},
+    # RZ pre-phase (shared with first block)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    # Ising + Controlled rotations (second stage, different pattern)
+    {"gate": "YY", "wires": [0, 1], "param": "yy_01"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_23"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_45"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_67"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "crz_14"},
+    {"gate": "CRX", "wires": [3, 6], "param": "crx_36"},
+    # RZ post-phase (shared with first block)
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+=======
+ANSATZ_SPEC = [
+    # === INITIAL GLOBAL RZ LAYER (phase initialization) ===
+    {"gate": "RZ", "wire": 0, "param": "rz_init"},
+    {"gate": "RZ", "wire": 1, "param": "rz_init"},
+    {"gate": "RZ", "wire": 2, "param": "rz_init"},
+    {"gate": "RZ", "wire": 3, "param": "rz_init"},
+    {"gate": "RZ", "wire": 4, "param": "rz_init"},
+    {"gate": "RZ", "wire": 5, "param": "rz_init"},
+    {"gate": "RZ", "wire": 6, "param": "rz_init"},
+    {"gate": "RZ", "wire": 7, "param": "rz_init"},
+    
+    # === SINGLE OPTIMIZED BLOCK ===
+    # RY rotations
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    # RZ pre-phase
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    # Entangling layer (Ising + Controlled rotations)
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_67"},
+    {"gate": "CRY", "wires": [1, 4], "param": "cry_14"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "crz_36"},
+    # RZ post-phase
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

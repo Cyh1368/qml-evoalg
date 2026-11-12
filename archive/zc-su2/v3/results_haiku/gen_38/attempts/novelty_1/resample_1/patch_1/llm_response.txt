@@ -1,0 +1,69 @@
+Looking at the performance metrics, I can see that:
+
+1. **Prior program (second one)** has a better combined score (0.58) with 10 distinct parameters
+2. **Current program** has a worse combined score (0.50) with 11 distinct parameters
+3. The current program added `crz_diag` gates but this hurt performance significantly
+
+The key insight from the recommendation and prior programs is that:
+- The second prior program achieved better results by removing the initial `rz_pre` block and starting directly with `ry` gates
+- Parameter economy is critical - fewer distinct parameters always score higher
+- The `rz_post` block should use parity-split parameters (even/odd qubits) to add expressiveness without adding many parameters
+
+The current program regressed by adding CRZ gates with parameter sharing, which increased both the distinct parameter count and depth while hurting generalization.
+
+**Strategy**: Return to the simpler, high-performing architecture from the second prior program (which scored 0.58) and enhance it with the parity-split `rz_post` block as suggested - this adds only 1 extra parameter (11 distinct → 11 still, but with better expressiveness through differentiation).
+
+<NAME>
+parity_split_rz_post
+</NAME>
+
+<DESCRIPTION>
+The second prior program (score 0.58) performed better than the current one (score 0.50). It achieved this with a cleaner, simpler architecture: RY alternation, then RZ global, then entangling gates, then final RZ.
+
+The recommendation suggests splitting the final RZ block by parity to refine phase control after entangling. This adds only one extra parameter while maintaining the proven benefits of the original structure.
+
+Change: 
+1. Remove the CRZ diagonal gates that hurt performance
+2. Return to the simpler entangling scheme from the high-scoring prior
+3. Split the final `rz_post` block: use `rz_post_even` for qubits [0,2,4,6] and `rz_post_odd` for [1,3,5,7]
+
+This maintains 11 distinct parameters (same count) but with better expressiveness, echoing the RY alternation scheme's parity benefits. The simpler architecture also reduces depth and convergence time.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "CRZ", "wires": [0, 5], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [1, 6], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [2, 7], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_diag"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+=======
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_odd"},
+>>>>>>> REPLACE
+</DIFF>

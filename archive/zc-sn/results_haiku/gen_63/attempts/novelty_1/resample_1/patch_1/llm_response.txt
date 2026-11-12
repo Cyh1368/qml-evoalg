@@ -1,0 +1,58 @@
+Looking at the performance metrics, I can see that:
+
+1. **Prior programs (both with 50 params)**: Combined score 0.91, validation_accuracy 0.93-0.94, test_accuracy 0.89-0.90
+2. **Current program (56 params)**: Combined score 0.90, validation_accuracy 0.92, test_accuracy 0.92
+
+The current program has:
+- **Better test accuracy** (0.92 vs 0.89-0.90) - excellent generalization
+- **Lower combined score** (0.90 vs 0.91) - likely due to validation_accuracy drop and more parameters
+- **More parameters** (56 vs 50) - the global RX layer adds 1 extra parameter per repetition
+
+The recommendation suggests merging post-entanglement RZ parameters into pre-entanglement parameters by replacing `rz_post_a` with `rz_pre_a` and `rz_post_b` with `rz_pre_b`. This would:
+- **Reduce parameters from 56 to 48** (removing 8 gates worth of unique parameters)
+- **Maintain expressivity** through dual-application of phase parameters at different circuit points
+- **Improve parameter efficiency** score
+- **Preserve the strong test performance** (0.92) we've achieved
+
+This is more aggressive parameter sharing than the prior 50-parameter variants, but the prior programs already demonstrated that reusing `rz_pre_a` and `rz_pre_b` in the mid-circuit layer worked well. Extending this to the post-entanglement layer should further consolidate learnable phases while keeping the enhanced test generalization from the current global RX layer.
+
+<NAME>
+merge_rz_post_to_pre
+</NAME>
+
+<DESCRIPTION>
+The current 56-parameter circuit achieves excellent test accuracy (0.92) but has a lower combined score (0.90 vs 0.91) than the 50-parameter prior variants. The post-entanglement RZ layer uses distinct parameters `rz_post_a` and `rz_post_b`, but prior experiments showed that reusing `rz_pre_a` and `rz_pre_b` in the mid-circuit layer maintained expressivity while reducing parameters.
+
+This edit merges the post-entanglement RZ parameters into the pre-entanglement parameters by replacing:
+- All `"rz_post_a"` → `"rz_pre_a"`
+- All `"rz_post_b"` → `"rz_pre_b"`
+
+This reduces the ansatz from 56 to 48 parameters while preserving the circuit structure and the strong test generalization (0.92) already achieved. The dual application of phase parameters at different circuit depths should maintain or enhance expressivity through multi-stage phase modulation.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # ========== Post-entanglement RZ Layer ==========
+    # Minimal sharing: 2 parameters across all 8 qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+=======
+    # ========== Post-entanglement RZ Layer ==========
+    # Merged with pre-entanglement parameters for reduced parameter count
+    # while maintaining dual-stage phase modulation capability
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,91 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Layered RY-RZ-CZ Ansatz**  
+- **Implementation**: Defines an ansatz on 8 qubits consisting of RY rotations on each qubit, followed by pre-entanglement RZ rotations, a nearest-neighbor CZ chain, and post-entanglement RZ rotations, using 24 distinct parameters.  
+- **Performance**: Combined score 0.29 with train accuracy 0.88, validation 0.63, test 0.56, and a generalization gap of 0.31.  
+- **Feedback**: The design yields high training accuracy with modest depth (20) and gate count (93) but underperforms on validation and test sets; adding richer entanglement or parameterized two-qubit gates may improve generalization.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Shared-Parameter Ring Ansatz**  
+- **Implementation**: Constructs an 8-qubit circuit with global shared Ry rotations, shared pre- and post-Rz layers, and a cyclic CZ entanglement ring, using only three distinct trainable parameters.  
+- **Performance**: Achieved a combined score of 0.36 with train/validation/test accuracies of 0.69/0.50/0.47 and a generalization gap of 0.22.  
+- **Feedback**: Heavy parameter sharing yields a compact model (n_params=5, n_distinct_params=3) but limits expressivity, leading to underfitting and low test performance. High circuit depth (33) and gate count (96) did not offset the small parameter set, resulting in low parameter efficiency (0.09).
+**Program Identifier:** Generation 1 - Patch Name shared_ring_ansatz - Correct Program: True
+
+**Program Name: Layered Even-Odd RY-RZ Ring Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with shared RY rotations on even/odd wires, a global RZ on all qubits, a ring of CZ entangling gates, and a second shared RY mixing layer, using 5 distinct parameters across 7 rotation instances.  
+- **Performance**: Combined score 0.37 with train/validation/test accuracies of 0.62/0.55/0.50, a generalization gap of 0.12, 33-depth and 96 gates, achieving parameter efficiency of 0.07.  
+- **Feedback**: Strong parameter sharing kept the parameter count low but limited expressivity, leading to modest test accuracy and no clear convergence, while the high depth-to-parameter ratio suggests room to streamline the ansatz.
+**Program Identifier:** Generation 2 - Patch Name shared_ring_mixer - Correct Program: True
+
+**Program Name: Ring Entangled RY-RZ Quantum Ansatz**  
+- **Implementation**: Defines an 8-qubit ansatz with alternating parity-based RY rotations (shared “even”/“odd” parameters), layerwise RZ rotations before and after, and a cyclic CZ entanglement pattern, yielding a 33-depth, 96-gate circuit with only 4 distinct parameters used 6 times.  
+- **Performance**: Combined score 0.38; train / validation / test accuracies 0.75 / 0.60 / 0.57 with a generalization gap of 0.18 and parameter efficiency of 0.09.  
+- **Feedback**: Parameter sharing keeps the model compact but the high depth and gate count relative to few parameters limit expressivity and efficiency, resulting in moderate accuracy and a notable generalization gap.
+**Program Identifier:** Generation 3 - Patch Name staggered_parameter_tying - Correct Program: True
+
+**Program Name: Shared-Param CZ-Chain Ansatz**  
+- **Implementation**: Constructs an 8-qubit variational circuit with a layer of globally shared RY rotations, shared pre- and post-entanglement RZ rotations, and a linear chain of CZ gates, yielding only three distinct parameters.  
+- **Performance**: Combined score 0.36 (train acc 0.69, val acc 0.52, test acc 0.46) with 93 gates over depth 20 and parameter efficiency 0.09.  
+- **Feedback**: The aggressive parameter sharing produces a highly compact model but limits expressivity, resulting in a significant generalization gap (0.23) and modest test accuracy.
+**Program Identifier:** Generation 5 - Patch Name global_rotation_tying - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+- Parity-based parameter sharing  
+  • Generation 3 (“Ring Entangled RY-RZ Quantum Ansatz”) uses just two RY parameters (`ry_even`, `ry_odd`) alternating on even/odd wires.  
+  • This pattern achieved the top combined score (0.38) with train/val/test = 0.75/0.60/0.57, outperforming both full-param (Gen 0: 0.29) and over-shared (Gen 1/5: 0.36) designs.  
+- Shared pre- and post-entanglement RZ layers  
+  • Using a single `rz_pre` on all qubits before CZ and `rz_post` after reduces distinct parameters to 4 without harming performance.  
+- Cyclic CZ entanglement ring  
+  • Full 8-qubit ring connectivity (CZ between 0–1,…,7–0) consistently beat linear chain entanglers (Gen 5 test 0.46 vs Gen 3 test 0.57).  
+- Moderate parameter count + high depth/gate count  
+  • Retaining depth = 33 and gate_count = 96 while reducing distinct parameters to 4 hit the sweet spot—high capacity but controlled overfitting.
+
+## Ineffective Approaches
+
+- Over-parameterization (Gen 0: 24 distinct params)  
+  • Yields very high train accuracy (0.88) but large generalization gap (0.31) and test accuracy only 0.56, combined score 0.29.  
+- Aggressive parameter tying (3 distinct params in Gen 1 & Gen 5)  
+  • Both designs stalled at combined 0.36, with underfitting visible in low train (0.69) and test (≈0.47) accuracies.  
+- Simplified linear CZ chains  
+  • Shared-param CZ-chain Ansatz (Gen 5) matched the depth/gate count of the ring (20 depth/93 gates) yet fell short (test 0.46) of ring-entangled versions.  
+- Excessive depth-to-parameter ratio without structured sharing  
+  • Gen 2 had depth = 33 and 5 distinct params but no alternating pattern; it achieved combined 0.37 but lagged behind Gen 3’s 0.38.
+
+## Implementation Insights
+
+- Define RY layers with just two named parameters (`ry_even`, `ry_odd`) and assign them alternately across wires to boost expressivity per parameter.  
+- Use global `rz_pre` and `rz_post` parameters on all qubits instead of distinct RZs per wire—simplifies tuning and limits overfitting.  
+- Encode the CZ entanglement as a true ring (including the wrap-around gate between qubit 7 and qubit 0) for maximal connectivity.  
+- Maintaining a consistent high depth (33) and gate count (96) is acceptable when paired with strategic parameter sharing, as seen in the best-performing spec.
+
+## Performance Analysis
+
+- Combined score progression:  
+  • Gen 0: 0.29 → Gen 1/5: 0.36 → Gen 2: 0.37 → Gen 3: 0.38  
+  • Each generational tweak to parameter sharing and entanglement yielded measurable gains.  
+- Test accuracy vs. generalization gap trade-off:  
+  • Gen 2 minimized gap (0.12) but had lower test (0.50); Gen 3 balanced both with test 0.57 and gap 0.18.  
+- Parameter efficiency (n_params/depth) rose modestly from Gen 2 (0.07) to Gen 3 (0.09), correlating with the top combined score.  
+- The best program leverages structured sharing and full ring entanglement to outperform both heavily shared under-parametrized models and fully unshared over-parametrized ones.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Introduce parity‐based pre‐entanglement RZ sharing. Replace the single “rz_pre” with two parameters, “rz_pre_even” and “rz_pre_odd”, applied to wires by parity. This preserves the parity‐sharing principle that boosted RY expressivity in Gen 3 while giving the model a bit more flexibility to fit phase shifts without exploding the parameter count.
+
+2. Swap each static CZ in the ring for a shared‐parameter controlled‐RZ gate. Define a single “crz_entangle” parameter and replace all eight CZ gates with CRZ(wires=[i,i+1], param="crz_entangle"). You keep full ring connectivity (proven superior to chains) but now the entanglers themselves become tunable, potentially capturing correlations more richly with only one extra parameter.
+
+3. Double the ansatz depth by stacking two identical parity‐RY → parity‐RZ pre → ring‐CZ → RZ post blocks back-to-back. This raises depth to ~66 and gate count to ~192 but retains 4–6 distinct parameters. Given that high depth paired with structured sharing yielded Gen 3’s best result, this tests whether repeated feature‐extraction stages further boost generalization.
+
+4. Enrich the entanglement graph with long-range CZ edges (e.g. CZ on wires [0,4], [1,5], [2,6], [3,7]) in addition to the 8-qubit ring. This adds only four extra gates yet densifies connectivity, which may reduce the generalization gap further by enabling more direct correlations across distant qubits—leveraging the success of full-ring entanglement.
+
+5. Evaluate a mod-4 RY‐sharing scheme for finer granularity. Instead of two parity parameters, introduce four RY parameters (“ry_0”–“ry_3”) assigned by wire_index mod 4. This modest increase from 2→4 distinct RY parameters preserves structured sharing while probing whether slightly richer angular diversity can edge test accuracy above Gen 3’s 0.57.

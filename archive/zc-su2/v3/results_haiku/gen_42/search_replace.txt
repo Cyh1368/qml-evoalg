@@ -1,0 +1,129 @@
+Looking at the performance metrics, I can see several key patterns:
+
+1. **Best performer (score 0.59)**: The second program achieves the best combined score with strong validation accuracy (0.97) and test accuracy (0.95), excellent parameter efficiency (0.08), and crucially the **worst_group_margin is still low at 0.31**, indicating the hardest samples are not well-separated.
+
+2. **Current program (score 0.56)**: While it has good parameter efficiency (0.08) with 9 distinct params, it's actually **worse than the baseline** and has a very slow convergence (630 steps vs 90 for the best program).
+
+3. **Key insight from the recommendation**: Adding long-range CRZ entangler layers on diagonal pairs with shared parameters has been shown to improve worst-group margins in prior work. The recommendation suggests: diagonal pairs [(0,5), (1,6), (2,7), (3,4)] with a single shared parameter `crz_diag`.
+
+4. **Analysis of the current program**: It's more complex (138 gates, 21 depth) but performs worse, suggesting the added complexity (parity-swapped RY and mid-circuit RZ) is hurting generalization rather than helping. The slow convergence suggests potential optimization difficulties.
+
+**Strategy**:
+- Return to the simpler, better-performing structure from the second program (which achieved 0.59)
+- Add the diagonal CRZ entangler layer as recommended to improve worst_group_margin
+- Keep parameter count minimal for efficiency
+- This maintains what works while strategically adding long-range entanglement
+
+<NAME>
+add_diagonal_crz_entangler
+</NAME>
+
+<DESCRIPTION>
+The best performing program (score 0.59) achieves strong validation and test accuracy but has a relatively low worst_group_margin (0.31), indicating poor separation of the hardest samples. The recommendation suggests adding diagonal CRZ entanglers with a shared parameter can improve worst-group margins without deepening the circuit unnecessarily.
+
+I will revert to the simpler, high-performing structure (program 2) and inject a diagonal CRZ entangler layer immediately before the final rz_post layer. This uses four long-range CRZ gates on diagonal pairs [(0,5), (1,6), (2,7), (3,4)] with a single shared parameter `crz_diag`, adding minimal complexity (4 gates, 1 parameter) while providing the long-range entanglement that appears to help separate difficult validation groups.
+
+This approach:
+1. Keeps the simpler, proven structure that converges quickly and efficiently
+2. Adds targeted long-range entanglement on diagonal pairs (less explored than nearest-neighbor)
+3. Uses parameter sharing to maintain parameter efficiency (critical for scoring)
+4. Should improve worst_group_margin while maintaining or improving overall score
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Initial parity-based RY layer
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    # Pre-interaction RZ layer
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    # Ising interactions: nearest neighbor + longer range with parameter sharing
+    {"gate": "XX", "wires": [0, 1], "param": "xx_nn"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_shared"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_nn"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_shared"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    # Mid-circuit parity-swapped RY layer (reversed parity)
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_0"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_0"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_0"},
+    # Mid-circuit shared RZ
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+    # Post-interaction RZ layer
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "CRX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "CRY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    # Long-range diagonal CRZ entangler layer
+    {"gate": "CRZ", "wires": [0, 5], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [1, 6], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [2, 7], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_diag"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

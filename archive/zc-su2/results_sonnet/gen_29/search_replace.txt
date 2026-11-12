@@ -1,0 +1,88 @@
+<NAME>
+add_shared_crz_layer_single_theta
+
+<DESCRIPTION>
+Simplify the rotation layer to use a single shared parameter "theta" for all pre- and post-entanglement rotations (matching the best-performing prior seed with n_params=8, score=0.80), and additionally inject a single shared-parameter CRZ layer on disjoint qubit pairs after the CZ ring, as recommended. This adds only one extra trainable parameter ("phi") per block repetition while giving the ansatz a tunable, parametrized two-qubit interaction strength beyond the fixed CZ entangler, which should improve expressivity/generalization without significantly increasing parameter count. Reducing rotation parameters from 4 groups to a single shared theta cuts parameter count roughly in half compared to the current program, directly improving parameter economy, while the added CRZ layer compensates for the lost per-qubit rotation flexibility via controlled entanglement tuning.
+
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Pre-entanglement rotations: 4 groups of 2 qubits, each group driven by
+    # a single shared parameter (RY on both wires of the group).
+    {"gate": "RY", "wire": 0, "param": "p_g0"},
+    {"gate": "RY", "wire": 1, "param": "p_g0"},
+    {"gate": "RY", "wire": 2, "param": "p_g1"},
+    {"gate": "RY", "wire": 3, "param": "p_g1"},
+    {"gate": "RY", "wire": 4, "param": "p_g2"},
+    {"gate": "RY", "wire": 5, "param": "p_g2"},
+    {"gate": "RY", "wire": 6, "param": "p_g3"},
+    {"gate": "RY", "wire": 7, "param": "p_g3"},
+
+    # Nearest-neighbor entangling chain (fixed, no parameters).
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Post-entanglement rotations: reuse the SAME parameters as the
+    # corresponding pre-entanglement RY gates, but on a different axis (RZ),
+    # halving the parameter count relative to using distinct post params.
+    {"gate": "RZ", "wire": 0, "param": "p_g0"},
+    {"gate": "RZ", "wire": 1, "param": "p_g0"},
+    {"gate": "RZ", "wire": 2, "param": "p_g1"},
+    {"gate": "RZ", "wire": 3, "param": "p_g1"},
+    {"gate": "RZ", "wire": 4, "param": "p_g2"},
+    {"gate": "RZ", "wire": 5, "param": "p_g2"},
+    {"gate": "RZ", "wire": 6, "param": "p_g3"},
+    {"gate": "RZ", "wire": 7, "param": "p_g3"},
+]
+=======
+ANSATZ_SPEC = [
+    # Pre-entanglement rotations: ALL qubits share a SINGLE trainable
+    # parameter "theta" for maximal parameter economy.
+    {"gate": "RY", "wire": 0, "param": "theta"},
+    {"gate": "RY", "wire": 1, "param": "theta"},
+    {"gate": "RY", "wire": 2, "param": "theta"},
+    {"gate": "RY", "wire": 3, "param": "theta"},
+    {"gate": "RY", "wire": 4, "param": "theta"},
+    {"gate": "RY", "wire": 5, "param": "theta"},
+    {"gate": "RY", "wire": 6, "param": "theta"},
+    {"gate": "RY", "wire": 7, "param": "theta"},
+
+    # Nearest-neighbor entangling chain (fixed, no parameters).
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Parametrized entangling layer on disjoint pairs, sharing a single
+    # extra trainable parameter "phi" to tune interaction strength while
+    # adding only one parameter to the whole block.
+    {"gate": "CRZ", "wires": [0, 1], "param": "phi"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "phi"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "phi"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "phi"},
+
+    # Post-entanglement rotations: reuse the SAME "theta" parameter,
+    # different axis (RZ), keeping total unique parameters minimal.
+    {"gate": "RZ", "wire": 0, "param": "theta"},
+    {"gate": "RZ", "wire": 1, "param": "theta"},
+    {"gate": "RZ", "wire": 2, "param": "theta"},
+    {"gate": "RZ", "wire": 3, "param": "theta"},
+    {"gate": "RZ", "wire": 4, "param": "theta"},
+    {"gate": "RZ", "wire": 5, "param": "theta"},
+    {"gate": "RZ", "wire": 6, "param": "theta"},
+    {"gate": "RZ", "wire": 7, "param": "theta"},
+]
+>>>>>>> REPLACE
+</DIFF>

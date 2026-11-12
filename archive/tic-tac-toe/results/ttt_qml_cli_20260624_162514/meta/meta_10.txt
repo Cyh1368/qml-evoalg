@@ -1,0 +1,137 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Tic-Tac-Toe QNN Classifier**  
+- **Implementation**: Builds a 9-qubit variational circuit with three feature-map uploads and two ansatz repeats per upload, using symmetry-grouped RY/RZ rotations on corners, edges and center, CRZ entanglers on ring and hub edges, and final periphery/center mixing; training uses an L2 loss on Pauli-Z expectation outputs with the Adam optimizer.  
+- **Performance**: Achieved 0.40±0.00 train accuracy, 0.47±0.00 validation accuracy, 0.50±0.00 test accuracy, a 0.10 generalization gap, and 0.01 parameter efficiency over 84 parameters.  
+- **Feedback**: The heavily regularized, symmetry-informed ansatz and compact mixing delivered near-chance classification and failed to converge to the set threshold, suggesting under-expressiveness despite high circuit depth (76) and gate count (315); increasing entanglement diversity or revising the feature encoding may improve performance.
+**Program Identifier:** Generation 8 - Patch Name crz_symmetry_split_mixing - Correct Program: True
+
+**Program Name: Symmetry-Aware Quantum Tic-Tac-Toe Classifier**  
+- **Implementation**: Defines a custom Pennylane QNode that encodes board states via RX feature maps and applies a symmetry-aware ansatz consisting of shared RY/RZ rotations on corners, edges, and center, staggered CRX entangling gates along ring edges, CRY hub couplings, and final RX/RZ mixing, repeated across three upload layers with two repeats each. Output Z expectations on peripheral and center qubits are aggregated into cross, circle, and draw scores.  
+- **Performance**: Achieved low classification performance (train 27%, validation 29%, test 38%), combined score 0.34, using 78 parameters, depth 53, and 315 gates.  
+- **Feedback**: Despite parameter sharing, the high gate count and moderate depth yielded poor expressivity and negligible parameter efficiency, leading to underfitting (small generalization gap) and suggesting the need for a richer ansatz or revised training strategy.
+**Program Identifier:** Generation 9 - Patch Name symmetry_tuned_crx_mix - Correct Program: True
+
+**Program Name: Symmetric QML TicTacToe Classifier**
+- **Implementation**: Implements a 9-qubit variational circuit that encodes board states via RX feature rotations and applies a symmetry-aware ansatz of shared RY/RZ single-qubit gates, CRZ entanglers on ring and hub edges, and RX mixing across three uploads with two repeats; training uses backprop Adam and L2 loss on a class-balanced split of tic-tac-toe states.
+- **Performance**: Combined score 0.47 with train/validation/test accuracies of 0.43/0.40/0.42 and a small generalization gap of 0.02.
+- **Feedback**: Heavy parameter sharing yields only 72 parameters and moderate circuit depth (76), but likely under-constrains expressivity, leading to sub-50% accuracy and no convergence to the 0.90 target; richer entanglement or deeper ansatz layers may be needed.
+**Program Identifier:** Generation 10 - Patch Name crz_shared_symmetry_mixer - Correct Program: True
+
+**Program Name: Symmetric QML Tic-Tac-Toe Classifier**  
+- **Implementation**: Enumerates all legal tic-tac-toe boards into balanced train/validation/test splits, encodes cell values via RX rotations, and applies a 9-qubit ansatz with symmetry-aware RY/RZ/RX layers and a fixed CNOT entanglement ring with center hub, repeated across three uploads and two repeats using PennyLane.  
+- **Performance**: Combined score 0.41 with train accuracy 0.33, validation accuracy 0.33, test accuracy 0.30, generalization gap 0.03, depth 52, gate count 291, and 72 parameters.  
+- **Feedback**: The symmetry-constrained ansatz and strong entanglement structure yielded near-random performance, indicating under-expressivity, and the high depth and gate count did not improve parameter efficiency.
+**Program Identifier:** Generation 11 - Patch Name symmetry_weighted_voting_ansatz - Correct Program: True
+
+**Program Name: Symmetry-Aware QML Ansatz for Tic-Tac-Toe**  
+- **Implementation**: The ansatz encodes 9-cell board states via RX feature rotations and applies three uploads of a two-repeat block that shares RY, RX, RZ, and CRZ parameters across corners, edges, and center, resulting in 66 parameters, depth 76, and 315 gates; data are class-balanced and trained with an L2 loss using Pennylane’s Adam optimizer.  
+- **Performance**: Combined score 0.42 with train/validation/test accuracies of 0.32/0.44/0.48, a 0.17 generalization gap, and parameter efficiency 0.01.  
+- **Feedback**: Aggressive parameter sharing kept the circuit compact but likely limited expressivity, yielding only modest accuracy and no clear convergence before the threshold; enhancing entanglement or relaxing sharing constraints may improve results.
+**Program Identifier:** Generation 12 - Patch Name crz_sym_shared_ansatz - Correct Program: True
+
+**Program Name: Symmetry-Sharing QML Tic-Tac-Toe Classifier**  
+- **Implementation**: Builds a 9-qubit PennyLane circuit with three re-uploads of a symmetry-aware ansatz block, combining shared RY layers, a global RZ pre-phase, fixed CZ entanglers, CRX controlled rotations, RX mixing, and final RY adjustments; includes legal board enumeration, class-balanced splits, and Adam backprop training on L2 loss.  
+- **Performance**: Combined score 0.46 with train/validation/test accuracies of 0.42/0.47/0.53, 54 parameters, circuit depth 53, and 315 gates.  
+- **Feedback**: Heavy parameter sharing and fixed entanglers kept parameter count low but limited expressivity, yielding modest accuracy and low parameter efficiency (0.01) with a moderate generalization gap (0.12), indicating underfitting.
+**Program Identifier:** Generation 13 - Patch Name shared_crx_with_fixed_cz - Correct Program: True
+
+**Program Name: Symmetry-Aware Tic-Tac-Toe QML Classifier**  
+- **Implementation**: Constructs a 9-qubit circuit with three feature-map uploads and two repeated ansatz blocks, using symmetry-shared single-qubit RY/RZ and parameterized CRX/CRY layers plus peripheral/center RX/RY rotations; board states are encoded via RX rotations and classification is read out from Pauli-Z expectations, optimized with Adam on an L2 loss.  
+- **Performance**: Combined score 0.44 with train 0.47, validation 0.42, test 0.35 accuracies, generalization gap 0.12, using 72 parameters, depth 76, and 315 gates.  
+- **Feedback**: The symmetry-driven parameter sharing reduced model size but appears to undercut expressivity, yielding low accuracy and parameter efficiency; the relatively deep, gate-heavy circuit may also limit performance on this small classification task.
+**Program Identifier:** Generation 14 - Patch Name shared_crx_cry_symmetry_compact - Correct Program: True
+
+**Program Name: Symmetry-Aware QML Tic-Tac-Toe Classifier**  
+- **Implementation**: The 9-qubit Pennylane circuit encodes board states via RX feature maps and performs three data reuploads with two ansatz repeats each, applying symmetry-shared RY/RZ rotations for corners, edges, and center, a compact CZ ring plus CRZ hub entangling layer, and shared RX mixing. Pauli-Z expectations are aggregated into cross, circle, and draw class scores.  
+- **Performance**: Achieves a combined score of 0.38 with train/validation/test accuracies of 0.35/0.31/0.45, a generalization gap of 0.10, using 48 parameters, depth ~52, and 291 gates.  
+- **Feedback**: Parameter sharing and reduced entanglement depth yield a lightweight circuit with minimal overfitting but limited expressivity and low overall accuracy; adding richer entanglement or extra layers could boost performance.
+**Program Identifier:** Generation 15 - Patch Name none - Correct Program: True
+
+**Program Name:** Symmetry-Aware QML Tic-Tac-Toe Classifier  
+- **Implementation:** The ansatz uses symmetry-aware shared RY/RZ rotations, fixed CZ entanglers, parametrized CRX gates distinguishing ring and hub edges, compact RX mixing, and employs 3 uploads × 2 repeats over nine qubits. Data is generated by recursively enumerating legal tic-tac-toe boards into class-balanced splits with replacement, and training runs on PennyLane QNodes using an L2 loss and Adam optimizer.  
+- **Performance:** Achieved a combined score of 0.39 with train/validation/test accuracies of approximately 0.37/0.33/0.27, depth 59, gate count 369, and 72 parameters.  
+- **Feedback:** Extensive parameter sharing and a limited parameter budget likely restricted expressivity and led to underfitting, preventing convergence to high accuracy; balanced sampling maintained class proportions but did not significantly improve generalization.
+**Program Identifier:** Generation 16 - Patch Name add_rz_output_layer - Correct Program: True
+
+**Program Name: Symmetry-Aware Tic-Tac-Toe QML Classifier**  
+- **Implementation**: Implements a 9-qubit Pennylane circuit with an RX feature map, symmetry-shared RY/RZ rotations for corners, edges, and center, partial CZ entangling on grid edges, and three upload–two repeat ansatz blocks, trained via Adam optimizer on an L2 loss over class-balanced tic-tac-toe boards.  
+- **Performance**: Achieves test accuracy 0.50 (train 0.37, validation 0.47), combined score 0.45, using 72 parameters, depth 52, gate count 291, and a generalization gap of 0.13.  
+- **Feedback**: The compact, parameter-shared ansatz underfits—evidenced by low training accuracy, no convergence to the threshold, and poor parameter efficiency (~0.01); boosting entanglement or diversifying parameters may improve expressivity and convergence.
+**Program Identifier:** Generation 17 - Patch Name shared_rz_final_sharpening - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+- Symmetry-aware parameter sharing by board region (corners, edges, center)  
+  • Current best (“crz_shared_symmetry_mixer” style) uses 3 keys for RY and 3 for RZ per block, 54 params → combined 0.48, gap 0.02, depth 46, gates 237.  
+  • Generation 13 (shared_crx_with_fixed_cz) also groups rotations by region (54 params) and achieves combined 0.46.  
+
+- Fixed CZ entangling layers in place of parametrized two-qubit rotations  
+  • Current best replaces trainable CRZ/CRX with eight fixed CZs/block → 25% fewer gates (237 vs. 315) and depth drop from 76 to 46, boosting combined from 0.42 (Gen 12) to 0.48.  
+
+- Lightweight class-specific output rotations  
+  • Adding small “ry_*_out” adjustments per symmetry class (9 gates/block) is present in the best program (combined 0.48) and in Gen 17 (shared_rz_final_sharpening) to improve readout separation.  
+
+- Three feature-map uploads × two ansatz repeats  
+  • All top performers (current best, Gen 10) use N_UPLOADS=3, N_REPEATS=2. This layout balances expressivity with trainability and underpins low generalization gaps (~0.02).
+
+## Ineffective Approaches
+
+- Parametrized two-qubit rotations (CRX/CRY/CRZ)  
+  • Gen 14 (shared_crx_cry_symmetry_compact) includes CRX/CRY entanglers, yielding depth 76, gates 315, combined 0.44, test 0.35 and a 0.12 gap—no expressivity gain but higher vanishing-gradient risk.  
+
+- Excessive circuit depth and gate count (≥70 depth, ≥290 gates)  
+  • Gen 12 and Gen 14 depth ≥76 stalled at combined ≤0.44; Gen 15 (none) depth ~52 but only 48 params still fell to combined 0.38, showing that depth alone cannot compensate for poor entanglement/parameter balance.  
+
+- Over-sharing without entanglement diversity  
+  • Gen 15 (48 params, minimal CZ ring+hub) achieved minimal overfitting but low accuracy (combined 0.38); too few unique parameters limited pattern discrimination.  
+
+## Implementation Insights
+
+- Decoupled ANSATZ_SPEC plus validate_ansatz_spec for rapid ansatz iteration  
+  • All top designs swap only the ANSATZ_SPEC block; validate_ansatz_spec catches wiring and parameter mistakes before training.  
+
+- O(1) parameter lookup via ordered_unique_keys and key-to-index mapping  
+  • The best program builds key_to_position once per block, avoiding Python‐level searches inside apply_ansatz_block and reducing overhead during backprop.  
+
+- Fixed-entangler CZ layers shrink execution graph  
+  • Replacing trainable two-qubit gates with plain qml.CZ reduces tape operations from 315→237, accelerates autograd, and lowers gradient saturation as seen in the current best.  
+
+- AnnotatedQueue for accurate circuit_metadata  
+  • Using qml.queuing.AnnotatedQueue to record operations/depth ensures precise measurement of circuit complexity (depth 46, gates 237) that directly correlates with performance.
+
+## Performance Analysis
+
+- Best at ~54 total parameters, moderate depth (~46), low gate count (237)  
+  • Current best: combined 0.48, train 0.32, val 0.44, test 0.33, gap 0.02, eff 0.009.  
+  • Models with 66–72 params or depth >70 (Gen 12, 14, 16, 17) saw combined ≤0.46 and gaps ≥0.10.  
+
+- Generalization gap minimal when depth ≤53 and parameter budget 50–60  
+  • Current best and Gen 10 both hold gap ~0.02. Increasing depth or trainable two-qubit gates inflates gaps to 0.12–0.17.  
+
+- Parameter efficiency peaks with compact, symmetry-shared designs  
+  • Combined 0.48 at 54 params → efficiency ~0.009, outperforming Gen 13 (54 params, eff 0.01) and Gen 16 (72 params, eff 0.01) despite similar param counts.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Cycle through three disjoint CZ‐only entangling motifs across the uploads. Instead of the same eight CZ edges in each block, define three fixed CZ patterns (e.g. drop one ring edge and add one hub edge per upload) so each feature-map re-upload sees a different sparse connectivity. This preserves the low two-qubit gate count (≈8 CZs/block) while enriching mixing geometry—an approach known to boost expressivity without adding parameters.  
+
+2. Append a lightweight shared RZ_out adjustment immediately after the existing RY_out layer. Mirror the “ry_*_out” pattern by adding rz_corner_out, rz_edge_out, and rz_center_out (nine additional single-qubit gates, three params) to the end of each block. Empirical results from Gen 17 show that small class-shared phase shifts sharpen decision boundaries in the measurement basis at minimal cost.  
+
+3. Refine the corner symmetry class into two diagonal subclasses to capture distinct “three-in-a-row” features. Replace ry_corner/rz_corner with ry_corner_a/rz_corner_a for qubits (0,4) and ry_corner_b/rz_corner_b for qubits (2,6), while keeping edge and center parameters shared. This only adds four parameters (bringing the block to ∼58 params) yet leverages existing symmetry sharing to better discriminate diagonal win patterns.  
+
+4. Introduce three learnable scalar weights in the class_expectations mapping to re-weight qubit groups per output. Define alpha_edge, alpha_corner, alpha_center and compute  
+   cross = α_edge·mean(z_edges),  
+   circle = α_corner·mean(z_corners),  
+   draw = α_center·z_center.  
+This adds three parameters at the readout stage and lives entirely in the autograd graph, giving the network flexibility to emphasize or attenuate region-specific signals without altering circuit depth.  
+
+5. Augment each ansatz block with two fixed diagonal CZs linking the center qubit to opposite corners. For example, add CZ([0,8]) and CZ([4,8]) (or their rotated equivalents) alongside the existing ring+hub CZs. This minimal connectivity boost (2 CZs/block, +2 operations) targets under-represented diagonal mixing paths essential for “three-in-a-row” detection, while keeping total gate count comfortably under ~260.

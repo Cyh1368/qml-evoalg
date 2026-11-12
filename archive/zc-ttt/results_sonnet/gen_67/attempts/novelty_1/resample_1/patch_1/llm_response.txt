@@ -1,0 +1,109 @@
+<NAME>
+revert_and_add_rx_shared_layer
+
+<DESCRIPTION>
+The sublayer-parallelized CRZ decomposition (currently in the file) reduced depth from 41→39 but also reduced validation/test accuracy (0.63→0.61), suggesting that the original strictly-sequential CRZ ordering builds up more useful correlations during training (perhaps due to its particular entangling schedule interacting well with the classical optimizer). We therefore revert the entangling block to the original, better-performing sequential CRZ ordering from the seed (score 0.63) and additionally introduce a lightweight expressivity boost: right after the RY encoding layer, we add an RX rotation on every qubit that reuses the *same* parameter name as the corresponding RY gate (e.g. RX(wire=0, param="ry_0")). This adds no new trainable parameters (parameter-sharing keeps n_params fixed at 162) while giving each qubit's state a combined RY+RX rotation, exploring a richer subspace of single-qubit states before entanglement. This should improve the representational power of the encoding without increasing parameter count or hurting generalization, and it restores the higher-performing entangling schedule.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # --- Encoding-like rotation layer (individual params) ---
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+
+    # --- Entangling layer: CRZ gates grouped into 4 parallel sublayers ---
+    # (matching decomposition of the allowed connectivity graph; gates within
+    # a sublayer act on disjoint wires and can be scheduled concurrently)
+    # Sublayer 1
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [4, 8], "param": "crz_d"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_e"},
+    # Sublayer 2
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_f"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_c"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_g"},
+    # Sublayer 3
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_c"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_h"},
+    # Sublayer 4
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_a"},
+
+    # --- Final output rotation layer (individual params) ---
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_8"},
+]
+=======
+ANSATZ_SPEC = [
+    # --- Encoding-like rotation layer (individual params) ---
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RY", "wire": 8, "param": "ry_8"},
+
+    # --- Shared-parameter RX layer: reuses the RY parameter names so that
+    # no new trainable parameters are introduced, while giving each qubit a
+    # combined RY+RX rotation to explore a richer single-qubit subspace
+    # before entanglement.
+    {"gate": "RX", "wire": 0, "param": "ry_0"},
+    {"gate": "RX", "wire": 1, "param": "ry_1"},
+    {"gate": "RX", "wire": 2, "param": "ry_2"},
+    {"gate": "RX", "wire": 3, "param": "ry_3"},
+    {"gate": "RX", "wire": 4, "param": "ry_4"},
+    {"gate": "RX", "wire": 5, "param": "ry_5"},
+    {"gate": "RX", "wire": 6, "param": "ry_6"},
+    {"gate": "RX", "wire": 7, "param": "ry_7"},
+    {"gate": "RX", "wire": 8, "param": "ry_8"},
+
+    # --- Entangling layer: original sequential CRZ ordering (best-performing
+    # schedule from prior experiments) ---
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [0, 3], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [0, 8], "param": "crz_2"},
+
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_3"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_4"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_5"},
+    {"gate": "CRZ", "wires": [4, 8], "param": "crz_9"},
+
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_10"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_11"},
+
+    # --- Final output rotation layer (individual params) ---
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_8"},
+]
+>>>>>>> REPLACE
+</DIFF>

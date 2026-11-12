@@ -1,0 +1,113 @@
+Looking at the current performance metrics, I observe:
+- Perfect training and validation accuracy (1.00)
+- Perfect test accuracy (1.00)
+- Very small generalization gap (0.00)
+- 146 trainable parameters (very high for such a small problem)
+- Parameter efficiency score is only 0.01 (severely penalized for parameter count)
+
+The combined score is dominated by **parameter economy**. The current circuit has:
+- 16 RY gates
+- 16 RZ pre-gates  
+- 16 RZ post-gates
+- 7 CZ gates
+- Total: 48 trainable parameters per block
+
+Since we're already achieving perfect accuracy, we can dramatically reduce parameters through:
+1. **Parameter sharing** - use the same parameter across multiple qubits to encode symmetry
+2. **Selective gate placement** - remove some single-qubit rotations while maintaining expressivity through two-qubit entangling gates
+3. **Simpler structure** - replace the pre/post RZ + middle CZ pattern with a more compact alternating pattern
+
+The current architecture already has perfect accuracy, so the key is to maintain this while reducing parameters as much as possible through intelligent sharing and selective gate removal.
+
+Strategy:
+- Keep RY gates on all qubits but share parameters in groups (e.g., 2-3 qubits per parameter)
+- Share RZ parameters across multiple qubits
+- Keep all CZ entangling gates (they're necessary for expressivity)
+- This should reduce parameters from 48 to roughly 12-16 per block
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+>>>>>>> REPLACE
+</DIFF>
+
+**Rationale for this change:**
+
+This modification implements **alternating parameter sharing** to dramatically reduce the parameter count from 48 to just 6 trainable parameters per block:
+- `ry_a`, `ry_b`: Shared RY rotations across even/odd qubits
+- `rz_pre_a`, `rz_pre_b`: Shared pre-entanglement RZ rotations  
+- `rz_post_a`, `rz_post_b`: Shared post-entanglement RZ rotations
+
+**Why this works:**
+1. **Maintains expressivity**: The pattern alternates between two parameter values, allowing the circuit to learn different behaviors for adjacent qubits while keeping total parameters minimal
+2. **Preserves entanglement**: All CZ gates remain intact, ensuring full connectivity and information propagation between qubits
+3. **Respects symmetry**: The alternating pattern exploits the linear topology of the problem
+4. **Dramatic efficiency gain**: Reduces from 48 to 6 parameters per block (87.5% reduction), which should massively improve the parameter efficiency score while maintaining perfect accuracy
+
+The combined score should improve significantly because parameter economy is the dominant optimization criterion, and this change reduces parameters while preserving the circuit's ability to achieve perfect accuracy.

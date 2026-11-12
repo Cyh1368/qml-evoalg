@@ -1,0 +1,36 @@
+<NAME>
+replace_reverse_cry_with_outer_crz
+</NAME>
+
+<DESCRIPTION>
+The current bidirectional CRY layer increased depth and parameters but reduced validation/test accuracy, likely because it over-rotates population amplitudes and disrupts the useful endpoint-to-midpoint line features. This edit keeps the extra entangling capacity but changes that second outer-ring layer to orbit-shared CRZ gates aligned with the same tic-tac-toe line segments as the successful CRY layer. CRZ adds conditional phase/parity information, which later RX/RY readout mixers can convert into Z evidence, while avoiding the stronger amplitude scrambling of reverse CRY. Parameter count remains the same as the current candidate, but the inductive bias is closer to line/parity detection.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# 2b) Counter-direction entanglers, midpoint -> endpoint.  This adds genuine
+# bidirectional information flow on the outer ring, increasing expressivity to
+# address the underfitting seen in the prior best (train < validation accuracy)
+# while sharing a single parameter to stay efficient.
+for a, b in (
+    (1, 0), (1, 2),
+    (3, 2), (3, 4),
+    (5, 4), (5, 6),
+    (7, 6), (7, 0),
+):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_mid_to_endpoint"})
+=======
+# 2b) Conditional phase companions on the same winning-line segments.  The
+# previous reverse-CRY layer appeared to over-scramble amplitudes and regressed
+# accuracy; CRZ instead adds parity/phase features that later RX/RY readout
+# mixers can convert into Z evidence.  This follows the useful CRY topology
+# without adding asymmetric midpoint feedback.
+for a, b in (
+    (0, 1), (2, 1),
+    (2, 3), (4, 3),
+    (4, 5), (6, 5),
+    (6, 7), (0, 7),
+):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [a, b], "param": "crz_endpoint_to_mid_phase"})
+>>>>>>> REPLACE
+</DIFF>

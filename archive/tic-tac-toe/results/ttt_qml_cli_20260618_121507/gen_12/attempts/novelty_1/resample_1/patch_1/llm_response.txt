@@ -1,0 +1,137 @@
+Looking at the metrics, the current program (0.45) regressed from the prior best (0.53). The prior best used a pure CRY-based entangling structure with RY decoders. The current version's fixed CNOTs (which strongly entangle from step 0) plus CRX/CRY mix appears to hurt training. Let me return to the strong CRY-line motif but improve it.
+
+<NAME>
+cry_lines_with_diag_paths
+</NAME>
+
+<DESCRIPTION>
+The current program regressed badly (0.45 vs prior 0.53). The fixed CNOT aggregators saturate entanglement before any training signal can shape the state, and CRX/CRY both mixing the same edges adds redundant parameters. 
+
+I revert to the proven motif from the best prior ansatz (RY decoder → trainable CRY line-segment entanglers → center aggregation → center broadcast → RY/RX readout), which scored 0.53. The key improvements over that prior: (1) add a small trainable RX phase layer before the RY decoder so the circuit can shift the RX(±2π/3) feature into a more separable region before decoding (separating the three cell values requires both X and Y handling); (2) keep all entanglers parametrized (no fixed CNOTs) so the circuit starts near identity and trains smoothly under Adam. This keeps parameter count moderate and preserves the symmetric, tic-tac-toe-aware structure that generalized well (low generalization gap).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = []
+
+# 1) Sign-sensitive local decoders.
+# The fixed feature map is RX(±2π/3 * cell_value).  A trainable RX offset
+# directly separates +1 from -1 through the final Z expectation, while the
+# following RY layer rotates information into the measurement quadrature.
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RX", "wire": w, "param": "rx_corner_sign"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RX", "wire": w, "param": "rx_edge_sign"})
+ANSATZ_SPEC.append({"gate": "RX", "wire": CENTER, "param": "rx_center_sign"})
+
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_corner_decode"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_edge_decode"})
+ANSATZ_SPEC.append({"gate": "RY", "wire": CENTER, "param": "ry_center_decode"})
+
+# 2) Fixed CNOT line aggregators.
+# These supply non-parametric nonlinear pair features immediately from step 0.
+# Endpoints feed the legal midpoint cells on all outer row/column segments.
+for a, b in (
+    (0, 1), (2, 1),
+    (2, 3), (4, 3),
+    (4, 5), (6, 5),
+    (6, 7), (0, 7),
+):
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [a, b]})
+
+# Middle row/column evidence is compressed into the center draw readout.
+for a, b in ((1, 8), (3, 8), (5, 8), (7, 8)):
+    ANSATZ_SPEC.append({"gate": "CNOT", "wires": [a, b]})
+
+# 3) Trainable controlled rotations.
+# CRX is aligned with the RX feature encoding and acts like a learnable
+# conditional re-upload on midpoint/center targets.  CRY adds a complementary
+# mixer that empirically helped the prior best circuit.
+for a, b in (
+    (0, 1), (2, 1),
+    (2, 3), (4, 3),
+    (4, 5), (6, 5),
+    (6, 7), (0, 7),
+):
+    ANSATZ_SPEC.append({"gate": "CRX", "wires": [a, b], "param": "crx_endpoint_to_mid"})
+
+for a, b in ((1, 8), (3, 8), (5, 8), (7, 8)):
+    ANSATZ_SPEC.append({"gate": "CRX", "wires": [a, b], "param": "crx_mid_to_center"})
+
+for a, b in ((8, 1), (8, 3), (8, 5), (8, 7)):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_center_to_mid"})
+
+# 4) Orbit-shared readout mixers aligned with fixed class measurements:
+# edge average -> cross, corner average -> circle, center -> draw.
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_corner_read"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_edge_read"})
+ANSATZ_SPEC.append({"gate": "RY", "wire": CENTER, "param": "ry_center_read"})
+
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RX", "wire": w, "param": "rx_corner_read"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RX", "wire": w, "param": "rx_edge_read"})
+ANSATZ_SPEC.append({"gate": "RX", "wire": CENTER, "param": "rx_center_read"})
+=======
+ANSATZ_SPEC = []
+
+# 1) Local decoder: small trainable RX pre-shift then RY rotation.
+# The fixed feature map is RX(±2π/3 * cell_value), storing the player sign in
+# the Y quadrature.  A trainable RX shift lets the circuit move the three cell
+# values (-1, 0, +1) into a more linearly-separable region, and the following
+# RY rotates that information directly into the Z measurement axis.  Sharing by
+# board orbit (corner/edge/center) respects D4 symmetry and stays compact.
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RX", "wire": w, "param": "rx_corner_pre"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RX", "wire": w, "param": "rx_edge_pre"})
+ANSATZ_SPEC.append({"gate": "RX", "wire": CENTER, "param": "rx_center_pre"})
+
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_corner_decode"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_edge_decode"})
+ANSATZ_SPEC.append({"gate": "RY", "wire": CENTER, "param": "ry_center_decode"})
+
+# 2) Trainable line-segment entanglers (no fixed CNOTs).  Starting near
+# identity keeps the optimization landscape benign for Adam.  Each outer-ring
+# endpoint feeds its legal row/column midpoint, building "two cells agree on a
+# line" features.  This was the key ingredient of the strongest prior ansatz.
+for a, b in (
+    (0, 1), (2, 1),
+    (2, 3), (4, 3),
+    (4, 5), (6, 5),
+    (6, 7), (0, 7),
+):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_endpoint_to_mid"})
+
+# 3) Center aggregation for the middle row and middle column -> draw readout.
+for a, b in ((1, 8), (3, 8), (5, 8), (7, 8)):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_mid_to_center"})
+
+# 4) Center broadcast back to edge midpoints.  Repeated re-uploading turns this
+# into a low-depth route for diagonal/middle-line evidence under the restricted
+# adjacency graph.
+for a, b in ((8, 1), (8, 3), (8, 5), (8, 7)):
+    ANSATZ_SPEC.append({"gate": "CRY", "wires": [a, b], "param": "cry_center_to_mid"})
+
+# 5) Orbit-shared readout mixers aligned with fixed class measurements:
+# edge average -> cross, corner average -> circle, center -> draw.
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_corner_read"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RY", "wire": w, "param": "ry_edge_read"})
+ANSATZ_SPEC.append({"gate": "RY", "wire": CENTER, "param": "ry_center_read"})
+
+for w in CORNERS:
+    ANSATZ_SPEC.append({"gate": "RX", "wire": w, "param": "rx_corner_read"})
+for w in EDGES:
+    ANSATZ_SPEC.append({"gate": "RX", "wire": w, "param": "rx_edge_read"})
+ANSATZ_SPEC.append({"gate": "RX", "wire": CENTER, "param": "rx_center_read"})
+>>>>>>> REPLACE
+
+</DIFF>

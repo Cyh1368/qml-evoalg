@@ -1,0 +1,102 @@
+Looking at the performance metrics and the recommendation provided, I can see several key insights:
+
+1. **Current state**: Score 0.58 with 12 distinct parameters, worst_group_margin 0.34
+2. **Prior best**: Score 0.59 with 10 distinct parameters (Gen 54 variant), worst_group_margin 0.31
+3. **Key issue**: The current program has TOO MANY parameters (12 distinct) causing lower parameter_efficiency (0.07 vs 0.08 in the best prior variant)
+4. **Recommendation**: Add a long-range XX entangler between qubits 0 and 7 to improve worst-group margins
+
+The recommendation suggests adding `{"gate":"XX", "wires":[0,7], "param":"xx_07"}` but the real insight is that we need to:
+- Reduce parameter count while maintaining or improving separation quality
+- Add strategic long-range entanglement (0-7 coupling)
+- Simplify the post-rotation layer which currently has 12 distinct parameters split unnecessarily
+
+My strategy:
+1. **Eliminate redundant parameters**: The current `rz_post_even` and `rz_post_odd` split (12 distinct params total) is less efficient than the prior version with only 10 distinct params
+2. **Add long-range entanglement**: Insert XX gate between qubits 0 and 7 to improve worst-group margins
+3. **Consolidate**: Use fewer distinct parameter names while maintaining expressiveness
+
+The best prior version had:
+- `ry_0`, `ry_1` (alternating pattern)
+- `rz_pre` (shared across all)
+- Three entangler pairs with unique params
+- `rz_post` (shared across all)
+- 10 distinct parameters total
+
+I'll modify the current program to:
+1. Simplify the post-rotation layer from split even/odd back to unified `rz_post`
+2. Add the long-range XX(0,7) entangler
+3. Maintain the middle RZ layer but use it more efficiently
+
+<NAME>
+add_longrange_entangle_simplify_params
+</NAME>
+
+<DESCRIPTION>
+The current program has 12 distinct parameters (higher parameter count reduces efficiency score). The prior best variant achieved 0.59 with only 10 distinct parameters using a simpler post-rotation layer.
+
+Key changes:
+1. Simplify the post-rotation layer: Replace `rz_post_even` and `rz_post_odd` (2 params) with single shared `rz_post` (1 param), reducing distinct params from 12 to 11
+2. Add long-range XX entangler between qubits 0 and 7 immediately after the main entangler block, which improves worst-group margins on hard samples as shown in prior generations
+3. Remove the middle RZ layer (`rz_mid`) to further reduce parameter count to 10, matching the best prior version
+
+This aligns with the observation that parameter economy is critical: "fewer distinct trainable parameter names ALWAYS scores higher, with no point of diminishing returns." The worst_group_margin can be improved through better entanglement structure rather than adding layers.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_0"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_0"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_0"},
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_odd"},
+=======
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "XX", "wires": [0, 7], "param": "xx_07"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RY", "wire": 0, "param": "ry_1"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_0"},
+    {"gate": "RY", "wire": 4, "param": "ry_1"},
+    {"gate": "RY", "wire": 5, "param": "ry_0"},
+    {"gate": "RY", "wire": 6, "param": "ry_1"},
+    {"gate": "RY", "wire": 7, "param": "ry_0"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+>>>>>>> REPLACE
+</DIFF>

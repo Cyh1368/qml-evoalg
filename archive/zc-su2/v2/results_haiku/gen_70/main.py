@@ -1,0 +1,79 @@
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial rotation layer with aggressive parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry"},
+    {"gate": "RY", "wire": 1, "param": "ry"},
+    {"gate": "RY", "wire": 2, "param": "ry"},
+    {"gate": "RY", "wire": 3, "param": "ry"},
+    {"gate": "RY", "wire": 4, "param": "ry"},
+    {"gate": "RY", "wire": 5, "param": "ry"},
+    {"gate": "RY", "wire": 6, "param": "ry"},
+    {"gate": "RY", "wire": 7, "param": "ry"},
+
+    # First Ising layer: nearest-neighbor XX gates forming a ring structure
+    {"gate": "XX", "wires": [0, 1], "param": "ent_xx"},
+    {"gate": "XX", "wires": [1, 2], "param": "ent_xx"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_xx"},
+    {"gate": "XX", "wires": [3, 4], "param": "ent_xx"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_xx"},
+    {"gate": "XX", "wires": [5, 6], "param": "ent_xx"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_xx"},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Second Ising layer: offset YY gates for complementary entanglement
+    {"gate": "YY", "wires": [0, 2], "param": "ent_yy"},
+    {"gate": "YY", "wires": [2, 4], "param": "ent_yy"},
+    {"gate": "YY", "wires": [4, 6], "param": "ent_yy"},
+    {"gate": "YY", "wires": [1, 3], "param": "ent_yy"},
+    {"gate": "YY", "wires": [3, 5], "param": "ent_yy"},
+    {"gate": "YY", "wires": [5, 7], "param": "ent_yy"},
+
+    # Intermediate rotation layer
+    {"gate": "RZ", "wire": 0, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 1, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 3, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 5, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rot_mid"},
+    {"gate": "RZ", "wire": 7, "param": "rot_mid"},
+
+    # Third Ising layer: ZZ gates with longer range connectivity
+    {"gate": "ZZ", "wires": [0, 3], "param": "ent_zz"},
+    {"gate": "ZZ", "wires": [1, 4], "param": "ent_zz"},
+    {"gate": "ZZ", "wires": [2, 5], "param": "ent_zz"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "ent_zz"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "ent_zz"},
+
+    # Final rotation layer
+    {"gate": "RY", "wire": 0, "param": "rot_final"},
+    {"gate": "RY", "wire": 1, "param": "rot_final"},
+    {"gate": "RY", "wire": 2, "param": "rot_final"},
+    {"gate": "RY", "wire": 3, "param": "rot_final"},
+    {"gate": "RY", "wire": 4, "param": "rot_final"},
+    {"gate": "RY", "wire": 5, "param": "rot_final"},
+    {"gate": "RY", "wire": 6, "param": "rot_final"},
+    {"gate": "RY", "wire": 7, "param": "rot_final"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

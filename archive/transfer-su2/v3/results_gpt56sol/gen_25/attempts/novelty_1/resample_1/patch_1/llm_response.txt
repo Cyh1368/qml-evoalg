@@ -1,0 +1,84 @@
+<NAME>
+tunable_mobius_chords
+</NAME>
+
+<DESCRIPTION>
+Replace the underperforming readout-graph Floquet circuit with the previously stronger symmetry-regularized Möbius-ladder structure. A single collective angle remains shared by every RY and RZ rotation, preserving parameter economy and few-shot generalization. The local ring uses fixed CZ gates, while the four diametric Möbius chords use one shared ZZ parameter. This adds only one circuit degree of freedom but allows optimization to control non-local correlation strength independently, which should improve worst-group separation without introducing wire-specific parameters or excessive training capacity.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# A one-parameter Floquet circuit built on the actual readout graph.
+#
+# The global RY mixer and the two noncommuting interaction sweeps share the
+# same angle. Consequently the model has only one circuit degree of freedom,
+# but its repeated action is not equivalent to one simple Pauli rotation.
+# Reversing the ZZ sweep also avoids introducing an arbitrary preferred end
+# of the supplied pair ordering.
+_SHARED_PARAM = "readout_floquet_angle"
+
+ANSATZ_SPEC = (
+    [
+        {"gate": "RY", "wire": wire, "param": _SHARED_PARAM}
+        for wire in range(N_QUBITS)
+    ]
+    + [
+        {
+            "gate": "XX",
+            "wires": [int(a), int(b)],
+            "param": _SHARED_PARAM,
+        }
+        for a, b in READOUT_PAIRS
+    ]
+    + [
+        {
+            "gate": "ZZ",
+            "wires": [int(a), int(b)],
+            "param": _SHARED_PARAM,
+        }
+        for a, b in reversed(READOUT_PAIRS)
+    ]
+)
+=======
+# A symmetry-regularized Möbius ladder with only two circuit parameters.
+# Collective basis rotations retain the strong few-shot inductive bias of the
+# best prior structure, while one shared angle tunes all non-local chords.
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "collective_angle"},
+    {"gate": "RY", "wire": 1, "param": "collective_angle"},
+    {"gate": "RY", "wire": 2, "param": "collective_angle"},
+    {"gate": "RY", "wire": 3, "param": "collective_angle"},
+    {"gate": "RY", "wire": 4, "param": "collective_angle"},
+    {"gate": "RY", "wire": 5, "param": "collective_angle"},
+    {"gate": "RY", "wire": 6, "param": "collective_angle"},
+    {"gate": "RY", "wire": 7, "param": "collective_angle"},
+
+    # Fixed nearest-neighbour ring supplies robust parameter-free mixing.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # All diametric links share one tunable strength, preserving cyclic
+    # symmetry while adapting the amount of long-range entanglement.
+    {"gate": "ZZ", "wires": [0, 4], "param": "cross_ent"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "cross_ent"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "cross_ent"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "cross_ent"},
+
+    {"gate": "RZ", "wire": 0, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 1, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 2, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 3, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 4, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 5, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 6, "param": "collective_angle"},
+    {"gate": "RZ", "wire": 7, "param": "collective_angle"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

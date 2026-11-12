@@ -1,0 +1,63 @@
+<NAME>
+param_efficient_shared_entangling
+
+<DESCRIPTION>
+The current ansatz uses 24 distinct parameters (per-qubit RZ pre/post plus RY), which is likely causing overfitting given the very small training set (train acc 0.88 vs val 0.63, gap 0.31). Since parameter economy is explicitly rewarded and generalization is the dominant score term, I collapse the two per-qubit RZ layers (16 params) into two single shared parameters (one for the pre-entangling RZ layer, one for the post-entangling RZ layer), and replace the fixed CZ entangling ring with a parametrized CRZ ring using ONE shared parameter, giving the circuit trainable, but low-dimensional, entangling strength instead of no entangling parameter at all. This keeps the per-qubit RY layer (8 params, essential for individual feature encoding) but reduces the total distinct parameter count from 24 to 11, which should reduce the train/val gap and improve worst-group margin, while adding a small amount of trainable entanglement expressivity that was previously absent (CZ was fixed).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "CRZ", "wires": [0, 1], "param": "ent"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "ent"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "ent"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "ent"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "ent"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "ent"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "ent"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,103 @@
+<NAME>
+add_global_rz_after_shared_layers
+
+<DESCRIPTION>
+The current candidate (7 distinct params) underperforms the previous simpler design (5 distinct params, score 0.69) that used a fully-shared ZZ ring and reused the same RZ parameters both before and after entanglement. I revert to that more parameter-efficient structure (RY_a/RY_b, RZ_a/RZ_b shared pre/post, single shared ZZ ring) and add one small refinement recommended: a single shared global RZ rotation applied to all 8 qubits at the very end of the block. This adds only one new parameter but can act as a global phase/bias correction that fine-tunes the decision boundary uniformly across qubits, potentially improving worst-group margin and validation/test loss without needing per-qubit granularity. Net distinct params: 6 (ry_a, ry_b, rz_a, rz_b, zz_ring, rz_global), still fewer than the current 7-param version, while restoring the stronger baseline structure.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_shared"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+=======
+ANSATZ_SPEC = [
+    # RY pre-rotation layer: two symmetric groups sharing one parameter each
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+
+    # RZ pre-entangling layer: shares parameters with the post layer below
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+
+    # Fully shared entangling ring
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+
+    # RZ post-entangling layer: reuse pre-layer parameters (rz_a, rz_b)
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+
+    # Global RZ fine-tuning layer: single shared parameter across all qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_global"},
+    {"gate": "RZ", "wire": 1, "param": "rz_global"},
+    {"gate": "RZ", "wire": 2, "param": "rz_global"},
+    {"gate": "RZ", "wire": 3, "param": "rz_global"},
+    {"gate": "RZ", "wire": 4, "param": "rz_global"},
+    {"gate": "RZ", "wire": 5, "param": "rz_global"},
+    {"gate": "RZ", "wire": 6, "param": "rz_global"},
+    {"gate": "RZ", "wire": 7, "param": "rz_global"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

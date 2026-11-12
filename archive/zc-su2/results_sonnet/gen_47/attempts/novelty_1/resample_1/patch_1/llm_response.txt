@@ -1,0 +1,95 @@
+<NAME>
+two_shared_params_crz_entangler
+</NAME>
+
+<DESCRIPTION>
+Replace the 3-parameter design (ry_global, xx_ent, rz_global) with a leaner 2-parameter design as suggested: a single shared rotation parameter "theta1" drives all single-qubit RY (pre) and RZ (post) rotations across all 8 qubits, while a second shared parameter "theta2" drives a fixed-topology entangling layer of parametrized CRZ gates placed on the antipodal (distance-4) and skip-2 (distance-2) links. This reduces the per-block unique-parameter count from 3 to 2 (a ~33% cut), while the CRZ entangler (versus the mixed XX/CZ layer) gives every qubit two non-local parametrized entangling partners plus two additional fixed-free skip-2 CRZ links, preserving expressivity needed to entangle the whole register with minimal parameters. This directly tests whether a slightly richer, but still highly economical, entangling layer can restore the higher combined score (0.80) seen in the 1-parameter seeds while still allowing some flexibility beyond a single global scalar.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE
+=======
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Pre-entanglement rotations: ALL 8 qubits share a single global RY
+    # parameter. This is the most extreme reduction of the RY-sharing idea
+    # explored in earlier generations (group-of-2 -> group-of-8).
+    {"gate": "RY", "wire": 0, "param": "ry_global"},
+    {"gate": "RY", "wire": 1, "param": "ry_global"},
+    {"gate": "RY", "wire": 2, "param": "ry_global"},
+    {"gate": "RY", "wire": 3, "param": "ry_global"},
+    {"gate": "RY", "wire": 4, "param": "ry_global"},
+    {"gate": "RY", "wire": 5, "param": "ry_global"},
+    {"gate": "RY", "wire": 6, "param": "ry_global"},
+    {"gate": "RY", "wire": 7, "param": "ry_global"},
+
+    # Entangling layer: closed ring (nearest-neighbor chain + wrap-around
+    # edge) instead of an open chain. No extra parameters, but every qubit
+    # now has exactly two entangling neighbors, evening out expressivity
+    # that was lost by collapsing all rotation parameters to one.
+    {"gate": "XX", "wires": [0, 1], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_ent"},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Post-entanglement rotations: ALL 8 qubits share a single global RZ
+    # parameter, distinct from the RY one (different axis, so the two
+    # parameters together still let the block realize a non-trivial
+    # entangled transformation despite using only 2 unique names).
+    {"gate": "RZ", "wire": 0, "param": "rz_global"},
+    {"gate": "RZ", "wire": 1, "param": "rz_global"},
+    {"gate": "RZ", "wire": 2, "param": "rz_global"},
+    {"gate": "RZ", "wire": 3, "param": "rz_global"},
+    {"gate": "RZ", "wire": 4, "param": "rz_global"},
+    {"gate": "RZ", "wire": 5, "param": "rz_global"},
+    {"gate": "RZ", "wire": 6, "param": "rz_global"},
+    {"gate": "RZ", "wire": 7, "param": "rz_global"},
+]
+=======
+ANSATZ_SPEC = [
+    # Pre-entanglement rotations: ALL 8 qubits share a single global RY
+    # parameter "theta1". This keeps the rotation budget at the minimal
+    # possible single scalar for the whole layer.
+    {"gate": "RY", "wire": 0, "param": "theta1"},
+    {"gate": "RY", "wire": 1, "param": "theta1"},
+    {"gate": "RY", "wire": 2, "param": "theta1"},
+    {"gate": "RY", "wire": 3, "param": "theta1"},
+    {"gate": "RY", "wire": 4, "param": "theta1"},
+    {"gate": "RY", "wire": 5, "param": "theta1"},
+    {"gate": "RY", "wire": 6, "param": "theta1"},
+    {"gate": "RY", "wire": 7, "param": "theta1"},
+
+    # Entangling layer: parametrized CRZ gates on antipodal (distance-4)
+    # links and skip-2 (distance-2) links, ALL sharing a single second
+    # parameter "theta2". This gives every qubit non-local entangling
+    # partners at two different length scales while introducing only
+    # one extra trainable scalar for the whole entangling layer.
+    {"gate": "CRZ", "wires": [0, 4], "param": "theta2"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "theta2"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "theta2"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "theta2"},
+    {"gate": "CRZ", "wires": [0, 2], "param": "theta2"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "theta2"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "theta2"},
+    {"gate": "CRZ", "wires": [6, 0], "param": "theta2"},
+
+    # Post-entanglement rotations: ALL 8 qubits share the SAME "theta1"
+    # parameter (different axis: RZ), so the block realizes a richer,
+    # non-trivial entangled transformation while the total unique
+    # trainable-parameter count per block stays fixed at exactly 2.
+    {"gate": "RZ", "wire": 0, "param": "theta1"},
+    {"gate": "RZ", "wire": 1, "param": "theta1"},
+    {"gate": "RZ", "wire": 2, "param": "theta1"},
+    {"gate": "RZ", "wire": 3, "param": "theta1"},
+    {"gate": "RZ", "wire": 4, "param": "theta1"},
+    {"gate": "RZ", "wire": 5, "param": "theta1"},
+    {"gate": "RZ", "wire": 6, "param": "theta1"},
+    {"gate": "RZ", "wire": 7, "param": "theta1"},
+]
+>>>>>>> REPLACE
+</DIFF>

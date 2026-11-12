@@ -1,0 +1,48 @@
+Looking at the performance metrics, I can see that:
+
+1. **Current program (score 0.67)**: 7 distinct parameters, 9 total params, worst_group_margin: 0.35
+2. **Prior program (score 0.68)**: 6 distinct parameters, 8 total params, worst_group_margin: 0.36
+
+The key insight from the recommendation and prior results is that **parameter economy is critical**. The worst-group margin actually *decreased* when we went from 6 to 7 distinct parameters (0.36 → 0.35), and the score dropped (0.68 → 0.67).
+
+The recommendation suggests aggressively merging the initial RY gates' parameters from the even/odd split into a single unified "ry" parameter. This would reduce distinct parameters from 7 to 5, which aligns with the observation that leaner ansätze (≤6 params) perform better.
+
+The rationale is:
+- Extreme parameter sharing forces the model to learn more generalizable features
+- Fewer distinct parameters reduces overfitting risk and improves worst-group margin
+- The prior results showed that simpler architectures with shared parameters maintain expressivity while improving robustness
+- The worst-group margin is the dominant scoring term, so robustness on hard samples matters most
+
+Let me implement this change:
+
+<NAME>
+unified_initial_ry
+</NAME>
+
+<DESCRIPTION>
+Merge the even/odd RY parameter split in the initial rotation layer into a single unified "ry" parameter. This reduces distinct parameters from 7 to 5, following the pattern that showed 0.36 worst-group margin with 6 params. Extreme parameter sharing should force better generalization and robustness on the hardest validation samples (worst-group margin), which is the dominant score component. The prior program achieved better performance with fewer distinct parameters, suggesting that parameter economy is more important than fine-grained expressivity for this task.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Initial rotation layer with efficient even/odd parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+=======
+    # Initial rotation layer with unified parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry"},
+    {"gate": "RY", "wire": 1, "param": "ry"},
+    {"gate": "RY", "wire": 2, "param": "ry"},
+    {"gate": "RY", "wire": 3, "param": "ry"},
+    {"gate": "RY", "wire": 4, "param": "ry"},
+    {"gate": "RY", "wire": 5, "param": "ry"},
+    {"gate": "RY", "wire": 6, "param": "ry"},
+    {"gate": "RY", "wire": 7, "param": "ry"},
+>>>>>>> REPLACE
+</DIFF>

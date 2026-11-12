@@ -1,0 +1,70 @@
+Looking at the performance metrics and prior programs, I can identify key patterns:
+
+1. **Current performance**: Score 0.72, perfect accuracy, 14 params, but slow convergence (150 steps) and low depth (66)
+2. **Prior successful patterns**: 
+   - Gen 62 (score 0.72): 4-block alternating zigzag pattern with both forward and reverse CZ chains
+   - Gen 66 (score 0.72): 2-block design with ring topology and cross connections
+3. **Current weakness**: Only 1 simple block with a linear + closure topology; convergence is slow despite perfect accuracy
+
+The recommendation explicitly suggests: **"Prepend a reverse-direction CZ sweep at the start of every block (wires [7,6]→…→[1,0]) before each forward CZ chain."**
+
+This aligns with Gen 62's success. The intuition is that bidirectional entanglement creates richer expressivity and improves gradient flow, reducing convergence steps.
+
+**Strategy**: Implement a double-zigzag pattern within a compact single-block structure:
+- Add reverse CZ chain [7,6]→[1,0] at the start
+- Follow with forward CZ chain [0,1]→[6,7] and closure [7,0]
+- Maintain minimal parameter overhead (2 params) for efficiency
+
+This provides:
+1. Better expressivity through bidirectional entanglement
+2. Faster convergence (gradient flow improved by alternating directions)
+3. Maintains parameter economy
+4. Slightly increased depth (beneficial for circuit expressivity)
+
+<NAME>
+reverse_forward_cz_zigzag
+</NAME>
+
+<DESCRIPTION>
+Prepend a reverse-direction CZ sweep before the forward sweep to implement a bidirectional zigzag entanglement pattern. This follows the recommendation and mirrors the success of Gen 62's 4-block alternating design but in a more parameter-efficient single-block structure.
+
+The reverse sweep [7,6]→[1,0] followed by the forward sweep [0,1]→[6,7] with closure creates bidirectional information flow. This should improve gradient flow during training and reduce convergence steps while maintaining parameter efficiency and accuracy.
+
+Evidence from prior programs: Gen 62 (alternating 4-block design) and Gen 66 (ring with directed entanglement) both achieved score 0.72 with this type of pattern. The current single-block design achieves perfect accuracy but has slow convergence (150 steps). Adding the reverse sweep should accelerate this.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+=======
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # Reverse CZ sweep [7,6] -> [1,0] for bidirectional entanglement
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CZ", "wires": [5, 4]},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CZ", "wires": [3, 2]},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CZ", "wires": [1, 0]},
+    # Forward CZ sweep [0,1] -> [6,7] plus ring closure
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+>>>>>>> REPLACE
+
+</DIFF>

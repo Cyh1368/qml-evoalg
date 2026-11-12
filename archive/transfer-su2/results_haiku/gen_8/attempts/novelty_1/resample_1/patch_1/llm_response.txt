@@ -1,0 +1,83 @@
+<NAME>
+ultra_compact_ansatz_max_sharing
+</NAME>
+
+<DESCRIPTION>
+Analysis of prior programs:
+
+1. **Seed program** (score 0.82): 24 params, uses independent RY and RZ on all qubits + line of XX gates
+2. **Best program** (score 0.99): 38 params, uses fully shared RY and RZ layers + XX on alternating pairs
+3. **Current program** (score 0.93): 50 params, uses alternating parameter sharing (ry_a/ry_b, rz_a/rz_b) + XX on alternating pairs
+
+Key insight: The program with score 0.99 achieves perfect accuracy with the fewest parameters (38) by using complete parameter sharing on single-qubit layers. It demonstrates that maximum parameter economy actually improves the score.
+
+The current program (50 params) is a middle ground that doesn't achieve the best efficiency. The alternating pattern (ry_a/ry_b) is more expressive than full sharing, but less efficient than needed.
+
+Strategy to improve from 0.93 to ≥0.99:
+- Reduce parameters to match or beat the best program (38 params)
+- Use maximum parameter sharing on single-qubit rotations (one RY param, one RZ param)
+- Keep the XX entanglement structure on alternating pairs (4 params)
+- This gives: 1 RY + 1 RZ + 4 XX = 6 params per block × 6 repeats × 1 upload + 2 readout = 38 params
+
+This should achieve:
+1. Perfect accuracy (demonstrated by prior)
+2. Highest parameter efficiency (0.03 vs 0.02)
+3. Fastest convergence
+4. Lowest combined score penalty from parameter count
+
+The mechanism: complete sharing acts as a strong inductive bias that works well for this task while being maximally efficient. The 8-qubit problem benefits from this symmetry.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_0"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_1"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_2"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_3"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared RY layer: apply same rotation to all qubits
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    # Parametrized XX interactions on alternating pairs
+    {"gate": "XX", "wires": [0, 1], "param": "xx_0"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_1"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_2"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_3"},
+    # Shared RZ layer: apply same rotation to all qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

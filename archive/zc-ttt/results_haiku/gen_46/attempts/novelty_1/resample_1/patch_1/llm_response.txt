@@ -1,0 +1,53 @@
+Looking at the performance metrics across the three programs, I can identify key patterns:
+
+1. **Current program** (score 0.60): Best test accuracy (0.65) and lowest generalization gap (0.04), but highest parameter count (174) and validation loss (2.12)
+2. **Second program** (score 0.60): Lower parameter count (114), good validation accuracy (0.65)
+3. **First program** (score 0.56): Highest validation loss (2.18), moderate parameters (126)
+
+The current program has excellent generalization but suffers from:
+- High parameter count (174) leading to potential overfitting
+- Elevated validation loss (2.12)
+- No explicit output-stage entanglement before measurement
+
+The recommendation suggests adding a lightweight CZ coupling at the output stage (before Layer 5) on qubits [3,8]. This is strategically sound because:
+
+1. **Zero parameter cost**: Fixed gates don't increase parameter count
+2. **Captures residual correlations**: The pair (3,8) appears in multiple parametrized gates (CRZ at [0,8], CRZ at [1,3], CZ at [4,8]), making this coupling meaningful
+3. **Minimal depth overhead**: Only +1 depth
+4. **Mirrors prior success**: Layer 3 uses mixed fixed/parametrized entanglers effectively
+5. **Improves information flow**: Enhances connectivity before final readout preparation
+
+This modification should:
+- Maintain or improve test accuracy (0.65)
+- Reduce validation loss from 2.12 toward 2.10 or lower
+- Keep parameter count at 174 (no new parameters)
+- Slightly increase depth (63 → 64) but with better expressivity per parameter
+
+<NAME>
+add_output_cz_coupling
+</NAME>
+
+<DESCRIPTION>
+Add a lightweight CZ gate between qubits 3 and 8 immediately before Layer 5 (final RY rotations). This fixed two-qubit gate:
+
+1. Costs zero parameters while improving entanglement at the output stage
+2. Captures residual correlations between qubits that are already connected via parametrized gates in Layer 3
+3. Mirrors the mixed-entangler strategy (parametrized + fixed gates) that proved successful in Layer 3
+4. Adds only +1 depth while potentially improving expressivity
+5. Enhances information flow to the readout qubits before final preparation
+
+The pair (3,8) is valid per the allowed two-qubit gates list and appears in multiple parametrized interactions, making this coupling strategically positioned to capture important correlations without overfitting.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 5: Final RY rotations for output preparation
+    {"gate": "RY", "wire": 0, "param": "ry_out_0"},
+=======
+    # Layer 4.5: Output-stage fixed entanglement (zero parameters)
+    {"gate": "CZ", "wires": [3, 8]},
+
+    # Layer 5: Final RY rotations for output preparation
+    {"gate": "RY", "wire": 0, "param": "ry_out_0"},
+>>>>>>> REPLACE
+</DIFF>

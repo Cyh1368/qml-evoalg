@@ -1,0 +1,68 @@
+# Analysis
+
+Looking at the three programs:
+
+1. **Seed program**: Score 0.46, 6 distinct params, poor generalization (gap 0.17), worst_group_margin 0.21
+2. **Best program**: Score 0.58, 10 distinct params, excellent generalization (gap 0.04), worst_group_margin 0.28
+3. **Current program**: Score 0.43, 5 distinct params, but underfitting badly (train 0.69, validation 0.64), worst_group_margin only 0.05
+
+The current program has:
+- Too few parameters (5 distinct) leading to underfitting
+- Poor training accuracy (0.69) indicates the ansatz lacks expressivity
+- Worst group margin is critically low (0.05)
+- The entangling structure (CZ + long-range XX/YY) may be ineffective
+
+The recommendation suggests inserting a **second alternating RY layer** before the final RZ block, reusing ry_a and ry_b. This:
+1. Adds expressivity without new parameters (parameter economy preserved)
+2. Doubles the proven heterogeneous RY alternation pattern
+3. Can improve robust separation and worst-group margin
+4. Matches the structure that worked well in the best program (alternating ry_0/ry_1)
+
+**Strategy**: Insert the second RY alternation layer after the entanglers but before the final RZ (rz_post) block. This leverages parameter sharing to add expressivity without increasing distinct parameter count.
+
+<NAME>
+double_ry_alternation_mid_circuit
+</NAME>
+
+<DESCRIPTION>
+The best program (score 0.58) uses alternating RY parameters (ry_0/ry_1) that achieve strong generalization and robust worst-group margin (0.28). The current program underperforms (worst_group_margin 0.05) due to insufficient expressivity.
+
+The recommendation is to insert a second alternating RY layer mid-circuit (after entanglers, before final RZ) using the same ry_a and ry_b parameters. This:
+1. Adds expressivity without increasing distinct parameter count
+2. Leverages proven heterogeneous RY alternation pattern
+3. Should improve worst-group margin and robust separation
+4. Maintains parameter economy (reuses existing ry_a, ry_b)
+
+The insertion point is after the XX/YY entanglers, giving the circuit depth to develop more complex feature maps while keeping parameters minimal.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "YY", "wires": [0, 5], "param": "yy_a"},
+    {"gate": "YY", "wires": [1, 6], "param": "yy_a"},
+    {"gate": "YY", "wires": [2, 7], "param": "yy_a"},
+]
+=======
+    {"gate": "YY", "wires": [0, 5], "param": "yy_a"},
+    {"gate": "YY", "wires": [1, 6], "param": "yy_a"},
+    {"gate": "YY", "wires": [2, 7], "param": "yy_a"},
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

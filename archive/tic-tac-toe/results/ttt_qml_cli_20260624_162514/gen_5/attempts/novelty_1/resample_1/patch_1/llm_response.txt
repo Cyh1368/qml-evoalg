@@ -1,0 +1,132 @@
+<NAME>
+symmetry_compact_partial_entangle
+</NAME>
+
+<DESCRIPTION>
+Reduce gate count and parameter count while preserving expressive, symmetry-aware structure.
+I replace the previous heavy per-block layout (many single-qubit layers and 12 parameterized CRX edges) with a compact, symmetry-grouped single-qubit layer (shared RY and RZ by corner/edge/center classes) plus a partial entangling layer of CZs (selecting 4 ring edges and 4 hub edges). This halves the entangling operations per block and collapses many per-wire parameters into 6 shared parameters per block, improving parameter efficiency, reducing depth/gate-count, and adding regularization via weight sharing. The smaller parameter set should train faster with Adam and generalize better while keeping enough entanglement to model board structure.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Initial RY with light symmetry breaking:
+    # corners split into two pairs to allow controlled asymmetry
+    {"gate": "RY", "wire": 0, "param": "ry_corner_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_b"},
+    # edges split into two pairs
+    {"gate": "RY", "wire": 1, "param": "ry_edge_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge_b"},
+    # center its own rotation
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Local pre-phases shared by symmetry class (compact, regularizing)
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Local RX adjustments (class-shared)
+    {"gate": "RX", "wire": 0, "param": "rx_corner"},
+    {"gate": "RX", "wire": 2, "param": "rx_corner"},
+    {"gate": "RX", "wire": 4, "param": "rx_corner"},
+    {"gate": "RX", "wire": 6, "param": "rx_corner"},
+    {"gate": "RX", "wire": 1, "param": "rx_edge"},
+    {"gate": "RX", "wire": 3, "param": "rx_edge"},
+    {"gate": "RX", "wire": 5, "param": "rx_edge"},
+    {"gate": "RX", "wire": 7, "param": "rx_edge"},
+    {"gate": "RX", "wire": 8, "param": "rx_center"},
+
+    # Parametrized entangling rotations:
+    # Use CRX around the ring (single shared param) to provide tunable mixing,
+    # and a separate CRX for hub edges to let center-edge coupling differ.
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [1, 2], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [5, 6], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [7, 0], "param": "crx_ring"},
+    {"gate": "CRX", "wires": [1, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [3, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [5, 8], "param": "crx_hub"},
+    {"gate": "CRX", "wires": [7, 8], "param": "crx_hub"},
+
+    # Final compact mixing (shared across wires to limit param count)
+    {"gate": "RY", "wire": 0, "param": "ry_out"},
+    {"gate": "RY", "wire": 1, "param": "ry_out"},
+    {"gate": "RY", "wire": 2, "param": "ry_out"},
+    {"gate": "RY", "wire": 3, "param": "ry_out"},
+    {"gate": "RY", "wire": 4, "param": "ry_out"},
+    {"gate": "RY", "wire": 5, "param": "ry_out"},
+    {"gate": "RY", "wire": 6, "param": "ry_out"},
+    {"gate": "RY", "wire": 7, "param": "ry_out"},
+    {"gate": "RY", "wire": 8, "param": "ry_out"},
+    {"gate": "RZ", "wire": 0, "param": "rz_out"},
+    {"gate": "RZ", "wire": 1, "param": "rz_out"},
+    {"gate": "RZ", "wire": 2, "param": "rz_out"},
+    {"gate": "RZ", "wire": 3, "param": "rz_out"},
+    {"gate": "RZ", "wire": 4, "param": "rz_out"},
+    {"gate": "RZ", "wire": 5, "param": "rz_out"},
+    {"gate": "RZ", "wire": 6, "param": "rz_out"},
+    {"gate": "RZ", "wire": 7, "param": "rz_out"},
+    {"gate": "RZ", "wire": 8, "param": "rz_out"},
+]
+=======
+ANSATZ_SPEC = [
+    # Compact symmetry-aware single-qubit layer:
+    # share rotations by class to regularize and reduce params
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Partial entangling layer (compact): choose 4 ring edges and 4 hub edges
+    # to provide mixing while keeping gate count low.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+
+    # Small final single-qubit adjustment (shared per class)
+    {"gate": "RY", "wire": 0, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 8, "param": "ry_center_out"},
+]
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,94 @@
+I apologize for the error. I misunderstood the constraints—only the `ANSATZ_SPEC` within the EVOLVE-BLOCK can be modified. The readout layer and parameter initialization are in fixed code regions.
+
+Given this constraint, I can only modify the ansatz itself. Let me propose a targeted improvement to the ANSATZ_SPEC that will enhance parameter efficiency and convergence.
+
+<NAME>
+enhanced_ansatz_with_parametrized_interactions
+</NAME>
+
+<DESCRIPTION>
+The current ansatz uses a fixed chain of CZ gates with alternating RY and RZ rotations. While it achieves perfect accuracy, it has slower convergence (90 steps vs. 60 in the best prior) and higher gate count (186 vs. 138).
+
+The key insight from the second prior program is that using **parametrized two-qubit interactions** (like ZZ gates) with **aggressive parameter sharing** dramatically reduces the parameter count while maintaining accuracy. That program achieved 26 parameters with only 3 unique parameter keys per block.
+
+**Proposed improvement:**
+Replace the fixed CZ chain with parametrized ZZ interactions on the same pairs, and consolidate the RY/RZ rotations to use only 2-3 shared parameters instead of 4. This:
+1. Reduces gate overhead by replacing fixed CZ with parametrized ZZ (same gate count but learnable)
+2. Increases parameter sharing to match the best prior's economy
+3. Should improve convergence by reducing the parameter space to optimize
+
+The structure will be:
+- Single shared RY on all qubits (1 parameter)
+- Parametrized ZZ on the chain pairs (1 parameter, shared across all pairs)
+- Single shared RZ on all qubits (1 parameter)
+
+This gives 3 parameters per block × 6 repeats + 2 readout = 20 total parameters (vs. current 26), matching the best prior's efficiency.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+=======
+ANSATZ_SPEC = [
+    # Shared RY rotation on all qubits
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    # Parametrized ZZ interactions on chain pairs with shared parameter
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_chain"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_chain"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_chain"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_chain"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_chain"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_chain"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_chain"},
+    # Shared RZ rotation on all qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

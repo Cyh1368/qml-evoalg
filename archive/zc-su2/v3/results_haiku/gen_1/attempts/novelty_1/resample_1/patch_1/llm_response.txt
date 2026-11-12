@@ -1,0 +1,99 @@
+Looking at the current performance metrics, I can identify several key issues:
+
+1. **Very poor generalization**: validation_accuracy (0.63) is much lower than train_accuracy (0.88), with a large generalization gap of 0.31
+2. **Severe worst_group_margin problem**: 0.03 is extremely low, indicating the classifier fails catastrophically on hard samples
+3. **Too many parameters**: 24 distinct parameters with high parameter redundancy
+4. **Parameter efficiency score very low**: 0.02 (this matters significantly in scoring)
+
+The current architecture has too many independent parameters (one per qubit per layer) which likely causes overfitting on the small training set. The worst_group_margin being so low suggests the model doesn't learn robust decision boundaries for difficult samples.
+
+**Strategy:**
+1. **Reduce parameter count dramatically** through aggressive parameter sharing
+2. **Add two-qubit parametrized interactions** (XX/YY/ZZ gates) to create stronger entanglement patterns that might help with robust separation
+3. **Simplify to a minimal but expressive architecture** that generalizes better
+
+The key insight is that parameter sharing forces the model to learn more general features rather than memorizing training examples. With fewer distinct parameters, the model must find simpler, more generalizable patterns - which is exactly what helps with worst-group performance and the generalization gap.
+
+<NAME>
+shared_params_entangling_ansatz
+</NAME>
+
+<DESCRIPTION>
+Replace the over-parameterized architecture with a minimal ansatz using aggressive parameter sharing and two-qubit parametrized gates (XX interactions). This design:
+
+1. Uses only 4 distinct parameters instead of 24 (6x reduction)
+2. Shares single-qubit rotation parameters across all qubits (ry_shared, rz_shared)
+3. Adds XX gates with shared parameter to create controlled entanglement
+4. Maintains chain connectivity but with fewer, shared gates
+5. Expected benefits:
+   - Dramatically improves parameter_efficiency score
+   - Reduces overfitting through parameter economy
+   - Forces learning of generalizable features
+   - Should improve worst_group_margin through simpler decision boundaries
+   - Reduces train-test gap
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_shared"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_shared"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_shared"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "XX", "wires": [1, 2], "param": "xx_shared"},
+    {"gate": "XX", "wires": [3, 4], "param": "xx_shared"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx_shared"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

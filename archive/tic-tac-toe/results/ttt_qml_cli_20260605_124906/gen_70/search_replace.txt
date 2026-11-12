@@ -1,0 +1,44 @@
+<NAME>
+insert_second_ry_layer_in_hybrid
+</NAME>
+
+<DESCRIPTION>
+Add a symmetry-shared second RY layer (ry2_corner/ry2_edge/ry2_center) between the hub-ring entanglement and the final post-entanglement RZ, increasing expressivity while preserving parameter sharing. This keeps the overall budget modest (adds 3 parameters per block, from 11 to 14) and leverages the existing symmetry groups. The patch inserts the new layer immediately after Layer 4 (CRX hub entanglement) and before the final Layer 5 (rz_post_*), without altering the rest of the training loop or data handling.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 4: Hub entanglement (center to edges) - CRX with shared parameter
+    spec.append({"gate": "CRX", "wires": [center, 1], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 3], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 5], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 7], "param": "crx_hub_edge"})
+
+    # Layer 5: Post-entanglement RZ (shared per group)
+    for w in corners:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_post_corner"})
+    for w in edges:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": center, "param": "rz_post_center"})
+=======
+    # Layer 4: Hub entanglement (center to edges) - CRX with shared parameter
+    spec.append({"gate": "CRX", "wires": [center, 1], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 3], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 5], "param": "crx_hub_edge"})
+    spec.append({"gate": "CRX", "wires": [center, 7], "param": "crx_hub_edge"})
+
+    # Layer 5b: Second RY layer (shared per group)
+    for w in corners:
+        spec.append({"gate": "RY", "wire": w, "param": "ry2_corner"})
+    for w in edges:
+        spec.append({"gate": "RY", "wire": w, "param": "ry2_edge"})
+    spec.append({"gate": "RY", "wire": center, "param": "ry2_center"})
+
+    # Layer 6: Post-entanglement RZ (shared per group)
+    for w in corners:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_post_corner"})
+    for w in edges:
+        spec.append({"gate": "RZ", "wire": w, "param": "rz_post_edge"})
+    spec.append({"gate": "RZ", "wire": center, "param": "rz_post_center"})
+>>>>>>> REPLACE
+</DIFF>

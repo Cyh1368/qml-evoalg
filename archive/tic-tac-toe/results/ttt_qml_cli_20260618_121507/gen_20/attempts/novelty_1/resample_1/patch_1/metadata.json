@@ -1,0 +1,14 @@
+{
+  "generation": 20,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "direct_winline_readout_decoder",
+  "patch_description": "A fundamentally different design philosophy. The prior ans\u00e4tze over-relied on heavy bidirectional CRY entanglement that destroyed the clean sign-information stored by the RX feature map, collapsing accuracy (the current 96-param version got *worse*, 37%, than the 72-param seeds at 52%).\n\nKey insight: the RX(\u00b12\u03c0/3) feature map writes player sign into the Y-quadrature. The cleanest classifier reads it back as Z via a single trainable RY layer, then needs ONLY enough entanglement to compute \"three-in-a-line agreement\" \u2014 the actual decision function of tic-tac-toe. Excessive entanglement is harmful: it scrambles the already-informative single-qubit signal.\n\nNew strategy:\n1. **Per-orbit RY decoder** (sign \u2192 Z), as before, but immediately followed by a per-orbit RX phase to give a 2-axis local frame *without* RZ (RZ commutes through Z readout and wastes capacity \u2014 confirmed by prior notes).\n2. **Single light directional entangling pass** along winning-line segments (endpoint \u2192 midpoint only, no reverse pass) using ONE shared CRY parameter. This injects \"two-cells-agree\" features at minimal depth.\n3. **Center coupling** with one shared CRY from the four edges into the center, giving the draw readout (qubit 8) explicit middle-row/column context \u2014 and a separate single shared center\u2192edge broadcast so diagonal/center evidence reaches the perimeter readouts within the re-uploading repeats.\n4. **Per-orbit readout RY** aligned to the measurement grouping.\n\nThis keeps the parameter count LOW (\u224811 per block \u2192 66 total, fewer than the failing 96), keeps depth shallow (one entangling sweep instead of three), preserves the informative feature signal, and lets data re-uploading (l=3, p=2) build up the line-agreement nonlinearity across repetitions rather than within one over-deep block.",
+  "error_msg": null,
+  "timestamp": "2026-06-18T15:41:13.109642",
+  "llm_cost": 0.43730500000000005,
+  "llm_model": "anthropic/claude-opus-4.8"
+}

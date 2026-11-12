@@ -1,0 +1,41 @@
+Analyzing the performance data, I notice:
+
+1. **Current program (0.57)** has the best parameter efficiency (0.09) and lowest parameter count (8 distinct), but suffers from reduced validation accuracy (0.91 vs 0.97) and larger generalization gap (0.11 vs 0.05).
+
+2. **Prior program 2 (0.59)** scores highest with 10 distinct params, uses CRX and CRY gates on strategic links, and achieves better validation accuracy (0.97) and worst_group_margin (0.31).
+
+3. **Prior program 1 (0.58)** has more expressivity with 12 distinct params but shows the generalization gap issue was already present.
+
+The key insight: The second prior program achieved +0.02 score improvement over the first by replacing XX and YY gates with **CRX and CRY controlled parametrized gates** on links [6,7] and [1,4]. This suggests that controlled gates provide better expressivity for this problem.
+
+**Proposed improvement strategy:**
+Following the successful pattern from prior program 2, I'll enhance the current minimalist ansatz by:
+1. Replace the ZZ gate on link [4,5] with a CRZ (controlled parametrized phase gate) - this adds one new distinct parameter while maintaining low parameter count
+2. Replace the XX gate on link [0,1] with CRX and YY on [2,3] with CRY to boost expressivity on critical entangling links
+3. Keep the ZZ on [3,6] as a cross-link stabilizer
+
+This targeted addition of controlled gates should improve validation accuracy and worst_group_margin (addressing robust separation on hard samples) without excessive parameter inflation.
+
+<NAME>
+add_controlled_gates_for_expressivity
+</NAME>
+
+<DESCRIPTION>
+Replace Ising gates (XX, YY, ZZ) with controlled parametrized gates (CRX, CRY, CRZ) on key entangling links. Prior program 2 demonstrated that CRX/CRY gates boost combined score from 0.58→0.59 by improving expressivity. The current program sacrificed validation accuracy (0.97→0.91) and worst_group_margin (0.34→0.33) for minimal parameter count. By selectively upgrading to controlled gates on strategic links, we can recover expressivity while keeping parameter efficiency reasonable. CRZ on [4,5] adds one new parameter while providing richer entanglement structure for the central link.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Minimal two-qubit entangling layer: strategic nearest-neighbor + cross-coupled pairs (3 distinct params)
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+=======
+    # Enhanced two-qubit entangling layer: controlled gates for better expressivity (5 distinct params)
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_01"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_23"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_45"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_67"},
+>>>>>>> REPLACE
+</DIFF>

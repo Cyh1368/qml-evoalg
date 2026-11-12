@@ -1,0 +1,96 @@
+<NAME>
+linear_chain_optimized
+</NAME>
+
+<DESCRIPTION>
+Analysis of the three programs shows:
+
+1. **Best performer (Score 0.91)**: Uses a simple linear chain topology with alternating parameter sharing (ry_a/ry_b pattern), linear CZ gates, and a reverse CRZ chain. This achieves 44 parameters, excellent accuracy (0.92 validation), minimal generalization gap (0.01), and efficient convergence.
+
+2. **Current program (Score 0.87)**: Uses a sparse diagonal skip-link topology (even/odd layers with step-2 connections) plus nearest-neighbor chains. While it has lower depth (96 vs 154), it suffers from:
+   - Higher parameter count (74 vs 44) without accuracy benefits
+   - Larger generalization gap (0.04 vs 0.01)
+   - Worse test accuracy (0.86 vs 0.91)
+   - Higher loss (0.46 vs 0.37)
+
+3. **Key insight**: The linear chain with parameter sharing is superior. The current sparse topology appears to add complexity without benefit.
+
+**Crossover strategy**: Adopt the proven linear chain architecture from the 0.91 performer, which demonstrates:
+- Optimal parameter efficiency through 2-way parameter sharing (ry_a/ry_b, rz_pre_a/rz_pre_b, rz_post_a/rz_post_b)
+- Superior entanglement structure: forward linear CZ chain + reverse parametrized CRZ chain
+- Better generalization and convergence
+
+The linear chain topology with controlled parameter sharing is the foundation of success here, not the sparse diagonal approach.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Shared initial RY rotations - pairs of qubits share parameters
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    # Shared pre-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_b"},
+    # Linear chain CZ gates
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Reverse chain with parametrized CRZ gates for enhanced expressivity
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev"},
+    # Shared post-entanglement RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_b"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

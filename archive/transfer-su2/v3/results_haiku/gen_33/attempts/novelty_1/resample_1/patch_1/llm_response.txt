@@ -1,0 +1,88 @@
+<NAME>
+weighted_readout_calibration
+</NAME>
+
+<DESCRIPTION>
+The recommendation to add learnable weighted averaging of correlators is well-motivated. Currently, the `predict_batch` function computes a simple arithmetic mean of all correlators before applying gain and bias calibration. This uniform treatment is suboptimal because:
+
+1. **Heterogeneous predictiveness**: Not all correlator pairs contribute equally to the classification decision. Some pairs may be much more informative for separating the hardest samples.
+
+2. **Worst-group margin bottleneck**: The current worst_group_margin is 0.33, indicating that the classifier struggles with the most difficult samples. By learning which correlators matter most, we can tighten the margins on those groups.
+
+3. **Parameter economy**: Adding ~8 learnable weights (one per correlator pair) has minimal cost (~10% increase in readout parameters, ~4% in total) while extending the decoupled readout calibration pattern that already works well (gain/bias are proven beneficial).
+
+4. **No quantum circuit modification**: The improvement is purely in the classical readout, avoiding any risk of disrupting the well-tuned ansatz.
+
+Implementation approach:
+- Add trainable weights `w_pair_0`, `w_pair_1`, ..., `w_pair_{M-1}` where M = len(READOUT_PAIRS)
+- Normalize these weights to sum to 1 using softmax to ensure stable gradients
+- Replace the simple mean with the weighted sum in `predict_batch`
+- Update initialization and parameter management to include these new weights
+- Update N_READOUT_PARAMS accordingly
+
+This is a low-risk, high-reward change that leverages the dataset's own correlator structure without redesigning the quantum circuit.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+=======
+N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK
+N_READOUT_PARAMS = 2 + len(READOUT_PAIRS)  # gain, bias, plus one weight per correlator pair
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per state: calibrated mean of the fixed correlators."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    states = pnp.array(np.asarray(x_batch, dtype=complex), requires_grad=False)
+    z = pnp.stack(circuit_pair_expectations(states, circuit_params))  # (n_pairs, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+=======
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per state: weighted mean of correlators with learnable pair weights."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    pair_weights_raw = params[N_CIRCUIT_PARAMS + 2:]
+    
+    states = pnp.array(np.asarray(x_batch, dtype=complex), requires_grad=False)
+    z = pnp.stack(circuit_pair_expectations(states, circuit_params))  # (n_pairs, B)
+    
+    # Normalize weights with softmax for numerical stability and interpretability
+    weights = pnp.exp(pair_weights_raw) / pnp.sum(pnp.exp(pair_weights_raw))
+    
+    # Compute weighted average across correlator pairs
+    weighted_z = pnp.sum(weights[:, None] * z, axis=0)  # (B,)
+    
+    return gain * (weighted_z - bias)
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    init_scale = float(os.environ.get("INIT_SCALE", str(np.pi)))
+    init = rng.uniform(-init_scale, init_scale, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+=======
+    init_scale = float(os.environ.get("INIT_SCALE", str(np.pi)))
+    init = rng.uniform(-init_scale, init_scale, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    init[N_CIRCUIT_PARAMS + 2:] = 0.0  # pair weights start at 0 (uniform after softmax)
+    params = pnp.array(init, requires_grad=True)
+>>>>>>> REPLACE
+
+</DIFF>

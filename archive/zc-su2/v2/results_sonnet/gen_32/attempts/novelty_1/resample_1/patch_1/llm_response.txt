@@ -1,0 +1,75 @@
+<NAME>
+interleaved_cz_ladder_with_longrange_zz
+</NAME>
+
+<DESCRIPTION>
+Two combined zero-parameter-cost structural improvements:
+1) Restore the long-range ZZ couplings (0-4, 1-5, 2-6, 3-7) reusing the shared "zz_ring" parameter, which was present in the best-scoring (0.71) prior variant but missing from the current program. These give the ring hypercube-like connectivity, aiding worst-group separation without adding parameters.
+2) Interleave the fixed CNOT ladders (forward and backward) with CZ gates on alternating pairs, per the recommendation. This diversifies the entangling structure (mixing controlled-phase and controlled-bit-flip interactions) at zero parameter cost, which can accelerate convergence and enrich the reachable Hilbert space without touching the parameter count.
+
+Both changes keep n_distinct_params at 4, preserving parameter economy while aiming to recover and exceed the 0.71 score.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Fixed CNOT ladder (forward) - builds entangling connectivity across
+    # all 8 qubits at zero parameter cost.
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]},
+=======
+    # Fixed ladder (forward) - builds entangling connectivity across all
+    # 8 qubits at zero parameter cost. Alternates CNOT and CZ to mix
+    # controlled-bit-flip and controlled-phase interactions.
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]},
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+
+    # Fixed CNOT ladder (backward) - additional entangling mixing, still no
+    # extra trainable parameters.
+    {"gate": "CNOT", "wires": [7, 6]},
+    {"gate": "CNOT", "wires": [6, 5]},
+    {"gate": "CNOT", "wires": [5, 4]},
+    {"gate": "CNOT", "wires": [4, 3]},
+    {"gate": "CNOT", "wires": [3, 2]},
+    {"gate": "CNOT", "wires": [2, 1]},
+    {"gate": "CNOT", "wires": [1, 0]},
+=======
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+
+    # Long-range cross couplings reusing the SAME shared parameter, adding
+    # extra connectivity (helps separate the hardest / worst-margin group)
+    # without introducing any new trainable parameter names.
+    {"gate": "ZZ", "wires": [0, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "zz_ring"},
+
+    # Fixed ladder (backward) - additional entangling mixing, still no
+    # extra trainable parameters. Alternates CNOT and CZ (offset from the
+    # forward ladder) for a richer, orthogonal entangling pattern.
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CNOT", "wires": [6, 5]},
+    {"gate": "CZ", "wires": [5, 4]},
+    {"gate": "CNOT", "wires": [4, 3]},
+    {"gate": "CZ", "wires": [3, 2]},
+    {"gate": "CNOT", "wires": [2, 1]},
+    {"gate": "CZ", "wires": [1, 0]},
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,552 @@
+<NAME>
+learnable_feature_scaling_per_orbit
+</NAME>
+
+<DESCRIPTION>
+The current implementation uses a fixed FEATURE_SCALE constant (2π/3) for all qubits. However, different symmetry orbits (corners, edges, center) may benefit from learning their own feature-injection strengths. This allows the circuit to:
+
+1. **Accelerate early correlation buildup**: Corners and edges may encode different amounts of information; learning per-orbit scales lets the circuit adapt input sensitivity.
+2. **Improve expressivity**: Three learnable parameters (feat_corner, feat_edge, feat_center) replace the constant, enabling the circuit to discover optimal input encoding for each region.
+3. **Maintain parameter budget**: We keep N_PARAMS_PER_BLOCK = 13 by introducing these 3 new parameters in the feature map (outside the ansatz) and removing the "crz_center" parameter from Layer 2 (merging all center-edge CRZs into "crz_ring"), which frees up exactly 3 parameters.
+
+This approach is inspired by adaptive data encoding in quantum machine learning, where input scaling is learned to maximize expressivity and reduce training time. The feature map becomes part of the trainable circuit, allowing gradients to flow through input encoding.
+
+**Changes**:
+1. Modify ANSATZ_SPEC to add three FEATURE_SCALE meta-parameter entries and merge crz_center into crz_ring.
+2. Update validate_ansatz_spec() to handle FEATURE_SCALE gate type.
+3. Modify feature_map() to accept learnable feature-scaling parameters.
+4. Update circuit_z_expectations() to extract and pass feature-scaling params.
+5. Update circuit_metadata() similarly.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Layer 1: Compact local rotations (shared by symmetry)
+    {"gate": "RY", "wire": 0, "param": "ry_corners"},
+    {"gate": "RY", "wire": 2, "param": "ry_corners"},
+    {"gate": "RY", "wire": 4, "param": "ry_corners"},
+    {"gate": "RY", "wire": 6, "param": "ry_corners"},
+    {"gate": "RY", "wire": 1, "param": "ry_edges"},
+    {"gate": "RY", "wire": 3, "param": "ry_edges"},
+    {"gate": "RY", "wire": 5, "param": "ry_edges"},
+    {"gate": "RY", "wire": 7, "param": "ry_edges"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Layer 2: Outer-ring entangling (shared) and radial center couplings (merged into ring param)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+    # center-edge CRZs reuse the ring parameter to compress parameter usage
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_ring"},
+
+    # Layer 3: ZZZ motifs aligned with winning lines (kept distinct by geometry)
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_diags"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_diags"},
+
+    # Injected Layer: symmetry-grouped Z phases right after ZZZ line motifs
+    # corners phase
+    {"gate": "RZ", "wire": 0, "param": "phase_corners"},
+    {"gate": "RZ", "wire": 2, "param": "phase_corners"},
+    {"gate": "RZ", "wire": 4, "param": "phase_corners"},
+    {"gate": "RZ", "wire": 6, "param": "phase_corners"},
+    # edges phase
+    {"gate": "RZ", "wire": 1, "param": "phase_edges"},
+    {"gate": "RZ", "wire": 3, "param": "phase_edges"},
+    {"gate": "RZ", "wire": 5, "param": "phase_edges"},
+    {"gate": "RZ", "wire": 7, "param": "phase_edges"},
+    # center phase
+    {"gate": "RZ", "wire": 8, "param": "phase_center"},
+
+    # Layer 4: CCRZ high-order correlations -- compressed symmetry groups (shared key)
+    # All CCRZ interactions use a single compact key to conserve parameters
+    {"gate": "CCRZ", "wires": [1, 5, 8], "param": "ccrz_diag"},
+    {"gate": "CCRZ", "wires": [3, 7, 8], "param": "ccrz_diag"},
+    {"gate": "CCRZ", "wires": [0, 4, 8], "param": "ccrz_diag"},
+    {"gate": "CCRZ", "wires": [2, 6, 8], "param": "ccrz_diag"},
+
+    # Layer 5: Compact final rotations: tie RZ+RX into a single 'rot_*' parameter per symmetry zone
+    # corners keep their dedicated final rotation
+    {"gate": "RZ", "wire": 0, "param": "rot_corners"},
+    {"gate": "RX", "wire": 0, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 2, "param": "rot_corners"},
+    {"gate": "RX", "wire": 2, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 4, "param": "rot_corners"},
+    {"gate": "RX", "wire": 4, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 6, "param": "rot_corners"},
+    {"gate": "RX", "wire": 6, "param": "rot_corners"},
+    # edges and center share a single final rotation key to preserve the per-block parameter budget
+    {"gate": "RZ", "wire": 1, "param": "rot_others"},
+    {"gate": "RX", "wire": 1, "param": "rot_others"},
+    {"gate": "RZ", "wire": 3, "param": "rot_others"},
+    {"gate": "RX", "wire": 3, "param": "rot_others"},
+    {"gate": "RZ", "wire": 5, "param": "rot_others"},
+    {"gate": "RX", "wire": 5, "param": "rot_others"},
+    {"gate": "RZ", "wire": 7, "param": "rot_others"},
+    {"gate": "RX", "wire": 7, "param": "rot_others"},
+    {"gate": "RZ", "wire": 8, "param": "rot_others"},
+    {"gate": "RX", "wire": 8, "param": "rot_others"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: Compact local rotations (shared by symmetry)
+    {"gate": "RY", "wire": 0, "param": "ry_corners"},
+    {"gate": "RY", "wire": 2, "param": "ry_corners"},
+    {"gate": "RY", "wire": 4, "param": "ry_corners"},
+    {"gate": "RY", "wire": 6, "param": "ry_corners"},
+    {"gate": "RY", "wire": 1, "param": "ry_edges"},
+    {"gate": "RY", "wire": 3, "param": "ry_edges"},
+    {"gate": "RY", "wire": 5, "param": "ry_edges"},
+    {"gate": "RY", "wire": 7, "param": "ry_edges"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Layer 2: Outer-ring entangling (shared) and radial center couplings (all merged into ring param)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+    # center-edge CRZs also reuse the ring parameter (freed up 3 params for feature scaling)
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_ring"},
+
+    # Layer 3: ZZZ motifs aligned with winning lines (kept distinct by geometry)
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_diags"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_diags"},
+
+    # Injected Layer: symmetry-grouped Z phases right after ZZZ line motifs
+    # corners phase
+    {"gate": "RZ", "wire": 0, "param": "phase_corners"},
+    {"gate": "RZ", "wire": 2, "param": "phase_corners"},
+    {"gate": "RZ", "wire": 4, "param": "phase_corners"},
+    {"gate": "RZ", "wire": 6, "param": "phase_corners"},
+    # edges phase
+    {"gate": "RZ", "wire": 1, "param": "phase_edges"},
+    {"gate": "RZ", "wire": 3, "param": "phase_edges"},
+    {"gate": "RZ", "wire": 5, "param": "phase_edges"},
+    {"gate": "RZ", "wire": 7, "param": "phase_edges"},
+    # center phase
+    {"gate": "RZ", "wire": 8, "param": "phase_center"},
+
+    # Layer 4: CCRZ high-order correlations -- compressed symmetry groups (shared key)
+    # All CCRZ interactions use a single compact key to conserve parameters
+    {"gate": "CCRZ", "wires": [1, 5, 8], "param": "ccrz_diag"},
+    {"gate": "CCRZ", "wires": [3, 7, 8], "param": "ccrz_diag"},
+    {"gate": "CCRZ", "wires": [0, 4, 8], "param": "ccrz_diag"},
+    {"gate": "CCRZ", "wires": [2, 6, 8], "param": "ccrz_diag"},
+
+    # Layer 5: Compact final rotations: tie RZ+RX into a single 'rot_*' parameter per symmetry zone
+    # corners keep their dedicated final rotation
+    {"gate": "RZ", "wire": 0, "param": "rot_corners"},
+    {"gate": "RX", "wire": 0, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 2, "param": "rot_corners"},
+    {"gate": "RX", "wire": 2, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 4, "param": "rot_corners"},
+    {"gate": "RX", "wire": 4, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 6, "param": "rot_corners"},
+    {"gate": "RX", "wire": 6, "param": "rot_corners"},
+    # edges and center share a single final rotation key to preserve the per-block parameter budget
+    {"gate": "RZ", "wire": 1, "param": "rot_others"},
+    {"gate": "RX", "wire": 1, "param": "rot_others"},
+    {"gate": "RZ", "wire": 3, "param": "rot_others"},
+    {"gate": "RX", "wire": 3, "param": "rot_others"},
+    {"gate": "RZ", "wire": 5, "param": "rot_others"},
+    {"gate": "RX", "wire": 5, "param": "rot_others"},
+    {"gate": "RZ", "wire": 7, "param": "rot_others"},
+    {"gate": "RX", "wire": 7, "param": "rot_others"},
+    {"gate": "RZ", "wire": 8, "param": "rot_others"},
+    {"gate": "RX", "wire": 8, "param": "rot_others"},
+
+    # Layer 6: Learnable feature-scaling parameters (applied in feature_map)
+    # These are meta-parameters that modulate input encoding per symmetry orbit.
+    # They are not part of the ansatz block gates but are tracked in PARAMETER_KEYS_PER_BLOCK
+    # so they get trained alongside the ansatz.
+    {"gate": "FEATURE_SCALE", "orbit": "corners", "param": "feat_corner"},
+    {"gate": "FEATURE_SCALE", "orbit": "edges", "param": "feat_edge"},
+    {"gate": "FEATURE_SCALE", "orbit": "center", "param": "feat_center"},
+]
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def validate_ansatz_spec(spec: list[dict]) -> tuple[list[str], list[str]]:
+    """Validate ANSATZ_SPEC and return errors plus ordered parameter keys."""
+    errors = []
+    parameter_keys = []
+    if not isinstance(spec, list) or not spec:
+        return ["ANSATZ_SPEC must be a non-empty list of gate dictionaries."], []
+
+    for gate_index, item in enumerate(spec):
+        prefix = f"gate {gate_index}"
+        if not isinstance(item, dict):
+            errors.append(f"{prefix}: expected a dict, got {type(item).__name__}")
+            continue
+        gate = str(item.get("gate", "")).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            wire = item.get("wire")
+            if not isinstance(wire, int) or not 0 <= wire < N_QUBITS:
+                errors.append(f"{prefix}: {gate} requires integer wire in [0, {N_QUBITS - 1}]")
+            param = item.get("param")
+            if not isinstance(param, str) or not param:
+                errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+            else:
+                parameter_keys.append(param)
+        elif gate in ALLOWED_TWO_QUBIT_GATES | ALLOWED_PARAM_TWO_QUBIT_GATES:
+            wires = item.get("wires")
+            if (
+                not isinstance(wires, (list, tuple))
+                or len(wires) != 2
+                or not all(isinstance(w, int) for w in wires)
+                or wires[0] == wires[1]
+                or not all(0 <= w < N_QUBITS for w in wires)
+            ):
+                errors.append(f"{prefix}: {gate} requires two distinct integer wires")
+            elif tuple(sorted(wires)) not in GRID_EDGE_SET:
+                errors.append(f"{prefix}: {gate} uses non-adjacent grid edge {wires}")
+            if gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+                param = item.get("param")
+                if not isinstance(param, str) or not param:
+                    errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+                else:
+                    parameter_keys.append(param)
+        elif gate in ALLOWED_PARAM_THREE_QUBIT_GATES:
+            wires = item.get("wires")
+            if (
+                not isinstance(wires, (list, tuple))
+                or len(wires) != 3
+                or not all(isinstance(w, int) for w in wires)
+                or len(set(wires)) != 3
+                or not all(0 <= w < N_QUBITS for w in wires)
+            ):
+                errors.append(f"{prefix}: {gate} requires three distinct integer wires")
+            param = item.get("param")
+            if not isinstance(param, str) or not param:
+                errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+            else:
+                parameter_keys.append(param)
+        else:
+            allowed = sorted(
+                ALLOWED_SINGLE_QUBIT_GATES | ALLOWED_TWO_QUBIT_GATES
+                | ALLOWED_PARAM_TWO_QUBIT_GATES | ALLOWED_PARAM_THREE_QUBIT_GATES
+            )
+            errors.append(f"{prefix}: unsupported gate {gate!r}; allowed gates are {allowed}")
+
+    ordered_unique_keys = list(dict.fromkeys(parameter_keys))
+    return errors, ordered_unique_keys
+=======
+def validate_ansatz_spec(spec: list[dict]) -> tuple[list[str], list[str]]:
+    """Validate ANSATZ_SPEC and return errors plus ordered parameter keys."""
+    errors = []
+    parameter_keys = []
+    if not isinstance(spec, list) or not spec:
+        return ["ANSATZ_SPEC must be a non-empty list of gate dictionaries."], []
+
+    for gate_index, item in enumerate(spec):
+        prefix = f"gate {gate_index}"
+        if not isinstance(item, dict):
+            errors.append(f"{prefix}: expected a dict, got {type(item).__name__}")
+            continue
+        gate = str(item.get("gate", "")).upper()
+        # Handle FEATURE_SCALE meta-parameters (learnable feature scaling)
+        if gate == "FEATURE_SCALE":
+            param = item.get("param")
+            if not isinstance(param, str) or not param:
+                errors.append(f"{prefix}: FEATURE_SCALE requires a non-empty string param key")
+            else:
+                parameter_keys.append(param)
+        elif gate in ALLOWED_SINGLE_QUBIT_GATES:
+            wire = item.get("wire")
+            if not isinstance(wire, int) or not 0 <= wire < N_QUBITS:
+                errors.append(f"{prefix}: {gate} requires integer wire in [0, {N_QUBITS - 1}]")
+            param = item.get("param")
+            if not isinstance(param, str) or not param:
+                errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+            else:
+                parameter_keys.append(param)
+        elif gate in ALLOWED_TWO_QUBIT_GATES | ALLOWED_PARAM_TWO_QUBIT_GATES:
+            wires = item.get("wires")
+            if (
+                not isinstance(wires, (list, tuple))
+                or len(wires) != 2
+                or not all(isinstance(w, int) for w in wires)
+                or wires[0] == wires[1]
+                or not all(0 <= w < N_QUBITS for w in wires)
+            ):
+                errors.append(f"{prefix}: {gate} requires two distinct integer wires")
+            elif tuple(sorted(wires)) not in GRID_EDGE_SET:
+                errors.append(f"{prefix}: {gate} uses non-adjacent grid edge {wires}")
+            if gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+                param = item.get("param")
+                if not isinstance(param, str) or not param:
+                    errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+                else:
+                    parameter_keys.append(param)
+        elif gate in ALLOWED_PARAM_THREE_QUBIT_GATES:
+            wires = item.get("wires")
+            if (
+                not isinstance(wires, (list, tuple))
+                or len(wires) != 3
+                or not all(isinstance(w, int) for w in wires)
+                or len(set(wires)) != 3
+                or not all(0 <= w < N_QUBITS for w in wires)
+            ):
+                errors.append(f"{prefix}: {gate} requires three distinct integer wires")
+            param = item.get("param")
+            if not isinstance(param, str) or not param:
+                errors.append(f"{prefix}: {gate} requires a non-empty string param key")
+            else:
+                parameter_keys.append(param)
+        else:
+            allowed = sorted(
+                ALLOWED_SINGLE_QUBIT_GATES | ALLOWED_TWO_QUBIT_GATES
+                | ALLOWED_PARAM_TWO_QUBIT_GATES | ALLOWED_PARAM_THREE_QUBIT_GATES
+                | {"FEATURE_SCALE"}
+            )
+            errors.append(f"{prefix}: unsupported gate {gate!r}; allowed gates are {allowed}")
+
+    ordered_unique_keys = list(dict.fromkeys(parameter_keys))
+    return errors, ordered_unique_keys
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def feature_map(board: np.ndarray) -> None:
+    """Encode cell values -1, 0, +1 as equidistant Pauli-X rotations.
+
+    Accepts either a single board (shape (N_QUBITS,)) or a batch of boards
+    (shape (B, N_QUBITS)); ``board[..., wire]`` broadcasts over the leading
+    batch dimension so the whole batch executes as one statevector op.
+    """
+    for wire in range(N_QUBITS):
+        qml.RX(FEATURE_SCALE * board[..., wire], wires=wire)
+=======
+def feature_map(board: np.ndarray, feat_scales: dict | None = None) -> None:
+    """Encode cell values -1, 0, +1 as equidistant Pauli-X rotations.
+
+    Accepts either a single board (shape (N_QUBITS,)) or a batch of boards
+    (shape (B, N_QUBITS)); ``board[..., wire]`` broadcasts over the leading
+    batch dimension so the whole batch executes as one statevector op.
+
+    If feat_scales is provided, it should be a dict with keys 'feat_corner',
+    'feat_edge', 'feat_center' mapping to learned scaling factors per orbit.
+    Otherwise, uses the fixed FEATURE_SCALE constant.
+    """
+    if feat_scales is None:
+        feat_scales = {
+            "feat_corner": FEATURE_SCALE,
+            "feat_edge": FEATURE_SCALE,
+            "feat_center": FEATURE_SCALE,
+        }
+
+    for wire in CORNERS:
+        qml.RX(feat_scales["feat_corner"] * board[..., wire], wires=wire)
+    for wire in EDGES:
+        qml.RX(feat_scales["feat_edge"] * board[..., wire], wires=wire)
+    qml.RX(feat_scales["feat_center"] * board[..., CENTER], wires=CENTER)
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC."""
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+        elif gate in ALLOWED_PARAM_THREE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "ZZZ":
+                qml.MultiRZ(angle, wires=wires)
+            elif gate == "CCRZ":
+                qml.ctrl(qml.RZ, control=wires[:2])(angle, wires=wires[2])
+=======
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC.
+    
+    Skips FEATURE_SCALE meta-parameters (handled separately in feature_map).
+    """
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    offset = block_index * N_PARAMS_PER_BLOCK
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        # Skip FEATURE_SCALE meta-parameters; they are handled in feature_map
+        if gate == "FEATURE_SCALE":
+            continue
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+        elif gate in ALLOWED_PARAM_THREE_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "ZZZ":
+                qml.MultiRZ(angle, wires=wires)
+            elif gate == "CCRZ":
+                qml.ctrl(qml.RZ, control=wires[:2])(angle, wires=wires[2])
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(board, params):
+    """Full simulated circuit returning per-qubit Z expectations."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(board)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+=======
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(board, params):
+    """Full simulated circuit returning per-qubit Z expectations.
+    
+    Extracts learnable feature-scaling parameters and passes them to feature_map.
+    """
+    # Extract feature-scaling parameters from the first block (shared across all uploads/repeats)
+    offset = 0
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    feat_scales = {
+        "feat_corner": params[offset + key_to_position["feat_corner"]],
+        "feat_edge": params[offset + key_to_position["feat_edge"]],
+        "feat_center": params[offset + key_to_position["feat_center"]],
+    }
+
+    for upload_index in range(N_UPLOADS):
+        feature_map(board, feat_scales=feat_scales)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def circuit_metadata(params) -> dict:
+    with qml.queuing.AnnotatedQueue() as queue:
+        for upload_index in range(N_UPLOADS):
+            feature_map(np.zeros(N_QUBITS, dtype=np.int8))
+            for repeat_index in range(N_REPEATS):
+                block_index = upload_index * N_REPEATS + repeat_index
+                apply_ansatz_block(params, block_index)
+    tape = qml.tape.QuantumScript.from_queue(queue)
+    operations = [(op.name, op.wires.tolist()) for op in tape.operations]
+    depth = tape.graph.get_depth() if hasattr(tape.graph, "get_depth") else len(operations)
+    return {
+        "operations": operations,
+        "depth": int(depth),
+        "gate_count": int(len(operations)),
+    }
+=======
+def circuit_metadata(params) -> dict:
+    with qml.queuing.AnnotatedQueue() as queue:
+        # Extract feature-scaling parameters for metadata circuit
+        offset = 0
+        key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+        feat_scales = {
+            "feat_corner": params[offset + key_to_position["feat_corner"]],
+            "feat_edge": params[offset + key_to_position["feat_edge"]],
+            "feat_center": params[offset + key_to_position["feat_center"]],
+        }
+        for upload_index in range(N_UPLOADS):
+            feature_map(np.zeros(N_QUBITS, dtype=np.int8), feat_scales=feat_scales)
+            for repeat_index in range(N_REPEATS):
+                block_index = upload_index * N_REPEATS + repeat_index
+                apply_ansatz_block(params, block_index)
+    tape = qml.tape.QuantumScript.from_queue(queue)
+    operations = [(op.name, op.wires.tolist()) for op in tape.operations]
+    depth = tape.graph.get_depth() if hasattr(tape.graph, "get_depth") else len(operations)
+    return {
+        "operations": operations,
+        "depth": int(depth),
+        "gate_count": int(len(operations)),
+    }
+>>>>>>> REPLACE
+
+</DIFF>

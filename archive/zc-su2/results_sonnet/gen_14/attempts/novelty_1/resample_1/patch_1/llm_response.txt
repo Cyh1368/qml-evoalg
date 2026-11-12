@@ -1,0 +1,60 @@
+<NAME>
+reduce_group_count_shared_params
+
+<DESCRIPTION>
+The current ansatz uses 4 RY groups + 4 RZ groups + 1 shared CRZ ring = 9 unique parameters per repetition (56 total, since the backend applies the block 6 times plus 2 fixed extra params: 9*6+2=56). The earlier simpler design (RY groups reused as RZ groups via shared param names, nearest-neighbor CZ chain, no CRZ ring) used only 4 unique parameters per repetition and scored higher (0.66 vs 0.63), showing that trimming parameters and gates (dropping the wrap-around CZ and the CRZ ring) helps.
+
+Building on that insight, I cut parameter count further: instead of 4 rotation groups, use only 2 groups (halves of the register), and reuse the same parameter name for both the pre- and post-entanglement rotation layers (RY then RZ), exactly as in the higher-scoring seed but with half as many groups. This yields only 2 unique parameters per repetition (n_params = 6*2+2 = 14, vs 26 or 56 previously), while keeping a full nearest-neighbor CZ entangling chain for expressivity. Since all prior variants already reach perfect train/val/test accuracy, further reducing parameter count while keeping entanglement structure intact should directly boost the parameter-economy-dominated combined score, and the shallower/simpler circuit (fewer unique params, same gate depth as the CZ chain) should also help convergence speed and generalization gap.
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 1. Grouped RY rotation layer: 8 qubits split into 4 groups of 2, sharing
+#    a single trainable parameter per group (4 unique params total).
+for wire in range(N_QUBITS):
+    group = wire % 4
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": f"ry_g{group}"})
+
+# 2. Fixed full-ring CZ entangler (zero extra trainable parameters), mixing
+#    all qubits including wrap-around coupling (7 -> 0).
+for i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 1) % N_QUBITS]})
+
+# 3. Grouped RZ rotation layer, again 4 unique params shared across groups.
+for wire in range(N_QUBITS):
+    group = wire % 4
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": f"rz_g{group}"})
+
+# 4. Shared controlled-rotation ring: a single trainable "entanglement
+#    strength" parameter used across every neighboring pair on the ring.
+for i in range(N_QUBITS):
+    ANSATZ_SPEC.append(
+        {"gate": "CRZ", "wires": [i, (i + 1) % N_QUBITS], "param": "crz_shared"}
+    )
+# EVOLVE-BLOCK-END
+=======
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 1. Coarse-grained RY rotation layer: 8 qubits split into just 2 halves,
+#    sharing a single trainable parameter per half (2 unique params total).
+for wire in range(N_QUBITS):
+    group = wire // 4
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": f"p_g{group}"})
+
+# 2. Fixed nearest-neighbor CZ entangling chain (no wrap-around), zero
+#    extra trainable parameters, providing full connectivity across the
+#    register at minimal depth/gate cost.
+for i in range(N_QUBITS - 1):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + 1]})
+
+# 3. Post-entanglement rotation layer reusing the SAME parameter names as
+#    step 1 (same 2 unique parameters), just on a different axis (RZ),
+#    giving the circuit extra expressivity at zero extra parameter cost.
+for wire in range(N_QUBITS):
+    group = wire // 4
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": f"p_g{group}"})
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE

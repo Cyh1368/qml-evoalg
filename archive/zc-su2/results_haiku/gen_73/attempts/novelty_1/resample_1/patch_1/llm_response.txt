@@ -1,0 +1,50 @@
+<NAME>
+reverse_cz_sweep_before_xx
+</NAME>
+
+<DESCRIPTION>
+The current program uses XX gates in a forward-only chain on wires [0,1], [1,2], ..., [6,7]. The prior best program (score 0.72) achieved perfect accuracy with only 14 parameters using CZ gates in the same forward pattern, reaching faster convergence (30 steps vs 60 steps).
+
+The recommendation is to prepend a reverse CZ sweep before the XX gates, creating a bidirectional entanglement pattern without adding parameters. This approach:
+
+1. **Doubles entanglement at zero parameter cost**: Add CZ gates on wires [7,6], [6,5], ..., [1,0] before the forward XX chain, mirroring the zigzag strategy that worked well in Gen 62.
+
+2. **Improves parameter efficiency**: The current design uses 20 parameters (ry_shared, rz_shared, xx_shared) but struggles with convergence (60 steps). The bidirectional CZ pattern can build stronger correlations without additional trainable parameters.
+
+3. **Maintains gate count efficiency**: We're replacing the expensive trainable XX gates with fixed CZ gates, reducing the effective parameter count while keeping the total gate complexity reasonable.
+
+4. **Addresses the convergence gap**: The prior best (30 steps) vs current (60 steps) suggests the current XX parameterization may be harder to optimize. Fixed CZ gates provide stable entanglement infrastructure.
+
+The modification prepends fixed reverse CZ sweeps to create a Hadamard-like bidirectional entanglement before the parametrized XX layer, leveraging the proven strength of the CZ chain pattern while keeping parameter economy high.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_shared"},
+=======
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CZ", "wires": [5, 4]},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CZ", "wires": [3, 2]},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CZ", "wires": [1, 0]},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_shared"},
+>>>>>>> REPLACE
+</DIFF>

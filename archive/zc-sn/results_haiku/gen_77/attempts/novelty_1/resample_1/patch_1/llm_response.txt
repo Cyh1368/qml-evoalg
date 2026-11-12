@@ -1,0 +1,78 @@
+Looking at the performance metrics across the three programs, I can identify the following patterns:
+
+1. **Prior programs (score 0.91)**: Used alternating CRZ parameters on the reverse chain (`crz_rev_a`/`crz_rev_b`), with 50 parameters and mid-circuit RZ layers
+2. **Current program (score 0.90)**: Switched to a single shared CRY parameter (`cry_rev`) on all reverse connections, reduced to 44 parameters, but convergence step increased to 300 (from 180)
+
+The key insight is that **parameter sharing at the reverse chain is too aggressive**. The current program trades expressivity for parameter efficiency, losing the discriminative power that alternating parameters provide. The slower convergence (300 vs 180 steps) suggests the optimizer struggles with reduced flexibility.
+
+The recommendation aligns perfectly with this finding: **parameterize the forward CZ chain with shared CRZ gates using alternating parameters**, mirroring the successful reverse chain pattern from prior programs.
+
+**Rationale:**
+- The forward chain currently has no trainable parameters (fixed CZ gates), limiting early-stage expressivity
+- Adding CRZ gates with alternating parameters (`crz_fwd_a`/`crz_fwd_b`) provides tunable interaction strengths
+- This restores the parameter count closer to 50 while maintaining structure
+- The alternating pattern prevents over-parameterization while ensuring sufficient flexibility
+- This should accelerate convergence and improve validation accuracy
+
+<NAME>
+parametrize_forward_chain_crz
+</NAME>
+
+<DESCRIPTION>
+Replace fixed CZ gates in the forward linear chain with parametrized CRZ gates using alternating shared parameters (crz_fwd_a and crz_fwd_b). This mirrors the successful alternating CRZ pattern from prior high-scoring programs applied to the reverse chain.
+
+The forward chain currently provides no trainable degrees of freedom for interaction strength tuning. Adding alternating CRZ parameters enables:
+1. Early-stage expressivity and interaction control
+2. Reduced convergence steps through better initial tuning capability
+3. Balanced parameter efficiency (back to ~50 params) while maintaining discriminative power
+4. Symmetry with the reverse chain's successful alternating parameter scheme
+
+This directly addresses the current program's slower convergence (300 vs 180 steps) by restoring architectural flexibility lost when oversimplifying the reverse chain to a single shared parameter.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Forward linear chain CZ gates for low-depth entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+=======
+    # Forward linear chain with parametrized CRZ gates for tunable entanglement
+    # Alternating parameters enable flexible interaction strengths while controlling parameter count
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_fwd_a"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_fwd_b"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_fwd_a"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_fwd_b"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_fwd_a"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_fwd_b"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_fwd_a"},
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Reverse chain with shared CRY gate for amplitude-based entanglement
+    # All reverse connections use one trainable parameter
+    {"gate": "CRY", "wires": [7, 6], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [6, 5], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [5, 4], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [4, 3], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [3, 2], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [2, 1], "param": "cry_rev"},
+    {"gate": "CRY", "wires": [1, 0], "param": "cry_rev"},
+=======
+    # Reverse chain with parametrized CRZ gates for enhanced expressivity
+    # Restore alternating parameters for better discriminative power and convergence
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+>>>>>>> REPLACE
+</DIFF>

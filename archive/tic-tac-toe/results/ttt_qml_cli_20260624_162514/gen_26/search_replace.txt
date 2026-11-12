@@ -1,0 +1,140 @@
+<NAME>
+shared-compact-entangler-with-parameter-efficiency
+</NAME>
+
+<DESCRIPTION>
+I propose a compact, symmetry-aware ansatz that reduces parameter count and circuit depth while keeping expressive entanglement around the central hub. Key ideas:
+- Aggressively share parameters across the periphery (all eight outer cells) to encode rotational symmetry and improve generalization.
+- Keep a distinct center parameter to allow the hub to behave differently.
+- Replace multiple fixed hub-CZs with parameterized CRZ gates sharing a single "ent" parameter so entanglement strength is trainable but parameter-efficient.
+- Keep a small RX mixing layer and a final RY+RZ sharpening layer, both using shared periphery/center parameters to reduce parameter dimensionality.
+This reduces N_PARAMS (faster training, less overfitting), lowers depth and gate count, and adds a single learnable entangling strength to tune center-periphery coupling — a useful inductive bias for the tic-tac-toe geometry.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Compact symmetry-grouped initial rotations
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Local pre-phases shared by symmetry class
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+
+    # Selective fixed entangling layer (compact): 4 ring edges + 4 hub edges
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+
+    # Split final output mixing: periphery vs center for sharper decision boundary
+    {"gate": "RY", "wire": 0, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_periphery"},
+    {"gate": "RY", "wire": 8, "param": "ry_out_center"},
+    {"gate": "RZ", "wire": 0, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 1, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 2, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 3, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 4, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 5, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 6, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 7, "param": "rz_out_periphery"},
+    {"gate": "RZ", "wire": 8, "param": "rz_out_center"},
+]
+=======
+ANSATZ_SPEC = [
+    # Highly shared, symmetry-aware initial rotations:
+    # one periphery parameter for all eight outer cells, and one center parameter.
+    {"gate": "RY", "wire": 0, "param": "t_periph"},
+    {"gate": "RY", "wire": 1, "param": "t_periph"},
+    {"gate": "RY", "wire": 2, "param": "t_periph"},
+    {"gate": "RY", "wire": 3, "param": "t_periph"},
+    {"gate": "RY", "wire": 4, "param": "t_periph"},
+    {"gate": "RY", "wire": 5, "param": "t_periph"},
+    {"gate": "RY", "wire": 6, "param": "t_periph"},
+    {"gate": "RY", "wire": 7, "param": "t_periph"},
+    {"gate": "RY", "wire": 8, "param": "t_center"},
+
+    # Reuse the same periphery/center parameters as light pre-phases (parameter sharing
+    # across axes reduces param count while keeping asymmetry between center/periphery).
+    {"gate": "RZ", "wire": 0, "param": "t_periph"},
+    {"gate": "RZ", "wire": 1, "param": "t_periph"},
+    {"gate": "RZ", "wire": 2, "param": "t_periph"},
+    {"gate": "RZ", "wire": 3, "param": "t_periph"},
+    {"gate": "RZ", "wire": 4, "param": "t_periph"},
+    {"gate": "RZ", "wire": 5, "param": "t_periph"},
+    {"gate": "RZ", "wire": 6, "param": "t_periph"},
+    {"gate": "RZ", "wire": 7, "param": "t_periph"},
+    {"gate": "RZ", "wire": 8, "param": "t_center"},
+
+    # Compact ring entanglers (fixed CZs) to connect the perimeter without many params.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Trainable hub links: parameterized CRZs from the four adjacent edge cells into center.
+    # All share a single "ent" parameter so entanglement strength is learned but parameter-efficient.
+    {"gate": "CRZ", "wires": [1, 8], "param": "ent"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "ent"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "ent"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "ent"},
+
+    # Simple RX mixing layer: shared periphery and separate center mix parameters.
+    {"gate": "RX", "wire": 0, "param": "mix_periph"},
+    {"gate": "RX", "wire": 1, "param": "mix_periph"},
+    {"gate": "RX", "wire": 2, "param": "mix_periph"},
+    {"gate": "RX", "wire": 3, "param": "mix_periph"},
+    {"gate": "RX", "wire": 4, "param": "mix_periph"},
+    {"gate": "RX", "wire": 5, "param": "mix_periph"},
+    {"gate": "RX", "wire": 6, "param": "mix_periph"},
+    {"gate": "RX", "wire": 7, "param": "mix_periph"},
+    {"gate": "RX", "wire": 8, "param": "mix_center"},
+
+    # Small final sharpening layer: shared periphery and center parameters.
+    {"gate": "RY", "wire": 0, "param": "out_periph"},
+    {"gate": "RY", "wire": 1, "param": "out_periph"},
+    {"gate": "RY", "wire": 2, "param": "out_periph"},
+    {"gate": "RY", "wire": 3, "param": "out_periph"},
+    {"gate": "RY", "wire": 4, "param": "out_periph"},
+    {"gate": "RY", "wire": 5, "param": "out_periph"},
+    {"gate": "RY", "wire": 6, "param": "out_periph"},
+    {"gate": "RY", "wire": 7, "param": "out_periph"},
+    {"gate": "RY", "wire": 8, "param": "out_center"},
+    {"gate": "RZ", "wire": 0, "param": "out_periph"},
+    {"gate": "RZ", "wire": 1, "param": "out_periph"},
+    {"gate": "RZ", "wire": 2, "param": "out_periph"},
+    {"gate": "RZ", "wire": 3, "param": "out_periph"},
+    {"gate": "RZ", "wire": 4, "param": "out_periph"},
+    {"gate": "RZ", "wire": 5, "param": "out_periph"},
+    {"gate": "RZ", "wire": 6, "param": "out_periph"},
+    {"gate": "RZ", "wire": 7, "param": "out_periph"},
+    {"gate": "RZ", "wire": 8, "param": "out_center"},
+]
+>>>>>>> REPLACE
+</DIFF>

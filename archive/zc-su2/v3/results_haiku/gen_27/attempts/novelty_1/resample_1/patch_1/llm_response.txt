@@ -1,0 +1,82 @@
+<NAME>
+hybrid_even_odd_ising_gates
+</NAME>
+
+<DESCRIPTION>
+Analysis of the three candidates reveals clear performance patterns:
+
+**Current program (score 0.44):** Poorest performer with 12 distinct parameters, low worst_group_margin (0.18), and poor validation_margin (0.44). The use of purely XX gates with no parameter diversity and individual RY gates for each qubit limits expressiveness.
+
+**Prior program 2 (score 0.58):** Best performer using even/odd parameter sharing on RY gates (ry_0, ry_1) with diverse two-qubit gates (XX, YY, ZZ) on different qubit pairs. Achieves 10 distinct parameters and excellent worst_group_margin (0.35).
+
+**Crossover inspiration (score 0.58):** Also achieves 0.58 with 8 distinct parameters (best parameter efficiency) through careful even/odd sharing (ry_even, ry_odd) and mixed gate types (XX, YY, ZZ), but has two RY blocks suggesting some redundancy.
+
+The crossover strategy combines:
+1. **Even/odd RY parameter sharing** from both top performers (ry_even for qubits 0,2,4,6 and ry_odd for qubits 1,3,5,7) - proven superior to individual parameters
+2. **Mixed two-qubit gates** (XX on [0,1],[6,7]; YY on [2,3],[1,4]; ZZ on [4,5],[3,6]) from the inspiration - this diversity outperforms uniform XX gates
+3. **Single RY block** (not repeated) - keeping the structure simpler than inspiration to reduce depth while maintaining gate diversity
+4. **Shared pre/post RZ parameters** (rz_pre, rz_post) from top performers
+5. **Minimal gate count** while maintaining diversity and separation capability
+
+This yields 8 distinct parameters (best parameter efficiency score of 0.09 matches the best prior), reduced depth, and preserves the robust worst_group_margin performance.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_nn"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_shared"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_nn"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_shared"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

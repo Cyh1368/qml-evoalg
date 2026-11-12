@@ -1,0 +1,50 @@
+Looking at the performance data, I can identify the key issue:
+
+**Current program analysis:**
+- Combined score: 0.42 (significantly worse than prior programs at 0.58)
+- Worst-case group margin: 0.15 (critical bottleneck)
+- Validation accuracy: 0.75 (dropped from 0.93-0.97)
+- Generalization gap: 0.18 (worse than prior 0.04)
+- Parameter count: 7 distinct parameters (lower is better, but this one is TOO aggressive)
+
+**The problem:** The current design collapsed the pre-entanglement RZ layer to use a single `rz_pre` parameter for ALL qubits, losing important heterogeneity. Even though it reduces parameters from 10 to 7, it severely hurts the model's ability to handle the hardest samples (worst_group_margin dropped from 0.35 to 0.15).
+
+**The solution:** The recommendation suggests splitting `rz_pre` into two parameters based on parity, mirroring the successful alternating pattern used in the RY layers (`ry_0` and `ry_1`). This adds just ONE new distinct parameter (going from 7 to 8) while restoring crucial heterogeneity in the pre-entanglement phase.
+
+This approach:
+1. Restores the parity-based structure that worked well in prior programs
+2. Adds minimal parameters (7→8, still more efficient than the original 10)
+3. Improves worst-group margin robustness through better feature diversity
+4. Maintains clean parameter sharing aligned with the qubit structure
+
+<NAME>
+split_rz_pre_by_parity
+</NAME>
+
+<DESCRIPTION>
+Split the pre-entanglement RZ layer into two parameters based on qubit parity, mirroring the successful alternating RY pattern. This restores heterogeneity in the initial phase preparation, which is critical for robust separation of hard samples (worst_group_margin). The current monolithic rz_pre lacks expressiveness to capture qubit-specific rotation needs. By using rz_pre_even on qubits [0,2,4,6] and rz_pre_odd on [1,3,5,7], we add only one new distinct parameter (7→8) while significantly improving the model's ability to handle diverse sample difficulties, particularly the worst-case groups.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Pre-entanglement RZ layer
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+=======
+    # Pre-entanglement RZ layer with parity-based splitting
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_odd"},
+>>>>>>> REPLACE
+</DIFF>

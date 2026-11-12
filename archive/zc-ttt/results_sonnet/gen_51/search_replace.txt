@@ -1,0 +1,52 @@
+<NAME>
+remove_midlayer_add_zzz_correlator
+
+<DESCRIPTION>
+The previous edit added a mid-layer RY refresh (4 extra params) but this *decreased* combined score (0.63→0.62) and increased the generalization gap (0.09→0.10), indicating those extra single-qubit rotations added capacity without adding useful entangling structure. This edit reverts that regression by removing the mid-layer RY block, and instead invests the parameter budget more effectively by adding two three-qubit ZZZ interactions (which have no wire-pair restrictions) that link the hub qubit 0 with the two secondary clusters (qubits 4,8 and qubits 5,7). These gates share a single parameter to keep the parameter count low while introducing genuine higher-order (three-body) correlations that the existing two-qubit CRZ backbone cannot capture. Net effect versus the current program: -4 params (mid-layer RY removed) +1 param (shared ZZZ) = -3 params, while adding two three-qubit entangling gates that should improve expressivity/generalization without ballooning the parameter count.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE
+    # --- Mid-layer amplitude refresh: RY on high-connectivity qubits ---
+    # Targets qubits 1, 3, 5, 7, each touching 2-3 entangling edges above,
+    # giving the readout layer a locally-refreshed feature before the
+    # final phase rotations.
+    {"gate": "RY", "wire": 1, "param": "ry_mid_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid_3"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid_5"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid_7"},
+
+    # --- Final output rotation layer (individual params) ---
+=======
+    # --- Three-qubit correlator layer ---
+    # Links hub qubit 0 with the two secondary clusters (4,8) and (5,7),
+    # capturing higher-order correlations that pairwise CRZ gates cannot.
+    # Shared parameter keeps the added capacity cheap.
+    {"gate": "ZZZ", "wires": [0, 4, 8], "param": "zzz_hub"},
+    {"gate": "ZZZ", "wires": [0, 5, 7], "param": "zzz_hub"},
+
+    # --- Final output rotation layer (individual params) ---
+>>>>>>> REPLACE
+</DIFF>
+
+<<<<<<< SEARCH
+    # --- Mid-layer amplitude refresh: RY on high-connectivity qubits ---
+    # Targets qubits 1, 3, 5, 7, each touching 2-3 entangling edges above,
+    # giving the readout layer a locally-refreshed feature before the
+    # final phase rotations.
+    {"gate": "RY", "wire": 1, "param": "ry_mid_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid_3"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid_5"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid_7"},
+
+    # --- Final output rotation layer (individual params) ---
+=======
+    # --- Three-qubit correlator layer ---
+    # Links hub qubit 0 with the two secondary clusters (4,8) and (5,7),
+    # capturing higher-order correlations that pairwise CRZ gates cannot.
+    # Shared parameter keeps the added capacity cheap.
+    {"gate": "ZZZ", "wires": [0, 4, 8], "param": "zzz_hub"},
+    {"gate": "ZZZ", "wires": [0, 5, 7], "param": "zzz_hub"},
+
+    # --- Final output rotation layer (individual params) ---
+>>>>>>> REPLACE

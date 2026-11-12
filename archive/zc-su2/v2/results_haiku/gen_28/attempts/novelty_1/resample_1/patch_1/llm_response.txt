@@ -1,0 +1,133 @@
+Looking at the performance metrics, I can identify the key issues:
+
+1. **Current program (score 0.65)**: Added a global RX layer but this increased parameter count (8→10 distinct params) and convergence steps (30→60), actually *hurting* performance vs the second prior program (score 0.67).
+
+2. **Best prior (score 0.67)**: Used fixed CZ gates at skip-3 distances instead of parametrized gates, which improved worst_group_margin (0.35→0.36) without adding parameters.
+
+3. **Critical bottleneck**: The worst_group_margin (0.33-0.36) is much lower than validation_margin (0.71-0.73), indicating the classifier struggles with hard samples. The recommendation explicitly targets this by extending multi-scale entanglement.
+
+The key insight from the recommendation is to add wrap-around diagonal CRZ gates using the existing "ent_lr" parameter. This creates opposite-diagonal long-range entanglement patterns that:
+- Use NO new parameters (parameter reuse)
+- Create multi-scale coupling across distant qubits
+- Sharpen gradient signals for hard-to-classify samples
+- Maintain the lean parameter structure that scores well
+
+I'll remove the underperforming global RX layer and add the wrap-around diagonals as recommended:
+
+<NAME>
+remove_rx_add_wraparound_crz
+</NAME>
+
+<DESCRIPTION>
+Remove the global RX layer that added parameters without improving performance (increased distinct params from 7→8 and convergence steps from 30→60), then add wrap-around diagonal CRZ gates along opposite diagonals using the existing "ent_lr" parameter. 
+
+The wrap-around CRZs ([3,6] and [5,0]) extend the long-range entanglement pattern to create multi-scale diagonal couplings that better capture hard-sample discrimination without increasing the distinct parameter count. This directly addresses the bottleneck: worst_group_margin (0.33) is much lower than validation_margin (0.71), indicating the classifier needs sharper gradients for difficult samples. The opposite diagonal pairs complement the existing [0,3], [1,4], [2,5], [4,7] diagonals and follow the recommendation to add these specific wrap-around gates.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Prepended global RX layer for orthogonal expressivity
+    {"gate": "RX", "wire": 0, "param": "rx_shared"},
+    {"gate": "RX", "wire": 1, "param": "rx_shared"},
+    {"gate": "RX", "wire": 2, "param": "rx_shared"},
+    {"gate": "RX", "wire": 3, "param": "rx_shared"},
+    {"gate": "RX", "wire": 4, "param": "rx_shared"},
+    {"gate": "RX", "wire": 5, "param": "rx_shared"},
+    {"gate": "RX", "wire": 6, "param": "rx_shared"},
+    {"gate": "RX", "wire": 7, "param": "rx_shared"},
+
+    # Initial rotation layer with parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+
+    # Intermediate rotations
+    {"gate": "RY", "wire": 1, "param": "ry_mid"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid"},
+
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Final rotation layer with shared parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+=======
+ANSATZ_SPEC = [
+    # Initial rotation layer with parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+
+    # Intermediate rotations
+    {"gate": "RY", "wire": 1, "param": "ry_mid"},
+    {"gate": "RY", "wire": 3, "param": "ry_mid"},
+    {"gate": "RY", "wire": 5, "param": "ry_mid"},
+    {"gate": "RY", "wire": 7, "param": "ry_mid"},
+
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+
+    # Wrap-around diagonal CRZ gates for multi-scale entanglement
+    {"gate": "CRZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [5, 0], "param": "ent_lr"},
+
+    # Final rotation layer with shared parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+>>>>>>> REPLACE
+</DIFF>
