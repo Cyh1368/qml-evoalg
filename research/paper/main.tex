@@ -61,14 +61,18 @@ the endpoint that had been omitted --- inference-time Reynolds averaging of the 
 predictor --- is the one effect that is consistent and large
 ($-0.0486$, CI $[-0.0708,-0.0284]$, $7/12$ runs eligible on \texttt{graphs\_n6}), whereas
 verifier \emph{feedback} changes development-selected risk by an undetected amount; the
-same averaging applied to non-LLM arms helps equally, so it is the analytic tool, not the
-LLM, that carries the gain. (iv)~Verification as implemented does not identify the
-group: $10$ of $299$ graph proposals carried the task's group and $289$ wrong-group
-proposals passed the label-preservation gate --- which is expected, because every
-subgroup of a label symmetry passes it; it is a soundness filter, not an identification
-test. A hand-built equivariant architecture beats every search arm on the ring
+same averaging applied to non-LLM arms also helps, so the gain is not attributable to the
+LLM (we do \emph{not} establish that the two are equal). (iv)~Verification as implemented
+does not identify the group: $10$ of $299$ graph proposals carried the task's declared
+group, and the other $289$ are \emph{valid} symmetry hypotheses of proper subgroups --- none
+violated label preservation, and none could have, because every permutation of six vertices
+preserves that target's labels, so the gate cannot fail there by construction. On the ring,
+where the scored target admits only $12$ of $720$ permutations, the same gate rejected
+$95$ of $102$ hypotheses that \emph{were} symmetries of the scored target, with $0$ false
+accepts: it is an under-sensitive soundness filter, not an identification test. A hand-built
+equivariant architecture beats every search arm on the ring
 ($+0.0060$ to $+0.0097$ worse for the arms), and a one-threshold classical rule beats
-every arm on graphs (dev risk $0.351$ vs $0.538$--$0.566$). All endpoints are labelled
+every arm on graphs (development risk $0.351$ vs $0.538$--$0.566$). All endpoints are labelled
 development, sealed or fresh; we do not claim held-out generalisation from development
 risk, we do not claim quantum advantage, and we record two provenance defects in our own
 earlier run records rather than quietly fixing them.
@@ -326,8 +330,10 @@ proposal-by-proposal.
 
 \textbf{A trivial shortcut.} A single edge-count threshold fitted on training data alone
 attains $83.0\%$ historical validation accuracy. In the fresh benchmark used here the same
-rule reaches $91.2\%$ development accuracy and risk $0.351$ (\S\ref{sec:baselines}), which
-is better than every search arm; density, not structure, carries much of the signal.
+rule reaches \emph{development} accuracy $91.2\%$ and risk $0.351$ (\S\ref{sec:baselines}),
+which is better than every search arm at the same endpoint; density, not structure, carries
+much of the signal. Its risk on the same evaluation rows as the arms is reported in
+\S\ref{sec:deployed} so the comparison is matched.
 
 \section{WP-REPAIR: a causal repair experiment with explicit units}
 \label{sec:repair}
@@ -716,9 +722,11 @@ equivariant architecture (bidirectional CRZ, measured channel residual $4\times1
 reaches development risk $0.00055$ on \texttt{ring\_n6}; every search arm is worse, by
 $+0.0060$ ($\texttt{llm-fitness}$, CI $[+0.0055,+0.0064]$) to $+0.0097$
 ($\texttt{mutation-ea}$), all $p<10^{-4}$. On \texttt{graphs\_n6} the same construction is
-\emph{worse} than every arm ($0.667$ vs $0.538$--$0.566$): an exactly equivariant
-three-parameter block cannot express connectedness, which is the two-sided lesson of
-two-sided lesson of \cite{baumann2026}. The classical edge-count rule (threshold fitted on training rows only,
+\emph{worse} than every arm ($0.667$ vs $0.538$--$0.566$): at the search protocol's per-fit
+budget this exactly equivariant three-parameter block did not reach the arms' risk. We report
+that as an optimisation outcome at a fixed budget, \emph{not} as an expressivity impossibility
+--- no proof or exhaustive representational argument is offered --- which is the two-sided
+lesson of \cite{baumann2026}. The classical edge-count rule (threshold fitted on training rows only,
 $k{=}6$) reaches development risk $0.351$ and accuracy $0.912$ on graphs, beating every arm;
 the best constant predictor reaches $0.657$; the invariant oracle on the ring is $0$ by
 construction. Density stratification (E-S5) puts the arms' error where the shortcut lives:
@@ -818,9 +826,10 @@ $\eta$ & & mean diff & 95\% CI & mean diff & 95\% CI \\
 \end{table}
 
 The untouched-input result is the cleanest statement this paper can make about repair: on data
-no part of the pipeline touched, enforcing equivariance buys nothing over a gate-matched
-asymmetric control when the target is symmetric, and costs $4.6\%$ of the target variance when
-it is not. The file digests before and after the read are identical
+no part of the pipeline touched, the difference between enforced equivariance and a
+gate-matched asymmetric control is \emph{not detected} when the target is symmetric ($-0.00057$,
+CI $[-0.00176,+0.00028]$; we do not claim the two are equal), and enforcing it costs $4.6\%$ of
+the target variance when the target is not. The file digests before and after the read are identical
 (\texttt{research/HOLDOUT\_ACCESS\_v4.json}), and the evaluator now refuses to open the two
 splits consumed by the defective run.
 

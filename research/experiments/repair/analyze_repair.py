@@ -182,6 +182,10 @@ def floor_accounting(rows, eta, steps=None):
                 entry[name] = float(np.mean([r[key] for r in rs]))
         if "floor_exact_finite_orbit" in entry:
             entry["excess_over_floor"] = entry["orb_risk"] - entry["floor_exact_finite_orbit"]
+        if "floor_representative_mc" in entry:
+            # computed here so the manuscript never derives risk - floor by hand
+            entry["excess_over_rep_floor"] = (entry["mean_dev_risk"]
+                                              - entry["floor_representative_mc"])
         out.append(entry)
     return out
 

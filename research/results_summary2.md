@@ -9,99 +9,133 @@ Inference conventions: `research/core/paired.py` (percentile bootstrap over *uni
 - input: `research/experiments/repair/repair_v1_reanalysis.json`  units rule: REVISED_PROTOCOL sections 1-4
 - units per eta (rows vs units after collapsing exact repeats): {"0.0": {"rows": 72, "units": 8}, "0.5": {"rows": 72, "units": 24}, "1.0": {"rows": 72, "units": 24}}
 
-| eta | steps | contrast | rows | units | mean diff (a-b) | 95% CI | frac a better | p_shift-boot | p_signflip | p_holm | verdict |
+Headline columns use the **primary estimand** of Addendum A5.1: at `eta = 0` the 24 optimiser seeds; at `eta > 0` the 24 seed vectors after averaging the 8 frozen breaking directions within each seed (E-A). The cell-level interval is listed separately as sensitivity E-D.
+
+| eta | steps | contrast | rows | units (estimand) | mean diff (a-b) | 95% CI (primary) | frac a better | p_shift-boot | p_signflip | p_holm | verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 0.0 | 200 | repaired vs control | 24 | 8 | -0.00093 | [-0.00217, -0.00002] | 0.62 | 0.0832 | 0.125 | 0.166 | a better (CI excludes 0 on the negative side) |
-| 0.0 | 200 | repaired vs original | 24 | 8 | -0.00201 | [-0.00394, -0.00021] | 0.88 | 0.03435 | 0.125 | 0.103 | a better (CI excludes 0 on the negative side) |
-| 0.0 | 200 | control vs original | 24 | 8 | -0.00107 | [-0.00277, +0.00041] | 0.62 | 0.1912 | 0.3203 | 0.191 | difference not detected (CI includes 0; NOT evidence of no effect) |
-| 0.5 | 200 | repaired vs control | 24 | 24 | +0.01817 | [+0.01317, +0.02305] | 0.17 | 5e-05 (floor < 5e-05) | 1.5e-05 | 0.000 | b worse (CI excludes 0 on the positive side) |
-| 0.5 | 200 | repaired vs original | 24 | 24 | +0.01690 | [+0.01250, +0.02112] | 0.17 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.000 | b worse (CI excludes 0 on the positive side) |
-| 0.5 | 200 | control vs original | 24 | 24 | -0.00127 | [-0.00546, +0.00289] | 0.46 | 0.5488 | 0.5636 | 0.549 | difference not detected (CI includes 0; NOT evidence of no effect) |
-| 1.0 | 200 | repaired vs control | 24 | 24 | +0.04523 | [+0.03225, +0.05773] | 0.04 | 5e-05 (floor < 5e-05) | 1e-05 | 0.000 | b worse (CI excludes 0 on the positive side) |
-| 1.0 | 200 | repaired vs original | 24 | 24 | +0.04319 | [+0.03491, +0.05130] | 0.00 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.000 | b worse (CI excludes 0 on the positive side) |
-| 1.0 | 200 | control vs original | 24 | 24 | -0.00204 | [-0.01346, +0.00903] | 0.42 | 0.7211 | 0.7294 | 0.721 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| 0.0 | 200 | repaired vs control | 24 | 8 (E-0: optimiser seeds, direction-free target) | -0.00093 | [-0.00217, -0.00002] | 0.62 | 0.0832 | 0.125 | 0.166 | difference not detected after multiplicity adjustment (adjusted p > 0.05; raw CI excludes 0 but is not a protocol verdict) |
+| 0.0 | 200 | repaired vs original | 24 | 8 (E-0: optimiser seeds, direction-free target) | -0.00201 | [-0.00394, -0.00021] | 0.88 | 0.03435 | 0.125 | 0.103 | difference not detected after multiplicity adjustment (adjusted p > 0.05; raw CI excludes 0 but is not a protocol verdict) |
+| 0.0 | 200 | control vs original | 24 | 8 (E-0: optimiser seeds, direction-free target) | -0.00107 | [-0.00277, +0.00041] | 0.62 | 0.1912 | 0.3203 | 0.191 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| 0.5 | 200 | repaired vs control | 24 | 8 (E-A) | +0.01817 | [+0.01402, +0.02214] | 0.17 | 5e-05 (floor < 5e-05) | 1.5e-05 | 0.00015 | a worse (raw CI excludes 0 on the positive side) |
+| 0.5 | 200 | repaired vs original | 24 | 8 (E-A) | +0.01690 | [+0.01260, +0.02118] | 0.17 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.00015 | a worse (raw CI excludes 0 on the positive side) |
+| 0.5 | 200 | control vs original | 24 | 8 (E-A) | -0.00127 | [-0.00541, +0.00295] | 0.46 | 0.5488 | 0.5636 | 0.554 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| 1.0 | 200 | repaired vs control | 24 | 8 (E-A) | +0.04523 | [+0.03458, +0.05538] | 0.04 | 5e-05 (floor < 5e-05) | 1e-05 | 0.00015 | a worse (raw CI excludes 0 on the positive side) |
+| 1.0 | 200 | repaired vs original | 24 | 8 (E-A) | +0.04319 | [+0.03425, +0.05184] | 0.00 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.00015 | a worse (raw CI excludes 0 on the positive side) |
+| 1.0 | 200 | control vs original | 24 | 8 (E-A) | -0.00204 | [-0.01327, +0.00868] | 0.42 | 0.7211 | 0.7294 | 0.721 | difference not detected (CI includes 0; NOT evidence of no effect) |
+
+### Estimand sensitivity at eta > 0 (A5.1)
+
+| eta | contrast | E-A seeds (primary) | E-B directions | E-C crossed | E-D cells (legacy) | direction-specific means |
+|---|---|---|---|---|---|---|
+| 0.5 | repaired vs control | [+0.01402, +0.02214] | [+0.01042, +0.02414] | [+0.00898, +0.02601] | [+0.01317, +0.02305] | +0.01042 … +0.02414 |
+| 0.5 | repaired vs original | [+0.01260, +0.02118] | [+0.01212, +0.02136] | [+0.00959, +0.02381] | [+0.01250, +0.02112] | +0.01212 … +0.02136 |
+| 0.5 | control vs original | [-0.00541, +0.00295] | [-0.00691, +0.00170] | [-0.00831, +0.00555] | [-0.00546, +0.00289] | -0.00691 … +0.00170 |
+| 1.0 | repaired vs control | [+0.03458, +0.05538] | [+0.02589, +0.06036] | [+0.02146, +0.06461] | [+0.03225, +0.05773] | +0.02589 … +0.06036 |
+| 1.0 | repaired vs original | [+0.03425, +0.05184] | [+0.03126, +0.05595] | [+0.02691, +0.05805] | [+0.03491, +0.05130] | +0.03126 … +0.05595 |
+| 1.0 | control vs original | [-0.01327, +0.00868] | [-0.00709, +0.00536] | [-0.01825, +0.01281] | [-0.01346, +0.00903] | -0.00709 … +0.00536 |
+
+*All four intervals condition on one dataset and one task family; none quantifies newly sampled training datasets or task families.*
 
 ### Floor accounting (population / MC / exact finite-orbit)
 
-| eta | arm | units | dev risk | floor (rep MC) | floor (exact orbit) | orb risk | orb risk after projection | excess over orbit floor | channel residual |
-|---|---|---|---|---|---|---|---|---|---|
-| 0.0 | control | 8 | 0.01404 | 0.00000 | n/a | n/a | n/a | n/a | 7.32e-01 |
-| 0.0 | original | 8 | 0.01511 | 0.00000 | n/a | n/a | n/a | n/a | 5.61e-01 |
-| 0.0 | repaired | 8 | 0.01311 | 0.00000 | n/a | n/a | n/a | n/a | 8.65e-16 |
-| 0.5 | control | 24 | 0.23715 | 0.23710 | n/a | n/a | n/a | n/a | 7.75e-01 |
-| 0.5 | original | 24 | 0.23842 | 0.23710 | n/a | n/a | n/a | n/a | 7.58e-01 |
-| 0.5 | repaired | 24 | 0.25532 | 0.23710 | n/a | n/a | n/a | n/a | 6.56e-16 |
-| 1.0 | control | 24 | 0.92591 | 0.94838 | n/a | n/a | n/a | n/a | 7.52e-01 |
-| 1.0 | original | 24 | 0.92796 | 0.94838 | n/a | n/a | n/a | n/a | 7.57e-01 |
-| 1.0 | repaired | 24 | 0.97114 | 0.94838 | n/a | n/a | n/a | n/a | 1.38e-15 |
+| eta | arm | units | dev risk | floor (rep MC) | floor (exact orbit) | orb risk | orb risk after projection | excess over orbit floor | excess over rep-MC floor | channel residual |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0.0 | control | 8 | 0.01404 | 0.00000 | n/a | n/a | n/a | n/a | +0.01404 | 7.32e-01 |
+| 0.0 | original | 8 | 0.01511 | 0.00000 | n/a | n/a | n/a | n/a | +0.01511 | 5.61e-01 |
+| 0.0 | repaired | 8 | 0.01311 | 0.00000 | n/a | n/a | n/a | n/a | +0.01311 | 8.65e-16 |
+| 0.5 | control | 24 | 0.23715 | 0.23710 | n/a | n/a | n/a | n/a | +0.00005 | 7.75e-01 |
+| 0.5 | original | 24 | 0.23842 | 0.23710 | n/a | n/a | n/a | n/a | +0.00132 | 7.58e-01 |
+| 0.5 | repaired | 24 | 0.25532 | 0.23710 | n/a | n/a | n/a | n/a | +0.01822 | 6.56e-16 |
+| 1.0 | control | 24 | 0.92591 | 0.94838 | n/a | n/a | n/a | n/a | -0.02247 | 7.52e-01 |
+| 1.0 | original | 24 | 0.92796 | 0.94838 | n/a | n/a | n/a | n/a | -0.02042 | 7.57e-01 |
+| 1.0 | repaired | 24 | 0.97114 | 0.94838 | n/a | n/a | n/a | n/a | +0.02276 | 1.38e-15 |
 
 ### E-R1 function-space contrast (same fitted predictor)
 
-| eta | arm | units | R_orb(f) - R_orb(P f) | E[(f-P f)^2] | cross term | identity gap |
-|---|---|---|---|---|---|---|
+| eta | arm | units | R_orb(f) - R_orb(P f) | E[(f-P f)^2] | cross term | no-cross-term gap | full A3 gap |
+|---|---|---|---|---|---|---|---|
 
 ## WP-REPAIR-2 (corrected design)
 
 - input: `research/experiments/repair/repair2_analysis.json`  units rule: REVISED_PROTOCOL sections 1-4
 - units per eta (rows vs units after collapsing exact repeats): {"0.0": {"rows": 120, "units": 24}, "0.5": {"rows": 960, "units": 192}, "1.0": {"rows": 960, "units": 192}}
 
-| eta | steps | contrast | rows | units | mean diff (a-b) | 95% CI | frac a better | p_shift-boot | p_signflip | p_holm | verdict |
+Headline columns use the **primary estimand** of Addendum A5.1: at `eta = 0` the 24 optimiser seeds; at `eta > 0` the 24 seed vectors after averaging the 8 frozen breaking directions within each seed (E-A). The cell-level interval is listed separately as sensitivity E-D.
+
+| eta | steps | contrast | rows | units (estimand) | mean diff (a-b) | 95% CI (primary) | frac a better | p_shift-boot | p_signflip | p_holm | verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 0.0 | 200 | repaired vs control_dup | 24 | 24 | -0.00060 | [-0.00135, +0.00019] | 0.75 | 0.1229 | 0.1495 | 0.246 | difference not detected (CI includes 0; NOT evidence of no effect) |
-| 0.0 | 200 | repaired vs control_rand | 24 | 24 | -0.00171 | [-0.00276, -0.00080] | 0.88 | 0.00115 | 0.000375 | 0.006 | a better (CI excludes 0 on the negative side) |
-| 0.0 | 200 | repaired vs original | 24 | 24 | -0.00134 | [-0.00237, -0.00031] | 0.79 | 0.01075 | 0.01811 | 0.043 | a better (CI excludes 0 on the negative side) |
-| 0.0 | 200 | control_dup vs original | 24 | 24 | -0.00074 | [-0.00166, +0.00002] | 0.46 | 0.08195 | 0.133 | 0.246 | difference not detected (CI includes 0; NOT evidence of no effect) |
-| 0.0 | 200 | control_matched vs original | 24 | 24 | +0.00003 | [-0.00033, +0.00053] | 0.46 | 0.875 | 0.9374 | 0.875 | difference not detected (CI includes 0; NOT evidence of no effect) |
-| 0.5 | 200 | repaired vs control_dup | 192 | 192 | +0.01142 | [+0.00958, +0.01329] | 0.23 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.000 | b worse (CI excludes 0 on the positive side) |
-| 0.5 | 200 | repaired vs control_rand | 192 | 192 | +0.00935 | [+0.00746, +0.01129] | 0.30 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.000 | b worse (CI excludes 0 on the positive side) |
-| 0.5 | 200 | repaired vs original | 192 | 192 | +0.00879 | [+0.00719, +0.01043] | 0.30 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.000 | b worse (CI excludes 0 on the positive side) |
-| 0.5 | 200 | control_dup vs original | 192 | 192 | -0.00263 | [-0.00457, -0.00069] | 0.61 | 0.0083 | 0.008065 | 0.017 | a better (CI excludes 0 on the negative side) |
-| 0.5 | 200 | control_matched vs original | 192 | 192 | -0.00043 | [-0.00124, +0.00032] | 0.49 | 0.2759 | 0.2953 | 0.276 | difference not detected (CI includes 0; NOT evidence of no effect) |
-| 1.0 | 200 | repaired vs control_dup | 192 | 192 | +0.03605 | [+0.03134, +0.04087] | 0.15 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.000 | b worse (CI excludes 0 on the positive side) |
-| 1.0 | 200 | repaired vs control_rand | 192 | 192 | +0.02797 | [+0.02296, +0.03316] | 0.19 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.000 | b worse (CI excludes 0 on the positive side) |
-| 1.0 | 200 | repaired vs original | 192 | 192 | +0.02526 | [+0.02135, +0.02920] | 0.18 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.000 | b worse (CI excludes 0 on the positive side) |
-| 1.0 | 200 | control_dup vs original | 192 | 192 | -0.01080 | [-0.01545, -0.00620] | 0.59 | 5e-05 (floor < 5e-05) | 2e-05 | 0.000 | a better (CI excludes 0 on the negative side) |
-| 1.0 | 200 | control_matched vs original | 192 | 192 | -0.00234 | [-0.00439, -0.00043] | 0.48 | 0.02055 | 0.02048 | 0.021 | a better (CI excludes 0 on the negative side) |
+| 0.0 | 200 | repaired vs control_dup | 24 | 24 (E-0: optimiser seeds, direction-free target) | -0.00060 | [-0.00135, +0.00019] | 0.75 | 0.1229 | 0.1495 | 0.246 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| 0.0 | 200 | repaired vs control_rand | 24 | 24 (E-0: optimiser seeds, direction-free target) | -0.00171 | [-0.00276, -0.00080] | 0.88 | 0.00115 | 0.000375 | 0.00575 | a better (raw CI excludes 0 on the negative side) |
+| 0.0 | 200 | repaired vs original | 24 | 24 (E-0: optimiser seeds, direction-free target) | -0.00134 | [-0.00237, -0.00031] | 0.79 | 0.01075 | 0.01811 | 0.043 | a better (raw CI excludes 0 on the negative side) |
+| 0.0 | 200 | control_dup vs original | 24 | 24 (E-0: optimiser seeds, direction-free target) | -0.00074 | [-0.00166, +0.00002] | 0.46 | 0.08195 | 0.133 | 0.246 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| 0.0 | 200 | control_matched vs original | 24 | 24 (E-0: optimiser seeds, direction-free target) | +0.00003 | [-0.00033, +0.00053] | 0.46 | 0.875 | 0.9374 | 0.875 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| 0.5 | 200 | repaired vs control_dup | 192 | 24 (E-A) | +0.01142 | [+0.00887, +0.01394] | 0.23 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.00025 | a worse (raw CI excludes 0 on the positive side) |
+| 0.5 | 200 | repaired vs control_rand | 192 | 24 (E-A) | +0.00935 | [+0.00642, +0.01234] | 0.30 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.00025 | a worse (raw CI excludes 0 on the positive side) |
+| 0.5 | 200 | repaired vs original | 192 | 24 (E-A) | +0.00879 | [+0.00682, +0.01066] | 0.30 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.00025 | a worse (raw CI excludes 0 on the positive side) |
+| 0.5 | 200 | control_dup vs original | 192 | 24 (E-A) | -0.00263 | [-0.00465, -0.00054] | 0.61 | 0.0083 | 0.008065 | 0.0277 | a better (raw CI excludes 0 on the negative side) |
+| 0.5 | 200 | control_matched vs original | 192 | 24 (E-A) | -0.00043 | [-0.00116, +0.00025] | 0.49 | 0.2759 | 0.2953 | 0.226 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| 1.0 | 200 | repaired vs control_dup | 192 | 24 (E-A) | +0.03605 | [+0.02998, +0.04210] | 0.15 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.00025 | a worse (raw CI excludes 0 on the positive side) |
+| 1.0 | 200 | repaired vs control_rand | 192 | 24 (E-A) | +0.02797 | [+0.01974, +0.03644] | 0.19 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.00025 | a worse (raw CI excludes 0 on the positive side) |
+| 1.0 | 200 | repaired vs original | 192 | 24 (E-A) | +0.02526 | [+0.02039, +0.02995] | 0.18 | 5e-05 (floor < 5e-05) | 5e-06 (floor < 5e-06) | 0.00025 | a worse (raw CI excludes 0 on the positive side) |
+| 1.0 | 200 | control_dup vs original | 192 | 24 (E-A) | -0.01080 | [-0.01450, -0.00724] | 0.59 | 5e-05 (floor < 5e-05) | 2e-05 | 0.00025 | a better (raw CI excludes 0 on the negative side) |
+| 1.0 | 200 | control_matched vs original | 192 | 24 (E-A) | -0.00234 | [-0.00435, -0.00051] | 0.48 | 0.02055 | 0.02048 | 0.0169 | a better (raw CI excludes 0 on the negative side) |
+
+### Estimand sensitivity at eta > 0 (A5.1)
+
+| eta | contrast | E-A seeds (primary) | E-B directions | E-C crossed | E-D cells (legacy) | direction-specific means |
+|---|---|---|---|---|---|---|
+| 0.5 | repaired vs control_dup | [+0.00887, +0.01394] | [+0.00869, +0.01443] | [+0.00743, +0.01567] | [+0.00958, +0.01329] | +0.00622 … +0.01936 |
+| 0.5 | repaired vs control_rand | [+0.00642, +0.01234] | [+0.00547, +0.01433] | [+0.00456, +0.01551] | [+0.00746, +0.01129] | +0.00223 … +0.02420 |
+| 0.5 | repaired vs original | [+0.00682, +0.01066] | [+0.00403, +0.01391] | [+0.00358, +0.01451] | [+0.00719, +0.01043] | -0.00061 … +0.02123 |
+| 0.5 | control_dup vs original | [-0.00465, -0.00054] | [-0.00570, +0.00068] | [-0.00681, +0.00166] | [-0.00457, -0.00069] | -0.01009 … +0.00617 |
+| 0.5 | control_matched vs original | [-0.00116, +0.00025] | [-0.00140, +0.00053] | [-0.00196, +0.00089] | [-0.00124, +0.00032] | -0.00234 … +0.00180 |
+| 1.0 | repaired vs control_dup | [+0.02998, +0.04210] | [+0.02610, +0.04597] | [+0.02366, +0.04828] | [+0.03134, +0.04087] | +0.01579 … +0.05443 |
+| 1.0 | repaired vs control_rand | [+0.01974, +0.03644] | [+0.01755, +0.04057] | [+0.01523, +0.04410] | [+0.02296, +0.03316] | +0.00947 … +0.06426 |
+| 1.0 | repaired vs original | [+0.02039, +0.02995] | [+0.01360, +0.03769] | [+0.01262, +0.03911] | [+0.02135, +0.02920] | +0.00381 … +0.05764 |
+| 1.0 | control_dup vs original | [-0.01450, -0.00724] | [-0.01695, -0.00430] | [-0.01942, -0.00224] | [-0.01545, -0.00620] | -0.02388 … +0.00372 |
+| 1.0 | control_matched vs original | [-0.00435, -0.00051] | [-0.00408, -0.00065] | [-0.00570, +0.00065] | [-0.00439, -0.00043] | -0.00613 … +0.00116 |
+
+*All four intervals condition on one dataset and one task family; none quantifies newly sampled training datasets or task families.*
 
 ### Floor accounting (population / MC / exact finite-orbit)
 
-| eta | arm | units | dev risk | floor (rep MC) | floor (exact orbit) | orb risk | orb risk after projection | excess over orbit floor | channel residual |
-|---|---|---|---|---|---|---|---|---|---|
-| 0.0 | control_dup | 24 | 0.01397 | 0.00000 | 0.00000 | 0.01399 | 0.01395 | +0.01399 | 6.41e-01 |
-| 0.0 | control_matched | 24 | 0.01475 | 0.00000 | 0.00000 | 0.01477 | 0.01459 | +0.01477 | 6.19e-01 |
-| 0.0 | control_rand | 24 | 0.01508 | 0.00000 | 0.00000 | 0.01509 | 0.01499 | +0.01509 | 5.77e-01 |
-| 0.0 | original | 24 | 0.01471 | 0.00000 | 0.00000 | 0.01473 | 0.01460 | +0.01473 | 5.73e-01 |
-| 0.0 | repaired | 24 | 0.01337 | 0.00000 | 0.00000 | 0.01337 | 0.01337 | +0.01337 | 1.26e-15 |
-| 0.5 | control_dup | 192 | 0.23900 | 0.23613 | 0.24021 | 0.24289 | 0.26105 | +0.00268 | 7.51e-01 |
-| 0.5 | control_matched | 192 | 0.24121 | 0.23613 | 0.24021 | 0.24561 | 0.25953 | +0.00540 | 7.02e-01 |
-| 0.5 | control_rand | 192 | 0.24107 | 0.23613 | 0.24021 | 0.24670 | 0.26046 | +0.00649 | 6.41e-01 |
-| 0.5 | original | 192 | 0.24164 | 0.23613 | 0.24021 | 0.24612 | 0.25921 | +0.00591 | 6.83e-01 |
-| 0.5 | repaired | 192 | 0.25042 | 0.23613 | 0.24021 | 0.25587 | 0.25587 | +0.01565 | 9.88e-16 |
-| 1.0 | control_dup | 192 | 0.92486 | 0.94453 | 0.96085 | 0.94043 | 0.98741 | -0.02042 | 7.68e-01 |
-| 1.0 | control_matched | 192 | 0.93332 | 0.94453 | 0.96085 | 0.95003 | 0.98521 | -0.01082 | 7.32e-01 |
-| 1.0 | control_rand | 192 | 0.93294 | 0.94453 | 0.96085 | 0.95224 | 0.98612 | -0.00861 | 6.68e-01 |
-| 1.0 | original | 192 | 0.93566 | 0.94453 | 0.96085 | 0.95210 | 0.98484 | -0.00875 | 7.07e-01 |
-| 1.0 | repaired | 192 | 0.96091 | 0.94453 | 0.96085 | 0.98029 | 0.98029 | +0.01944 | 1.21e-15 |
+| eta | arm | units | dev risk | floor (rep MC) | floor (exact orbit) | orb risk | orb risk after projection | excess over orbit floor | excess over rep-MC floor | channel residual |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0.0 | control_dup | 24 | 0.01397 | 0.00000 | 0.00000 | 0.01399 | 0.01395 | +0.01399 | +0.01397 | 6.41e-01 |
+| 0.0 | control_matched | 24 | 0.01475 | 0.00000 | 0.00000 | 0.01477 | 0.01459 | +0.01477 | +0.01475 | 6.19e-01 |
+| 0.0 | control_rand | 24 | 0.01508 | 0.00000 | 0.00000 | 0.01509 | 0.01499 | +0.01509 | +0.01508 | 5.77e-01 |
+| 0.0 | original | 24 | 0.01471 | 0.00000 | 0.00000 | 0.01473 | 0.01460 | +0.01473 | +0.01471 | 5.73e-01 |
+| 0.0 | repaired | 24 | 0.01337 | 0.00000 | 0.00000 | 0.01337 | 0.01337 | +0.01337 | +0.01337 | 1.26e-15 |
+| 0.5 | control_dup | 192 | 0.23900 | 0.23613 | 0.24021 | 0.24289 | 0.26105 | +0.00268 | +0.00287 | 7.51e-01 |
+| 0.5 | control_matched | 192 | 0.24121 | 0.23613 | 0.24021 | 0.24561 | 0.25953 | +0.00540 | +0.00507 | 7.02e-01 |
+| 0.5 | control_rand | 192 | 0.24107 | 0.23613 | 0.24021 | 0.24670 | 0.26046 | +0.00649 | +0.00494 | 6.41e-01 |
+| 0.5 | original | 192 | 0.24164 | 0.23613 | 0.24021 | 0.24612 | 0.25921 | +0.00591 | +0.00550 | 6.83e-01 |
+| 0.5 | repaired | 192 | 0.25042 | 0.23613 | 0.24021 | 0.25587 | 0.25587 | +0.01565 | +0.01429 | 9.88e-16 |
+| 1.0 | control_dup | 192 | 0.92486 | 0.94453 | 0.96085 | 0.94043 | 0.98741 | -0.02042 | -0.01967 | 7.68e-01 |
+| 1.0 | control_matched | 192 | 0.93332 | 0.94453 | 0.96085 | 0.95003 | 0.98521 | -0.01082 | -0.01121 | 7.32e-01 |
+| 1.0 | control_rand | 192 | 0.93294 | 0.94453 | 0.96085 | 0.95224 | 0.98612 | -0.00861 | -0.01159 | 6.68e-01 |
+| 1.0 | original | 192 | 0.93566 | 0.94453 | 0.96085 | 0.95210 | 0.98484 | -0.00875 | -0.00887 | 7.07e-01 |
+| 1.0 | repaired | 192 | 0.96091 | 0.94453 | 0.96085 | 0.98029 | 0.98029 | +0.01944 | +0.01638 | 1.21e-15 |
 
 ### E-R1 function-space contrast (same fitted predictor)
 
-| eta | arm | units | R_orb(f) - R_orb(P f) | E[(f-P f)^2] | cross term | identity gap |
-|---|---|---|---|---|---|---|
-| 0.0 | control_dup | 24 | +0.00004 | 0.000041 | +7.268e-22 | 5.0e-18 |
-| 0.0 | control_matched | 24 | +0.00018 | 0.000176 | +1.084e-21 | 4.7e-18 |
-| 0.0 | control_rand | 24 | +0.00010 | 0.000099 | -1.301e-22 | 5.5e-18 |
-| 0.0 | original | 24 | +0.00014 | 0.000139 | +8.637e-22 | 3.8e-18 |
-| 0.0 | repaired | 24 | -0.00000 | 0.000000 | -1.376e-36 | 3.5e-18 |
-| 0.5 | control_dup | 192 | -0.01815 | 0.001971 | +1.006e-02 | 9.1e-02 |
-| 0.5 | control_matched | 192 | -0.01392 | 0.001445 | +7.685e-03 | 6.8e-02 |
-| 0.5 | control_rand | 192 | -0.01376 | 0.001461 | +7.611e-03 | 9.5e-02 |
-| 0.5 | original | 192 | -0.01309 | 0.001370 | +7.228e-03 | 5.3e-02 |
-| 0.5 | repaired | 192 | +0.00000 | 0.000000 | +1.455e-20 | 1.1e-16 |
-| 1.0 | control_dup | 192 | -0.04698 | 0.002817 | +2.490e-02 | 2.0e-01 |
-| 1.0 | control_matched | 192 | -0.03518 | 0.001968 | +1.857e-02 | 1.6e-01 |
-| 1.0 | control_rand | 192 | -0.03388 | 0.002021 | +1.795e-02 | 2.1e-01 |
-| 1.0 | original | 192 | -0.03274 | 0.001799 | +1.727e-02 | 1.2e-01 |
-| 1.0 | repaired | 192 | +0.00000 | 0.000000 | +2.701e-20 | 3.3e-16 |
+| eta | arm | units | R_orb(f) - R_orb(P f) | E[(f-P f)^2] | cross term | no-cross-term gap | full A3 gap |
+|---|---|---|---|---|---|---|---|
+| 0.0 | control_dup | 24 | +0.00004 | 0.000041 | +7.268e-22 | 5.0e-18 | 5.0e-18 |
+| 0.0 | control_matched | 24 | +0.00018 | 0.000176 | +1.084e-21 | 4.7e-18 | 4.7e-18 |
+| 0.0 | control_rand | 24 | +0.00010 | 0.000099 | -1.301e-22 | 5.5e-18 | 5.5e-18 |
+| 0.0 | original | 24 | +0.00014 | 0.000139 | +8.637e-22 | 3.8e-18 | 3.8e-18 |
+| 0.0 | repaired | 24 | -0.00000 | 0.000000 | -1.376e-36 | 3.5e-18 | 3.5e-18 |
+| 0.5 | control_dup | 192 | -0.01815 | 0.001971 | +1.006e-02 | 9.1e-02 | 1.1e-16 |
+| 0.5 | control_matched | 192 | -0.01392 | 0.001445 | +7.685e-03 | 6.8e-02 | 8.0e-17 |
+| 0.5 | control_rand | 192 | -0.01376 | 0.001461 | +7.611e-03 | 9.5e-02 | 8.2e-17 |
+| 0.5 | original | 192 | -0.01309 | 0.001370 | +7.228e-03 | 5.3e-02 | 1.0e-16 |
+| 0.5 | repaired | 192 | +0.00000 | 0.000000 | +1.455e-20 | 1.1e-16 | 1.1e-16 |
+| 1.0 | control_dup | 192 | -0.04698 | 0.002817 | +2.490e-02 | 2.0e-01 | 3.7e-16 |
+| 1.0 | control_matched | 192 | -0.03518 | 0.001968 | +1.857e-02 | 1.6e-01 | 3.3e-16 |
+| 1.0 | control_rand | 192 | -0.03388 | 0.002021 | +1.795e-02 | 2.1e-01 | 3.2e-16 |
+| 1.0 | original | 192 | -0.03274 | 0.001799 | +1.727e-02 | 1.2e-01 | 3.1e-16 |
+| 1.0 | repaired | 192 | +0.00000 | 0.000000 | +2.701e-20 | 3.3e-16 | 3.3e-16 |
 
 ### Optimiser-budget sensitivity
 
@@ -109,15 +143,15 @@ Inference conventions: `research/core/paired.py` (percentile bootstrap over *uni
 |---|---|---|---|---|---|---|
 | 0.0 | 600 | repaired vs control_dup | 6 | -0.00135 | [-0.00316, +0.00006] | difference not detected (CI includes 0; NOT evidence of no effect) |
 | 0.0 | 600 | control_dup vs original | 6 | -0.00169 | [-0.00349, +0.00008] | difference not detected (CI includes 0; NOT evidence of no effect) |
-| 0.5 | 600 | repaired vs control_dup | 12 | +0.01987 | [+0.01503, +0.02428] | b worse (CI excludes 0 on the positive side) |
+| 0.5 | 600 | repaired vs control_dup | 12 | +0.01987 | [+0.01503, +0.02428] | a worse (raw CI excludes 0 on the positive side) |
 | 0.5 | 600 | control_dup vs original | 12 | -0.00509 | [-0.01183, +0.00182] | difference not detected (CI includes 0; NOT evidence of no effect) |
-| 1.0 | 600 | repaired vs control_dup | 12 | +0.05117 | [+0.03699, +0.06387] | b worse (CI excludes 0 on the positive side) |
+| 1.0 | 600 | repaired vs control_dup | 12 | +0.05117 | [+0.03699, +0.06387] | a worse (raw CI excludes 0 on the positive side) |
 | 1.0 | 600 | control_dup vs original | 12 | -0.00735 | [-0.01999, +0.00517] | difference not detected (CI includes 0; NOT evidence of no effect) |
 | 0.0 | 1800 | repaired vs control_dup | 6 | -0.00111 | [-0.00288, +0.00014] | difference not detected (CI includes 0; NOT evidence of no effect) |
 | 0.0 | 1800 | control_dup vs original | 6 | +0.00011 | [-0.00266, +0.00302] | difference not detected (CI includes 0; NOT evidence of no effect) |
-| 0.5 | 1800 | repaired vs control_dup | 12 | +0.02202 | [+0.01654, +0.02714] | b worse (CI excludes 0 on the positive side) |
+| 0.5 | 1800 | repaired vs control_dup | 12 | +0.02202 | [+0.01654, +0.02714] | a worse (raw CI excludes 0 on the positive side) |
 | 0.5 | 1800 | control_dup vs original | 12 | -0.00585 | [-0.01439, +0.00215] | difference not detected (CI includes 0; NOT evidence of no effect) |
-| 1.0 | 1800 | repaired vs control_dup | 12 | +0.05659 | [+0.04337, +0.06778] | b worse (CI excludes 0 on the positive side) |
+| 1.0 | 1800 | repaired vs control_dup | 12 | +0.05659 | [+0.04337, +0.06778] | a worse (raw CI excludes 0 on the positive side) |
 | 1.0 | 1800 | control_dup vs original | 12 | -0.00638 | [-0.01889, +0.00641] | difference not detected (CI includes 0; NOT evidence of no effect) |
 
 ## WP-SEARCH reanalysis (frozen 120-run record, development endpoints)
@@ -142,26 +176,26 @@ Inference conventions: `research/core/paired.py` (percentile bootstrap over *uni
 
 | family | endpoint | contrast | n | mean diff | 95% CI | p_holm (D) |
 |---|---|---|---|---|---|---|
-| graphs_n6 | candidate | llm-verify-repair vs llm-verify | 12 | +0.00092 | [-0.01457, +0.02417] | 1.000 |
+| graphs_n6 | candidate | llm-verify-repair vs llm-verify | 12 | +0.00092 | [-0.01457, +0.02417] | 1 |
 | graphs_n6 | deployed | llm-verify-repair vs llm-verify | 12 | -0.02744 | [-0.05401, +0.00519] | 0.614 |
-| graphs_n6 | candidate | llm-fitness vs mutation-ea | 12 | +0.02642 | [-0.01772, +0.06524] | 1.000 |
-| graphs_n6 | deployed | llm-fitness vs mutation-ea | 12 | +0.02642 | [-0.01772, +0.06524] | 1.000 |
-| graphs_n6 | candidate | mutation-ea vs random | 12 | +0.00148 | [-0.01554, +0.02098] | 1.000 |
-| graphs_n6 | deployed | mutation-ea vs random | 12 | +0.00148 | [-0.01554, +0.02098] | 1.000 |
-| graphs_n6 | candidate | llm-verify vs random | 12 | +0.01376 | [-0.02361, +0.05026] | 1.000 |
-| graphs_n6 | deployed | llm-verify vs random | 12 | +0.01376 | [-0.02361, +0.05026] | 1.000 |
-| graphs_n6 | candidate | llm-verify-repair vs llm-fitness | 12 | -0.01322 | [-0.06242, +0.03188] | 1.000 |
+| graphs_n6 | candidate | llm-fitness vs mutation-ea | 12 | +0.02642 | [-0.01772, +0.06524] | 1 |
+| graphs_n6 | deployed | llm-fitness vs mutation-ea | 12 | +0.02642 | [-0.01772, +0.06524] | 1 |
+| graphs_n6 | candidate | mutation-ea vs random | 12 | +0.00148 | [-0.01554, +0.02098] | 1 |
+| graphs_n6 | deployed | mutation-ea vs random | 12 | +0.00148 | [-0.01554, +0.02098] | 1 |
+| graphs_n6 | candidate | llm-verify vs random | 12 | +0.01376 | [-0.02361, +0.05026] | 1 |
+| graphs_n6 | deployed | llm-verify vs random | 12 | +0.01376 | [-0.02361, +0.05026] | 1 |
+| graphs_n6 | candidate | llm-verify-repair vs llm-fitness | 12 | -0.01322 | [-0.06242, +0.03188] | 1 |
 | graphs_n6 | deployed | llm-verify-repair vs llm-fitness | 12 | -0.04158 | [-0.08572, -0.00566] | 0.406 |
-| ring_n6 | candidate | llm-verify-repair vs llm-verify | 12 | -0.00046 | [-0.00127, +0.00045] | 1.000 |
-| ring_n6 | deployed | llm-verify-repair vs llm-verify | 12 | -0.00046 | [-0.00127, +0.00045] | 1.000 |
-| ring_n6 | candidate | llm-fitness vs mutation-ea | 12 | -0.00371 | [-0.00423, -0.00326] | 0.000 |
-| ring_n6 | deployed | llm-fitness vs mutation-ea | 12 | -0.00371 | [-0.00423, -0.00326] | 0.000 |
-| ring_n6 | candidate | mutation-ea vs random | 12 | +0.00009 | [-0.00009, +0.00031] | 1.000 |
-| ring_n6 | deployed | mutation-ea vs random | 12 | +0.00009 | [-0.00009, +0.00031] | 1.000 |
-| ring_n6 | candidate | llm-verify vs random | 12 | -0.00304 | [-0.00390, -0.00215] | 0.000 |
-| ring_n6 | deployed | llm-verify vs random | 12 | -0.00304 | [-0.00390, -0.00215] | 0.000 |
-| ring_n6 | candidate | llm-verify-repair vs llm-fitness | 12 | +0.00013 | [-0.00050, +0.00080] | 1.000 |
-| ring_n6 | deployed | llm-verify-repair vs llm-fitness | 12 | +0.00013 | [-0.00050, +0.00080] | 1.000 |
+| ring_n6 | candidate | llm-verify-repair vs llm-verify | 12 | -0.00046 | [-0.00127, +0.00045] | 1 |
+| ring_n6 | deployed | llm-verify-repair vs llm-verify | 12 | -0.00046 | [-0.00127, +0.00045] | 1 |
+| ring_n6 | candidate | llm-fitness vs mutation-ea | 12 | -0.00371 | [-0.00423, -0.00326] | 0.0005 |
+| ring_n6 | deployed | llm-fitness vs mutation-ea | 12 | -0.00371 | [-0.00423, -0.00326] | 0.0005 |
+| ring_n6 | candidate | mutation-ea vs random | 12 | +0.00009 | [-0.00009, +0.00031] | 1 |
+| ring_n6 | deployed | mutation-ea vs random | 12 | +0.00009 | [-0.00009, +0.00031] | 1 |
+| ring_n6 | candidate | llm-verify vs random | 12 | -0.00304 | [-0.00390, -0.00215] | 0.0005 |
+| ring_n6 | deployed | llm-verify vs random | 12 | -0.00304 | [-0.00390, -0.00215] | 0.0005 |
+| ring_n6 | candidate | llm-verify-repair vs llm-fitness | 12 | +0.00013 | [-0.00050, +0.00080] | 1 |
+| ring_n6 | deployed | llm-verify-repair vs llm-fitness | 12 | +0.00013 | [-0.00050, +0.00080] | 1 |
 
 ### E-S4 reliability (per arm, development record)
 
@@ -272,6 +306,47 @@ Inference conventions: `research/core/paired.py` (percentile bootstrap over *uni
 
 - **E-R4' supersedes the E-R4 table of the first one-shot run**, whose `eta > 0` rows scored every arm against a single invariant label (REVISED_PROTOCOL Addendum A4). Self-check: PASS (216 units compared, max |dev diff| 0.0); digests unchanged: True; access record: `research/HOLDOUT_ACCESS_v4.json`
 
+### E-S7 sealed-test risk of the frozen candidates (candidate endpoint)
+
+*Endpoint note: these are the refitted **candidates**. The deployed repaired predictor is measured separately (A5.5, `research/holdout_deployed.py`); `test_risk_averaged_diagnostic` was never computed in this run.*
+
+| family | arm | n | mean dev risk | mean sealed-test risk |
+|---|---|---|---|---|
+| ring_n6 | llm-fitness | 12 | 0.00651 | 0.00639 |
+| ring_n6 | llm-verify | 12 | 0.00709 | 0.00711 |
+| ring_n6 | llm-verify-repair | 12 | 0.00664 | 0.00697 |
+| ring_n6 | mutation-ea | 12 | 0.01022 | 0.01025 |
+| ring_n6 | random | 12 | 0.01013 | 0.00995 |
+| graphs_n6 | llm-fitness | 12 | 0.56572 | 0.51806 |
+| graphs_n6 | llm-verify | 12 | 0.55158 | 0.49272 |
+| graphs_n6 | llm-verify-repair | 12 | 0.55250 | 0.50674 |
+| graphs_n6 | mutation-ea | 12 | 0.53930 | 0.49753 |
+| graphs_n6 | random | 12 | 0.53782 | 0.48704 |
+
+| family | contrast | pairs | mean diff | 95% CI | p_shift-boot | verdict |
+|---|---|---|---|---|---|---|
+| ring_n6 | llm-verify vs llm-fitness | 12 | +0.00072 | [-0.00039, +0.00186] | 0.2182 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| ring_n6 | llm-verify-repair vs llm-verify | 12 | -0.00014 | [-0.00148, +0.00123] | 0.8395 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| ring_n6 | llm-fitness vs mutation-ea | 12 | -0.00386 | [-0.00491, -0.00277] | 5e-05 (floor < 5e-05) | a better (CI excludes 0 on the negative side) |
+| ring_n6 | llm-verify vs random | 12 | -0.00284 | [-0.00442, -0.00117] | 0.0004 | a better (CI excludes 0 on the negative side) |
+| graphs_n6 | llm-verify vs llm-fitness | 12 | -0.02534 | [-0.11142, +0.05299] | 0.5362 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| graphs_n6 | llm-verify-repair vs llm-verify | 12 | +0.01401 | [-0.02964, +0.06451] | 0.5673 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| graphs_n6 | llm-fitness vs mutation-ea | 12 | +0.02053 | [-0.04866, +0.07697] | 0.5324 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| graphs_n6 | llm-verify vs random | 12 | +0.00568 | [-0.04052, +0.05050] | 0.8028 | difference not detected (CI includes 0; NOT evidence of no effect) |
+
+### E-S7 paired against the `random` arm (regenerated from the stored per-run record; no new sealed read)
+
+| family | arm | vs | pairs | mean diff | 95% CI | p_shift-boot | p_signflip | verdict |
+|---|---|---|---|---|---|---|---|---|
+| graphs_n6 | llm-fitness | random | 12 | +0.03102 | [-0.04167, +0.09514] | 0.369 | 0.4219 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| graphs_n6 | llm-verify | random | 12 | +0.00568 | [-0.04052, +0.05050] | 0.8028 | 0.8125 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| graphs_n6 | llm-verify-repair | random | 12 | +0.01970 | [-0.00448, +0.05037] | 0.1629 | 0.2344 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| graphs_n6 | mutation-ea | random | 12 | +0.01049 | [-0.01082, +0.03816] | 0.4141 | 0.4844 | difference not detected (CI includes 0; NOT evidence of no effect) |
+| ring_n6 | llm-fitness | random | 12 | -0.00356 | [-0.00469, -0.00239] | 5e-05 (floor < 5e-05) | 0.0009766 | a better (raw CI excludes 0 on the negative side) |
+| ring_n6 | llm-verify | random | 12 | -0.00284 | [-0.00442, -0.00117] | 0.0004 | 0.009277 | a better (raw CI excludes 0 on the negative side) |
+| ring_n6 | llm-verify-repair | random | 12 | -0.00298 | [-0.00452, -0.00154] | 0.00015 | 0.00293 | a better (raw CI excludes 0 on the negative side) |
+| ring_n6 | mutation-ea | random | 12 | +0.00030 | [-0.00009, +0.00090] | 0.2714 | 0.375 | difference not detected (CI includes 0; NOT evidence of no effect) |
+
 ### E-R4 repair arms on untouched data
 
 | split | eta | contrast | units | mean diff | 95% CI | p_shift-boot | p_signflip | verdict |
@@ -327,11 +402,11 @@ Family `ring_n6`, target `alpha_1` (the declared group is **not** a label symmet
 
 | arm | runs | mean dev risk | accuracy | nonconstant | repair fired/attempted | hyp. | hyp. pass gate | hyp. = task group |
 |---|---|---|---|---|---|---|---|---|
-| llm-fitness | 12 | 0.04049 | 0.912 | 12/12 | 0/0 | 56 | 0 | 0 |
-| llm-verify | 12 | 0.03699 | 0.916 | 12/12 | 0/0 | 73 | 4 | 0 |
-| llm-verify-repair | 12 | 0.04106 | 0.917 | 12/12 | 0/6 | 71 | 4 | 0 |
-| mutation-ea | 12 | 0.04123 | 0.915 | 12/12 | 0/0 | 79 | 0 | 0 |
-| random | 12 | 0.04122 | 0.912 | 12/12 | 0/0 | 69 | 0 | 0 |
+| llm-fitness | 12 | 0.04049 | 0.91181 | 12/12 | 0/0 | 56 | 0 | 0 |
+| llm-verify | 12 | 0.03699 | 0.91632 | 12/12 | 0/0 | 73 | 4 | 0 |
+| llm-verify-repair | 12 | 0.04106 | 0.91701 | 12/12 | 0/6 | 71 | 4 | 0 |
+| mutation-ea | 12 | 0.04123 | 0.91528 | 12/12 | 0/0 | 79 | 0 | 0 |
+| random | 12 | 0.04122 | 0.91215 | 12/12 | 0/0 | 69 | 0 | 0 |
 
 | contrast | n | mean diff | 95% CI | p_shift-boot | p_signflip | p_holm (E) | verdict |
 |---|---|---|---|---|---|---|---|
@@ -341,3 +416,110 @@ Family `ring_n6`, target `alpha_1` (the declared group is **not** a label symmet
 | mutation-ea vs random | 12 | +0.00001 | [-0.00280, +0.00311] | 0.9942 | 0.9844 | 1 | difference not detected (CI includes 0; NOT evidence of no effect) |
 | llm-verify vs random | 12 | -0.00423 | [-0.01027, +0.00135] | 0.1545 | 0.2012 | 0.6692 | difference not detected (CI includes 0; NOT evidence of no effect) |
 
+## Verifier semantics: what a label-preservation gate can decide (A5.2 / A5.3)
+
+- probe: 512 rows, seed 777 (gate reads train rows[:64]; the probe excludes them)
+
+### Measured label-symmetry groups (all n! permutations tested)
+
+| family | target | label-symmetry order | hypothesis space |L|/|S_n| | contains declared group | = full symmetric |
+|---|---|---|---|---|---|---|
+| ring_n6 | alpha_0 | 12 | 720 | 0.0167 | True | False |
+| ring_n6 | alpha_0.1 | 2 | 720 | 0.0028 | False | False |
+| ring_n6 | alpha_0.25 | 2 | 720 | 0.0028 | False | False |
+| ring_n6 | alpha_0.5 | 2 | 720 | 0.0028 | False | False |
+| ring_n6 | alpha_1 | 2 | 720 | 0.0028 | False | False |
+| ring_n6 | ALL_COLUMNS | 2 | 720 | 0.0028 | False | False |
+| graphs_n6 | connected | 720 | 720 | 1.0000 | True | True |
+| graphs_n6 | triangle | 720 | 720 | 1.0000 | True | True |
+| graphs_n6 | ALL_COLUMNS | 720 | 720 | 1.0000 | True | True |
+
+### Fixed-panel selectivity (identical inputs, target varied)
+
+| family | target | gate variant | sensitivity | false-accept |
+|---|---|---|---|---|
+| ring_n6 | alpha_0 | implemented | 1/6 = 0.17 [0.030, 0.564] | 0/3 = 0.00 [0.000, 0.561] |
+| ring_n6 | alpha_0 | target_specific | 1/6 = 0.17 [0.030, 0.564] | 0/3 = 0.00 [0.000, 0.561] |
+| ring_n6 | alpha_0 | target_specific_tol | 6/6 = 1.00 [0.610, 1.000] | 0/3 = 0.00 [0.000, 0.561] |
+| ring_n6 | alpha_0.1 | implemented | 1/2 = 0.50 [0.095, 0.905] | 0/7 = 0.00 [0.000, 0.354] |
+| ring_n6 | alpha_0.1 | target_specific | 1/2 = 0.50 [0.095, 0.905] | 0/7 = 0.00 [0.000, 0.354] |
+| ring_n6 | alpha_0.1 | target_specific_tol | 2/2 = 1.00 [0.342, 1.000] | 0/7 = 0.00 [0.000, 0.354] |
+| ring_n6 | alpha_0.25 | implemented | 1/2 = 0.50 [0.095, 0.905] | 0/7 = 0.00 [0.000, 0.354] |
+| ring_n6 | alpha_0.25 | target_specific | 1/2 = 0.50 [0.095, 0.905] | 0/7 = 0.00 [0.000, 0.354] |
+| ring_n6 | alpha_0.25 | target_specific_tol | 2/2 = 1.00 [0.342, 1.000] | 0/7 = 0.00 [0.000, 0.354] |
+| ring_n6 | alpha_0.5 | implemented | 1/2 = 0.50 [0.095, 0.905] | 0/7 = 0.00 [0.000, 0.354] |
+| ring_n6 | alpha_0.5 | target_specific | 1/2 = 0.50 [0.095, 0.905] | 0/7 = 0.00 [0.000, 0.354] |
+| ring_n6 | alpha_0.5 | target_specific_tol | 2/2 = 1.00 [0.342, 1.000] | 0/7 = 0.00 [0.000, 0.354] |
+| ring_n6 | alpha_1 | implemented | 1/2 = 0.50 [0.095, 0.905] | 0/7 = 0.00 [0.000, 0.354] |
+| ring_n6 | alpha_1 | target_specific | 1/2 = 0.50 [0.095, 0.905] | 0/7 = 0.00 [0.000, 0.354] |
+| ring_n6 | alpha_1 | target_specific_tol | 2/2 = 1.00 [0.342, 1.000] | 0/7 = 0.00 [0.000, 0.354] |
+| graphs_n6 | connected | implemented | 9/9 = 1.00 [0.701, 1.000] | 0/0 = n/a [n/a] |
+| graphs_n6 | connected | target_specific | 9/9 = 1.00 [0.701, 1.000] | 0/0 = n/a [n/a] |
+| graphs_n6 | connected | target_specific_tol | 9/9 = 1.00 [0.701, 1.000] | 0/0 = n/a [n/a] |
+| graphs_n6 | triangle | implemented | 9/9 = 1.00 [0.701, 1.000] | 0/0 = n/a [n/a] |
+| graphs_n6 | triangle | target_specific | 9/9 = 1.00 [0.701, 1.000] | 0/0 = n/a [n/a] |
+| graphs_n6 | triangle | target_specific_tol | 9/9 = 1.00 [0.701, 1.000] | 0/0 = n/a [n/a] |
+
+### Search-generated hypotheses: status and recorded gate decisions
+
+| family | target | exact declared | valid proper subgroup | valid supergroup | sound non-comparable | invalid |
+|---|---|---|---|---|---|---|
+| graphs_n6 | connected | 10 | 289 | 0 | 0 | 0 |
+| ring_n6 | alpha_0 | 0 | 120 | 0 | 0 | 72 |
+
+| family | target | gate label-pass | of those invalid (false accepts) | gate label-fail | of those sound for the scored target |
+|---|---|---|---|---|---|
+| graphs_n6 | connected | 144 | 0 (0.00 [0.000, 0.026]) | 0 | 0 (n/a [n/a]) |
+| ring_n6 | alpha_0 | 7 | 0 (0.00 [0.000, 0.354]) | 95 | 95 (1.00 [0.961, 1.000]) |
+
+## Verification as a decision rule (A5.4)
+
+### graphs_n6 — 60 candidates, MC-twirl share 1.00, verify 0.45s vs average 12.51s
+
+Thresholds (development only): median 0.0854, q1 0.058, q3 0.128
+
+| rule | fired | realised mean risk change | if always applied | precision | recall | harmed | missed beneficial (total gain) |
+|---|---|---|---|---|---|---|---|
+| R0_supplied_group | 60/60 | -0.08705 | -0.08705 | 60/60 [0.940, 1.000] | 60/60 [0.940, 1.000] | 0 | 0 (0.0000) |
+| R1_label_gate | 60/60 | -0.08705 | -0.08705 | 60/60 [0.940, 1.000] | 60/60 [0.940, 1.000] | 0 | 0 (0.0000) |
+| R2_deployed_gate | 60/60 | -0.08705 | -0.08705 | 60/60 [0.940, 1.000] | 60/60 [0.940, 1.000] | 0 | 0 (0.0000) |
+| R2b_channel_below_tol | 0/60 | +0.00000 | -0.08705 | 0/0 [n/a] | 0/60 [0.000, 0.060] | 0 | 60 (5.2230) |
+| R3_predictor_defect_median | 30/60 | -0.06024 | -0.08705 | 30/30 [0.886, 1.000] | 30/60 [0.377, 0.623] | 0 | 30 (1.6084) |
+| R3_predictor_defect_q1 | 45/60 | -0.07544 | -0.08705 | 45/45 [0.921, 1.000] | 45/60 [0.628, 0.842] | 0 | 15 (0.6965) |
+| R3_predictor_defect_q3 | 12/60 | -0.03434 | -0.08705 | 12/12 [0.758, 1.000] | 12/60 [0.118, 0.318] | 0 | 48 (3.1626) |
+
+- **R4 mismatched-group control:** undefined on this family: no mismatched group exists: the scored target's label-symmetry group is the full symmetric group
+
+| arm | n | mean delta (declared-group average) | mean predictor defect | channel above repair floor | repair fired in the run |
+|---|---|---|---|---|---|
+| llm-fitness | 12 | -0.07162 | 0.0759 | 12 | 0 |
+| llm-verify | 12 | -0.08267 | 0.0916 | 12 | 0 |
+| llm-verify-repair | 12 | -0.08181 | 0.0904 | 12 | 7 |
+| mutation-ea | 12 | -0.09732 | 0.1018 | 12 | 0 |
+| random | 12 | -0.10183 | 0.1129 | 12 | 0 |
+
+### ring_n6 — 60 candidates, MC-twirl share 0.00, verify 0.01s vs average 0.18s
+
+Thresholds (development only): median 0.00385, q1 0.00326, q3 0.0044
+
+| rule | fired | realised mean risk change | if always applied | precision | recall | harmed | missed beneficial (total gain) |
+|---|---|---|---|---|---|---|---|
+| R0_supplied_group | 60/60 | -0.00345 | -0.00345 | 60/60 [0.940, 1.000] | 60/60 [0.940, 1.000] | 0 | 0 (0.0000) |
+| R1_label_gate | 0/60 | +0.00000 | -0.00345 | 0/0 [n/a] | 0/60 [0.000, 0.060] | 0 | 60 (0.2068) |
+| R2_deployed_gate | 0/60 | +0.00000 | -0.00345 | 0/0 [n/a] | 0/60 [0.000, 0.060] | 0 | 60 (0.2068) |
+| R2b_channel_below_tol | 0/60 | +0.00000 | -0.00345 | 0/0 [n/a] | 0/60 [0.000, 0.060] | 0 | 60 (0.2068) |
+| R3_predictor_defect_median | 30/60 | -0.00197 | -0.00345 | 30/30 [0.886, 1.000] | 30/60 [0.377, 0.623] | 0 | 30 (0.0884) |
+| R3_predictor_defect_q1 | 45/60 | -0.00274 | -0.00345 | 45/45 [0.921, 1.000] | 45/60 [0.628, 0.842] | 0 | 15 (0.0421) |
+| R3_predictor_defect_q3 | 14/60 | -0.00096 | -0.00345 | 14/14 [0.785, 1.000] | 14/60 [0.144, 0.354] | 0 | 46 (0.1490) |
+
+- **R4 mismatched-group control:** mean risk change +0.00399 over 60 candidates
+
+| arm | n | mean delta (declared-group average) | mean predictor defect | channel above repair floor | repair fired in the run |
+|---|---|---|---|---|---|
+| llm-fitness | 12 | -0.00307 | 0.0033 | 12 | 0 |
+| llm-verify | 12 | -0.00326 | 0.0036 | 12 | 0 |
+| llm-verify-repair | 12 | -0.00308 | 0.0035 | 12 | 0 |
+| mutation-ea | 12 | -0.00390 | 0.0046 | 12 | 0 |
+| random | 12 | -0.00393 | 0.0045 | 12 | 0 |
+
+_(A5.5 deployed-endpoint evaluation not yet run)_
