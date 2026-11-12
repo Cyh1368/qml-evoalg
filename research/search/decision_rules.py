@@ -153,7 +153,10 @@ def _rule_metrics(rows, fired, delta_key="delta_declared"):
     return {
         "n_candidates": int(len(rows)), "n_fired": int(f.sum()),
         "firing_rate": float(f.mean()) if len(rows) else None,
-        "mean_delta_itt": float(d.mean()) if len(rows) else None,
+        # realised decision-level change: non-firing candidates contribute 0, so this
+        # differs across rules (the unconditional mean delta is reported separately)
+        "mean_realised_delta": float(d[f].sum() / len(rows)) if len(rows) else None,
+        "mean_delta_if_always_applied": float(d.mean()) if len(rows) else None,
         "mean_delta_fired": float(d[f].mean()) if f.any() else None,
         "precision_helped_given_fired": _P.wilson_ci(int((f & helped).sum()), int(f.sum())),
         "recall_fired_given_helped": _P.wilson_ci(int((f & helped).sum()),
@@ -255,9 +258,11 @@ def main(argv=None):
         print("\n=== %s (%d runs, MC twirl share %.2f) ==="
               % (fam, d["n_runs"], d["mc_twirl_share"]))
         for rule, m in d["rules"].items():
-            print("  %-28s fire %3d/%3d  ITT mean delta %+.5f  precision %s  recall %s  "
-                  "harmed %d  missed beneficial %d (total gain %.4f)"
-                  % (rule, m["n_fired"], m["n_candidates"], m["mean_delta_itt"],
+            print("  %-28s fire %3d/%3d  realised delta %+.5f  (always-applied %+.5f)  "
+                  "precision %s  recall %s  harmed %d  missed beneficial %d "
+                  "(total gain %.4f)"
+                  % (rule, m["n_fired"], m["n_candidates"], m["mean_realised_delta"],
+                     m["mean_delta_if_always_applied"],
                      "%.2f" % (m["precision_helped_given_fired"]["rate"] or 0.0),
                      "%.2f" % (m["recall_fired_given_helped"]["rate"] or 0.0),
                      m["n_harmed"], m["n_missed_beneficial"],
