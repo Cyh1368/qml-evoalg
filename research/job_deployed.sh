@@ -14,8 +14,9 @@ export OPENBLAS_NUM_THREADS=1
 export LD_LIBRARY_PATH=/apps/software/2024a/software/Python/3.12.3-GCCcore-13.3.0/lib:${LD_LIBRARY_PATH:-}
 cd "${REPO:-$SLURM_SUBMIT_DIR}"
 if [ "${DRY_RUN:-0}" = "1" ]; then
+  mkdir -p build/deployed
   python3 -m research.holdout_deployed --dry-run --workers "${WORKERS:-24}" \
-    --out /tmp/deployed_dry.json --access-log /tmp/deployed_dry_access.json
+    --out build/deployed/dry.json --access-log build/deployed/dry_access.json
 else
   python3 -m research.holdout_deployed --workers "${WORKERS:-24}" \
     --out "${OUT:-research/HOLDOUT_DEPLOYED.json}" \
