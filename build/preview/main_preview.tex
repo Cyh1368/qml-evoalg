@@ -65,14 +65,18 @@ the endpoint that had been omitted --- inference-time Reynolds averaging of the 
 predictor --- is the one effect that is consistent and large
 ($-0.0486$, CI $[-0.0708,-0.0284]$, $7/12$ runs eligible on \texttt{graphs\_n6}), whereas
 verifier \emph{feedback} changes development-selected risk by an undetected amount; the
-same averaging applied to non-LLM arms helps equally, so it is the analytic tool, not the
-LLM, that carries the gain. (iv)~Verification as implemented does not identify the
-group: $10$ of $299$ graph proposals carried the task's group and $289$ wrong-group
-proposals passed the label-preservation gate --- which is expected, because every
-subgroup of a label symmetry passes it; it is a soundness filter, not an identification
-test. A hand-built equivariant architecture beats every search arm on the ring
+same averaging applied to non-LLM arms also helps, so the gain is not attributable to the
+LLM (we do \emph{not} establish that the two are equal). (iv)~Verification as implemented
+does not identify the group: $10$ of $299$ graph proposals carried the task's declared
+group, and the other $289$ are \emph{valid} symmetry hypotheses of proper subgroups --- none
+violated label preservation, and none could have, because every permutation of six vertices
+preserves that target's labels, so the gate cannot fail there by construction. On the ring,
+where the scored target admits only $12$ of $720$ permutations, the same gate rejected
+$95$ of $102$ hypotheses that \emph{were} symmetries of the scored target, with $0$ false
+accepts: it is an under-sensitive soundness filter, not an identification test. A hand-built
+equivariant architecture beats every search arm on the ring
 ($+0.0060$ to $+0.0097$ worse for the arms), and a one-threshold classical rule beats
-every arm on graphs (dev risk $0.351$ vs $0.538$--$0.566$). All endpoints are labelled
+every arm on graphs (development risk $0.351$ vs $0.538$--$0.566$). All endpoints are labelled
 development, sealed or fresh; we do not claim held-out generalisation from development
 risk, we do not claim quantum advantage, and we record two provenance defects in our own
 earlier run records rather than quietly fixing them.
@@ -178,26 +182,41 @@ quantum advantage of any kind \\
 
 Every entry of \S\ref{sec:related} was checked against a primary record (arXiv API,
 Crossref, PMLR); all eight had at least one material error, and the corrected list is in
-the bibliography with the audit in \texttt{research/paper/REFERENCES\_AUDIT.md}. Symmetry
-exploitation in variational QML is established work \cite{meyer2023}; equivariant unitary
-layers and channels, with constructive prescriptions, are general and known
-\cite{nguyen2024}; permutation-invariant QML for graph connectedness is directly occupied
-territory \cite{mansky2025}; symmetry alone does not determine a useful architecture
-\cite{baumann2026}; averaging-operator generalisation benefits, including projection
-identities of the kind we use, are known \cite{elesedy2021}; enforcing, discovering and
-promoting symmetry by Lie-derivative methods is known \cite{otto2023}; finite-measurement
-task-level symmetry inference with projection bias is the closest conceptual
-neighbour \cite{chen2026}; and the LLM-evolutionary harness we build on is
-ShinkaEvolve \cite{lange2025}. The bandit ensemble that selects a proposer per generation
-is \emph{not} from \cite{lange2025}: it is a modification made by our own prior
-study \cite{ho2026prior}, and we attribute it there.
+the bibliography with the audit in \texttt{research/paper/REFERENCES\_AUDIT.md}. One of my
+own round-1 audit conclusions was also wrong and is withdrawn in that file: I had recorded
+that \cite{meyer2023} does not support invariant re-uploading, and re-reading the primary
+text shows it does. That source constructs ``variational quantum data re-uploading models
+that make invariant predictions'', defines an \emph{equivariant embedding} ($U(V_s[x]) = U_s U(x) U_s^{\dagger}$),
+and gives the \emph{twirling formula} $T_U[X] = |S|^{-1}\sum_{s} U_s X U_s^{\dagger}$ as a
+projector onto the commutant, applied to gates and whole ans\"atze. Our inference-time
+average is the output-side specialisation of that projector, and our constructive equivariant
+baseline is an instance of their blueprint; neither is a contribution of ours.
 
-The mathematical tools are therefore not the contribution, and we make no priority claim.
-What we intend to contribute is empirical and negative-leaning: a measurement, under
-matched budgets, of \emph{where} executable verification changes behaviour in
-LLM-guided quantum circuit design --- finding that the analytic repair step carries the
-gain while the group-identification step fails in a way that is predictable from the
-group theory.
+The rest of the picture is equally established: equivariant unitary layers and channels with
+constructive prescriptions \cite{nguyen2024}; permutation-invariant QML for graph connectedness,
+directly occupied territory \cite{mansky2025}; symmetry alone does not determine a useful
+architecture \cite{baumann2026}; averaging-operator generalisation benefits, including
+projection identities of the kind we use \cite{elesedy2021}; enforcing, discovering and
+promoting symmetry by Lie-derivative methods \cite{otto2023}; finite-measurement task-level
+symmetry inference with projection bias, the closest conceptual neighbour \cite{chen2026}; and
+the LLM-evolutionary harness we build on is ShinkaEvolve \cite{lange2025}. The bandit ensemble
+that selects a proposer per generation is \emph{not} from \cite{lange2025}: it is a
+modification made by our own prior study \cite{ho2026prior}, and we attribute it there.
+
+\paragraph{What is left, stated precisely.} The averaging operator, the projection identity,
+the invariant-model blueprint and the label-preservation test are all prior art, and the
+limitation we document for the verifier (a validity test cannot distinguish a group from its
+valid subgroups) is a structural property of such tests, not a discovered fact about LLM
+reasoning. What this paper contributes is a \emph{measurement} of the decision problem that
+sits between having a symmetry tool and using it: on identical fitted predictors, we quantify
+how much of the averaging benefit a label-preservation gate actually lets through
+(sensitivity $1/6$ on the invariant target, $0/60$ repairs fired on the ring, $0$ false
+accepts), show that on one of the two task families the gate is \emph{provably vacuous} before
+any model runs (the target's label-symmetry group is the whole hypothesis space), show that a
+verifier-free measured-defect gate captures the same benefit with no harm, and show that the
+negative control --- averaging over a mismatched group --- is where verification would earn
+its keep. That is a statement about when to apply a known repair, which the prior literature
+on how to build the repair does not settle.
 
 \section{Preliminaries: symmetry diagnostics and their assumptions}
 \label{sec:math}
@@ -330,8 +349,10 @@ proposal-by-proposal.
 
 \textbf{A trivial shortcut.} A single edge-count threshold fitted on training data alone
 attains $83.0\%$ historical validation accuracy. In the fresh benchmark used here the same
-rule reaches $91.2\%$ development accuracy and risk $0.351$ (\S\ref{sec:baselines}), which
-is better than every search arm; density, not structure, carries much of the signal.
+rule reaches \emph{development} accuracy $91.2\%$ and risk $0.351$ (\S\ref{sec:baselines}),
+which is better than every search arm at the same endpoint; density, not structure, carries
+much of the signal. Its risk on the same evaluation rows as the arms is reported in
+\S\ref{sec:deployed} so the comparison is matched.
 
 \section{WP-REPAIR: a causal repair experiment with explicit units}
 \label{sec:repair}
@@ -640,27 +661,40 @@ question is answered by E-S2, which is underpowered at $12$ seeds.
 arm's selected predictor (E-S5b) lowers development risk for \emph{all} arms, including
 the non-LLM ones: graphs $-0.0639$ (\texttt{llm-fitness}) to $-0.1114$ (\texttt{random});
 ring $-0.0031$ to $-0.0039$; all intervals exclude $0$. Whatever the averaging buys, it
-does not require an LLM to buy it.
+does not require an LLM to buy it. \textbf{Approximation, stated plainly:} the declared
+group of \texttt{graphs\_n6} is $S_6$ with $720$ elements, so every graphs twirl in this
+paper is a \emph{Monte-Carlo} average over $24$ sampled group elements, not the exact
+Reynolds projection --- the MC share is $1.00$ on graphs and $0.00$ on the ring, where
+$|D_6| = 12$ is enumerated exactly. Guarantees that hold for the exact projector
+(equivariance of the averaged predictor, the projection identity) do \emph{not} transfer to
+a $24$-element average; what we report for graphs is the measured risk change of that
+approximation, and its cost is $12.5$\,s per candidate against $0.18$\,s on the ring.
 
 \subsection{Verification does not identify the group}
 \label{sec:selectivity}
 
-For every proposal that carried a hypothesis we recomputed, on the trusted side, whether
-its group equals the task's group and whether it passes the label-preservation gate that
-the verifier uses. On \texttt{graphs\_n6}, $299$ proposals carried a hypothesis: $10$
-carried $S_6$, and $289$ wrong-group proposals \emph{passed} the gate. On
-\texttt{ring\_n6}, $192$ carried a hypothesis: $0$ carried $D_6$, and $7$ passed.
+For every proposal that carried a hypothesis we recomputed, on the trusted side, its status
+against the declared group and against the measured label-symmetry group of the scored
+target (\S\ref{sec:semantics}). On \texttt{graphs\_n6}, of $299$ proposals carrying a
+hypothesis, $10$ are \texttt{exact\_declared} ($S_6$) and $289$ are
+\texttt{valid\_proper\_subgroup}: genuine label symmetries, weaker than declared, and
+\textbf{no} invalid hypothesis at all --- which is not a surprise once $|L_t| = 720$ is
+measured, because on that target no permutation hypothesis can fail the test. On
+\texttt{ring\_n6}, of $192$ proposals, $0$ are \texttt{exact\_declared}, $120$ are valid
+proper subgroups of $D_6$, and $72$ are genuinely invalid for the scored target; the gate
+accepted $7$ of them and rejected $95$ that \emph{were} symmetries of the scored target.
 
-This is not an implementation bug; it is the test's logic. Label preservation tests
-$y(gx)=y(x)$ on sampled rows for the \emph{proposed} group. If the true label symmetry is
-$G$ and the proposal is a subgroup $H\le G$, every element of $H$ preserves labels by
-construction, so the gate accepts. It is a \emph{soundness filter} (it can refute a group
-that visibly breaks labels, as on the ring where $185/192$ are rejected) and not an
-\emph{identification} test. The behavioural consequence is exactly what the search results
-show: repair fires on candidates whose group is wrong, and the averaged predictor still
-improves, because averaging over a subgroup of the true symmetry still removes variance.
-Establishing identification would need a different instrument (counterexample search over
-the group, or a symmetry-breaking probe distribution), which we did not build.
+This is a structural property of validity tests, not an implementation bug and not a
+discovered fact about LLM reasoning: testing that a proposed group preserves labels cannot
+distinguish a group from its valid subgroups, because every element of a subgroup of a label
+symmetry preserves labels by construction. A finite-sample label test is a \emph{screen}, not
+a universal soundness certificate. Read correctly, the implemented gate is sound (measured
+false-accept rate $0/7$ on the ring, $0/144$ on graphs) and severely under-sensitive (it
+rejected $95$ of $95$ sound ring hypotheses, CI $[0.961,1.000]$). Establishing
+\emph{identification} of the maximal group would need a different instrument (counterexample
+search over the group, or a symmetry-breaking probe distribution), which we did not build;
+\S\ref{sec:semantics} measures what the existing gate does decide, and \S\ref{sec:decision}
+measures what that costs.
 
 \subsection{Does the verifier's effect track the target's symmetry? (Addendum A1)}
 \label{sec:breaking}
@@ -720,9 +754,11 @@ equivariant architecture (bidirectional CRZ, measured channel residual $4\times1
 reaches development risk $0.00055$ on \texttt{ring\_n6}; every search arm is worse, by
 $+0.0060$ ($\texttt{llm-fitness}$, CI $[+0.0055,+0.0064]$) to $+0.0097$
 ($\texttt{mutation-ea}$), all $p<10^{-4}$. On \texttt{graphs\_n6} the same construction is
-\emph{worse} than every arm ($0.667$ vs $0.538$--$0.566$): an exactly equivariant
-three-parameter block cannot express connectedness, which is the two-sided lesson of
-two-sided lesson of \cite{baumann2026}. The classical edge-count rule (threshold fitted on training rows only,
+\emph{worse} than every arm ($0.667$ vs $0.538$--$0.566$): at the search protocol's per-fit
+budget this exactly equivariant three-parameter block did not reach the arms' risk. We report
+that as an optimisation outcome at a fixed budget, \emph{not} as an expressivity impossibility
+--- no proof or exhaustive representational argument is offered --- which is the two-sided
+lesson of \cite{baumann2026}. The classical edge-count rule (threshold fitted on training rows only,
 $k{=}6$) reaches development risk $0.351$ and accuracy $0.912$ on graphs, beating every arm;
 the best constant predictor reaches $0.657$; the invariant oracle on the ring is $0$ by
 construction. Density stratification (E-S5) puts the arms' error where the shortcut lives:
@@ -822,11 +858,138 @@ $\eta$ & & mean diff & 95\% CI & mean diff & 95\% CI \\
 \end{table}
 
 The untouched-input result is the cleanest statement this paper can make about repair: on data
-no part of the pipeline touched, enforcing equivariance buys nothing over a gate-matched
-asymmetric control when the target is symmetric, and costs $4.6\%$ of the target variance when
-it is not. The file digests before and after the read are identical
+no part of the pipeline touched, the difference between enforced equivariance and a
+gate-matched asymmetric control is \emph{not detected} when the target is symmetric ($-0.00057$,
+CI $[-0.00176,+0.00028]$; we do not claim the two are equal), and enforcing it costs $4.6\%$ of
+the target variance when the target is not. The file digests before and after the read are identical
 (\texttt{research/HOLDOUT\_ACCESS\_v4.json}), and the evaluator now refuses to open the two
 splits consumed by the defective run.
+
+\subsection{What a label-preservation verifier can decide (A5.2, A5.3)}
+\label{sec:semantics}
+
+The referee's second point is correct as a matter of definition, and checking it changed
+what we report. A hypothesis closure $H$ is now classified against the declared group $G$
+and the \emph{measured} label-symmetry group $L_t$ of the scored target (every one of the
+$n!$ site permutations tested on an independent probe panel of 512 development rows that the
+gate never reads). Counting $H \ne G$ as a wrong group was wrong: $H < G$ is a genuine
+symmetry that is merely weaker than declared.
+
+\begin{table}[t]
+\centering
+\caption{Measured label-symmetry groups. $|L_t|/|S_n|$ is the fraction of the permutation
+hypothesis space that the label test can \emph{not} reject for target $t$; it is computable
+before any model is trained, and it decides whether a label-preservation verifier can carry
+information at all. $\textsc{all}$ is the conjunction the implemented gate actually checks.}
+\label{tab:semantics}
+\small
+\begin{tabular}{llrrll}
+\toprule
+family & target & $|L_t|$ & $|L_t|/|S_n|$ & contains $G$ & $=S_n$ \\
+\midrule
+graphs & connected & 720 & 1.0000 & yes & \textbf{yes} \\
+graphs & triangle  & 720 & 1.0000 & yes & \textbf{yes} \\
+graphs & \textsc{all} & 720 & 1.0000 & yes & yes \\
+ring & alpha\_0 & 12 & 0.0167 & yes & no \\
+ring & alpha\_0.1 / 0.25 / 0.5 / 1 & 2 & 0.0028 & no & no \\
+ring & \textsc{all} & 2 & 0.0028 & no & no \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two consequences. First, on \texttt{graphs\_n6} the label gate is \emph{vacuous by
+construction}: connectedness is invariant under every relabelling of the vertices, so no
+permutation hypothesis can violate it, and the observed $144/144$ acceptances say nothing
+about the quality of the proposals. The $289$ hypotheses we previously called ``wrong group''
+are \texttt{valid\_proper\_subgroup}: sound, incomplete, and \textbf{zero} false accepts.
+Second, on the ring the scored target $\alpha_0$ admits $12$ of $720$ permutations, but the
+implemented gate checks \emph{every} target column in the dataset, whose conjunction admits
+only $2$ of $720$ --- six times stricter than the scored target requires.
+
+\begin{table}[t]
+\centering
+\caption{Fixed-panel selectivity (A5.3): identical ring inputs, only the target varies. The
+panel is fixed in advance (identity, rotation, reflection, the declared dihedral group, its
+$C_3$ and $C_2$ subgroups, the full symmetric group, 20 random permutations, all 15 single
+transpositions). Wilson intervals; denominators are panel members, not elements.}
+\label{tab:panel}
+\small
+\begin{tabular}{llccc}
+\toprule
+target & gate variant & sensitivity & false-accept & $|L_t|$ \\
+\midrule
+$\alpha_0$ & implemented (all columns, tol.\ $0$) & $1/6 = 0.167$ $[0.030,0.564]$ & $0/3$ $[0.000,0.561]$ & 12 \\
+$\alpha_0$ & scored target, tol.\ $0$ & $1/6 = 0.167$ $[0.030,0.564]$ & $0/3$ $[0.000,0.561]$ & 12 \\
+$\alpha_0$ & scored target, tol.\ $10^{-9}$ & $\mathbf{6/6 = 1.000}$ $[0.610,1.000]$ & $0/3$ $[0.000,0.561]$ & 12 \\
+$\alpha_1$ & implemented & $1/2 = 0.500$ $[0.095,0.905]$ & $0/7$ $[0.000,0.354]$ & 2 \\
+connected & implemented & $9/9 = 1.000$ $[0.701,1.000]$ & $0/0$ (no violator exists) & 720 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The sensitivity loss has two separable causes, each measured: the all-columns conjunction,
+and a zero tolerance applied to a continuous target. The declared rotation is a genuine
+symmetry of $\alpha_0$ --- its worst violated fraction on the probe is $0.0$ at the probe's
+$10^{-9}$ tolerance --- yet at a tolerance of exactly $0$ the gate records a violated fraction
+of $0.53125$ across the rotation's closure ($34$ of its $64$ gate rows) and rejects it. With
+both causes corrected, panel sensitivity on the invariant target goes from $1/6$ to $6/6$
+with no false accepts. On the search-generated hypotheses the recorded decisions give
+$0$ false accepts out of $7$ accepted on the ring (CI $[0.000,0.354]$) and $95$ of $95$
+rejected hypotheses \emph{sound} for the scored target (CI $[0.961,1.000]$): the implemented
+gate's failure mode is missed sound hypotheses, not accepted unsound ones. Recovering $D_6$
+on a target that is deliberately not $D_6$-invariant would be the wrong answer, and we no
+longer score it as a failure.
+
+\subsection{Verification as a decision rule (A5.4)}
+\label{sec:decision}
+
+That declared-group averaging helps non-LLM pipelines does not show a verifier is necessary,
+so we stopped asserting it and measured the decision instead. For each of the $120$ frozen
+candidates we applied the same averaging and scored the same rows under five rules. The
+outcome is paired per candidate ($\Delta = $ risk after $-$ risk before; negative helps), and
+a rule's \emph{realised} change counts a non-firing candidate as $0$.
+
+\begin{table}[t]
+\centering
+\caption{Decision-rule comparison on the $120$ frozen candidates ($60$ per family).
+Precision is the share of fired repairs that helped; recall the share of beneficial repairs
+that fired; both with Wilson intervals in \texttt{research/results\_summary2.md}. The
+mismatched-group control is undefined on graphs because no mismatched group exists there.}
+\label{tab:decision}
+\small
+\begin{tabular}{llrrrrr}
+\toprule
+family & rule & fired & realised $\Delta$ & if always applied & precision & missed beneficial \\
+\midrule
+graphs & R0 supplied group (always) & 60/60 & $-0.08705$ & $-0.08705$ & 60/60 & 0 \\
+graphs & R1 label gate & 60/60 & $-0.08705$ & $-0.08705$ & 60/60 & 0 \\
+graphs & R2 deployed gate & 60/60 & $-0.08705$ & $-0.08705$ & 60/60 & 0 \\
+graphs & R3 defect gate ($q_1$) & 45/60 & $-0.07544$ & $-0.08705$ & 45/45 & 15 \\
+graphs & R4 mismatched group & --- & \multicolumn{4}{l}{undefined: $L_t$ is the whole space} \\
+\midrule
+ring & R0 supplied group (always) & 60/60 & $-0.00345$ & $-0.00345$ & 60/60 & 0 \\
+ring & R1 label gate & $\mathbf{0/60}$ & $\mathbf{0.00000}$ & $-0.00345$ & 0/0 & 60 \\
+ring & R2 deployed gate & $\mathbf{0/60}$ & $\mathbf{0.00000}$ & $-0.00345$ & 0/0 & 60 \\
+ring & R3 defect gate ($q_1$) & 45/60 & $-0.00274$ & $-0.00345$ & 45/45 & 15 \\
+ring & R4 mismatched group & 60 & $+0.00399$ & --- & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Four things follow. (i)~Averaging over the supplied group never hurt a single one of the
+$120$ candidates, so on these targets unconditional averaging is the better policy and the
+verifier is \emph{not} a precondition for the benefit. (ii)~The implemented gate forfeits
+$100\%$ of the available benefit on the ring (realised $0.00000$ against $-0.00345$), which
+is the operational cost of the sensitivity loss measured above. (iii)~A verifier-free gate on
+the predictor's own measured non-invariance captures $79\%$ of it ($-0.00274$) at precision
+$45/45$ with no candidate harmed. (iv)~The negative control is where verification would earn
+its keep: averaging over a mismatched group costs $+0.00399$, so a rule that fires blindly is
+unsafe exactly on targets whose symmetry differs from the supplied group. Two further
+mechanical facts matter for design: the channel condition in the deployed gate is satisfied by
+$60/60$ candidates in both families, so it contributes no discrimination, and on graphs the
+label test costs $0.45$\,s while the averaging it gates costs $12.5$\,s --- the filter is
+$3.6\%$ of the work it is supposed to save, and it filters nothing.
+
 
 \section{Discussion}
 \label{sec:discussion}
@@ -868,7 +1031,19 @@ $n{=}9$ simulation exceeds this revision's budget; a single model
 directions, which supports within-benchmark statements only; equal gate counts do not make
 two circuit families equivalent in expressivity or optimisation geometry, so no
 symmetry-only attribution is offered; the verifier's label gate has no power against
-subgroups of the true label symmetry; the model serving alias exposes no immutable
+subgroups of the true label symmetry, and on \texttt{graphs\_n6} no power against anything,
+since its target's label-symmetry group is the whole hypothesis space;
+the \emph{graphs} benchmark cannot supply a fresh test distribution at all --- all $2^{15}$
+labeled six-vertex graphs, hence all isomorphism classes, are already consumed by
+development and the earlier holdouts, so the graphs deployed-endpoint result is a labelled
+second read rather than untouched data;
+every \texttt{graphs\_n6} average in this paper is a $24$-element Monte-Carlo twirl of a
+$720$-element group, so exact-projector guarantees do not transfer to it; the defect gate in
+the decision-rule ablation is one statistic on one dataset per family, so it is a measured
+comparison on this benchmark and not a validated method;
+all repair inference conditions on a single dataset and task family, so no interval here
+covers newly sampled datasets or families;
+the model serving alias exposes no immutable
 checkpoint revision, so reproducibility of the LLM component is temporal rather than
 bit-level; and no quantum-advantage claim is made or implied.
 
@@ -991,14 +1166,35 @@ python3 -m research.search.dev_analysis --dir logs/runs_confirm \
   --out research/search/dev_analysis.json --workers 24
 python3 -m research.search.analyze_breaking --dir logs/runs_breaking \
   --out research/search/breaking_target.json
+python3 -m research.search.verify_semantics --runs logs/runs_confirm \
+  --out research/search/verify_semantics.json
+sbatch research/search/job_decision.sh          # A5.4 decision rules
 python3 -m research.holdout_oneshot --splits dev --skip-search \
   --selfcheck research/experiments/repair/repair2_results.json   # gate, no sealed read
-python3 -m research.holdout_oneshot --splits fresh_v3 --skip-search \
+python3 -m research.holdout_oneshot --splits fresh_v4 --skip-search \
   --selfcheck research/experiments/repair/repair2_results.json \
-  --out research/HOLDOUT_RESULTS_v3.json \
-  --access-log research/HOLDOUT_ACCESS_v3.json   # ONE shot on v3 only
+  --out research/HOLDOUT_RESULTS_v4.json \
+  --access-log research/HOLDOUT_ACCESS_v4.json   # ONE shot on v4 only
+python3 -m research.holdout_search_contrasts     # E-S7 vs-random contrasts
+DRY_RUN=1 sbatch research/job_deployed.sh        # A5.5 gate first, opens nothing
+sbatch research/job_deployed.sh                  # A5.5 deployed endpoint, ONE read
 python3 -m research.compile_results2 --out research/results_summary2.md
+python3 -m research.paper.check_numbers          # manuscript numbers must match records
+python3 -m research.build_manifest --out research/MANIFEST.md
 \end{verbatim}
+Each one-shot command refuses a split recorded as consumed, so the commands above are safe
+to copy: re-running them cannot turn a consumed split into a second look. The mapping from
+every table in this paper to its code revision, result file, digest, endpoint, split, seed
+and status is in \texttt{research/MANIFEST.md}, which is itself generated.
+
+\paragraph{What the digests prove, and what they do not.} Recording a file's sha256 before
+and after a read shows the bytes were not modified while we read them. It does \emph{not}
+show that the file had never been opened before, and neither \texttt{0444} permissions nor
+the evaluator's path check are access isolation: they are procedural guards against our own
+drift, and the consumed-split ledger in \texttt{research/MANIFEST.md} is the record that
+matters. Likewise, git gives a documented chronology --- the commit that last touched an
+analysis file, and the commit that added the protocol --- but it is not an independently
+certified preregistration service, and we do not describe it as one.
 Stack: \texttt{Python/3.12.3}, \texttt{SciPy-bundle/2024.05} (NumPy 1.26.4, SciPy 1.13.1);
 LLM arms additionally \texttt{module load ycrc-llm/1.0}. CPU batch jobs run on the
 cluster's \texttt{day} partition with \texttt{OPENBLAS\_NUM\_THREADS=1}; the work is
