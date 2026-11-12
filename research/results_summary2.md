@@ -1071,3 +1071,205 @@ _Unit is the paired seed. 'difference not detected' means the interval covers 0;
 | graphs_n6 | connected | 720 | 720 | 1.000000 | 2 | 1.00000 | [0.99904, 1.00000] | 1 |
 | graphs_n6 | connected | 720 | 720 | 1.000000 | 3 | 1.00000 | [0.99904, 1.00000] | 1 |
 
+## Gate-parity decision comparison with mixture objective (A7.3/A7.4/A7.5)
+
+_risk + w * (search_seconds + H * deployed_seconds), H=1000; risk is a per-prediction MSE (a rate), the horizon term is cumulative, and search-time cost is never counted as deployment cost_
+
+### graphs_n6
+
+| regime | rule | fired | deployed risk | mean delta | CI | harmful rejected | beneficial missed | search s | deployed s/pred |
+|---|---|---|---|---|---|---|---|---|---|
+| declared | always_repair | 60/60 | 0.46087 | -0.08392 | [-0.09868, -0.07000] | 0/0 | 0/60 | 48.424614 | 0.045476 |
+| declared | calib_exact | 0/60 | 0.54479 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 1.201219 | 0.000000 |
+| declared | calib_harm | 0/60 | 0.54479 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 1.201219 | 0.000000 |
+| declared | corrected_label | 60/60 | 0.46087 | -0.08392 | [-0.09868, -0.07000] | 0/0 | 0/60 | 49.625833 | 0.045476 |
+| declared | defect_q1_frozen | 45/60 | 0.47111 | -0.07368 | [-0.09277, -0.05407] | 0/0 | 15/60 | 39.145295 | 0.034056 |
+| declared | defect_q1_within | 45/60 | 0.47111 | -0.07368 | [-0.09277, -0.05407] | 0/0 | 15/60 | 39.145295 | 0.034056 |
+| declared | defective_label | 60/60 | 0.46087 | -0.08392 | [-0.09868, -0.07000] | 0/0 | 0/60 | 49.621942 | 0.045476 |
+| declared | deployed_gate | 60/60 | 0.46087 | -0.08392 | [-0.09868, -0.07000] | 0/0 | 0/60 | 49.967490 | 0.045476 |
+| declared | never_repair | 0/60 | 0.54479 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.000000 | 0.000000 |
+| declared | random_matched | 45/60 | 0.48774 | -0.05705 | [-0.07098, -0.04176] | 0/0 | 15/60 | 37.358474 | 0.035081 |
+| subgroup | always_repair | 60/60 | 0.47970 | -0.06509 | [-0.07845, -0.05327] | 0/0 | 0/59 | 11.923405 | 0.009830 |
+| subgroup | calib_exact | 0/60 | 0.54479 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 59/59 | 0.003101 | 0.000000 |
+| subgroup | calib_harm | 0/60 | 0.54479 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 59/59 | 0.003101 | 0.000000 |
+| subgroup | corrected_label | 60/60 | 0.47970 | -0.06509 | [-0.07845, -0.05327] | 0/0 | 0/59 | 11.926506 | 0.009830 |
+| subgroup | defect_q1_frozen | 31/60 | 0.50052 | -0.04427 | [-0.06327, -0.02663] | 0/0 | 28/59 | 6.671916 | 0.004915 |
+| subgroup | defect_q1_within | 45/60 | 0.48777 | -0.05702 | [-0.07330, -0.04122] | 0/0 | 14/59 | 9.649918 | 0.007366 |
+| subgroup | defective_label | 60/60 | 0.47970 | -0.06509 | [-0.07845, -0.05327] | 0/0 | 0/59 | 11.926480 | 0.009830 |
+| subgroup | deployed_gate | 60/60 | 0.47970 | -0.06509 | [-0.07845, -0.05327] | 0/0 | 0/59 | 11.934981 | 0.009830 |
+| subgroup | never_repair | 0/60 | 0.54479 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 59/59 | 0.000000 | 0.000000 |
+| subgroup | random_matched | 45/60 | 0.50153 | -0.04326 | [-0.05428, -0.03161] | 0/0 | 15/59 | 9.183790 | 0.007567 |
+
+| regime | calib_exact tolerance | calib_harm tolerance |
+|---|---|---|
+| declared | None | None |
+| subgroup | None | None |
+
+| mixture pi(declared) | argmin at w=0 | argmin at w=1e-2 | strictly unique? |
+|---|---|---|---|
+| 0.00 | never_repair | never_repair | w=0: False |
+| 0.25 | always_repair | never_repair | w=0: False |
+| 0.50 | always_repair | never_repair | w=0: False |
+| 0.75 | always_repair | never_repair | w=0: False |
+| 1.00 | always_repair | never_repair | w=0: False |
+
+**Verdict (A7.5 categories, mechanical):** scoped negative: no calibrated rule is the strictly unique best policy at any (mixture, cost-weight) cell on this continuum
+
+_Policies that are strictly unique best somewhere: always_repair, never_repair_
+
+| regime | mean delta if always applied | always better? |
+|---|---|---|
+| declared | -0.08392 | True |
+| subgroup | -0.06509 | True |
+
+### ring_n6
+
+| regime | rule | fired | deployed risk | mean delta | CI | harmful rejected | beneficial missed | search s | deployed s/pred |
+|---|---|---|---|---|---|---|---|---|---|
+| approx_s05 | always_repair | 60/60 | 0.00465 | -0.00343 | [-0.00373, -0.00315] | 0/0 | 0/60 | 0.197829 | 0.000745 |
+| approx_s05 | calib_exact | 0/60 | 0.00808 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001433 | 0.000000 |
+| approx_s05 | calib_harm | 0/60 | 0.00808 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001433 | 0.000000 |
+| approx_s05 | corrected_label | 0/60 | 0.00808 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001433 | 0.000000 |
+| approx_s05 | defect_q1_frozen | 45/60 | 0.00535 | -0.00274 | [-0.00315, -0.00240] | 0/0 | 15/60 | 0.209892 | 0.000543 |
+| approx_s05 | defect_q1_within | 45/60 | 0.00535 | -0.00274 | [-0.00315, -0.00240] | 0/0 | 15/60 | 0.209892 | 0.000543 |
+| approx_s05 | defective_label | 0/60 | 0.00808 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001495 | 0.000000 |
+| approx_s05 | deployed_gate | 0/60 | 0.00808 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.012379 | 0.000000 |
+| approx_s05 | never_repair | 0/60 | 0.00808 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.000000 | 0.000000 |
+| approx_s05 | random_matched | 45/60 | 0.00555 | -0.00253 | [-0.00291, -0.00215] | 0/0 | 15/60 | 0.150581 | 0.000567 |
+| approx_s10 | always_repair | 60/60 | 0.00469 | -0.00342 | [-0.00371, -0.00314] | 0/0 | 0/60 | 0.197907 | 0.000745 |
+| approx_s10 | calib_exact | 0/60 | 0.00811 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001428 | 0.000000 |
+| approx_s10 | calib_harm | 0/60 | 0.00811 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001428 | 0.000000 |
+| approx_s10 | corrected_label | 0/60 | 0.00811 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001428 | 0.000000 |
+| approx_s10 | defect_q1_frozen | 45/60 | 0.00539 | -0.00272 | [-0.00312, -0.00239] | 0/0 | 15/60 | 0.210264 | 0.000544 |
+| approx_s10 | defect_q1_within | 45/60 | 0.00539 | -0.00272 | [-0.00312, -0.00239] | 0/0 | 15/60 | 0.210264 | 0.000544 |
+| approx_s10 | defective_label | 0/60 | 0.00811 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001491 | 0.000000 |
+| approx_s10 | deployed_gate | 0/60 | 0.00811 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.012386 | 0.000000 |
+| approx_s10 | never_repair | 0/60 | 0.00811 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.000000 | 0.000000 |
+| approx_s10 | random_matched | 45/60 | 0.00557 | -0.00253 | [-0.00290, -0.00215] | 0/0 | 15/60 | 0.150333 | 0.000566 |
+| approx_s20 | always_repair | 60/60 | 0.00495 | -0.00339 | [-0.00368, -0.00311] | 0/0 | 0/60 | 0.196785 | 0.000740 |
+| approx_s20 | calib_exact | 0/60 | 0.00834 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001428 | 0.000000 |
+| approx_s20 | calib_harm | 0/60 | 0.00834 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001428 | 0.000000 |
+| approx_s20 | corrected_label | 0/60 | 0.00834 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001428 | 0.000000 |
+| approx_s20 | defect_q1_frozen | 45/60 | 0.00565 | -0.00269 | [-0.00307, -0.00237] | 0/0 | 15/60 | 0.209073 | 0.000541 |
+| approx_s20 | defect_q1_within | 45/60 | 0.00565 | -0.00269 | [-0.00307, -0.00237] | 0/0 | 15/60 | 0.209073 | 0.000541 |
+| approx_s20 | defective_label | 0/60 | 0.00834 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001485 | 0.000000 |
+| approx_s20 | deployed_gate | 0/60 | 0.00834 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.012381 | 0.000000 |
+| approx_s20 | never_repair | 0/60 | 0.00834 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.000000 | 0.000000 |
+| approx_s20 | random_matched | 45/60 | 0.00581 | -0.00253 | [-0.00289, -0.00215] | 0/0 | 15/60 | 0.149365 | 0.000562 |
+| approx_s40 | always_repair | 60/60 | 0.00621 | -0.00334 | [-0.00362, -0.00304] | 0/0 | 0/60 | 0.194065 | 0.000729 |
+| approx_s40 | calib_exact | 0/60 | 0.00955 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001425 | 0.000000 |
+| approx_s40 | calib_harm | 0/60 | 0.00955 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001425 | 0.000000 |
+| approx_s40 | corrected_label | 0/60 | 0.00955 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001425 | 0.000000 |
+| approx_s40 | defect_q1_frozen | 45/60 | 0.00692 | -0.00263 | [-0.00297, -0.00232] | 0/0 | 15/60 | 0.207040 | 0.000533 |
+| approx_s40 | defect_q1_within | 45/60 | 0.00692 | -0.00263 | [-0.00297, -0.00232] | 0/0 | 15/60 | 0.207040 | 0.000533 |
+| approx_s40 | defective_label | 0/60 | 0.00955 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001496 | 0.000000 |
+| approx_s40 | deployed_gate | 0/60 | 0.00955 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.012357 | 0.000000 |
+| approx_s40 | never_repair | 0/60 | 0.00955 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.000000 | 0.000000 |
+| approx_s40 | random_matched | 45/60 | 0.00702 | -0.00253 | [-0.00289, -0.00214] | 0/0 | 15/60 | 0.147745 | 0.000556 |
+| declared | always_repair | 60/60 | 0.00467 | -0.00345 | [-0.00376, -0.00316] | 0/0 | 0/60 | 0.196490 | 0.000739 |
+| declared | calib_exact | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001412 | 0.000000 |
+| declared | calib_harm | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001412 | 0.000000 |
+| declared | corrected_label | 60/60 | 0.00467 | -0.00345 | [-0.00376, -0.00316] | 0/0 | 0/60 | 0.197902 | 0.000739 |
+| declared | defect_q1_frozen | 45/60 | 0.00537 | -0.00275 | [-0.00317, -0.00240] | 0/0 | 15/60 | 0.209670 | 0.000542 |
+| declared | defect_q1_within | 45/60 | 0.00537 | -0.00275 | [-0.00317, -0.00240] | 0/0 | 15/60 | 0.209670 | 0.000542 |
+| declared | defective_label | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.001445 | 0.000000 |
+| declared | deployed_gate | 60/60 | 0.00467 | -0.00345 | [-0.00376, -0.00316] | 0/0 | 0/60 | 0.208905 | 0.000739 |
+| declared | never_repair | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.000000 | 0.000000 |
+| declared | random_matched | 45/60 | 0.00558 | -0.00254 | [-0.00292, -0.00215] | 0/0 | 15/60 | 0.149181 | 0.000562 |
+| mismatched | always_repair | 60/60 | 0.01078 | +0.00266 | [+0.00232, +0.00297] | 0/58 | 0/2 | 0.049789 | 0.000128 |
+| mismatched | calib_exact | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 58/58 | 2/2 | 0.000386 | 0.000000 |
+| mismatched | calib_harm | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 58/58 | 2/2 | 0.000386 | 0.000000 |
+| mismatched | corrected_label | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 58/58 | 2/2 | 0.000386 | 0.000000 |
+| mismatched | defect_q1_frozen | 56/60 | 0.01064 | +0.00252 | [+0.00215, +0.00286] | 4/58 | 0/2 | 0.062189 | 0.000120 |
+| mismatched | defect_q1_within | 45/60 | 0.01020 | +0.00209 | [+0.00171, +0.00243] | 15/58 | 0/2 | 0.053887 | 0.000100 |
+| mismatched | defective_label | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 58/58 | 2/2 | 0.000393 | 0.000000 |
+| mismatched | deployed_gate | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 58/58 | 2/2 | 0.009844 | 0.000000 |
+| mismatched | never_repair | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 58/58 | 2/2 | 0.000000 | 0.000000 |
+| mismatched | random_matched | 45/60 | 0.01017 | +0.00205 | [+0.00176, +0.00234] | 15/58 | 0/2 | 0.037835 | 0.000098 |
+| subgroup | always_repair | 60/60 | 0.00547 | -0.00265 | [-0.00292, -0.00239] | 0/0 | 0/60 | 0.049774 | 0.000128 |
+| subgroup | calib_exact | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.000385 | 0.000000 |
+| subgroup | calib_harm | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.000385 | 0.000000 |
+| subgroup | corrected_label | 60/60 | 0.00547 | -0.00265 | [-0.00292, -0.00239] | 0/0 | 0/60 | 0.050159 | 0.000128 |
+| subgroup | defect_q1_frozen | 26/60 | 0.00676 | -0.00136 | [-0.00183, -0.00090] | 0/0 | 34/60 | 0.036632 | 0.000054 |
+| subgroup | defect_q1_within | 45/60 | 0.00602 | -0.00210 | [-0.00234, -0.00184] | 0/0 | 15/60 | 0.051981 | 0.000093 |
+| subgroup | defective_label | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.000393 | 0.000000 |
+| subgroup | deployed_gate | 60/60 | 0.00547 | -0.00265 | [-0.00292, -0.00239] | 0/0 | 0/60 | 0.059638 | 0.000128 |
+| subgroup | never_repair | 0/60 | 0.00812 | +0.00000 | [+0.00000, +0.00000] | 0/0 | 60/60 | 0.000000 | 0.000000 |
+| subgroup | random_matched | 45/60 | 0.00621 | -0.00191 | [-0.00221, -0.00161] | 0/0 | 15/60 | 0.037757 | 0.000097 |
+
+| regime | calib_exact tolerance | calib_harm tolerance |
+|---|---|---|
+| approx_s05 | 0.03 | None |
+| approx_s10 | 0.03 | None |
+| approx_s20 | 0.03 | None |
+| approx_s40 | 0.03 | None |
+| declared | None | None |
+| mismatched | 0.03 | None |
+| subgroup | None | None |
+
+| mixture pi(declared) | argmin at w=0 | argmin at w=1e-2 | strictly unique? |
+|---|---|---|---|
+| 0.00 | never_repair | never_repair | w=0: False |
+| 0.25 | corrected_label | never_repair | w=0: False |
+| 0.50 | corrected_label | never_repair | w=0: False |
+| 0.75 | corrected_label | never_repair | w=0: False |
+| 1.00 | always_repair | never_repair | w=0: False |
+
+**Verdict (A7.5 categories, mechanical):** scoped negative: no calibrated rule is the strictly unique best policy at any (mixture, cost-weight) cell on this continuum
+
+_Policies that are strictly unique best somewhere: always_repair, corrected_label, never_repair_
+
+| regime | mean delta if always applied | always better? |
+|---|---|---|
+| approx_s05 | -0.00343 | True |
+| approx_s10 | -0.00342 | True |
+| approx_s20 | -0.00339 | True |
+| approx_s40 | -0.00334 | True |
+| declared | -0.00345 | True |
+| mismatched | +0.00266 | False |
+| subgroup | -0.00265 | True |
+
+## Decision model: measured benefit, harm and the firing threshold (A7)
+
+_V(A) = E[A*Delta] + w*E[c_gate + A*c_rep]; fire iff posterior q > q*(w) = (H + w*c_rep)/(B + H)_
+
+_Withdrawn: value is a function of P(supplied group wrong) and P(Q lands in L_t) alone. Why: q* depends on the ratio of conditional benefit to conditional harm and on the repair cost; the two probabilities enter only through the posterior, together with the screen's sensitivity and specificity_
+
+| family | regime | B (benefit) | H (harm) | share harmful | q* | 95% CI | screen sens | screen spec | posterior q | q > q* |
+|---|---|---|---|---|---|---|---|---|---|---|
+| graphs_n6 | declared | 0.08392 | 0.00000 | 0.000 | 0.000 | [0.000, 0.000] | 1.000 | n/a | n/a | None |
+| graphs_n6 | subgroup | 0.06620 | 0.00000 | 0.000 | 0.000 | [0.000, 0.000] | 1.000 | n/a | n/a | None |
+| ring_n6 | approx_s05 | 0.00343 | 0.00000 | 0.000 | 0.000 | [0.000, 0.000] | n/a | 1.000 | n/a | None |
+| ring_n6 | approx_s10 | 0.00342 | 0.00000 | 0.000 | 0.000 | [0.000, 0.000] | n/a | 1.000 | n/a | None |
+| ring_n6 | approx_s20 | 0.00339 | 0.00000 | 0.000 | 0.000 | [0.000, 0.000] | n/a | 1.000 | n/a | None |
+| ring_n6 | approx_s40 | 0.00334 | 0.00000 | 0.000 | 0.000 | [0.000, 0.000] | n/a | 1.000 | n/a | None |
+| ring_n6 | declared | 0.00345 | 0.00000 | 0.000 | 0.000 | [0.000, 0.000] | 1.000 | n/a | n/a | None |
+| ring_n6 | mismatched | 0.00018 | 0.00276 | 0.967 | 0.938 | [0.933, 1.000] | n/a | 1.000 | n/a | None |
+| ring_n6 | subgroup | 0.00265 | 0.00000 | 0.000 | 0.000 | [0.000, 0.000] | 1.000 | n/a | n/a | None |
+
+## Proposal-distribution audit with defined pools (A7.1/A7.2)
+
+_Q = proposals from LLM arms on the family's own runs, one entry per proposal, selected-best duplicate removed, mock runs excluded; finite pools enumerated exactly, Monte Carlo only for the uniform models_
+
+_Deprecated unfiltered pool size: 819_
+
+| family | Q | kind | n | accepted | rate | 95% upper if zero | interval |
+|---|---|---|---|---|---|---|---|
+| graphs_n6 | uniform_single | Monte Carlo | 400 | 400 | 1.0000 | n/a | Wilson over draws |
+| graphs_n6 | uniform_k | Monte Carlo | 400 | 400 | 1.0000 | n/a | Wilson over draws |
+| graphs_n6 | uniform_k | Monte Carlo | 400 | 400 | 1.0000 | n/a | Wilson over draws |
+| graphs_n6 | llm_graphs_n6 | exact pool | 304 | 304 | 1.0000 | n/a | exact over pool |
+| ring_n6 | uniform_single | Monte Carlo | 400 | 9 | 0.0225 | n/a | Wilson over draws |
+| ring_n6 | uniform_k | Monte Carlo | 400 | 1 | 0.0025 | n/a | Wilson over draws |
+| ring_n6 | uniform_k | Monte Carlo | 400 | 0 | 0.0000 | 0.00746 | Wilson over draws |
+| ring_n6 | llm_ring_n6 | exact pool | 192 | 120 | 0.6250 | n/a | exact over pool |
+| tictactoe_n9 | uniform_single | Monte Carlo | 400 | 0 | 0.0000 | 0.00746 | Wilson over draws |
+| tictactoe_n9 | uniform_k | Monte Carlo | 400 | 0 | 0.0000 | 0.00746 | Wilson over draws |
+| tictactoe_n9 | uniform_k | Monte Carlo | 400 | 0 | 0.0000 | 0.00746 | Wilson over draws |
+
+| family | panel entries | inconclusive (subgroup not enumerable) | distinct subgroups |
+|---|---|---|---|
+| graphs_n6 | 9 | 0 | 7 |
+| ring_n6 | 9 | 0 | 7 |
+| tictactoe_n9 | 9 | 3 | 6 |
+

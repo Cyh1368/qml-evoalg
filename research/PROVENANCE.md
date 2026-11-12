@@ -261,3 +261,55 @@ early count read the top-level key and produced "0 attempted, 0 fired" for all 2
 which contradicted the deployed-endpoint study's 7/12. The correct location reproduces the known
 7/12 on frozen graphs, so the corrected reading is the one reported here. Any future count of
 repair firings must read `best.repair`.
+
+## Round 4 (Addendum A7 / A7.5a): the referee's four code defects, all confirmed and fixed
+
+Fourth-round review (`research/paper/REVIEW_ROUND4.md`) raised seven blockers. The four
+code-level ones were each verified in source before being accepted, and all four were correct:
+
+1. `corrected_gate.label_test`'s capped fallback sampled arbitrary permutations of $S_n$, which
+   cannot refute a subgroup hypothesis. Replaced by `closure_capped`, which returns words in the
+   proposed subgroup instead of raising. Pinned by `TestSubgroupSamplingA7`.
+2. `_empirical_hypotheses` filtered neither arm nor family and appended each selected best
+   hypothesis a second time; the call site computed a filtered pool and then passed the unfiltered
+   one. **This changed a headline number**: the ring LLM acceptance rate is 0.6250 (120/192,
+   enumerated exactly), not the 0.47 previously printed. `empirical_pool` + `accept_pool_exact`
+   replace it, with a write-time assertion that a family with a non-empty pool must carry its
+   exact-pool entry.
+3. `decision_rules2.evaluate_candidate` passed `gens_declared` to the defective label test in every
+   regime and computed the channel residual once with `group="true"` outside the regime loop.
+   `decision_rules3.py` (new module; the A6 record is kept as the audited artifact) gives every gate
+   the current regime's group and target, adds `never_repair`, separates `defect_q1_frozen` from
+   `defect_q1_within`, and measures timings three times instead of extrapolating. Under parity the
+   frozen-threshold defect rule fires 56/60 in the mismatched regime and rejects only 4 of 58
+   harmful repairs - the earlier comparison flattered it, and the 79% recovery figure is superseded.
+4. `analyze_corrected` assigned verdict strings before applying Holm. `assign_verdict` now runs
+   after adjustment, "significant" means the adjusted p, and the vocabulary distinguishes
+   descriptive band containment from a Holm-adjusted TOST equivalence claim. Applying this to our
+   own headline: the ring interval lies inside the ±0.002 band unadjusted but not after widening,
+   so **equivalence is not claimed**.
+
+**A patch that silently failed to apply.** The A7.2 main-loop edit was written by a heredoc script
+that died on a quote-escaping error before writing, so the first `corrected_gate_a7.json` still
+contained the old Monte-Carlo `empirical_llm` row and no exact-pool row. Caught by reading the
+record rather than trusting the commit. The write-time assertion above now exists precisely so this
+failure mode cannot recur silently. Lesson: a script that patches source must be verified by
+re-reading the target, not by exit status.
+
+**An analysis artifact that manufactured a win.** The first pass of `analyze_decision3` reported
+`calib_exact` as the optimal policy at π=0, w=0. It fires 0/60 and is numerically identical to
+`never_repair`; the "win" was an alphabetical `min()` over policy names breaking an exact tie. The
+analysis now requires strict improvement with a documented tie-break toward simpler policies and
+reports `strictly_unique` per cell. With that, the pre-declared verdict is a **scoped negative in
+both families**. Recorded because the failure was in our own code and in the direction of making our
+result look better.
+
+**A pre-declaration that was incoherent, amended before results.** A7.5 first calibrated the
+tolerance against "a null panel of exactly symmetric targets", where accepting is correct at every
+tolerance and the constrained error is identically zero. A7.5a names the two errors that can
+actually be controlled (`calib_exact`: accept a non-symmetry; `calib_harm`: accept a harmful repair)
+and was committed before any calibration was computed.
+
+Jobs: 33073899 (parity comparison), 33073900 (first A7 gate run, superseded by the lost-patch
+discovery), 33074408 (A7 gate record). Tests: search suite 59 (incl. 25 corrected_gate, 11
+decision_model), core 51, repair 13.

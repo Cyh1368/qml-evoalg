@@ -825,6 +825,114 @@ def uniform_model_check_section(path, out):
     out.append("")
 
 
+
+def decision3_section(path, out):
+    """A7.3/A7.4/A7.5: gate-parity comparison, mixture objective, calibrated tolerances."""
+    with open(path) as fh:
+        d = json.load(fh)
+    out.append("## Gate-parity decision comparison with mixture objective (A7.3/A7.4/A7.5)\n")
+    out.append("_%s_\n" % d.get("objective_definition", ""))
+    for fam, f in sorted(d["families"].items()):
+        out.append("### %s\n" % fam)
+        out.append("| regime | rule | fired | deployed risk | mean delta | CI | harmful rejected | beneficial missed | search s | deployed s/pred |")
+        out.append("|---|---|---|---|---|---|---|---|---|---|")
+        for regime, rows in sorted(f["regimes"].items()):
+            for x in rows:
+                out.append("| %s | %s | %d/%d | %.5f | %+.5f | [%+.5f, %+.5f] | %d/%d | %d/%d | %.6f | %.6f |"
+                           % (regime, x["rule"], x["n_fired"], x["n_candidates"],
+                              x["deployed_risk"], x["realised_mean_delta"],
+                              x["ci_low"], x["ci_high"], x["harmful_rejected"], x["n_harmful"],
+                              x["beneficial_missed"], x["n_beneficial"],
+                              x["search_seconds_per_candidate"],
+                              x["deployed_seconds_per_prediction"]))
+        out.append("")
+        out.append("| regime | calib_exact tolerance | calib_harm tolerance |")
+        out.append("|---|---|---|")
+        for regime, cal in sorted(f["calibration"].items()):
+            out.append("| %s | %s | %s |"
+                       % (regime, cal["calib_exact"]["chosen_tolerance_relative"],
+                          cal["calib_harm"]["chosen_tolerance_relative"]))
+        out.append("")
+        out.append("| mixture pi(declared) | argmin at w=0 | argmin at w=1e-2 | strictly unique? |")
+        out.append("|---|---|---|---|")
+        for key, m in sorted(f["mixtures"].items()):
+            tr = m.get("tie_report", {})
+            out.append("| %.2f | %s | %s | w=0: %s |"
+                       % (m["pi_declared"], m["argmin_by_w"].get("0e+00"),
+                          m["argmin_by_w"].get("1e-02"),
+                          tr.get("0e+00", {}).get("strictly_unique")))
+        out.append("")
+        out.append("**Verdict (A7.5 categories, mechanical):** %s\n" % f["verdict"]["category"])
+        if f["verdict"].get("any_strict_winners"):
+            out.append("_Policies that are strictly unique best somewhere: %s_\n"
+                       % ", ".join(f["verdict"]["any_strict_winners"]))
+        out.append("| regime | mean delta if always applied | always better? |")
+        out.append("|---|---|---|")
+        for row in f["flip_point"]["ordered"]:
+            out.append("| %s | %+.5f | %s |" % (row["regime"], row["mean_delta_if_always"],
+                                                row["always_better"]))
+        out.append("")
+
+
+def decision_model_section(path, out):
+    """A7: measured threshold rule q*(w) = (H + w c_rep)/(B + H) per regime."""
+    with open(path) as fh:
+        d = json.load(fh)
+    out.append("## Decision model: measured benefit, harm and the firing threshold (A7)\n")
+    out.append("_%s_\n" % d["model"])
+    out.append("_Withdrawn: %s. Why: %s_\n" % (d["withdrawn_claim"], d["why_withdrawn"]))
+    out.append("| family | regime | B (benefit) | H (harm) | share harmful | q* | 95% CI | screen sens | screen spec | posterior q | q > q* |")
+    out.append("|---|---|---|---|---|---|---|---|---|---|---|")
+    for fam, f in sorted(d["families"].items()):
+        for regime, r in sorted(f["regimes"].items()):
+            m, e = r["magnitudes"], r["screen_errors"]
+            ci = m.get("q_star_ci95")
+            q = r.get("posterior_given_accept")
+            out.append("| %s | %s | %.5f | %.5f | %.3f | %s | %s | %s | %s | %s | %s |"
+                       % (fam, regime, m["benefit_B"], m["harm_H"], m["share_harmful"],
+                          ("%.3f" % m["q_star"]) if m.get("q_star") is not None else "n/a",
+                          ("[%.3f, %.3f]" % tuple(ci)) if ci else "n/a",
+                          ("%.3f" % e["sensitivity"]) if e["sensitivity"] is not None else "n/a",
+                          ("%.3f" % e["specificity"]) if e["specificity"] is not None else "n/a",
+                          ("%.3f" % q) if q is not None else "n/a",
+                          r.get("screen_clears_threshold")))
+    out.append("")
+
+
+def gatefix_a7_section(path, out):
+    """A7.1/A7.2: proposal pools defined before measurement, exact enumeration, CP bounds."""
+    with open(path) as fh:
+        d = json.load(fh)
+    out.append("## Proposal-distribution audit with defined pools (A7.1/A7.2)\n")
+    out.append("_%s_\n" % d.get("pool_definition", ""))
+    out.append("_Deprecated unfiltered pool size: %d_\n"
+               % d.get("n_empirical_hypotheses_deprecated_unfiltered", 0))
+    out.append("| family | Q | kind | n | accepted | rate | 95% upper if zero | interval |")
+    out.append("|---|---|---|---|---|---|---|---|")
+    for fam, e in sorted(d["families"].items()):
+        for tgt, rows in sorted(e["accept"].items()):
+            if tgt != e["primary"]:
+                continue
+            for r in rows:
+                pool = r.get("pool") == "finite_stored_pool"
+                out.append("| %s | %s | %s | %d | %d | %s | %s | %s |"
+                           % (fam, r["Q"], "exact pool" if pool else "Monte Carlo",
+                              r.get("n_hypotheses", r.get("draws", 0)), r["accepted"],
+                              ("%.4f" % r["accept_rate"]) if r["accept_rate"] is not None else "n/a",
+                              ("%.5f" % r["zero_acceptance_upper_95"])
+                              if r.get("zero_acceptance_upper_95") is not None else "n/a",
+                              "exact over pool" if pool else "Wilson over draws"))
+    out.append("")
+    out.append("| family | panel entries | inconclusive (subgroup not enumerable) | distinct subgroups |")
+    out.append("|---|---|---|---|")
+    for fam, e in sorted(d["families"].items()):
+        ents = e["panel"]["entries"]
+        inc = [x for x in ents if x.get("scope") == "inconclusive"]
+        out.append("| %s | %d | %d | %s |"
+                   % (fam, len(ents), len(inc), e["panel"].get("n_unique_subgroups", "n/a")))
+    out.append("")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("--out", default="research/results_summary2.md")
@@ -855,6 +963,9 @@ def main(argv=None):
     gatefix_section("research/search/corrected_gate.json", out)
     corrected_search_section("research/search/corrected_search.json", out)
     uniform_model_check_section("research/search/uniform_model_check.json", out)
+    decision3_section("research/search/decision_rules3_analysis.json", out)
+    decision_model_section("research/search/decision_model.json", out)
+    gatefix_a7_section("research/search/corrected_gate_a7.json", out)
     with open(a.out, "w") as fh:
         fh.write("\n".join(out) + "\n")
     print("wrote %s (%d lines)" % (a.out, len(out)))

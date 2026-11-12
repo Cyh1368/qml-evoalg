@@ -143,6 +143,15 @@ SPEC_EXTERNAL_RAW = [
      "headline.ring_repair_fired_implemented", 0, ["0/12", "coverage"]),
     ("claims.a67.ring.diagnostic", "research/search/corrected_search.json",
      "headline.ring_repair_diagnostic_corrected", 5, ["−0.00300", "averaging"]),
+    ("claims.a7.qstar.mismatched", "research/search/decision_model.json",
+     "families.ring_n6.regimes.mismatched.magnitudes.q_star", 3, ["0.938", "mismatched"]),
+    ("claims.a7.qstar.ci_low", "research/search/decision_model.json",
+     "families.ring_n6.regimes.mismatched.magnitudes.q_star_ci95.[0]", 3, ["0.933", "mismatched"]),
+    ("claims.a7.pool.ring.rate", "research/search/corrected_gate_a7.json",
+     "families.ring_n6.accept.alpha_0.[Q=llm_ring_n6].accept_rate", 4, ["0.6250", "192"]),
+    ("claims.a7.n9.bound", "research/search/corrected_gate_a7.json",
+     "families.tictactoe_n9.accept.winner.[Q=uniform_single].zero_acceptance_upper_95", 5,
+     ["0.00746"]),
     ("claims.a67.graphs.diagnostic", "research/search/corrected_search.json",
      "headline.graphs_repair_diagnostic_corrected", 5, ["−0.06693", "(−0.06693"]),
 ]
@@ -195,13 +204,43 @@ SPEC_REBUTTAL_RAW = [
      "headline.graphs_repair_diagnostic_corrected", 5, ["−0.06693", "coverage"]),
 ]
 
+# A7 numbers as stated in the fourth-round rebuttal
+SPEC_REBUTTAL4_RAW = [
+    ("r4.pool.ring.rate", "research/search/corrected_gate_a7.json",
+     "families.ring_n6.accept.alpha_0.[Q=llm_ring_n6].accept_rate", 4, ["0.6250", "192"]),
+    ("r4.pool.ring.n", "research/search/corrected_gate_a7.json",
+     "families.ring_n6.accept.alpha_0.[Q=llm_ring_n6].n_hypotheses", 0, ["192", "accepted"]),
+    ("r4.pool.deprecated.size", "research/search/corrected_gate_a7.json",
+     "n_empirical_hypotheses_deprecated_unfiltered", 0, ["819"]),
+    ("r4.n9.cp_bound", "research/search/corrected_gate_a7.json",
+     "families.tictactoe_n9.accept.winner.[Q=uniform_single].zero_acceptance_upper_95", 5,
+     ["0.00746"]),
+    ("r4.qstar.mismatched", "research/search/decision_model.json",
+     "families.ring_n6.regimes.mismatched.magnitudes.q_star", 3, ["0.938"]),
+    ("r4.qstar.mismatched.ci_low", "research/search/decision_model.json",
+     "families.ring_n6.regimes.mismatched.magnitudes.q_star_ci95.[0]", 3, ["0.933"]),
+    ("r4.mismatch.harm", "research/search/decision_model.json",
+     "families.ring_n6.regimes.mismatched.magnitudes.harm_H", 5, ["0.00276"]),
+    ("r4.mismatch.benefit", "research/search/decision_model.json",
+     "families.ring_n6.regimes.mismatched.magnitudes.benefit_B", 5, ["0.00018"]),
+    ("r4.deployed.graphs.mean", "research/search/corrected_search.json",
+     "headline.graphs_deployed_repair_minus_fitness_mean", 5, ["−0.07269"]),
+    ("r4.deployed.graphs.holm", "research/search/corrected_search.json",
+     "headline.graphs_deployed_repair_minus_fitness_holm", 3, ["0.158"]),
+    ("r4.deployed.graphs.flip", "research/search/corrected_search.json",
+     "headline.graphs_deployed_repair_minus_fitness_flip", 4, ["0.0176"]),
+]
+
 SPEC_EXTERNAL = [{"id": a, "file": b, "path": c, "decimals": d, "context": e}
                  for a, b, c, d, e in SPEC_EXTERNAL_RAW]
 SPEC_REBUTTAL = [{"id": a, "file": b, "path": c, "decimals": d, "context": e}
                  for a, b, c, d, e in SPEC_REBUTTAL_RAW]
+SPEC_REBUTTAL4 = [{"id": a, "file": b, "path": c, "decimals": d, "context": e}
+                  for a, b, c, d, e in SPEC_REBUTTAL4_RAW]
 # (artifact, spec) pairs for the beyond-the-manuscript evaluation
 EXTERNAL_DOCS = [("research/CLAIMS.md", SPEC_EXTERNAL),
-                 ("research/paper/REBUTTAL_ROUND3.md", SPEC_REBUTTAL)]
+                 ("research/paper/REBUTTAL_ROUND3.md", SPEC_REBUTTAL),
+                 ("research/paper/REBUTTAL_ROUND4.md", SPEC_REBUTTAL4)]
 
 
 # --- second external artifact: the round-3 response itself, which quotes the A6 numbers.

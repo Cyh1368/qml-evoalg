@@ -1131,25 +1131,32 @@ symmetries, all sound on the probe) gives $|L|/|S_9| = 2.2\times10^{-5}$.}
 & & ring $\alpha_0$ & & uniform model & graphs & tictactoe \\
 $Q$ & $k$ & accept & 95\% CI & (idealised) & accept & accept \\
 \midrule
-uniform single & 1 & 0.0225 & [0.0119, 0.0422] & 0.01667 & 1.0000 & 0.0000 \\
-uniform $k$ & 2 & 0.0025 & [0.0004, 0.0140] & 0.00028 & 1.0000 & 0.0000 \\
-uniform $k$ & 3 & 0.0000 & [0.0000, 0.0095] & 4.63e-06 & 1.0000 & 0.0000 \\
-\textbf{empirical LLM} & 1 & \textbf{0.4700} & [0.4216, 0.5190] & --- & 1.0000 & --- \\
+uniform single & 1 & 0.0225 & MC 9/400 & 0.01667 & 1.0000 & $0/400$, $\le 0.00746$ \\
+uniform $k$ & 2 & 0.0025 & MC 1/400 & 0.00028 & 1.0000 & $0/400$, $\le 0.00746$ \\
+uniform $k$ & 3 & 0.0000 & MC 0/400 & 4.63e-06 & 1.0000 & $0/400$, $\le 0.00746$ \\
+\textbf{LLM pool} & --- & \textbf{0.6250} & exact 120/192 & --- & 1.0000 (304/304) & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{The uniform models are right and irrelevant.} The models are checked rather than asserted
-(\texttt{uniform\_model\_check.json}, $4000$ independent draws): single-generator soundness
+\paragraph{The uniform models are right and largely irrelevant.} The models are checked rather than
+asserted (\texttt{uniform\_model\_check.json}, $4000$ independent draws): single-generator soundness
 $0.01875$ against the predicted $0.016667$, two-generator $0.00025$ against $0.000278$, and
-$1.00000$ against $1.00000$ on graphs. But the proposals the model actually made accept at
-$0.4700$: $21\times$ the uniform single-permutation rate and roughly $1700\times$ the
-two-generator model. A diagnostic that ignores $Q$ is off by three orders of magnitude on the
-only $Q$ this paper studies, which is why we now report the distribution-aware quantity and
-treat the ratio as a special case of it. The two degenerate ends are measured rather than
-asserted: graphs accepts under every $Q$ (no predicate on this domain can discriminate), and
-the $n=9$ board task rejects under every $Q$ (a gate that rejects everything discriminates
-nothing either). A useful gate needs $Q$ to put mass on both sides of $L_t$.
+$1.00000$ against $1.00000$ on graphs. The proposals the model actually made accept far more often:
+$0.6250$ over a pool of $192$ ring proposals, which is $37.5\times$ the exact single-permutation
+rate $12/720 = 0.016667$ and $2248\times$ the exact two-generator rate $0.000278$. We no longer
+narrate that as a three-order-of-magnitude diagnostic failure: the pool is a finite stored object
+whose rate is enumerated exactly, so it carries no Monte-Carlo error and equally no uncertainty
+about the adaptive process that produced it, and between-run spread (proposals carrying a
+hypothesis: $0$ to $11$ per run) is reported separately. An earlier version of this table reported
+$0.4700$ from a pool that mixed arms and both six-qubit families and double-weighted selected
+candidates; that number was wrong and the pool is now defined before it is measured
+(\S\ref{sec:corrected}). The two degenerate ends are measured rather than asserted: graphs accepts
+under every $Q$ (no predicate on this domain can discriminate), and on the $n=9$ board task no
+uniform draw out of $400$ accepts, which bounds the rate at $0.00746$ with one-sided 95% confidence
+--- a bound on those $Q$s, not a proof that the verifier is non-discriminating, since a proposer
+concentrated on the eight board symmetries would be accepted. A useful gate needs $Q$ to put mass on
+both sides of $L_t$.
 
 \begin{table}[t]
 \centering
@@ -1235,14 +1242,19 @@ $120$ candidates, so on these targets unconditional averaging is the better poli
 verifier is \emph{not} a precondition for the benefit. (ii)~The implemented gate forfeits
 $100\%$ of the available benefit on the ring (realised $0.00000$ against $-0.00345$), which
 is the operational cost of the sensitivity loss measured above. (iii)~A verifier-free gate on
-the predictor's own measured non-invariance captures $79\%$ of it ($-0.00274$) at precision
-$45/45$ with no candidate harmed. (iv)~The negative control is where verification would earn
-its keep: averaging over a mismatched group costs $+0.00399$, so a rule that fires blindly is
-unsafe exactly on targets whose symmetry differs from the supplied group. Two further
-mechanical facts matter for design: the channel condition in the deployed gate is satisfied by
-$60/60$ candidates in both families, so it contributes no discrimination, and on graphs the
-label test costs $0.45$\,s while the averaging it gates costs $12.5$\,s --- the filter is
-$3.6\%$ of the work it is supposed to save, and it filters nothing.
+the predictor's own measured non-invariance is \emph{not} a free substitute once the comparison
+is run with parity: with every gate receiving its own regime's group and a threshold frozen on
+the declared regime, the defect rule fires $56/60$ in the mismatched regime and rejects only
+$4$ of $58$ harmful repairs (risk $0.01064$ against never-repair's $0.00812$). The earlier
+$79\%$-recovery figure came from a comparison in which that rule saw the declared group while
+the label gates saw the regime group, and it is superseded (Appendix~\ref{app:audit}).
+(iv)~The mismatched regime is where verification earns its keep, and the corrected screen does
+so exactly: it rejects $58$ of $58$ harmful repairs (and the two beneficial ones with them),
+while unconditional averaging there costs $+0.00266$. Two mechanical facts still matter for
+design, both recomputed under parity: the channel condition is satisfied by $60/60$ candidates
+in every regime of both families, so it contributes no discrimination, and on \texttt{graphs}
+with the declared group the label test costs $1.19$\,s while the averaging it gates costs
+$48.99$\,s --- $2.4\%$ of the work it is supposed to save, filtering nothing.
 
 \subsection{Corrected feedback inside the search loop}
 \label{sec:correctedsearch}
@@ -1274,6 +1286,63 @@ to $9/12$ with the averaging step worth $-0.06693$ $[-0.08532,-0.04742]$. The fr
 ($-0.04862$, CI $[-0.07106,-0.02845]$) reproduces the development estimate above to five decimals,
 which is an internal consistency check on the two pipelines.
 
+\subsection{What the value of a verifier actually depends on}
+\label{sec:decisionmodel}
+
+A screen's value is a decision, so we write the decision. Let $\Delta$ be repaired risk minus
+unrepaired risk (negative is a benefit), $A$ the firing decision, $c_{gate}$ the cost of screening
+one candidate and $c_{rep}$ the cost of repairing and serving the repaired predictor. Relative to
+never repairing, a policy changes the objective by $V(A) = E[A\Delta] + w\,E[c_{gate} + A c_{rep}]$.
+With $B = -E[\Delta \mid \text{valid}] > 0$, $H = E[\Delta \mid \text{invalid}] > 0$ and posterior
+$q = P(\text{supplied group is a label symmetry} \mid A = 1)$, firing is preferred exactly when
+$q > q^*(w) \equiv (H + w c_{rep})/(B + H)$, and Bayes gives $q = \pi s / (\pi s + (1-\pi)(1-f))$
+in terms of the screen's own sensitivity and specificity. Two probabilities about groups are
+therefore inputs to $q$, not a characterisation of value: the threshold is set by the ratio of two
+conditional effect magnitudes and by the cost of repair.
+
+\begin{table}[t]
+\caption{Measured thresholds. $q^*$ is the posterior at which firing becomes preferable; the CI is
+a candidate-level bootstrap. ``$\pi$'' is the measured share of candidates whose supplied group is
+a label symmetry on the probe set, and ``$q>q^*$'' is the model's prediction for the observed
+optimum. Data: \texttt{decision\_model.json}, computed from the parity run.}
+\label{tab:qstar}
+\small
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+family & regime & $B$ & $H$ & $q^*$ & 95\% CI \\
+\midrule
+ring & declared & 0.00345 & 0.00000 & 0.000 & $[0.000, 0.000]$ \\
+ring & subgroup & 0.00265 & 0.00000 & 0.000 & $[0.000, 0.000]$ \\
+ring & mismatched & 0.00018 & 0.00276 & \textbf{0.938} & $[0.933, 1.000]$ \\
+ring & approx $0.40$sd & 0.00334 & 0.00000 & 0.000 & $[0.000, 0.000]$ \\
+graphs & declared & 0.08392 & 0.00000 & 0.000 & $[0.000, 0.000]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The threshold swings from $0$ to $0.938$ across regimes that a proposal-distribution account treats
+as identical, and the model predicts the observed optimum in the declared, subgroup and mismatched
+regimes. It fails on the approximate-symmetry continuum, and that failure is the point: there the
+supplied group is not a label symmetry of the perturbed target ($\pi = 0$, so the rule says never
+fire) while all $60$ repairs help, by $-0.00334$ to $-0.00343$. Label validity is not merely a noisy
+proxy for the sign of $\Delta$; on this continuum it inverts.
+
+\paragraph{Calibrating the tolerance, and what calibration buys.}
+Because the tolerance \emph{is} the decision boundary under approximate symmetry, we calibrated it
+rather than choosing it, with the rule fixed in advance: take the largest tolerance on a scale-free
+grid whose one-sided 95% Clopper--Pearson bound on its own error rate is at most $\alpha = 0.05$,
+where the error is either accepting a non-symmetry (\texttt{calib\_exact}) or accepting a repair that
+harms this predictor (\texttt{calib\_harm}). Both outcomes are negative, and mechanically so.
+\texttt{calib\_exact} selects $t = 0.03\,\mathrm{sd}(y)$ --- the largest admissible value --- and
+still fires on $0/60$ candidates in every regime, because the label violations under a wrong or
+perturbed group exceed $3\%$ of the target's own spread; it is numerically identical to
+\texttt{never\_repair} in all seven regimes. \texttt{calib\_harm} admits no tolerance at all: none on
+the grid holds the harmful-accept bound at $0.05$. Under the verdict categories fixed before the run,
+this is a scoped negative in both families --- no calibrated rule is the strictly unique best policy
+at any (mixture, cost-weight) cell --- while the uncalibrated exactness screen forfeits the whole
+benefit as soon as the target is only approximately symmetric (at $0.40$\,sd, always-repair reaches
+$0.00621$ against the screen's $0.00955$).
+
 \section{Discussion}
 \label{sec:discussion}
 
@@ -1296,7 +1365,14 @@ entirely once the target is only approximately symmetric --- with the crossover 
 at the numerical tolerance. (e)~Re-running the search loop under corrected feedback changes what
 the model is told by a factor of $17$ on the ring and changes development-selected risk by an
 amount bounded inside the prespecified $\pm0.002$ band, while raising the ring repair gate from
-$0/12$ firings to $3/12$. (f)~At matched budgets a hand-built equivariant block and a
+$0/12$ firings to $3/12$. (f)~The value of a screen is a threshold on the posterior it induces, not
+a property of verification: the measured bar ranges from $q^* = 0$ (declared, subgroup, and all
+approximate regimes, where nothing is harmed) to $q^* = 0.938$ $[0.933, 1.000]$ under a mismatched
+group, and label validity \emph{inverts} as a proxy for the sign of $\Delta$ on the approximate
+continuum. (g)~Calibrating the tolerance does not rescue the screen: the largest $\alpha{=}0.05$-
+admissible tolerance still rejects $0/60$ candidates in every regime, collapsing the calibrated
+screen onto never-repair, and no tolerance controls the harmful-accept rate at that level. (h)~At
+matched budgets a hand-built equivariant block and a
 one-threshold classical rule beat LLM search on development splits, and the equivariant block
 still dominates on fresh held-out ring inputs ($0.00026$ against the best arm's $0.00648$);
 the classical rule's development advantage does not survive matched held-out rows.
@@ -1307,13 +1383,15 @@ wrong supplied group from being averaged over. It did not help the model find th
 feedback channel, even after its own defects were corrected and its content demonstrably changed,
 moved development-selected risk by less than the threshold this protocol treats as meaningful on
 the family where the study has power; it is not a precondition for the repair benefit --- averaging
-over a group we supply helps whether or not any gate checks it. That reframes the design question. A label-preservation
-screen should be judged the way one judges a fuse: by the harm it prevents, at the frequency
-the hazard occurs, relative to its cost --- not by whether it improves average performance on
-a benchmark where the supplied group happens to be right. On these tasks that frequency is
-$0$ on \texttt{graphs\_n6} (no mismatched group exists) and $1$ of $1$ on the ring's mismatched
-regime, and the same screen that is free insurance in the second case is pure overhead in the
-first.
+over a group we supply helps whether or not any gate checks it. That reframes the design question.
+A label-preservation screen should be judged the way one judges a fuse: by the harm it prevents, at
+the frequency the hazard occurs, relative to its cost --- concretely, by whether the posterior it
+induces clears $q^* = (H + w c_{rep})/(B+H)$ --- not by whether it improves average performance on a
+benchmark where the supplied group happens to be right. On these tasks that frequency is
+$0$ on \texttt{graphs\_n6} (no mismatched group exists) and $58$ of $60$ on the ring's mismatched
+regime, where the measured bar is $q^* = 0.938$: a screen must be nearly infallible there before
+firing pays, which is exactly why rejecting everything is optimal in that regime and why the
+corrected screen's $58/58$ rejection record is its whole contribution.
 
 \paragraph{What would change these conclusions.}
 Two things. First, an independent task family whose target is approximately rather than exactly

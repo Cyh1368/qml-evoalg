@@ -22,6 +22,29 @@ import numpy as np
 
 W_GRID = [0.0, 1e-4, 1e-3, 1e-2, 1e-1, 1.0]
 H = 1000
+# Tie-breaking must not manufacture a winner. Objectives are compared with a strict-improvement
+# tolerance, and among policies that tie the one earlier in this order is reported: the simple
+# baselines first, then the gates. Without this, an alphabetical min() over policy names reported
+# "calib_exact wins" in cells where it fires nothing and is numerically identical to never_repair.
+SIMPLICITY_ORDER = ["never_repair", "always_repair", "random_matched", "defective_label",
+                    "corrected_label", "deployed_gate", "defect_q1_frozen", "defect_q1_within",
+                    "calib_exact", "calib_harm"]
+TIE_TOL = 1e-12
+
+
+def argmin_strict(pol, wkey):
+    """Argmin by objective, ties resolved toward the simpler policy, plus the strictness flag."""
+    def key(r):
+        idx = SIMPLICITY_ORDER.index(r) if r in SIMPLICITY_ORDER else len(SIMPLICITY_ORDER)
+        return (pol[r]["objective"][wkey], idx)
+    best = min(pol, key=key)
+    best_val = pol[best]["objective"][wkey]
+    tied = sorted((r for r in pol if pol[r]["objective"][wkey] <= best_val + TIE_TOL),
+                  key=lambda r: SIMPLICITY_ORDER.index(r)
+                  if r in SIMPLICITY_ORDER else len(SIMPLICITY_ORDER))
+    strictly_unique = all(pol[r]["objective"][wkey] > best_val + TIE_TOL
+                          for r in pol if r != best)
+    return best, tied, strictly_unique
 
 
 def components(cost):
@@ -71,9 +94,14 @@ def mixture_table(fam_body):
             pol[rule] = {"risk_mix": d["risk_mix"], **comp,
                          "objective": {("%.0e" % w): objective(d["risk_mix"], comp, w)
                                        for w in W_GRID}}
-        argmin = {("%.0e" % w): min(pol, key=lambda r: pol[r]["objective"]["%.0e" % w])
-                  for w in W_GRID} if pol else {}
-        out[key] = {"pi_declared": pi, "policies": pol, "argmin_by_w": argmin}
+        argmin = {}
+        strict = {}
+        for w in W_GRID:
+            best, tied, uniq = argmin_strict(pol, "%.0e" % w)
+            argmin["%.0e" % w] = best
+            strict["%.0e" % w] = {"strictly_unique": uniq, "tied_policies": tied}
+        out[key] = {"pi_declared": pi, "policies": pol, "argmin_by_w": argmin,
+                    "tie_report": strict}
     return out
 
 
@@ -106,21 +134,28 @@ def flip_point(fam_body):
 
 
 def verdict(fam_body, mix):
-    """A7.5's pre-declared verdict categories, applied mechanically."""
+    """A7.5's pre-declared verdict categories, applied mechanically.
+
+    A calibrated rule counts as winning a cell only if it is the strictly unique argmin there: a
+    rule that fires nothing and ties with never-repair has not beaten anything, and reporting such
+    a tie as a win is exactly the kind of overstatement this protocol exists to prevent.
+    """
     best = set()
-    for m in mix.values():
-        best.update(m["argmin_by_w"].values())
+    cells = {}
+    for k, m in mix.items():
+        for w, r in m["argmin_by_w"].items():
+            if m["tie_report"][w]["strictly_unique"]:
+                best.add(r)
+                cells["%s/w=%s" % (k, w)] = r
     cal_best = sorted(best & {"calib_exact", "calib_harm"})
     if cal_best:
-        kind = ("best in at least one (mixture, cost-weight) cell"
-                if len(cal_best) < 2 else "best for both calibrated rules")
-        return {"category": "calibrated rule wins somewhere", "detail": kind,
-                "winning_rules": cal_best,
-                "cells": {k: v["argmin_by_w"] for k, v in mix.items()}}
-    return {"category": "scoped negative: a calibrated exactness screen does not beat "
-                        "always/never on this continuum",
-            "detail": "no (mixture, cost-weight) cell selects a calibrated rule",
-            "winning_rules": [], "cells": {k: v["argmin_by_w"] for k, v in mix.items()}}
+        return {"category": "calibrated rule strictly best in at least one cell",
+                "winning_rules": cal_best, "cells": cells}
+    return {"category": "scoped negative: no calibrated rule is the strictly unique best policy at "
+                        "any (mixture, cost-weight) cell on this continuum",
+            "detail": "calibrated rules either tie with a simple baseline or are dominated",
+            "winning_rules": [], "any_strict_winners": sorted(best),
+            "cells": cells}
 
 
 def main(argv=None):
