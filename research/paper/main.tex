@@ -1011,14 +1011,35 @@ python3 -m research.search.dev_analysis --dir logs/runs_confirm \
   --out research/search/dev_analysis.json --workers 24
 python3 -m research.search.analyze_breaking --dir logs/runs_breaking \
   --out research/search/breaking_target.json
+python3 -m research.search.verify_semantics --runs logs/runs_confirm \
+  --out research/search/verify_semantics.json
+sbatch research/search/job_decision.sh          # A5.4 decision rules
 python3 -m research.holdout_oneshot --splits dev --skip-search \
   --selfcheck research/experiments/repair/repair2_results.json   # gate, no sealed read
-python3 -m research.holdout_oneshot --splits fresh_v3 --skip-search \
+python3 -m research.holdout_oneshot --splits fresh_v4 --skip-search \
   --selfcheck research/experiments/repair/repair2_results.json \
-  --out research/HOLDOUT_RESULTS_v3.json \
-  --access-log research/HOLDOUT_ACCESS_v3.json   # ONE shot on v3 only
+  --out research/HOLDOUT_RESULTS_v4.json \
+  --access-log research/HOLDOUT_ACCESS_v4.json   # ONE shot on v4 only
+python3 -m research.holdout_search_contrasts     # E-S7 vs-random contrasts
+DRY_RUN=1 sbatch research/job_deployed.sh        # A5.5 gate first, opens nothing
+sbatch research/job_deployed.sh                  # A5.5 deployed endpoint, ONE read
 python3 -m research.compile_results2 --out research/results_summary2.md
+python3 -m research.paper.check_numbers          # manuscript numbers must match records
+python3 -m research.build_manifest --out research/MANIFEST.md
 \end{verbatim}
+Each one-shot command refuses a split recorded as consumed, so the commands above are safe
+to copy: re-running them cannot turn a consumed split into a second look. The mapping from
+every table in this paper to its code revision, result file, digest, endpoint, split, seed
+and status is in \texttt{research/MANIFEST.md}, which is itself generated.
+
+\paragraph{What the digests prove, and what they do not.} Recording a file's sha256 before
+and after a read shows the bytes were not modified while we read them. It does \emph{not}
+show that the file had never been opened before, and neither \texttt{0444} permissions nor
+the evaluator's path check are access isolation: they are procedural guards against our own
+drift, and the consumed-split ledger in \texttt{research/MANIFEST.md} is the record that
+matters. Likewise, git gives a documented chronology --- the commit that last touched an
+analysis file, and the commit that added the protocol --- but it is not an independently
+certified preregistration service, and we do not describe it as one.
 Stack: \texttt{Python/3.12.3}, \texttt{SciPy-bundle/2024.05} (NumPy 1.26.4, SciPy 1.13.1);
 LLM arms additionally \texttt{module load ycrc-llm/1.0}. CPU batch jobs run on the
 cluster's \texttt{day} partition with \texttt{OPENBLAS\_NUM\_THREADS=1}; the work is

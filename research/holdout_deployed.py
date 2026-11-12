@@ -56,6 +56,8 @@ from research.search import refit as _refit
 from research.search import verifier_bridge as _vb
 
 MC_TWIRL_ELEMENTS = 24
+EVAL_ROWS_MAX = 1024      # paired subsample: every endpoint uses these rows
+EVAL_ROW_SEED = 5150
 _W = {"eval_x": {}, "eval_y": {}}
 BANNER = ("*** ONE-SHOT HOLDOUT EVALUATION: sealed test arrays and the v5 fresh inputs "
           "are being read. This module is the only reader. ***")
@@ -67,6 +69,18 @@ def sha256(path):
 
 
 # ------------------------------------------------------------------ evaluation
+def _set_eval_rows(fam, x, y, source):
+    """Fix ONE paired subsample per family: every endpoint is scored on the same rows."""
+    n = len(x)
+    if n > EVAL_ROWS_MAX:
+        rng = np.random.default_rng(EVAL_ROW_SEED)
+        idx = np.sort(rng.choice(n, size=EVAL_ROWS_MAX, replace=False))
+        x, y = x[idx], y[idx]
+    _W["eval_x"][fam], _W["eval_y"][fam] = np.asarray(x), np.asarray(y, float)
+    _W["row_accounting"][fam] = {"rows_total": int(n), "rows_used": int(len(x)),
+                                 "seed": EVAL_ROW_SEED, "source": source}
+
+
 def _average(fit, task, rows, elems):
     acc = None
     for perm in elems:
@@ -210,13 +224,15 @@ def main(argv=None):
 
     # ---- evaluation rows -------------------------------------------------------
     sources = {}
+    _W["row_accounting"] = {}
     if a.dry_run:
         for fam in families:
             t = tasks[fam]
             dev = np.asarray(t.splits["validation"], bool)
             key = t.primary_target
-            _W["eval_x"][fam] = np.asarray(t.x)[dev]
-            _W["eval_y"][fam] = np.asarray(t.targets[key], float)[dev]
+            _set_eval_rows(fam, np.asarray(t.x)[dev],
+                           np.asarray(t.targets[key], float)[dev],
+                           "development validation (DRY RUN)")
             sources[fam] = "development validation (DRY RUN)"
     else:
         print(BANNER, flush=True)
@@ -226,19 +242,21 @@ def main(argv=None):
         sealed["ring_v5"] = v5
         before = {k: sha256(v) for k, v in sealed.items()}
         with np.load(sealed["graphs_v1"]) as d:
-            _W["eval_x"]["graphs_n6"] = np.asarray(d["x_test"])
+            gx = np.asarray(d["x_test"])
         t = tasks["graphs_n6"]
-        _W["eval_y"]["graphs_n6"] = np.asarray(
-            t.label_oracle(_W["eval_x"]["graphs_n6"], target=t.primary_target), float)
         sources["graphs_n6"] = ("v1 sealed split, SECOND READ (post hoc): no fresh "
                                 "class-disjoint graphs data exists (0 unseen isomorphism "
                                 "classes)")
+        _set_eval_rows("graphs_n6", gx,
+                       np.asarray(t.label_oracle(gx, target=t.primary_target), float),
+                       sources["graphs_n6"])
         with np.load(v5) as d:
-            _W["eval_x"]["ring_n6"] = np.asarray(d["x_test"])
+            rx = np.asarray(d["x_test"])
         t = tasks["ring_n6"]
-        _W["eval_y"]["ring_n6"] = np.asarray(
-            t.label_oracle(_W["eval_x"]["ring_n6"], target="alpha_0"), float)
         sources["ring_n6"] = "v5 fresh inputs-only holdout (seed 20261205), first read"
+        _set_eval_rows("ring_n6", rx,
+                       np.asarray(t.label_oracle(rx, target="alpha_0"), float),
+                       sources["ring_n6"])
         _W["sealed_before"] = before
 
     # ---- self-check BEFORE any outcome is computed on evaluation rows ----------
@@ -256,7 +274,8 @@ def main(argv=None):
                            [20261110 + i for i in range(4)]) for fam in families}
 
     out = {"protocol": "REVISED_PROTOCOL Addendum A5.5", "dry_run": a.dry_run,
-            "selfcheck": gate, "sources": sources, "runs": runs, "baselines": base,
+            "selfcheck": gate, "sources": sources, "row_accounting": _W["row_accounting"],
+            "runs": runs, "baselines": base,
             "contrasts": contrasts(runs)}
     if not a.dry_run:
         after = {k: sha256(v) for k, v in sealed.items()}
