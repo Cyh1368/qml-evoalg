@@ -78,12 +78,15 @@ preserves that target's labels, so the gate cannot fail there by construction. O
 where the scored target admits only $12$ of $720$ permutations, the same gate rejected
 $95$ of $102$ hypotheses that \emph{were} symmetries of the scored target, with $0$ false
 accepts: it is an under-sensitive soundness filter, not an identification test. (v)~Treated
-as a \emph{decision rule} rather than a tool, the gate is a recall bottleneck and not a safety
-device: averaging over the supplied group never harmed any of the $120$ frozen candidates, the
-implemented gate forfeits $100\%$ of the available benefit on the ring (realised $0.00000$
-against $-0.00345$), a verifier-free defect gate recovers $79\%$ of it ($-0.00274$) at
-precision $45/45$ with no candidate harmed, and a mismatched group costs $+0.00399$ --- the
-one regime in which a gate earns its keep. A hand-built
+as a \emph{decision rule} rather than a tool, the screen's failure turns out to be two
+specification defects rather than a property of verification: on the same $120$ frozen
+candidates, the \emph{corrected} label screen captures the whole available benefit of averaging
+over a valid group ($-0.00345$ at $0.0017$\,s of gate time) and rejects $58$ of $58$ harmful
+repairs when the supplied group is mismatched, whereas the implemented screen forfeits that
+benefit entirely (realised $0.00000$ against $-0.00345$). Unconditional averaging over a valid
+group harmed none of the $120$ candidates, so on these targets the screen is insurance against a
+wrong group, not a performance mechanism; the earlier defect-gate comparison in this section's
+first draft is superseded and is reported in the audit appendix. A hand-built
 equivariant architecture beats every search arm on the ring
 ($+0.0060$ to $+0.0097$ worse for the arms), and a one-threshold classical rule beats every
 arm on \emph{development validation} on graphs ($0.351$ vs $0.538$--$0.566$) but not on
@@ -1313,12 +1316,16 @@ regime, and the same screen that is free insurance in the second case is pure ov
 first.
 
 \paragraph{What would change these conclusions.}
-Two things, both expensive and neither performed here. First, matched search runs with the
-corrected feedback: post-processing frozen candidates cannot recover the trajectories that
-corrected feedback would have produced, so no behavioural claim about LLM feedback in this
-paper is stronger than ``difference not detected''. Second, an independent task family whose
-target is approximately rather than exactly symmetric, which is the regime where the choice of
-tolerance, rather than the presence of a verifier, decides the outcome.
+Two things. First, an independent task family whose target is approximately rather than exactly
+symmetric, with effect sizes and costs that separate the candidate policies: the perturbation
+continuum in this paper is synthetic and controlled, and it shows \emph{that} the tolerance, not
+the presence of a verifier, sets the decision boundary, but it does not establish that any
+real task has that shape. Second, a repair-relevant behaviour measurement on a family where the
+deployed endpoint has power: the corrected-feedback runs are complete and contemporaneous, and
+they bound the effect on ring development-selected risk inside the prespecified band, but on
+\texttt{graphs\_n6} the deployed contrast moves by $-0.07269$ with an unadjusted sign-flip
+$p$ of $0.0176$ that does not survive Holm adjustment ($0.158$), which is a hypothesis for a
+larger study rather than a result.
 
 \paragraph{Relation to the pilot.} A $48$-run pilot (3 seeds, 3 treatments) preceded the
 $120$-run study and is retained as exploratory. Its variance check set the confirmatory
@@ -1332,8 +1339,9 @@ job submissions at 17:10Z and 17:21Z).
 \label{sec:limitations}
 
 Small dense statevector simulation; two six-qubit development families plus one sealed
-ring holdout, with \texttt{tictactoe\_n9} left sealed and unclaimed because dense
-$n{=}9$ simulation exceeds this revision's budget; a single model
+ring holdout, and a third family (\texttt{tictactoe\_n9}) whose label-symmetry structure has
+been measured --- that needs no circuit simulation --- but which remains unrun as a
+search/repair benchmark because dense $n{=}9$ simulation exceeds this revision's budget; a single model
 (\MODEL{}), so no model comparison is claimed; budget $B{=}12$; three (now eight) breaking
 directions, which supports within-benchmark statements only; equal gate counts do not make
 two circuit families equivalent in expressivity or optimisation geometry, so no
@@ -1497,6 +1505,18 @@ Each one-shot command refuses a split recorded as consumed, so the commands abov
 to copy: re-running them cannot turn a consumed split into a second look. The mapping from
 every table in this paper to its code revision, result file, digest, endpoint, split, seed
 and status is in \texttt{research/MANIFEST.md}, which is itself generated.
+
+\paragraph{Scope of the internal checkers.}
+\texttt{check\_numbers.py} is a numeric-token lint: every decimal token of four or more digits
+in the manuscript must appear in a generated record at its own precision. \texttt{claim\_bind.py}
+additionally binds named manuscript values to named result keys and runs a mutation battery
+(sign flips, arm swaps, exponent changes) over those bindings, reporting detection rates. Both
+are \emph{self-checks on documents this project produced}: they catch transcription errors and
+stale numbers, and they are useful software hygiene, but they are not independent external
+validation, they cannot tell whether a bound quantity is the right estimand, and no claim in this
+paper rests on them being passed. Context-token matching in \texttt{claim\_bind.py} is a
+mechanical guard, not semantic reconciliation --- the fourth-round review found live
+contradictions that it did not, which is exactly the limit of what a token-level checker can do.
 
 \paragraph{What the digests prove, and what they do not.} Recording a file's sha256 before
 and after a read shows the bytes were not modified while we read them. It does \emph{not}

@@ -260,7 +260,11 @@ def panel_reanalysis(task, targets, probe):
         except ClosureTooLarge:
             H, order, sha = None, None, ">cap"
         row = {"entry": name, "n_generators": len(gens), "closure_order": order,
-               "closure_sha": sha}
+               "closure_sha": sha,
+               # A7.1: an entry whose subgroup could not be enumerated is inconclusive, and the
+               # record must say so where the number is read, not only inside the test result.
+               "scope": ("exhaustive_subgroup_on_probe_set" if order is not None
+                         else "inconclusive")}
         for tgt in targets:
             truth, worst = sound_on_probe(task, gens, tgt, probe)
             imp = label_test(task, gens, tgt, rows, 0.0, 0.0, all_columns=True)
@@ -513,19 +517,25 @@ def main(argv=None):
                 elems = ex.pop("elements")
                 ex["is_group"] = len(closure(elems, n)) == len(elems)
                 entry["exact_L"][tgt] = ex
-            emp_here = [g for g in emp if all(len(x) == n for x in g)]
+            # Q is defined before it is measured (A7.2): the family's own LLM arms, one entry per
+            # proposal, no selected-best duplicate. The finite pool is enumerated exactly; Monte
+            # Carlo is used only for the analytic uniform models, whose support is n!.
+            pool = empirical_pool(a.runs, fam.strip())
+            entry.setdefault("pool", {})[tgt] = {"n_hypotheses": pool["n_hypotheses"],
+                                                 "n_runs": pool["n_runs"],
+                                                 "arms": pool["arms"]}
             for kind, kw in [("uniform_single", {}), ("uniform_k", {"k": 2}),
-                             ("uniform_k", {"k": 3}),
-                             ("empirical_llm", {"empirical": emp_here}
-                              if emp_here else None)]:
-                if kw is None:
-                    continue
-                r = accept_probability(task, tgt, kind, probe, empirical=emp,
-                                       k=kw.get("k", 1))
+                             ("uniform_k", {"k": 3})]:
+                r = accept_probability(task, tgt, kind, probe, k=kw.get("k", 1))
                 # cross-check the MC estimator against the exact ratio where available
                 if tgt in entry["exact_L"] and kind == "uniform_single":
                     r["exact_single_perm_ratio"] = entry["exact_L"][tgt]["ratio"]
+                if r["accepted"] == 0:
+                    r["zero_acceptance_upper_95"] = cp_upper_95(0, r["draws"])
                 entry["accept"].setdefault(tgt, []).append(r)
+            if pool["hypotheses"]:
+                entry["accept"].setdefault(tgt, []).append(
+                    accept_pool_exact(task, tgt, pool, "llm_%s" % fam.strip(), probe))
         # declared group and a mismatched group, for the noise sweep
         declared = [list(g) for g in task.generators]
         mm = None
