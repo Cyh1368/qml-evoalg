@@ -559,6 +559,21 @@ def main(argv=None):
                          "tested directly; 9! = 362880 permutations are never enumerated")}
         out["families"][fam.strip()] = entry
         print("%s done" % fam, flush=True)
+    # Write-time self-check: a family with a non-empty proposal pool must carry the exactly
+    # enumerated pool entry. This exists because a patch that was supposed to add that entry
+    # silently failed to apply once, and the record came out looking complete with the old
+    # Monte-Carlo row in its place. A missing entry must fail loudly, not quietly.
+    for fam, e in out["families"].items():
+        for tgt, rows in e.get("accept", {}).items():
+            kinds = {r["Q"] for r in rows}
+            if any(r.get("pool") == "finite_stored_pool" for r in rows):
+                continue
+            n_pool = (e.get("pool") or {}).get(tgt, {}).get("n_hypotheses", 0)
+            if n_pool:
+                raise AssertionError(
+                    "%s/%s: pool has %d proposals but no exact pool entry in the record "
+                    "(Q values present: %s)" % (fam, tgt, n_pool, sorted(kinds)))
+
     with open(a.out, "w") as fh:
         json.dump(out, fh, indent=1, default=str)
     print("wrote", a.out)
