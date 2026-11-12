@@ -199,3 +199,71 @@ stated as such.
 **A2.7 Stop gate.** If, at matched `B_total`, the symmetry menu does not beat generic paired
 certification on both physical mechanisms, the paper reports a scoped negative as its operational
 finding and does not describe the study as demonstrating an advantage.
+
+---
+
+## Addendum A3 (pre-declared 2026-11-12, before any A3 analysis was run)
+
+A second review found six further problems. All six were verified in source before being accepted; all
+six are real, including two numerical statements in our own response that do not match our own JSON.
+This addendum amends the protocol. A2.0's invalidation list is extended, not revised.
+
+**A3.0 Additional invalidation.** Every certificate number produced before A2 (the `control.json`
+Q2/Q3 frontier, `bound.json`, the `variance.json` bound split) is invalid for any certificate claim, as
+of A2.0, **and must no longer appear in the submitted argument**. Under A2 they were marked withdrawn
+in one subsection while still being quoted in the abstract, Section 4 and two tables; that mixing is
+itself the defect. They move to a clearly labelled historical appendix and are excluded from the
+abstract, the contribution list and every table the paper argues from.
+
+**A3.1 Prose may not quote a number that is not in a generated table.** The response and Section 4.1
+said the symmetry menu reaches "power 1.000 at 20,800 shots" (`control_help`) and "1.000 at 96,000"
+(`control_interior`). `results/ledger.json` says **0.900 at 20,800** and **0.960 at 96,000**; power
+1.000 needs 59,200 and 160,000. This is the exact failure mode the old project's number checker
+existed to prevent, and it recurred the moment that checker was left behind. A3.1 adds
+`paper/check_numbers.py`: every number in the manuscript above a threshold must appear in a generated
+table or in `results/*.json`, or the build fails. Verdict words ("never certifies", "reaches",
+"at least") are checked against the same generated values.
+
+**A3.2 Preparations are counted per destructive shot.** The access model is scalar single-copy
+measurement: each shot consumes a freshly prepared state. `calib_ledger()` counted one preparation per
+policy *batch* (400 preparations for 3,200 shots), contradicting its own docstring. Preparations now
+equal shots for destructive single-copy measurement, with any declared non-destructive sharing stated
+explicitly rather than assumed. Compilations are the number of **distinct** circuits across the whole
+menu (two for a two-element group), not the sum over policies (twelve). Switches are derived from the
+schedule actually executed for the calibration run and the selected deployment policy, not summed over
+candidates that were never run.
+
+**A3.3 Deterministic policies must share one measurement record.** Every `shrink` policy is a
+deterministic rescaling of the same raw finite-shot estimate, so one raw batch evaluates all of them.
+The first version resampled a full raw batch per coefficient and charged all of them, inflating the
+group-free comparator's cost by the number of shrinkage levels. A3.3 adds a shared-record evaluator:
+one measurement record per instance per *distinct circuit*, from which every deterministic function of
+that record is computed at zero additional shot cost. The same sharing is applied wherever symmetry
+policies read the same orbit-point records. Dependence among policies computed from one record is
+handled by the simultaneous bound over the menu, which is valid regardless of dependence; the paired
+contrast per policy remains an average over independent instances.
+
+**A3.4 The comparison must isolate what it is said to isolate.** Two distinct questions are separated
+and both are reported:
+  (a) *What does the group buy?* Same procedure, different candidate sets, matched resources, with
+      group-free menus that are resource-efficient (shared-record shrinkage, and a raw-only menu).
+  (b) *What does certification buy?* Same candidate set (the symmetry menu), generic plug-in selection
+      (argmin of the paired mean loss, no certificate) versus certified selection, matched resources.
+The honest expectation, stated before running: our certificate **is** generic paired certification, so
+(b) should show no method-level advantage from symmetry-awareness, and any advantage in (a) is an
+advantage of the candidate set. If (b) shows nothing, the paper says the procedure is generic and
+claims nothing else.
+
+**A3.5 A2.7 is applied where A2.7 says it applies.** The stop gate names **both physical mechanisms**.
+The A2 ledger covered only the three synthetic control regimes. A3.5 runs the matched-resource
+comparison, with the A3.2 ledger and A3.3 sharing, on the Heisenberg mechanism and on the cluster
+mechanism. If the symmetry menu does not beat the strongest applicable equal-access group-free
+comparator on both, the paper reports the scoped negative as its operational finding and removes the
+advantage language from the contribution list.
+
+**A3.6 Language.** "Certifies" is reserved for the Maurer-Pontil rule, whose finite-sample validity is
+assumed and whose cost is reported. The Studentised sweep is described as a selector that selected
+useful policies frequently in these simulations, never as a certificate. The `n_required_mp` figure is
+described as the cost of that particular conservative bound, not as a lower bound for the statistical
+problem or a measurement-complexity result. The first term of Eq. (1) is renamed integrated squared
+discrepancy, and the access section states the preparation convention used by the ledger.
