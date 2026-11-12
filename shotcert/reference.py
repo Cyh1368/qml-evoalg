@@ -57,6 +57,16 @@ def reference_risk_x(task, x, pol):
     G = len(mu)
     tot = 0.0
 
+    if pol.mode == "shrink" and pol.base == "strat":
+        # A6.3: shrinkage applied to the ORBIT average rather than to the raw estimate. Enumerated
+        # from first principles -- equal averaging of G independent per-circuit means, S/G shots each,
+        # then scaled. The audit failed loudly when this branch was missing, which is the point.
+        scale = 1.0 - float(pol.gamma)
+        per = pol.S // G
+        for means, pr in _mean_grid([(per, mu[g]) for g in range(G)]):
+            tot += pr * (scale * float(np.mean(means)) - y) ** 2
+        return tot
+
     if pol.mode in ("raw", "shrink"):
         # shrink is raw scaled by (1 - gamma) toward the declared constant 0.0; the enumeration is
         # the same, with the scale applied to the sample mean. Without this branch a shrink policy
@@ -65,6 +75,13 @@ def reference_risk_x(task, x, pol):
         scale = 1.0 - float(pol.gamma) if pol.mode == "shrink" else 1.0
         for means, pr in _mean_grid([(pol.S, mu[0])]):
             tot += pr * (scale * means[0] - y) ** 2
+        return tot
+
+    if pol.mode == "alloc":
+        # A6.5: unequal per-circuit shot counts, equal averaging weights.
+        n = [int(v) for v in pol.alloc]
+        for means, pr in _mean_grid([(n[g], mu[g]) for g in range(G)]):
+            tot += pr * (float(np.mean(means)) - y) ** 2
         return tot
 
     if pol.mode == "stratified":

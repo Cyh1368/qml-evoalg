@@ -122,6 +122,10 @@ class Policy:
                       trade bias for variance, so it is the fair comparator for "does the group earn
                       its shots". It spends the same shots, compiles one circuit, switches zero times
                       and needs no calibration of the group at all.
+      "alloc"      -- A6.5: explicit per-circuit shot counts `alloc`, averaged with EQUAL weights.
+                      Equal weights keep the mean at the orbit average, so the discrepancy is
+                      unchanged and only the shot term moves; that isolates the structural claim that
+                      the orbit's shot-variance dispersion is what a smarter allocation can recover.
     """
     name: str
     mode: str
@@ -130,6 +134,8 @@ class Policy:
     w: float = 1.0
     orbit_size: int = 2
     gamma: float = 0.0     # shrink mode only: shrinkage coefficient toward the declared constant
+    alloc: tuple = ()      # alloc mode only (A6.5): shots per orbit point, equal averaging weights
+    base: str = "raw"      # shrink mode only: which estimator is shrunk, "raw" or "strat" (A6.3)
 
     @property
     def shots_used(self):
@@ -153,6 +159,8 @@ class Policy:
             return G * max(S_a // G, 1) + S_0
         if self.mode == "shrink":
             return self.S
+        if self.mode == "alloc":
+            return int(sum(self.alloc))
         return self.k * max(self.S // self.k, 1)
 
     def feasible(self):
@@ -177,6 +185,9 @@ class Policy:
             if not ((S_a // G) >= 1 or self.w == 0.0):
                 return False
             return S_0 >= 1 or self.w == 1.0
+        if self.mode == "alloc":
+            return len(self.alloc) == self.orbit_size and min(self.alloc) >= 1 \
+                and sum(self.alloc) <= self.S
         if self.mode == "orbit_k":
             return self.S // self.k >= 1
         return True
@@ -194,7 +205,7 @@ class Policy:
         """
         if self.mode in ("raw", "shrink"):
             return 1
-        if self.mode == "stratified":
+        if self.mode in ("stratified", "alloc"):
             return self.orbit_size
         return min(self.k, self.orbit_size)
 
@@ -209,7 +220,7 @@ class Policy:
         G = self.orbit_size
         if self.mode in ("raw", "shrink"):
             return frozenset({0})
-        if self.mode in ("stratified", "mix"):
+        if self.mode in ("stratified", "mix", "alloc"):
             return frozenset(range(G))
         return frozenset(range(min(self.k, G)))
 
@@ -278,6 +289,10 @@ def _estimator_moments(mu, pol):
         return float(mu[0]), float(sv[0]) / pol.S
     if pol.mode == "shrink":
         g = float(pol.gamma)
+        if pol.base == "strat":
+            per = pol.S // G
+            return ((1.0 - g) * float(np.mean(mu)),
+                    ((1.0 - g) ** 2) * float(np.sum(sv)) / (G * G * per))
         return (1.0 - g) * float(mu[0]), ((1.0 - g) ** 2) * float(sv[0]) / pol.S
     if pol.mode == "stratified":
         per = pol.S // G
@@ -299,6 +314,10 @@ def _estimator_moments(mu, pol):
         if pol.w < 1.0 and S_0 >= 1:        # at w=1 the raw branch is absent, not free
             v += ((1 - pol.w) ** 2) * float(sv[0]) / S_0
         return m, v
+    if pol.mode == "alloc":
+        n = np.asarray(pol.alloc, dtype=float)
+        assert len(n) == G and n.min() >= 1, "allocation must fund every orbit point"
+        return float(np.mean(mu)), float(np.sum(sv / (G * G * n)))
     # orbit_k
     per = pol.S // pol.k
     assert per >= 1, "infeasible policy reached the estimator"

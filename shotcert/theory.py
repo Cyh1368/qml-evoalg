@@ -86,3 +86,46 @@ def thresholds(c):
 def risk_theory(c, w, S):
     """Closed-form deployed risk of the w-mixture at budget S."""
     return (c["D0"] + c["sigma0"] / S + 2.0 * w * c["B"] + (w ** 2) * c["A"] + w * c["V"] / S)
+
+
+# ---- A6.5: the orbit variance profile sets how much symmetrisation can recover -------------------
+
+def sigma_profile(task, xs):
+    """(G,) array of per-orbit-point shot standard deviations, averaged over instances.
+
+    sigma_g^2 = 1 - mu_g^2 for a +-1 shot, so this is a property of the orbit's response functions and
+    is estimable from the same shots that estimate the means.
+    """
+    acc = None
+    for x in np.atleast_2d(np.asarray(xs, dtype=float)):
+        mu = np.asarray(orbit_expectations(task, x), dtype=float)
+        sv = np.asarray(shot_var_from_mu(mu), dtype=float)
+        acc = sv if acc is None else acc + sv
+    return np.sqrt(acc / len(np.atleast_2d(xs)))
+
+
+def neyman_alloc(sigmas, S):
+    """Integer shot allocation over the orbit minimising the averaged estimator's variance.
+
+    Minimising sum_g sigma_g^2 / n_g subject to sum_g n_g = S gives n_g proportional to sigma_g, and
+    the resulting variance coefficient is (mean_g sigma_g)^2 instead of mean_g sigma_g^2. Every point
+    must receive at least one shot, so at small S the allocation is clipped and the bound is not
+    attained exactly; the shortfall is reported rather than smoothed away.
+    """
+    sig = np.asarray(sigmas, dtype=float)
+    G = len(sig)
+    if S < G:
+        return None
+    raw = sig / sig.sum() * S
+    n = np.maximum(np.floor(raw).astype(int), 1)
+    while n.sum() > S:                                  # never exceed the budget
+        n[int(np.argmax(n))] -= 1
+    while n.sum() < S:                                  # spend the whole budget
+        n[int(np.argmin(raw - n))] += 1
+    return tuple(int(v) for v in n)
+
+
+def dispersion(sigmas):
+    """Var_g(sigma_g): exactly the shot-variance coefficient that Neyman allocation recovers."""
+    sig = np.asarray(sigmas, dtype=float)
+    return float(np.mean(sig ** 2) - np.mean(sig) ** 2)

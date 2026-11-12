@@ -10,7 +10,8 @@ n_beat = 0; both = []
 for r in rows:
     beats = r["risk"]["w_hat"] < r["risk"]["raw"] and r["risk"]["w_hat"] < r["risk"]["full"]
     if beats:
-        n_beat += 1; both.append("%s ($S=%d$)" % (r["task"], r["S"]))
+        n_beat += 1
+        both.append(r"\texttt{%s} ($S=%d$)" % (r["task"].replace("_", r"\_"), r["S"]))
     L.append("%s & %d & $%+.5f$ & $%+.5f$ & $%.2f$ & $%.2f\\pm{\\scriptsize%.2f}$ & $%.5f$ & $%.5f$ & $%.5f$ \\\\"
              % (r["task"].replace("_", "\\textunderscore{}"), r["S"], r["dD_true"], r["V_true"],
                 r["w_true"], r["w_hat_mean"], r["w_hat_sd"], r["risk"]["w_hat"],
