@@ -52,8 +52,11 @@ def _stag(n):
 class HeisenbergResponse:
     """Exact and device-reported site-0 response of the quenched chain, cached by (t, Delta)."""
 
+    supports_mirror = True        # A2.5: the mirror relation is checkable for this task family
+
     def __init__(self, n=6, J_alt=1.3, c_rect=0.18, gamma=0.0):
         self.n = n
+        self.J_alt = J_alt
         self.H0 = _heis(n, J_alt)
         self.M = _stag(n)
         self.Z0 = pauli_chain(n, 0, "Z")
@@ -228,3 +231,61 @@ def cluster_task(n=7, a_odd=0.0, c_rect=0.15, resp=None):
     t.y_var = float(np.var(ys))
     t.resp = R
     return t
+
+
+def mirror_operator(n):
+    """Site-reversal operator M: |b_0 b_1 ... b_{n-1}> -> |b_{n-1} ... b_0>.
+
+    Site 0 is the most significant bit in this convention, so reversal is a bit-index reversal of
+    the basis-state index.
+    """
+    dim = 2 ** n
+    M = np.zeros((dim, dim), dtype=complex)
+    for i in range(dim):
+        bits = [1 if (i >> (n - 1 - j)) & 1 else 0 for j in range(n)]
+        bits.reverse()                      # without this the "mirror" is the identity, and every
+        j = 0                               # residual it reports is meaningless
+        for b in bits:
+            j = (j << 1) | b
+        M[i, j] = 1.0
+    return M
+
+
+def mirror_relation_residual(n=6, J_alt=1.5, lam=0.25, times=(0.2, 0.5, 0.8)):
+    """A2.5: is Delta -> -Delta the mirror of the FULL experiment, or only of the Hamiltonian?
+
+    The manuscript asserted the former. The relation that can hold is
+    M H(lam) M = H(-lam), which is a statement about the Hamiltonian alone. A symmetry of the
+    deployed prediction additionally requires the preparation and the readout to transform with it:
+    M|psi_0> = |psi_0> up to phase, and M O M = O. Each of those is checked separately here, because
+    they fail independently and the paper's claim needs all three.
+    """
+    from shotcert.qsim import (eig_hermitian, heisenberg_hamiltonian, neel_state, pauli_chain,
+                               unitary_from_eig)
+    M = mirror_operator(n)
+    Hp = heisenberg_hamiltonian(n, J_alt, lam)
+    Hm = heisenberg_hamiltonian(n, J_alt, -lam)
+    out = {}
+    out["hamiltonian_residual"] = float(np.max(np.abs(M @ Hp @ M - Hm)))
+    psi = neel_state(n)
+    out["state_not_invariant"] = float(np.linalg.norm(M @ psi - psi))
+    Z0 = pauli_chain(n, 0, "Z")
+    out["observable_not_invariant"] = float(np.max(np.abs(M @ Z0 @ M - Z0)))
+    # The relation that DOES hold, if any: <Z_0>_t(lam) = <Z_{n-1}>_t(-lam) from the mirrored
+    # preparation. Compared against the naive claim <Z_0>_t(lam) = <Z_0>_t(-lam).
+    w, V = eig_hermitian(Hp)
+    wm, Vm = eig_hermitian(Hm)
+    Zn1 = pauli_chain(n, n - 1, "Z")
+    naive = full = 0.0
+    for t in times:
+        p_t = unitary_from_eig(w, V, t) @ psi
+        p_m = unitary_from_eig(wm, Vm, t) @ (M @ psi)
+        a = float(np.real(np.vdot(p_t, Z0 @ p_t)))
+        b_full = float(np.real(np.vdot(p_m, Zn1 @ p_m)))
+        b_naive = float(np.real(np.vdot(unitary_from_eig(wm, Vm, t) @ psi, Z0
+                                        @ unitary_from_eig(wm, Vm, t) @ psi)))
+        full = max(full, abs(a - b_full))
+        naive = max(naive, abs(a - b_naive))
+    out["transformed_relation_max_gap"] = full
+    out["naive_fixed_readout_max_gap"] = naive
+    return out

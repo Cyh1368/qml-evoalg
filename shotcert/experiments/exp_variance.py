@@ -23,7 +23,7 @@ import time
 
 import numpy as np
 
-from shotcert.certify import LOSS_RANGE, calibration_losses, eb_bound
+from shotcert.certify import CONTRAST_WIDTH, calibration_losses, mp_bound
 from shotcert.core import Policy, label_vector, predict_batch
 from shotcert.experiments.exp_control import menu
 from shotcert.tasks import control_task
@@ -61,7 +61,7 @@ def eb_split(D, delta):
     range_term = 7.0 * LOSS_RANGE * ln / (3.0 * (n - 1))
     return {"mean": float(np.mean(D)), "sd": math.sqrt(v),
             "var_term": var_term, "range_term": range_term,
-            "ub": eb_bound(D, delta)}
+            "ub": mp_bound(D, delta, menu_size=len(rows) if False else 1)}
 
 
 def main():

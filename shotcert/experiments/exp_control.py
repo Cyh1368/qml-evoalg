@@ -22,7 +22,7 @@ import time
 
 import numpy as np
 
-from shotcert.certify import calibration_losses, certify, eb_bound, true_delta
+from shotcert.certify import calib_ledger, calibration_losses, certify, mp_bound, true_delta
 from shotcert.core import Policy, components, exact_risk, label_vector, predict_batch
 from shotcert.tasks import control_task
 

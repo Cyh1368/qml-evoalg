@@ -21,8 +21,9 @@ import time
 
 import numpy as np
 
-from shotcert.certify import calibration_losses, certify, true_delta
+from shotcert.certify import calibration_losses, certify, n_required_mp, true_delta
 from shotcert.core import Policy, components, exact_risk
+from shotcert.physics import mirror_relation_residual
 from shotcert.experiments.exp_control import menu
 from shotcert.physics import cluster_task, heisenberg_task
 
@@ -55,7 +56,7 @@ def _mc_check(task, xs, reps=4000, S=32):
     return out
 
 
-def _frontier(task, allocs, eps, delta=0.05, reps=150, n_eval=400):
+def _frontier(task, allocs, eps, delta=0.05, reps=150, n_eval=400, bound="normal"):
     rows = []
     xs_eval = task.x_dist(n_eval, np.random.default_rng(555))
     for (n, S) in allocs:
@@ -64,21 +65,32 @@ def _frontier(task, allocs, eps, delta=0.05, reps=150, n_eval=400):
         rng = np.random.default_rng(31337 + n * 17 + S)
         viol = better = fb = 0
         chosen = {}
+        chosen_deltas = []
         for _ in range(reps):
             xs = task.x_dist(n, rng)
             losses = calibration_losses(task, pol_menu, xs, rng)
-            dec = certify(losses, pol_menu, "a0", eps=eps, delta=delta)
+            dec = certify(losses, pol_menu, "a0", eps=eps, delta=delta, bound=bound)
             chosen[dec.status] = chosen.get(dec.status, 0) + 1
             if dec.status == "fallback":
                 fb += 1
                 continue
             d = truth.get(dec.chosen, 0.0)
-            if d > 1e-12:
+            chosen_deltas.append(d)
+            if d > eps:                       # A2.5: violation is against the DECLARED eps
                 viol += 1
-            else:
+            if d <= eps:
                 better += 1
+        from shotcert.certify import wilson
+        vlo, vhi = wilson(viol, reps)
+        plo, phi = wilson(better, reps)
         rows.append({"n": n, "S": S, "eps": eps,
-                     "violation_rate": viol / reps, "power": better / reps,
+                     "violation_rate": viol / reps, "violation_ci": [vlo, vhi],
+                     "power": better / reps, "power_ci": [plo, phi],
+                     "power_denominator_note": "power is P(select a policy with true delta <= eps); "
+                                               "fallback counts against it",
+                     "selection_rate": (reps - fb) / reps,
+                     "mean_chosen_true_delta": float(np.mean(chosen_deltas)) if chosen_deltas else None,
+                     "worst_chosen_true_delta": float(max(chosen_deltas)) if chosen_deltas else None,
                      "fallback_rate": fb / reps,
                      "best_true": min(truth, key=lambda k: truth[k]),
                      "best_true_delta": min(truth.values()),
@@ -86,7 +98,13 @@ def _frontier(task, allocs, eps, delta=0.05, reps=150, n_eval=400):
     return rows
 
 
-def run_task(task, label, allocs, eps, mc_xs_n=150, table_xs_n=400):
+def run_task(task, label, allocs, eps, mc_xs_n=150, table_xs_n=400, mirror_n=None):
+    """One task: exact risk table, Monte-Carlo cross-check, and the certification frontier.
+
+    The risk table keeps EVERY policy, not just the best, because the sign-flip claim is about the
+    comparison between raw, full averaging and the best partial mixture; a table of best-only numbers
+    cannot show a sign flip (reviewer presentation point).
+    """
     xs_tab = task.x_dist(table_xs_n, np.random.default_rng(777))
     xs_mc = task.x_dist(mc_xs_n, np.random.default_rng(778))
     tab = _risk_table(task, xs_tab, S=64)
@@ -95,7 +113,15 @@ def run_task(task, label, allocs, eps, mc_xs_n=150, table_xs_n=400):
             "max_identity_gap": max(abs(v["identity_gap"]) for v in tab.values()),
             "max_mc_z": max(v["z"] for v in _mc_check(task, xs_mc).values()) if mc_xs_n else None,
             "mc_check_S32": _mc_check(task, xs_mc),
-            "frontier": _frontier(task, allocs, eps)}
+            "frontier": _frontier(task, allocs, eps),
+            # Smallest n at which the CORRECTED simultaneous MP bound could close the best available
+            # gap. Computed from the same table the paper quotes, so the two cannot disagree.
+            "n_required_mp": n_required_mp(
+                min(v["R"] - tab["a0"]["R"] for v in tab.values()), len(tab)),
+            # Triggered by the task-family label rather than an attribute, because the Task wrapper
+            # built by heisenberg_task() does not carry the response object's metadata.
+            "mirror_residual": mirror_relation_residual(n=mirror_n, J_alt=1.3, lam=0.25)
+            if mirror_n else None}
 
 
 def main():
@@ -107,23 +133,33 @@ def main():
     args = ap.parse_args()
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
 
-    # epsilon declared from the control pilot: the interior-policy gain scale there was ~0.01,
-    # so eps = 0.01 asks for a certified reduction of at least that size. eps = 0 is the stricter
-    # variant and is reported alongside, not instead.
-    eps = 0.01
+    # A2.5: epsilon restored to the FROZEN value, 0.02 * Var(Y), computed from the evaluation labels
+    # and printed so the number in the paper is the number in the protocol. The eps = 0.01 used in the
+    # first run was a silent substitution recorded as a protocol deviation in Addendum A2.0; it was
+    # also never used consistently, because "violation" was scored against 0 rather than against eps.
+    # Var(Y) is taken on the PRIMARY mechanism (even-target Heisenberg), which is the task family the
+    # confirmatory frontier is run on; the value is printed and stored so the paper cannot drift from
+    # the protocol. The cluster family reports its own Var(Y) alongside, since eps is per-family.
+    from shotcert.core import label_vector
+    probe = heisenberg_task(n=args.n_primary, a_odd=0.0, c_rect=0.18)
+    var_y = float(np.var(label_vector(probe, probe.x_dist(2000, np.random.default_rng(90210)))))
+    eps = 0.02 * var_y
+    res_eps = {"eps_rule": "0.02 * Var(Y), frozen protocol section on estimands",
+               "var_Y_primary": var_y, "eps_primary": eps}
+    print("primary eps: Var(Y)=%.6f -> eps=%.6f" % (var_y, eps), flush=True)
     allocs = [(50, 128), (100, 64), (200, 32), (400, 16), (800, 8), (1600, 4)]
     t0 = time.time()
     res = {"created_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-           "eps_declared": eps, "allocs": allocs, "tasks": []}
+           "eps_declared": eps, "eps_rule": res_eps, "allocs": allocs, "tasks": []}
 
     for a_odd, tag in ((0.0, "even_target"), (0.35, "mostly_even"), (1.0, "raw_target")):
         t = heisenberg_task(n=args.n_primary, a_odd=a_odd, c_rect=0.18)
         res["tasks"].append(run_task(t, "heisenberg_%s_n%d" % (tag, args.n_primary),
-                                     allocs, eps))
+                                     allocs, eps, mirror_n=args.n_primary))
     # scaling check on the same mechanism
     t8 = heisenberg_task(n=8, a_odd=0.0, c_rect=0.18)
     res["tasks"].append(run_task(t8, "heisenberg_even_target_n8", allocs, eps,
-                                 mc_xs_n=80, table_xs_n=250))
+                                 mc_xs_n=80, table_xs_n=250, mirror_n=8))
     # independent evaluation: different mechanism, different observable, different family
     for a_odd, tag in ((0.0, "even_target"), (1.0, "raw_target")):
         t = cluster_task(n=args.n_eval, a_odd=a_odd)

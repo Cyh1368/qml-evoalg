@@ -117,6 +117,11 @@ class Policy:
       "orbit_k"    -- k draws with replacement from the orbit, S/k shots each, equal weights
       "stratified" -- every orbit point gets S/|G| shots (equal-shot stratification)
       "mix"        -- weight w on the orbit-averaged prediction, 1-w on raw, same total S
+      "shrink"     -- A2.6 generic baseline, NO group use: (1-gamma) * raw estimate, same S shots.
+                      Shrinkage toward a declared constant (0.0) is the standard group-free way to
+                      trade bias for variance, so it is the fair comparator for "does the group earn
+                      its shots". It spends the same shots, compiles one circuit, switches zero times
+                      and needs no calibration of the group at all.
     """
     name: str
     mode: str
@@ -124,6 +129,7 @@ class Policy:
     S: int = 1
     w: float = 1.0
     orbit_size: int = 2
+    gamma: float = 0.0     # shrink mode only: shrinkage coefficient toward the declared constant
 
     @property
     def shots_used(self):
@@ -145,6 +151,8 @@ class Policy:
             S_a = max(int(round(self.w * self.S)), 0)
             S_0 = max(self.S - S_a, 0)
             return G * max(S_a // G, 1) + S_0
+        if self.mode == "shrink":
+            return self.S
         return self.k * max(self.S // self.k, 1)
 
     def feasible(self):
@@ -160,19 +168,47 @@ class Policy:
         if self.mode == "stratified":
             return self.S // G >= 1
         if self.mode == "mix":
-            return (max(int(round(self.w * self.S)), 0) // G) >= 1 or self.w == 0.0
+            S_a = max(int(round(self.w * self.S)), 0)
+            S_0 = max(self.S - S_a, 0)
+            # Both branches must be funded. Rounding can starve one of them: S=2, w=0.75 gives
+            # S_a=2 and S_0=0, and the raw branch keeps weight 0.25 while receiving no shots, which
+            # reached the estimator as a division by zero. A mixture that cannot fund a branch is not
+            # a cheaper mixture, it is a different estimator, so it is excluded and reported.
+            if not ((S_a // G) >= 1 or self.w == 0.0):
+                return False
+            return S_0 >= 1 or self.w == 1.0
         if self.mode == "orbit_k":
             return self.S // self.k >= 1
         return True
 
     @property
     def circuits(self):
-        """Distinct circuits compiled: one per orbit point actually touched."""
-        if self.mode == "raw":
+        """Distinct circuits compiled: one per orbit point actually touched.
+
+        Bounded by the orbit, always. The previous `min(k, orbit_size * 4)` reported eight distinct
+        circuits for a two-element group, and the switching experiment charged that number; the
+        reported interior optimum in k was an artefact of charging circuits that cannot exist. With
+        |G| = 2 every k >= 2 compiles the same two circuits, so a per-circuit cost cannot produce an
+        interior optimum at all --- only a per-SWITCH cost can, and switches are counted separately
+        from an explicit schedule below.
+        """
+        if self.mode in ("raw", "shrink"):
             return 1
         if self.mode == "stratified":
             return self.orbit_size
-        return min(self.k, self.orbit_size * 4)   # draws may repeat; upper bound on distinct
+        return min(self.k, self.orbit_size)
+
+    @property
+    def max_switches(self):
+        """Circuit-setting changes in one prediction's shot sequence, under the sorted schedule.
+
+        Schedule: the k chosen orbit indices in nondecreasing order (all shots for one circuit
+        before moving on). Switches = number of adjacent pairs that differ, so a grouped schedule
+        costs (distinct circuits touched - 1) and an interleaved schedule costs (k - 1). Reported
+        as the grouped value, which is the minimum over schedules and therefore the most
+        favourable-to-the-policy choice.
+        """
+        return max(self.circuits - 1, 0)
 
 
 def orbit_expectations(task, x, orbit=None):
@@ -225,6 +261,9 @@ def _estimator_moments(mu, pol):
     sv = shot_var_from_mu(mu)
     if pol.mode == "raw":
         return float(mu[0]), float(sv[0]) / pol.S
+    if pol.mode == "shrink":
+        g = float(pol.gamma)
+        return (1.0 - g) * float(mu[0]), ((1.0 - g) ** 2) * float(sv[0]) / pol.S
     if pol.mode == "stratified":
         per = pol.S // G
         assert per >= 1, "infeasible policy reached the estimator"
@@ -237,11 +276,12 @@ def _estimator_moments(mu, pol):
         S_0 = max(pol.S - S_a, 0)
         per = S_a // G
         assert per >= 1 or pol.w == 0.0, "infeasible mixture reached the estimator"
+        assert S_0 >= 1 or pol.w == 1.0, "mixture with an unfunded raw branch reached the estimator"
         m = pol.w * float(np.mean(mu)) + (1 - pol.w) * float(mu[0])
         v = 0.0
-        if pol.w > 0.0:                     # at w=0 the orbit branch is absent, not free
+        if pol.w > 0.0 and per >= 1:        # at w=0 the orbit branch is absent, not free
             v += (pol.w ** 2) * float(np.sum(sv)) / (G * G * per)
-        if pol.w < 1.0:                     # at w=1 the raw branch is absent, not free
+        if pol.w < 1.0 and S_0 >= 1:        # at w=1 the raw branch is absent, not free
             v += ((1 - pol.w) ** 2) * float(sv[0]) / S_0
         return m, v
     # orbit_k
@@ -266,7 +306,12 @@ def components(task, xs, pol):
         p = orbit_expectations(task, x)
         sv = shot_var_from_mu(p)
         y = float(np.asarray(task.label(x), dtype=float).reshape(-1)[0])
-        if pol.mode == "raw":
+        if pol.mode == "shrink":
+            g = float(pol.gamma)
+            b2 += ((1.0 - g) * float(p[0]) - y) ** 2
+            vg += 0.0
+            sg += ((1.0 - g) ** 2) * float(sv[0])
+        elif pol.mode == "raw":
             b2 += (float(p[0]) - y) ** 2
             vg += 0.0
             sg += float(sv[0])
@@ -276,9 +321,9 @@ def components(task, xs, pol):
             per = max(S_a // G, 1)     # components() is only called on feasible policies
             b2 += (pol.w * float(np.mean(p)) + (1 - pol.w) * float(p[0]) - y) ** 2
             vg += 0.0
-            if pol.w > 0.0:
+            if pol.w > 0.0 and per >= 1:
                 sg += (pol.w ** 2) * float(np.sum(sv)) * pol.S / (G * G * per)
-            if pol.w < 1.0:
+            if pol.w < 1.0 and S_0 >= 1:
                 sg += ((1 - pol.w) ** 2) * float(sv[0]) * pol.S / S_0
         else:
             per = max(pol.S // (pol.k if pol.mode == "orbit_k" else G), 1)  # components: feasible only
@@ -296,6 +341,9 @@ def predict_once(task, x, pol, rng):
     P = born_prob(orbit_expectations(task, x))
     if pol.mode == "raw":
         return 2.0 * (rng.binomial(pol.S, float(P[0])) / pol.S) - 1.0
+    if pol.mode == "shrink":
+        z0 = 2.0 * (rng.binomial(pol.S, float(P[0])) / pol.S) - 1.0
+        return (1.0 - float(pol.gamma)) * z0
     if pol.mode == "stratified":
         per = pol.S // G
         assert per >= 1, "infeasible policy reached deployment"
