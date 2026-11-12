@@ -209,3 +209,15 @@ the difference is inspectable.
 analysis run on development rows and on already-frozen development-selected candidates. The
 A6.7 rerun selects on development rows only. `research/HOLDOUT_ACCESS.json` is unchanged by this
 round; no split was read that was not already consumed in rounds 1-2.
+
+**A misreading worth recording, because it changed a scheduling decision.** Both A6.7 submissions
+showed `TotalCPU 00:00:00` with no output for tens of minutes, and read that as the LLM gateway
+throttling a single account. It is not: Slurm flushes CPU accounting for array tasks at
+completion, so a running task always reads 0. The gateway was answering in ~2.4 s (median latency
+across 48 calls in the frozen runs, max 4.4 s, median 1 attempt). The real cost is the
+per-candidate fit under node contention — the resubmitted array landed on a node carrying 45
+jobs. Consequence: array 33053054-33053059 (72 concurrent) and array 33054417 (6 concurrent, 32
+minutes in) were both cancelled on a wrong diagnosis. Neither wrote run logs, so nothing was
+consumed and no result depends on them; the live submission is **33058032** at 24-way
+concurrency. The lesson is recorded in the job script itself, where the wrong inference was
+originally written down.

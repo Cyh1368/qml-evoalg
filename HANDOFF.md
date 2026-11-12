@@ -19,7 +19,7 @@ verifier is the indispensable comparator**; acting on it reversed one of our hea
 | A6.8 claim binding with mutation testing | done — `research/paper/claim_bind.py`, report `claim_binding_report.md` |
 | Manuscript: new `sec:corrected`, accept table, de-Wilsoned panel table, rewritten Discussion, review narrative moved to `app:audit` | done, preview clean (25 pp, job 33054054) |
 | `REBUTTAL_ROUND3.md` | written, **one block pending**: the A6.7 numbers at the `<!--A67-->` marker |
-| A6.7 matched corrected-feedback search runs | **running** — job array `33054417`, 72 runs, `--array=0-71%6`; measured cost is ~20-25 min per run, so expect ~4-5 h wall at 6-way concurrency |
+| A6.7 matched corrected-feedback search runs | **running** — job array `33058032`, 72 runs, `--array=0-71%24` (earlier arrays 33053054-9 and 33054417 were cancelled on a misdiagnosis; they wrote nothing) |
 | CLAIMS / PROVENANCE / MANIFEST / README reconciliation | done |
 
 ## The one unfinished thing, and exactly how to finish it
@@ -81,9 +81,10 @@ sbatch research/paper/job_preview.sh           # PDF build; check the .out for e
   distinct-subgroup count. Import from `verify_semantics`, and `TestCanonicalPanel` now pins it.
 - **Never enumerate closures at n=9**: `|S_9| = 362880`. `closure()` has a 2000-element cap and
   raises `ClosureTooLarge`; sampling can refute a symmetry but never certify one.
-- **Concurrency against the LLM gateway**: 72 simultaneous clients sit idle (TotalCPU 0:00).
-  The confirmatory study used `%4`; the A6.7 array uses `%6` with per-task jitter. If you see
-  `TotalCPU 00:00:00` after ten minutes, throttle down, do not add retries.
+- **`TotalCPU 00:00:00` on a RUNNING array task means nothing**: Slurm flushes CPU accounting
+  at completion. It is not evidence of a network stall (the gateway answers in ~2.4 s median).
+  A 32-candidate run genuinely takes tens of minutes on a contended 1-CPU task; judge progress by
+  files appearing in the output directory, not by `sacct` CPU.
 - **Module version is `ycrc-llm/1.0`**, not `1.0.0` (that typo failed 72 tasks in 4 s).
 - `sound_on_probe`/`panel_reanalysis` take a **probe index array** (`probe_indices(...)`), not rows.
 - Shell calls are isolated: `module reset` + loads + command must be in one invocation.

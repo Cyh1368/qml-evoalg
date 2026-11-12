@@ -12,15 +12,20 @@
 #SBATCH --partition=day
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4G
-#SBATCH --array=0-71%6
+#SBATCH --array=0-71%24
 #SBATCH --output=logs/wp-corrsearch-%A_%a.out
 
 set -euo pipefail
-# Single throttled array: task id -> (family, arm, seed). The confirmatory study used
-# --array=0-11%4; 72 simultaneous LLM clients sit idle on network waits (TotalCPU 0:00 after
-# ten minutes), which is the gateway throttling a single account, so concurrency is capped
-# here rather than spread across six uncoordinated arrays.
-# Usage: sbatch --array=0-71%6 research/search/job_corrected_search.sh
+# Single array over all 72 runs: task id -> (family, arm, seed).
+#
+# Concurrency note, recorded because an earlier reading of this comment was wrong. Slurm
+# reports TotalCPU 00:00:00 for *running* array tasks -- the accounting is flushed at
+# completion -- so "TotalCPU 0 after ten minutes" is not evidence of network stalls, and the
+# gateway was in fact answering in ~2.4 s (median latency recorded in the frozen runs). The
+# real cost is the per-candidate fit under node contention: a 32-candidate run takes tens of
+# minutes on a shared 1-CPU task. Concurrency is therefore set by how many nodes are free,
+# capped at 24 to stay well clear of the 72-client submission that was cancelled here.
+# Usage: sbatch --array=0-71%24 research/search/job_corrected_search.sh
 FAMILIES=(ring_n6 graphs_n6)
 ARMS=(llm-fitness llm-verify llm-verify-repair)
 TID=${SLURM_ARRAY_TASK_ID:-0}
