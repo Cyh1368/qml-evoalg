@@ -12,12 +12,21 @@
 #SBATCH --partition=day
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4G
-#SBATCH --array=0-11%12
+#SBATCH --array=0-71%6
 #SBATCH --output=logs/wp-corrsearch-%A_%a.out
 
 set -euo pipefail
-ARM="${1:-llm-verify}"
-FAMILY="${2:-ring_n6}"
+# Single throttled array: task id -> (family, arm, seed). The confirmatory study used
+# --array=0-11%4; 72 simultaneous LLM clients sit idle on network waits (TotalCPU 0:00 after
+# ten minutes), which is the gateway throttling a single account, so concurrency is capped
+# here rather than spread across six uncoordinated arrays.
+# Usage: sbatch --array=0-71%6 research/search/job_corrected_search.sh
+FAMILIES=(ring_n6 graphs_n6)
+ARMS=(llm-fitness llm-verify llm-verify-repair)
+TID=${SLURM_ARRAY_TASK_ID:-0}
+FAMILY="${FAMILIES[$(( TID / 36 ))]}"
+SUB=$(( TID % 36 ))
+ARM="${ARMS[$(( SUB / 12 ))]}"
 BASE_SEED=20261110
 OUT=logs/runs_corrected
 MODEL=ycrc-local
@@ -30,8 +39,9 @@ module load Python/3.12.3-GCCcore-13.3.0 SciPy-bundle/2024.05-gfbf-2024a ycrc-ll
 export LD_LIBRARY_PATH=/apps/software/2024a/software/Python/3.12.3-GCCcore-13.3.0/lib:${LD_LIBRARY_PATH:-}
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 mkdir -p "$OUT"
-SEED=$(( BASE_SEED + ${SLURM_ARRAY_TASK_ID:-0} ))
+SEED=$(( BASE_SEED + (SUB % 12) ))
 cd "${SLURM_SUBMIT_DIR:-.}"
+sleep $(( (TID * 7) % 60 ))   # desynchronise the 6 concurrent clients
 python3 -m research.search.harness run \
   --arm "$ARM" --family "$FAMILY" --model "$MODEL" --seed "$SEED" \
   --budget "$BUDGET" --steps "$STEPS" --max-train "$MAX_TRAIN" \
