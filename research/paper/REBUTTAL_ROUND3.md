@@ -75,12 +75,19 @@ Four things follow, and the first two are reversals of what we wrote before.
    a cost of 0.0005 s, the defect rule rejects 15 and a size-matched random rule 14. Under the
    objective of A6.3 ($J = $ risk $+ w\cdot$(gate $+$ one-off averaging $+$ $H$ per-prediction
    overhead)), the corrected label gate is the best rule in the mismatched regime at every
-   $(H,w)$ we examined ($J = 0.000000$ at $H{=}100$, $w{=}10^{-3}$, against $+0.002737$ for
-   always-average, $+0.002164$ for the defect rule, $+0.002137$ for random), and is itself
-   dominated by unconditional averaging in the valid regime ($-0.003103$ vs $-0.003105$). That
+   $(H,w)$ we examined with $w>0$ ($J = 0.000000$ at $H{=}100$, $w{=}10^{-3}$, against $+0.002737$
+   for always-average, $+0.002164$ for the defect rule, $+0.002137$ for random), and is itself
+   dominated by unconditional averaging in the valid regime at small $w$ ($-0.003103$ vs
+   $-0.003105$). That
    is the honest shape of the answer to "is a verifier worth it": its value is entirely the
    value of insurance against a wrong supplied group, and on these two families that hazard has
    frequency 0 (graphs: no mismatched group exists) and 1 (ring mismatched).
+   Two qualifications we would rather state than have found. At $w=0$ the objective is loss-only
+   and the corrected gate *ties* with every rule that never fires (all realise exactly zero
+   change), so "best" is claimed only for $w>0$. And at large $w$ the objective is dominated by
+   the averaging cost, so the argmin becomes whichever rule does the least work --- on the valid
+   group that is the *defective* gate, winning by forfeiting the whole benefit. We therefore
+   report the loss-only comparison next to the objective rather than naming a single winner.
 3. **A strict label gate forfeits benefit under approximate symmetry, and the tolerance is the
    policy.** The corrected gate accepts at $\epsilon=10^{-12}$ and rejects at every larger
    perturbation, while averaging still helps by −0.00345 at all of them. The crossover sits at
