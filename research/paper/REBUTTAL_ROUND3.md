@@ -386,7 +386,7 @@ What is **not** established, and we do not claim it:
 | 2 | defective vs corrected vs alternative gates, identical frozen predictors, valid/invalid groups, consistent costs, paired inference | **done** | `research/search/decision_rules2.json` (7 rules × 5 regimes × 120 candidates, seed-vector CIs) |
 | 3 | rerun search with corrected verifier, frozen protocol, meaningful threshold | **done** | A6.7 committed before analysis; 72 runs in `logs/runs_corrected/`; `research/search/corrected_search.json` |
 | 4 | one substantive novelty claim, validated independently | **narrowed and stated**, with the gap named rather than papered over | §"Novelty" above; `verify_semantics.json`, `corrected_gate.json` |
-| 5 | consequence beyond this configuration | **partly**: two further task families bound the gate's discriminating power in opposite directions; no approximately-symmetric family exists in our set | `corrected_gate.json` (`tictactoe_n9`) |
+| 5 | consequence beyond this configuration | **partly**: the tolerance sweep gives a regime-independent consequence (the crossover sits at the tolerance), and the label-group measurement bounds the screen's power on any target; no approximately-symmetric task family exists in our set, so this is a boundary statement and not a cross-family validation | `corrected_gate.json` tolerance sweep; `verify_semantics.json`; `tictactoe_n9` remains sealed and unrun |
 
 ---
 
