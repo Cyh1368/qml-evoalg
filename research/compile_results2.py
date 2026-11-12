@@ -763,9 +763,10 @@ def corrected_search_section(path, out):
     for c in d["contrasts"]:
         out.append("| %s | %s | %s | %d | %s | [%s, %s] | %s | %s | %.2f | %s |"
                    % (c["family"], c["a"], c["b"], c["n_pairs"],
-                      fmt(c["mean_diff"], 5), fmt(c["ci95_low"], 5),
-                      fmt(c["ci95_high"], 5), fmt(c["sign_flip_p"], 4),
-                      fmt(c.get("holm_p"), 4), c["a_better_fraction"], c["verdict"]))
+                      "%+.5f" % c["mean_diff"], "%+.5f" % c["ci95_low"],
+                      "%+.5f" % c["ci95_high"], "%.4g" % c["sign_flip_p"],
+                      ("%.4g" % c["holm_p"]) if c.get("holm_p") is not None else "n/a",
+                      c["a_better_fraction"], c["verdict"]))
     out.append("")
     out.append("_%s_\n" % d["note"])
 
@@ -788,8 +789,8 @@ def uniform_model_check_section(path, out):
         for key, c in e["cells"].items():
             out.append("| %s | %s | %s | %d | %s | %d | %.5f | [%.5f, %.5f] | %.6f |"
                        % (fam, e["target"], e["exact_L_order"], e["factorial_n"],
-                          fmt(e["ratio"], 6), c["k"], c["measured"], c["ci95_low"],
-                          c["ci95_high"], c["model"]))
+                          "%.6f" % e["ratio"], c["k"], c["measured"], c["ci95_low"],
+                          c["ci95_high"], "%.3g" % c["model"]))
     out.append("")
 
 
