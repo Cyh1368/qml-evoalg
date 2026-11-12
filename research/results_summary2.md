@@ -649,3 +649,161 @@ Thresholds (development only): median 0.00385, q1 0.00326, q3 0.0044
 | ring_n6 | constructive equivariant (4 seeds, 120 steps) | +0.00026 | per-fit budget equals the search protocol's; total search budget is not equal (the arms also spend proposals) |
 | ring_n6 | oracle | +0.00000 | reference value, not a learned baseline: this is the function the synthetic target is |
 
+## Corrected-gate decision comparison (A6.2/A6.3)
+
+- frozen settings: atol_abs 1e-12, atol_rel 1e-09; eval rows 1024 (seed 5150); defect sample rows 64; horizons [1, 10, 100, 1000]; w grid [0.0, 0.0001, 0.001, 0.01, 0.1, 1.0]
+
+- regime group orders: {"graphs_n6": {"declared": 720, "subgroup": 6, "mismatched": null, "approx_1e-12": null, "approx_1e-9": null, "approx_1e-6": null, "approx_1e-3": null}, "ring_n6": {"declared": 12, "subgroup": 3, "mismatched": 3, "approx_1e-12": 12, "approx_1e-9": 12, "approx_1e-6": 12, "approx_1e-3": 12}}
+
+### graphs_n6
+
+| regime | sound | rule | fired | realised $\Delta$ | if always | harmful rejected | beneficial missed | gate s | one-off s | per-prediction s |
+|---|---|---|---|---|---|---|---|---|---|---|
+| declared | True | R0_always | 60/60 | -0.08392 | -0.08392 | 0/0 | 0/60 | 0.0000 | 62.243 | 0.05060 |
+| declared | True | R1_defective | 60/60 | -0.08392 | -0.08392 | 0/0 | 0/60 | 0.4193 | 62.243 | 0.05060 |
+| declared | True | R2_defective | 60/60 | -0.08392 | -0.08392 | 0/0 | 0/60 | 0.5606 | 62.243 | 0.05060 |
+| declared | True | R1_corrected | 60/60 | -0.08392 | -0.08392 | 0/0 | 0/60 | 1.3861 | 62.243 | 0.05060 |
+| declared | True | R2_corrected | 60/60 | -0.08392 | -0.08392 | 0/0 | 0/60 | 1.5274 | 62.243 | 0.05060 |
+| declared | True | R3_defect | 45/60 | -0.07368 | -0.08392 | 0/0 | 15/60 | 3.6574 | 46.572 | 0.03801 |
+| declared | True | R_rand75 | 45/60 | -0.06177 | -0.08392 | 0/0 | 15/60 | 0.0000 | 47.164 | 0.03891 |
+| subgroup | True | R0_always | 60/60 | -0.06509 | -0.06509 | 0/0 | 0/59 | 0.0000 | 15.173 | 0.01100 |
+| subgroup | True | R1_defective | 60/60 | -0.06509 | -0.06509 | 0/0 | 0/59 | 0.4189 | 15.173 | 0.01100 |
+| subgroup | True | R2_defective | 60/60 | -0.06509 | -0.06509 | 0/0 | 0/59 | 0.5603 | 15.173 | 0.01100 |
+| subgroup | True | R1_corrected | 60/60 | -0.06509 | -0.06509 | 0/0 | 0/59 | 0.0037 | 15.173 | 0.01100 |
+| subgroup | True | R2_corrected | 60/60 | -0.06509 | -0.06509 | 0/0 | 0/59 | 0.1450 | 15.173 | 0.01100 |
+| subgroup | True | R3_defect | 45/60 | -0.05702 | -0.06509 | 0/0 | 14/59 | 0.9151 | 11.406 | 0.00823 |
+| subgroup | True | R_rand75 | 45/60 | -0.04756 | -0.06509 | 0/0 | 15/59 | 0.0000 | 11.445 | 0.00846 |
+| mismatched | - | *undefined* | - | - | - | - | - | - | - | - |
+| approx_1e-12 | - | *undefined* | - | - | - | - | - | - | - | - |
+| approx_1e-9 | - | *undefined* | - | - | - | - | - | - | - | - |
+| approx_1e-6 | - | *undefined* | - | - | - | - | - | - | - | - |
+| approx_1e-3 | - | *undefined* | - | - | - | - | - | - | - | - |
+
+### graphs_n6: label-decision constancy and objective values
+
+| regime | label decision constant across candidates | rule | J(H=1,w=0) | J(H=100,w=1e-3) | J(H=1000,w=1) |
+|---|---|---|---|---|---|
+| declared | True | R0_always | -0.083924 | -0.016620 | 112.763745 |
+| declared | True | R1_defective | -0.083924 | -0.016201 | 113.183003 |
+| declared | True | R2_defective | -0.083924 | -0.016059 | 113.324308 |
+| declared | True | R1_corrected | -0.083924 | -0.015234 | 114.149858 |
+| declared | True | R2_corrected | -0.083924 | -0.015093 | 114.291163 |
+| declared | True | R3_defect | -0.073684 | -0.019653 | 88.169560 |
+| declared | True | R_rand75 | -0.061774 | -0.010720 | 86.009832 |
+| subgroup | True | R0_always | -0.065092 | -0.048819 | 26.108621 |
+| subgroup | True | R1_defective | -0.065092 | -0.048400 | 26.527571 |
+| subgroup | True | R2_defective | -0.065092 | -0.048259 | 26.668876 |
+| subgroup | True | R1_corrected | -0.065092 | -0.048815 | 26.112282 |
+| subgroup | True | R2_corrected | -0.065092 | -0.048674 | 26.253587 |
+| subgroup | True | R3_defect | -0.057021 | -0.043877 | 20.492108 |
+| subgroup | True | R_rand75 | -0.047561 | -0.035270 | 19.855775 |
+
+### ring_n6
+
+| regime | sound | rule | fired | realised $\Delta$ | if always | harmful rejected | beneficial missed | gate s | one-off s | per-prediction s |
+|---|---|---|---|---|---|---|---|---|---|---|
+| declared | True | R0_always | 60/60 | -0.00345 | -0.00345 | 0/0 | 0/60 | 0.0000 | 0.234 | 0.00109 |
+| declared | True | R1_defective | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0015 | 0.000 | 0.00000 |
+| declared | True | R2_defective | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0152 | 0.000 | 0.00000 |
+| declared | True | R1_corrected | 60/60 | -0.00345 | -0.00345 | 0/0 | 0/60 | 0.0017 | 0.234 | 0.00109 |
+| declared | True | R2_corrected | 60/60 | -0.00345 | -0.00345 | 0/0 | 0/60 | 0.0153 | 0.234 | 0.00109 |
+| declared | True | R3_defect | 45/60 | -0.00275 | -0.00345 | 0/0 | 15/60 | 0.0755 | 0.173 | 0.00080 |
+| declared | True | R_rand75 | 45/60 | -0.00254 | -0.00345 | 0/0 | 15/60 | 0.0000 | 0.179 | 0.00084 |
+| subgroup | True | R0_always | 60/60 | -0.00265 | -0.00265 | 0/0 | 0/60 | 0.0000 | 0.060 | 0.00020 |
+| subgroup | True | R1_defective | 0/60 | +0.00000 | -0.00265 | 0/0 | 60/60 | 0.0015 | 0.000 | 0.00000 |
+| subgroup | True | R2_defective | 0/60 | +0.00000 | -0.00265 | 0/0 | 60/60 | 0.0151 | 0.000 | 0.00000 |
+| subgroup | True | R1_corrected | 60/60 | -0.00265 | -0.00265 | 0/0 | 0/60 | 0.0005 | 0.060 | 0.00020 |
+| subgroup | True | R2_corrected | 60/60 | -0.00265 | -0.00265 | 0/0 | 0/60 | 0.0141 | 0.060 | 0.00020 |
+| subgroup | True | R3_defect | 45/60 | -0.00210 | -0.00265 | 0/0 | 15/60 | 0.0189 | 0.044 | 0.00015 |
+| subgroup | True | R_rand75 | 45/60 | -0.00192 | -0.00265 | 0/0 | 15/60 | 0.0000 | 0.045 | 0.00015 |
+| mismatched | False | R0_always | 60/60 | +0.00266 | +0.00266 | 0/58 | 0/2 | 0.0000 | 0.059 | 0.00020 |
+| mismatched | False | R1_defective | 0/60 | +0.00000 | +0.00266 | 58/58 | 2/2 | 0.0015 | 0.000 | 0.00000 |
+| mismatched | False | R2_defective | 0/60 | +0.00000 | +0.00266 | 58/58 | 2/2 | 0.0151 | 0.000 | 0.00000 |
+| mismatched | False | R1_corrected | 0/60 | +0.00000 | +0.00266 | 58/58 | 2/2 | 0.0005 | 0.000 | 0.00000 |
+| mismatched | False | R2_corrected | 0/60 | +0.00000 | +0.00266 | 58/58 | 2/2 | 0.0141 | 0.000 | 0.00000 |
+| mismatched | False | R3_defect | 45/60 | +0.00209 | +0.00266 | 15/58 | 0/2 | 0.0189 | 0.044 | 0.00015 |
+| mismatched | False | R_rand75 | 45/60 | +0.00208 | +0.00266 | 14/58 | 1/2 | 0.0000 | 0.045 | 0.00015 |
+| approx_1e-12 | True | R0_always | 60/60 | -0.00345 | -0.00345 | 0/0 | 0/60 | 0.0000 | 0.234 | 0.00109 |
+| approx_1e-12 | True | R1_defective | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0016 | 0.000 | 0.00000 |
+| approx_1e-12 | True | R2_defective | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0152 | 0.000 | 0.00000 |
+| approx_1e-12 | True | R1_corrected | 60/60 | -0.00345 | -0.00345 | 0/0 | 0/60 | 0.0017 | 0.234 | 0.00109 |
+| approx_1e-12 | True | R2_corrected | 60/60 | -0.00345 | -0.00345 | 0/0 | 0/60 | 0.0153 | 0.234 | 0.00109 |
+| approx_1e-12 | True | R3_defect | 45/60 | -0.00275 | -0.00345 | 0/0 | 15/60 | 0.0760 | 0.174 | 0.00080 |
+| approx_1e-12 | True | R_rand75 | 45/60 | -0.00254 | -0.00345 | 0/0 | 15/60 | 0.0000 | 0.178 | 0.00084 |
+| approx_1e-9 | False | R0_always | 60/60 | -0.00345 | -0.00345 | 0/0 | 0/60 | 0.0000 | 0.237 | 0.00109 |
+| approx_1e-9 | False | R1_defective | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0016 | 0.000 | 0.00000 |
+| approx_1e-9 | False | R2_defective | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0152 | 0.000 | 0.00000 |
+| approx_1e-9 | False | R1_corrected | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0017 | 0.000 | 0.00000 |
+| approx_1e-9 | False | R2_corrected | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0153 | 0.000 | 0.00000 |
+| approx_1e-9 | False | R3_defect | 45/60 | -0.00275 | -0.00345 | 0/0 | 15/60 | 0.0751 | 0.175 | 0.00080 |
+| approx_1e-9 | False | R_rand75 | 45/60 | -0.00254 | -0.00345 | 0/0 | 15/60 | 0.0000 | 0.180 | 0.00084 |
+| approx_1e-6 | False | R0_always | 60/60 | -0.00345 | -0.00345 | 0/0 | 0/60 | 0.0000 | 0.236 | 0.00109 |
+| approx_1e-6 | False | R1_defective | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0016 | 0.000 | 0.00000 |
+| approx_1e-6 | False | R2_defective | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0152 | 0.000 | 0.00000 |
+| approx_1e-6 | False | R1_corrected | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0017 | 0.000 | 0.00000 |
+| approx_1e-6 | False | R2_corrected | 0/60 | +0.00000 | -0.00345 | 0/0 | 60/60 | 0.0153 | 0.000 | 0.00000 |
+| approx_1e-6 | False | R3_defect | 45/60 | -0.00275 | -0.00345 | 0/0 | 15/60 | 0.0759 | 0.175 | 0.00080 |
+| approx_1e-6 | False | R_rand75 | 45/60 | -0.00254 | -0.00345 | 0/0 | 15/60 | 0.0000 | 0.180 | 0.00084 |
+| approx_1e-3 | False | R0_always | 60/60 | -0.00344 | -0.00344 | 0/0 | 0/60 | 0.0000 | 0.234 | 0.00109 |
+| approx_1e-3 | False | R1_defective | 0/60 | +0.00000 | -0.00344 | 0/0 | 60/60 | 0.0016 | 0.000 | 0.00000 |
+| approx_1e-3 | False | R2_defective | 0/60 | +0.00000 | -0.00344 | 0/0 | 60/60 | 0.0152 | 0.000 | 0.00000 |
+| approx_1e-3 | False | R1_corrected | 0/60 | +0.00000 | -0.00344 | 0/0 | 60/60 | 0.0017 | 0.000 | 0.00000 |
+| approx_1e-3 | False | R2_corrected | 0/60 | +0.00000 | -0.00344 | 0/0 | 60/60 | 0.0153 | 0.000 | 0.00000 |
+| approx_1e-3 | False | R3_defect | 45/60 | -0.00275 | -0.00344 | 0/0 | 15/60 | 0.0760 | 0.174 | 0.00080 |
+| approx_1e-3 | False | R_rand75 | 45/60 | -0.00254 | -0.00344 | 0/0 | 15/60 | 0.0000 | 0.179 | 0.00084 |
+
+### ring_n6: label-decision constancy and objective values
+
+| regime | label decision constant across candidates | rule | J(H=1,w=0) | J(H=100,w=1e-3) | J(H=1000,w=1) |
+|---|---|---|---|---|---|
+| declared | True | R0_always | -0.003447 | -0.003105 | 1.318370 |
+| declared | True | R1_defective | 0.000000 | 0.000002 | 0.001550 |
+| declared | True | R2_defective | 0.000000 | 0.000015 | 0.015154 |
+| declared | True | R1_corrected | -0.003447 | -0.003103 | 1.320034 |
+| declared | True | R2_corrected | -0.003447 | -0.003089 | 1.333638 |
+| declared | True | R3_defect | -0.002752 | -0.002423 | 1.046945 |
+| declared | True | R_rand75 | -0.002537 | -0.002275 | 1.013008 |
+| subgroup | True | R0_always | -0.002654 | -0.002574 | 0.254706 |
+| subgroup | True | R1_defective | 0.000000 | 0.000002 | 0.001508 |
+| subgroup | True | R2_defective | 0.000000 | 0.000015 | 0.015112 |
+| subgroup | True | R1_corrected | -0.002654 | -0.002574 | 0.255170 |
+| subgroup | True | R2_corrected | -0.002654 | -0.002560 | 0.268773 |
+| subgroup | True | R3_defect | -0.002095 | -0.002017 | 0.207294 |
+| subgroup | True | R_rand75 | -0.001923 | -0.001862 | 0.195649 |
+| mismatched | True | R0_always | 0.002658 | 0.002737 | 0.259011 |
+| mismatched | True | R1_defective | 0.000000 | 0.000001 | 0.001498 |
+| mismatched | True | R2_defective | 0.000000 | 0.000015 | 0.015101 |
+| mismatched | True | R1_corrected | 0.000000 | 0.000000 | 0.000465 |
+| mismatched | True | R2_corrected | 0.000000 | 0.000014 | 0.014069 |
+| mismatched | True | R3_defect | 0.002086 | 0.002164 | 0.214855 |
+| mismatched | True | R_rand75 | 0.002077 | 0.002137 | 0.198959 |
+| approx_1e-12 | True | R0_always | -0.003447 | -0.003104 | 1.318871 |
+| approx_1e-12 | True | R1_defective | 0.000000 | 0.000002 | 0.001586 |
+| approx_1e-12 | True | R2_defective | 0.000000 | 0.000015 | 0.015189 |
+| approx_1e-12 | True | R1_corrected | -0.003447 | -0.003102 | 1.320563 |
+| approx_1e-12 | True | R2_corrected | -0.003447 | -0.003089 | 1.334166 |
+| approx_1e-12 | True | R3_defect | -0.002752 | -0.002422 | 1.047865 |
+| approx_1e-12 | True | R_rand75 | -0.002537 | -0.002275 | 1.012343 |
+| approx_1e-9 | True | R0_always | -0.003447 | -0.003102 | 1.321389 |
+| approx_1e-9 | True | R1_defective | 0.000000 | 0.000002 | 0.001581 |
+| approx_1e-9 | True | R2_defective | 0.000000 | 0.000015 | 0.015185 |
+| approx_1e-9 | True | R1_corrected | 0.000000 | 0.000002 | 0.001694 |
+| approx_1e-9 | True | R2_corrected | 0.000000 | 0.000015 | 0.015297 |
+| approx_1e-9 | True | R3_defect | -0.002752 | -0.002422 | 1.048344 |
+| approx_1e-9 | True | R_rand75 | -0.002537 | -0.002273 | 1.014817 |
+| approx_1e-6 | True | R0_always | -0.003447 | -0.003102 | 1.321057 |
+| approx_1e-6 | True | R1_defective | 0.000000 | 0.000002 | 0.001569 |
+| approx_1e-6 | True | R2_defective | 0.000000 | 0.000015 | 0.015172 |
+| approx_1e-6 | True | R1_corrected | 0.000000 | 0.000002 | 0.001695 |
+| approx_1e-6 | True | R2_corrected | 0.000000 | 0.000015 | 0.015299 |
+| approx_1e-6 | True | R3_defect | -0.002752 | -0.002421 | 1.049492 |
+| approx_1e-6 | True | R_rand75 | -0.002537 | -0.002273 | 1.014773 |
+| approx_1e-3 | True | R0_always | -0.003445 | -0.003102 | 1.319000 |
+| approx_1e-3 | True | R1_defective | 0.000000 | 0.000002 | 0.001576 |
+| approx_1e-3 | True | R2_defective | 0.000000 | 0.000015 | 0.015180 |
+| approx_1e-3 | True | R1_corrected | 0.000000 | 0.000002 | 0.001686 |
+| approx_1e-3 | True | R2_corrected | 0.000000 | 0.000015 | 0.015290 |
+| approx_1e-3 | True | R3_defect | -0.002750 | -0.002420 | 1.048039 |
+| approx_1e-3 | True | R_rand75 | -0.002536 | -0.002274 | 1.013124 |
+
+_(A6 corrected-gate diagnostics not yet run)_

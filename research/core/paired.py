@@ -202,8 +202,13 @@ def crossed_bootstrap_ci(cell_matrix, n_boot=20000, seed=0):
     """Estimand E-C: resample seeds outside *and* directions inside.
 
     ``cell_matrix`` is ``(n_seeds, n_directions)``.  Both replication sources are treated as
-    random, which is the only interval that exposes the joint dependence; it is wider by
-    construction and is reported as sensitivity, never as the headline (Addendum A5.1).
+    random, which is the only interval that exposes the joint dependence.
+
+    It is **not** wider by construction: no ordering between a crossed-resampling interval
+    and a single-cluster interval holds for arbitrary data, and an earlier docstring here
+    asserted one.  In this design the crossed interval happened to be the widest, and that
+    observed ordering is reported as a sensitivity result (Addendum A5.1, corrected by the
+    third-round review), never as a theorem.
     """
     m = np.atleast_2d(np.asarray(cell_matrix, float))
     n_seed, n_dir = m.shape

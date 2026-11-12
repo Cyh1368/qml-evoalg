@@ -597,6 +597,141 @@ def deployed_section(path, access_path, out):
         out.append("| %s | oracle | %s | %s |" % (fam, fmt(o["risk"]), o["status"]))
     out.append("")
 
+def corrected_section(path, out):
+    """A6.2/A6.3: corrected vs defective gates, per-regime, with measured costs."""
+    d = load(path)
+    if d is None:
+        out.append("_(A6 corrected-gate comparison not yet run)_")
+        return
+    out.append("## Corrected-gate decision comparison (A6.2/A6.3)\n")
+    out.append("- frozen settings: atol_abs %g, atol_rel %g; eval rows %d (seed %d); "
+               "defect sample rows %d; horizons %s; w grid %s\n"
+               % (d["atol_abs"], d["atol_rel"], d["eval_rows"], d["eval_seed"],
+                  d["defect_sample_rows"], d["horizons"], d["w_grid"]))
+    out.append("- regime group orders: %s\n" % json.dumps(d["regime_orders"]))
+    for fam, fo in d["summary"].items():
+        out.append("### %s\n" % fam)
+        out.append("| regime | sound | rule | fired | realised $\\Delta$ | if always "
+                   "| harmful rejected | beneficial missed | gate s | one-off s "
+                   "| per-prediction s |")
+        out.append("|---|---|---|---|---|---|---|---|---|---|---|")
+        for reg, rv in fo.items():
+            if rv.get("undefined"):
+                out.append("| %s | - | *undefined* | - | - | - | - | - | - | - | - |"
+                           % reg)
+                continue
+            for rule, m in rv["rules"].items():
+                if "cost" not in m:
+                    continue
+                c = m["cost"]
+                out.append("| %s | %s | %s | %d/%d | %s | %s | %d/%d | %d/%d | %.4f "
+                           "| %.3f | %.5f |"
+                           % (reg, rv["group_is_label_symmetry"], rule, m["n_fired"],
+                              m["n_candidates"], fmt(m["realised_mean_delta"]),
+                              fmt(m["mean_delta_if_always_applied"]),
+                              m["harmful_rejected"], m["n_harmful"],
+                              m["beneficial_missed"], m["n_beneficial"],
+                              c["gate_seconds_per_candidate"],
+                              c["oneoff_averaging_seconds_per_candidate"],
+                              c["per_prediction_overhead_seconds"]))
+        out.append("")
+        out.append("### %s: label-decision constancy and objective values\n" % fam)
+        out.append("| regime | label decision constant across candidates | rule "
+                   "| J(H=1,w=0) | J(H=100,w=1e-3) | J(H=1000,w=1) |")
+        out.append("|---|---|---|---|---|---|")
+        for reg, rv in fo.items():
+            if rv.get("undefined"):
+                continue
+            for rule, m in rv["rules"].items():
+                if "objective" not in m:
+                    continue
+                j = m["objective"]
+                out.append("| %s | %s | %s | %.6f | %.6f | %.6f |"
+                           % (reg, rv["label_decision_constant_across_candidates"], rule,
+                              j["H1_w0"], j["H100_w0.001"], j["H1000_w1"]))
+        out.append("")
+
+
+def gatefix_section(path, out):
+    """A6.1/A6.5/A6.6: corrected gate, panel dedupe, distribution-aware diagnostic."""
+    d = load(path)
+    if d is None:
+        out.append("_(A6 corrected-gate diagnostics not yet run)_")
+        return
+    out.append("## Corrected gate, panel units and the distribution-aware diagnostic "
+               "(A6.1, A6.5, A6.6)\n")
+    out.append("- frozen tolerance: atol_abs %g, atol_rel %g; sweep %s; probe rows %d "
+               "(seed %d); gate rows %d; MC draws %d (seed %d)\n"
+               % (d["atol_abs"], d["atol_rel"], d["tol_sweep"], d["probe_rows"],
+                  d["probe_seed"], d["gate_rows"], d["mc_draws"], d["mc_seed"]))
+    for fam, e in d["families"].items():
+        out.append("### %s (n = %d, |S_n| = %d)\n"
+                   % (fam, e["n_qubits"], e["factorial_n"]))
+        p = e["panel"]
+        out.append("- panel: **%d generator-set entries**, **%d unique subgroups** "
+                   "(descriptive coverage over a hand-chosen panel; no binomial "
+                   "interpretation)" % (p["n_entries"], p["n_unique_subgroups"]))
+        dupes = {k: v for k, v in p["unique_subgroups"].items() if len(v) > 1}
+        out.append("  - generator sets generating the same subgroup: %s"
+                   % ("; ".join("%s" % ", ".join(v) for v in dupes.values())
+                      if dupes else "none"))
+        out.append("")
+        out.append("| target | entry | closure order | sound on probe | implemented "
+                   "accepts | corrected accepts | implemented violated fraction | "
+                   "corrected violated fraction |")
+        out.append("|---|---|---|---|---|---|---|---|")
+        for row in p["entries"]:
+            for tgt in e["targets"]:
+                t = row[tgt]
+                out.append("| %s | %s | %d | %s | %s | %s | %.6f | %.6f |"
+                           % (tgt, row["entry"], row["closure_order"], t["sound"],
+                              t["implemented_accepts"], t["corrected_accepts"],
+                              t["implemented_violated"], t["corrected_violated"]))
+        out.append("")
+        out.append("| target | exact L_t order | ratio to S_n | enumerate s | "
+                   "Q | draws | accepted | accept rate | Wilson 95% | MC s |")
+        out.append("|---|---|---|---|---|---|---|---|---|---|")
+        for tgt, ex in e["exact_L"].items():
+            for r in e["accept"][tgt]:
+                out.append("| %s | %s | %s | %.2f | %s%s | %d | %d | %.4f [%.4f, %.4f] "
+                           "| %.2f |"
+                           % (tgt, ex["order"], "%.6f" % ex["ratio"], ex["seconds"],
+                              r["Q"], ("" if r["k"] <= 1 else " k=%d" % r["k"]),
+                              r["draws"], r["accepted"], r["accept_rate"],
+                              r["ci95_low"], r["ci95_high"], r["seconds"]))
+        for tgt in e["targets"]:
+            if tgt in e["exact_L"]:
+                continue
+            for r in e["accept"][tgt]:
+                out.append("| %s | not enumerated (n! = %d) | - | - | %s%s | %d | %d "
+                           "| %.4f [%.4f, %.4f] | %.2f |"
+                           % (tgt, e["factorial_n"], r["Q"],
+                              ("" if r["k"] <= 1 else " k=%d" % r["k"]),
+                              r["draws"], r["accepted"], r["accept_rate"],
+                              r["ci95_low"], r["ci95_high"], r["seconds"]))
+        out.append("")
+        ns = e.get("noise_sweep")
+        if isinstance(ns, dict):
+            out.append("| eps | defective accepts valid | corrected accepts valid "
+                       "| defective accepts invalid | corrected accepts invalid "
+                       "| probe worst (valid) | max label shift |")
+            out.append("|---|---|---|---|---|---|---|")
+            for i, eps in enumerate(ns["eps"]):
+                out.append("| %g | %s | %s | %s | %s | %.3e | %.3e |"
+                           % (eps, ns["defective_accepts_valid"][i],
+                              ns["corrected_accepts_valid"][i],
+                              ns["defective_accepts_invalid"][i],
+                              ns["corrected_accepts_invalid"][i],
+                              ns["probe_worst_valid"][i], ns["label_shift_max"][i]))
+            out.append("")
+        if "board_symmetries" in e:
+            out.append("- algebraic anchor: %d board symmetries enumerated directly, "
+                       "all sound on probe = %s (9! = %d permutations are never "
+                       "enumerated)\n"
+                       % (e["board_symmetries"]["n_enumerated"],
+                          e["board_symmetries"]["all_sound_on_probe"], e["factorial_n"]))
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("--out", default="research/results_summary2.md")
@@ -623,6 +758,8 @@ def main(argv=None):
     decision_section("research/search/decision_rules.json", out)
     deployed_section("research/HOLDOUT_DEPLOYED.json",
                      "research/HOLDOUT_DEPLOYED_ACCESS.json", out)
+    corrected_section("research/search/decision_rules2.json", out)
+    gatefix_section("research/search/corrected_gate.json", out)
     with open(a.out, "w") as fh:
         fh.write("\n".join(out) + "\n")
     print("wrote %s (%d lines)" % (a.out, len(out)))
