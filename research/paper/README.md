@@ -34,7 +34,7 @@ verify that body/tables/math/references are valid LaTeX when the NeurIPS style i
 unavailable. It is **not** the submission format. Rebuild it with
 `sbatch --output logs/preview-%j.out research/paper/job_preview.sh` (a short `devel` job that
 loads `texlive/20240312-GCC-13.3.0`, substitutes an `article` preamble, and compiles twice).
-Last verified preview: 25 pages, zero errors, zero undefined references, no overfull box (job 33054054).
+Last verified preview: 26 pages, zero errors, zero undefined references, no overfull box (job 33055110).
 
 ## Numbers
 `python3 -m research.compile_results2 --out research/results_summary2.md` regenerates every

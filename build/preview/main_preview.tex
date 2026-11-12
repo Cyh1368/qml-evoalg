@@ -1029,11 +1029,18 @@ Under a mismatched group, averaging harms $58$ of $60$ candidates (mean $+0.0026
 screens reject all $58$; the defect statistic rejects $15$ and a size-matched random rule
 $14$, so both let roughly three quarters of the harm through. Under the cost objective of
 A6.3 ($J = $ risk $+ w\cdot$(gate $+$ one-off averaging $+$ $H$ per-prediction overhead)),
-the corrected label gate dominates unconditional averaging, the defect rule and the random
-rule at every $(H,w)$ considered in this regime, while on the valid group it is itself
-dominated by averaging --- which is the honest answer to ``is a verifier worth it'':
-\emph{only} for the risk that the supplied group is wrong, and its value depends on how often
-that risk is real.
+the corrected label gate is the best rule in this regime at every cost weight except $w{=}0$,
+where it ties with every other rule that never fires (all realise exactly zero change):
+$J{=}0.000000$ against $+0.002737$ for always-average, $+0.002164$ for the defect rule and
+$+0.002137$ for random selection at $H{=}100$, $w{=}10^{-3}$. On the valid group the ordering
+reverses at small $w$ ($-0.003103$ for the corrected gate against $-0.003105$ for unconditional
+averaging). At large $w$ the objective is dominated by the averaging cost and the winner becomes
+whichever rule does the least work --- on the valid group that is the \emph{defective} gate, which
+wins by forfeiting the entire benefit. We state that explicitly rather than quoting a single
+winner: the objective ranks rules only once the loss term is weighted meaningfully, so we report
+the loss-only comparison next to it. What survives any reasonable weighting is the qualitative
+answer to ``is a verifier worth it'': \emph{only} for the risk that the supplied group is wrong,
+and its value depends on how often that risk is real.
 
 \paragraph{(3) A strict label gate forfeits benefit under approximate symmetry, and the
 tolerance \emph{is} the policy.} With the frozen tolerance, the corrected gate accepts at
@@ -1123,15 +1130,16 @@ $Q$ & $k$ & accept & 95\% CI & (idealised) & accept & accept \\
 \midrule
 uniform single & 1 & 0.0225 & [0.0119, 0.0422] & 0.01667 & 1.0000 & 0.0000 \\
 uniform $k$ & 2 & 0.0025 & [0.0004, 0.0140] & 0.00028 & 1.0000 & 0.0000 \\
-uniform $k$ & 3 & 0.0000 & [0.0000, 0.0095] & 0.0000046 & 1.0000 & 0.0000 \\
+uniform $k$ & 3 & 0.0000 & [0.0000, 0.0095] & 4.63e-06 & 1.0000 & 0.0000 \\
 \textbf{empirical LLM} & 1 & \textbf{0.4700} & [0.4216, 0.5190] & --- & 1.0000 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{The uniform models are right and irrelevant.} An independent $4000$-draw check
-gives single-generator soundness $0.0179$ and two-generator soundness $0.00025$, matching
-$|L_t|/|S_n|$ and $(|L_t|/|S_n|)^k$. But the proposals the model actually made accept at
+\paragraph{The uniform models are right and irrelevant.} The models are checked rather than asserted
+(\texttt{uniform\_model\_check.json}, $4000$ independent draws): single-generator soundness
+$0.01875$ against the predicted $0.016667$, two-generator $0.00025$ against $0.000278$, and
+$1.00000$ against $1.00000$ on graphs. But the proposals the model actually made accept at
 $0.4700$: $21\times$ the uniform single-permutation rate and roughly $1700\times$ the
 two-generator model. A diagnostic that ignores $Q$ is off by three orders of magnitude on the
 only $Q$ this paper studies, which is why we now report the distribution-aware quantity and
@@ -1528,9 +1536,16 @@ reliable; ``independent replication'' of a frozen decision. \\
 3 & Corrected gate as first-class comparator; per-rule mismatch masks (the previous
 mismatched-group row applied no mask); measured costs including the defect statistic's own
 averaging; approximate-symmetry regimes; panel counts reported as descriptive coverage over
-$9$ generator sets ($7$ distinct subgroups on the $n{=}6$ families; $6$ identities established at $n{=}9$, where three entries exceed the enumeration cap) instead of binomial trials; the group-size
-ratio replaced by $\Pr_{H\sim Q}[H \le L_t]$; ``wider by construction'' removed; claim binding
-with mutation testing. A6. \\
+$9$ generator sets ($7$ distinct subgroups on the $n{=}6$ families; $6$ identities established
+at $n{=}9$, where three entries exceed the enumeration cap) instead of binomial trials; the
+group-size ratio replaced by $\Pr_{H\sim Q}[H \le L_t]$, estimated for four proposal
+distributions including the empirical one; ``wider by construction'' removed; claim binding
+with mutation testing; matched corrected-feedback search runs (A6.7). A6. \\
+3 (self-found) & While writing the response we found that this module's copy of the
+transformation panel had drifted from the canonical one while claiming to be it (different
+reflection, $\rho^4$ instead of $\rho^3$, different generators for the symmetric group), which
+changed the reported number of distinct subgroups. The copy is deleted, the canonical panel is
+imported, two tests pin the mapping, and the superseded output is retained for inspection. \\
 3 $\to$ withdrawn & ``The gate is a recall bottleneck'' (it was the implementation); the
 group-size ratio as a predictor of gate behaviour; ``verifier-free'' for the defect rule; the
 numeric checker described as validation rather than lint. \\

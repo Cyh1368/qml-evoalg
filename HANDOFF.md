@@ -19,7 +19,7 @@ verifier is the indispensable comparator**; acting on it reversed one of our hea
 | A6.8 claim binding with mutation testing | done — `research/paper/claim_bind.py`, report `claim_binding_report.md` |
 | Manuscript: new `sec:corrected`, accept table, de-Wilsoned panel table, rewritten Discussion, review narrative moved to `app:audit` | done, preview clean (25 pp, job 33054054) |
 | `REBUTTAL_ROUND3.md` | written, **one block pending**: the A6.7 numbers at the `<!--A67-->` marker |
-| A6.7 matched corrected-feedback search runs | **running/pending** — job array `33054417`, 72 runs, `--array=0-71%6` |
+| A6.7 matched corrected-feedback search runs | **running** — job array `33054417`, 72 runs, `--array=0-71%6`; measured cost is ~20-25 min per run, so expect ~4-5 h wall at 6-way concurrency |
 | CLAIMS / PROVENANCE / MANIFEST / README reconciliation | done |
 
 ## The one unfinished thing, and exactly how to finish it
