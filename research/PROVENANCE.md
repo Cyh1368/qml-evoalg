@@ -231,3 +231,33 @@ were all submitted with the wrong configuration; none wrote a run log, so nothin
 and no reported number depends on them. The live submission is **33058123**, with the budget and
 step count read off the frozen run JSONs. The general lesson — take the matched configuration
 from the record being extended, not from a template — is now written in the job script.
+
+## A6.7 completed: matched corrected-feedback search runs (job array 33058123, 72 runs)
+
+`research/search/corrected_search.json`, analysed by `research/search/analyze_corrected.py`
+(primary rule committed **before** any result existed; the two added blocks — repair coverage and
+feedback content — are labelled descriptive/post-hoc in the record and change no verdict).
+Configuration was taken from the frozen confirmatory run JSONs (`budget=12`, `steps=120`,
+`max_train=256`, `reasoning_effort=none`), and the analyser rejects any corrected-mode run whose
+configuration differs, so a cancelled wrong-configuration task finishing late cannot contaminate
+the record. All six family x arm cells have 12/12 seeds; zero records were skipped.
+
+Findings, in the order the protocol asks them. (1) Development-selected risk does not move:
+ring `llm-verify` minus `llm-fitness` +0.00039, CI [−0.00016, +0.00093], Holm 1.00 — the whole
+interval lies inside the prespecified ±0.002 band, so this is a bound, not merely a failure to
+reject. Graphs gives −0.02302 [−0.08802, +0.02815], which is far wider than the band and is
+reported as no information. (2) The correction demonstrably changed the feedback: among
+status-`ok` ring verifier reports the label test passes 53/53 corrected against 3/53 implemented.
+(3) The repair step's effect lives in coverage, not in the primary endpoint: at the selected
+candidate the ring gate fires 0/12 implemented (4 attempted) and 3/12 corrected, with the
+averaging step worth −0.00300 [−0.00416, −0.00195]; graphs coverage goes 7/12 to 9/12 with
+−0.06693 [−0.08532, −0.04742]. The frozen graphs diagnostic reproduces the development estimate
+−0.04862 [−0.07106, −0.02845] exactly, which cross-validates the two pipelines.
+
+**Trap recorded for the next session: repair state is at `best.repair`, not top-level `repair`.**
+The run JSONs carry a top-level `repair` key that is `None` for every run, and the per-run repair
+record (attempted / repaired / `dev_risk_repaired_diagnostic`) lives under `best.repair`. An
+early count read the top-level key and produced "0 attempted, 0 fired" for all 24 repair runs,
+which contradicted the deployed-endpoint study's 7/12. The correct location reproduces the known
+7/12 on frozen graphs, so the corrected reading is the one reported here. Any future count of
+repair firings must read `best.repair`.

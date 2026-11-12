@@ -114,7 +114,54 @@ before that was checked) — 72 new runs in `logs/runs_corrected/`, each carryin
 `llm-fitness` arm was re-run contemporaneously so the paired comparator is from the same model
 state rather than from a month earlier.
 
-<!--A67-->
+**Result: the feedback changed, the outcome did not.** Numbers below are from
+`research/search/corrected_search.json` (generated; `results_summary2.md` section
+\"Corrected-feedback search runs (A6.7)\"). Unit is the paired seed, Holm within family.
+
+| family | contrast | pairs | mean | 95% CI | Holm p | verdict |
+|---|---|---|---|---|---|---|
+| ring | verify-corrected $-$ fitness | 12 | +0.00039 | [−0.00016, +0.00093] | 1.00 | difference not detected |
+| ring | verify-repair-corrected $-$ fitness | 12 | +0.00049 | [−0.00020, +0.00120] | 1.00 | difference not detected |
+| ring | verify-repair-corrected $-$ verify-corrected | 12 | +0.00010 | [−0.00051, +0.00068] | 1.00 | difference not detected |
+| ring | verify-corrected $-$ verify-defective | 12 | −0.00027 | [−0.00100, +0.00046] | 1.00 | difference not detected |
+| graphs | verify-corrected $-$ fitness | 12 | −0.02302 | [−0.08802, +0.02815] | 1.00 | difference not detected |
+| graphs | verify-corrected $-$ verify-defective | 12 | −0.01496 | [−0.05608, +0.01969] | 1.00 | difference not detected |
+
+Three readings, and the third is the one that matters for the referee's requirement.
+
+1. **On the ring the null is informative, not merely unfalsified.** The primary interval lies
+   entirely inside the prespecified $\pm 0.002$ practically-meaningful band, so this study bounds
+   the effect of corrected feedback on development-selected risk *below* the threshold the
+   protocol set as worth caring about. On graphs the interval
+   ($\pm 0.06$ around $-0.023$) is far wider than the band: 12 seeds do not resolve graphs-sized
+   variance, and we report that as no information rather than as a null.
+2. **The correction demonstrably changed what the model was told** (descriptive, added after the
+   primary rule was frozen, and changing no verdict). Among status-`ok` verifier reports on the
+   ring, the label test passes 53/53 (fraction 1.000) under the corrected screen against 3/53
+   (0.057) under the implemented one; for the repair arm, 53/53 against 4/49 (0.082). On graphs
+   both screens pass everything (1.000), as the vacuity result predicts. So this is not a study of
+   a correction that never reached the prompt: the feedback content changed by a factor of 17, and
+   selected risk did not move.
+3. **The repair arm's primary contrast could not have registered the repair, and we say why.** By
+   the frozen protocol the repaired arm's official development risk is the *candidate's* risk and
+   the averaged value is a diagnostic, so the endpoint is structurally insensitive to the repair
+   step. Where the correction does show up is coverage: at the selected candidate, the ring gate
+   fires **0 of 12** under the implemented screen (4 attempted) and **3 of 12** under the corrected
+   screen (3 attempted, all firing), with the averaging step worth −0.00300
+   [−0.00416, −0.00195] on those runs. On graphs coverage rises from 7/12 to 9/12 and the
+   diagnostic effect is −0.06693 [−0.08532, −0.04742]; the frozen graphs figure
+   ($-0.04862$ [−0.07106, −0.02845]) reproduces the development estimate E-S1 exactly, which is a
+   useful internal consistency check.
+
+**What we therefore claim about feedback.** Not \"verification feedback does not help\" — the ring
+bound is a bound, the graphs arm is uninformative, and a larger graphs study could resolve it.
+What we claim is that the requirement is met: the trajectories were re-run under corrected
+feedback with a frozen protocol and a prespecified threshold, the feedback content changed
+materially, and no effect at or above the threshold was found on the family where the study has
+power. The behavioural conclusion in the manuscript is therefore \"no effect at the prespecified
+threshold on the ring; underpowered on graphs\", replacing the earlier \"difference not
+detected\" that rested on defective feedback.
+
 
 ---
 

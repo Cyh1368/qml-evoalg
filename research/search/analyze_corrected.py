@@ -223,6 +223,28 @@ def repair_coverage(runs):
     return out
 
 
+
+def _pick(rows, family, a, b, key):
+    for c in rows:
+        if c["family"] == family and c["a"] == a and c["b"] == b:
+            return float(c[key])
+    raise KeyError((family, a, b, key))
+
+
+def _pick_fb(runs, family, arm, key):
+    for r in feedback_content(runs):
+        if r["family"] == family and r["arm"] == arm:
+            return float(r[key])
+    raise KeyError((family, arm, key))
+
+
+def _pick_cov(rows, family, key):
+    for r in rows:
+        if r["family"] == family:
+            return float(r[key])
+    raise KeyError((family, key))
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="research/search/analyze_corrected.py")
     ap.add_argument("--corrected", default="logs/runs_corrected/*.json")
@@ -282,6 +304,32 @@ def main(argv=None):
                "note": ("official dev risk is the candidate's risk by protocol, so the primary "
                         "contrast is structurally insensitive to the repair step; coverage and "
                         "the diagnostic averaged-minus-candidate delta are where it shows")},
+           "headline": {
+               "ring_verify_minus_fitness_mean": _pick(rows, "ring_n6", "llm-verify/corrected",
+                                                       "llm-fitness/corrected", "mean_diff"),
+               "ring_verify_minus_fitness_ci_low": _pick(rows, "ring_n6", "llm-verify/corrected",
+                                                         "llm-fitness/corrected", "ci95_low"),
+               "ring_verify_minus_fitness_ci_high": _pick(rows, "ring_n6", "llm-verify/corrected",
+                                                          "llm-fitness/corrected", "ci95_high"),
+               "graphs_verify_minus_fitness_mean":
+                   _pick(rows, "graphs_n6", "llm-verify/corrected", "llm-fitness/corrected",
+                         "mean_diff"),
+               "ring_feedback_label_pass_corrected": _pick_fb(corr, "ring_n6", "llm-verify",
+                                                              "label_pass_of_ok"),
+               "ring_feedback_reports_ok_corrected": _pick_fb(corr, "ring_n6", "llm-verify",
+                                                              "status_ok"),
+               "ring_feedback_label_pass_implemented": _pick_fb(froz, "ring_n6", "llm-verify",
+                                                                "label_pass_of_ok"),
+               "ring_repair_fired_corrected": _pick_cov(repair_coverage(corr), "ring_n6",
+                                                        "fired"),
+               "ring_repair_fired_implemented": _pick_cov(repair_coverage(froz), "ring_n6",
+                                                          "fired"),
+               "ring_repair_diagnostic_corrected": _pick_cov(repair_coverage(corr), "ring_n6",
+                                                             "mean_averaged_minus_candidate"),
+               "graphs_repair_diagnostic_corrected": _pick_cov(repair_coverage(corr),
+                                                               "graphs_n6",
+                                                               "mean_averaged_minus_candidate"),
+           },
            "feedback_content_descriptive": {
                "corrected": feedback_content(corr),
                "implemented_frozen": feedback_content(froz),

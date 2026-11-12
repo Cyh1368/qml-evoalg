@@ -65,7 +65,11 @@ $+0.057$ at $1800$). (iii)~In the frozen $120$-run search study,
 the endpoint that had been omitted --- inference-time Reynolds averaging of the deployed
 predictor --- is the one effect that is consistent and large
 ($-0.0486$, CI $[-0.0708,-0.0284]$, $7/12$ runs eligible on \texttt{graphs\_n6}), whereas
-verifier \emph{feedback} changes development-selected risk by an undetected amount; the
+verifier \emph{feedback} changes development-selected risk by an undetected amount; re-running
+the search under a corrected feedback screen, which changes what the model is told by a factor of
+$17$ on the ring, still moves selected risk by only $+0.00039$
+($[-0.00016,+0.00093]$), inside the prespecified $\\pm0.002$ band, while the graphs arm is too
+noisy to resolve; the
 same averaging applied to non-LLM arms also helps, so the gain is not attributable to the
 LLM (we do \emph{not} establish that the two are equal). On the held-out endpoint that had
 been missing, the same repair step gives $-0.02846$ (CI $[-0.04704,-0.01190]$, $7/12$ runs)
@@ -1241,6 +1245,35 @@ $60/60$ candidates in both families, so it contributes no discrimination, and on
 label test costs $0.45$\,s while the averaging it gates costs $12.5$\,s --- the filter is
 $3.6\%$ of the work it is supposed to save, and it filters nothing.
 
+\subsection{Corrected feedback inside the search loop}
+\label{sec:correctedsearch}
+
+Everything above post-processes candidates that a fitness-driven loop had already produced, so
+it cannot show what corrected feedback would have done to the trajectory. We re-ran the search:
+three arms (\texttt{llm-fitness}, \texttt{llm-verify}, \texttt{llm-verify-repair}) under corrected
+semantics, both families, 12 paired seeds, with the budget and optimiser settings taken from the
+frozen record itself ($B{=}12$, 120 steps, \texttt{max\_train} 256) rather than from a template,
+and with the fitness arm re-run contemporaneously so the comparator comes from the same model
+state. Each of the 72 logs carries \texttt{label\_mode="corrected"}, and the analyser rejects any
+run whose configuration does not match the frozen one.
+
+The correction reached the model. Among status-\texttt{ok} verifier reports on the ring, the label
+test passes $53/53$ under the corrected screen against $3/53$ under the implemented one; on graphs
+both pass everything, as the vacuity result predicts. The trajectory outcome did not move: against
+the contemporaneous fitness arm, corrected verification changes development-selected risk by
+$+0.00039$, CI $[-0.00016,+0.00093]$ (Holm $p{=}1.00$), an interval lying entirely inside the
+prespecified $\pm0.002$ band; the repair arm gives $+0.00049$
+$[-0.00020,+0.00120]$. On graphs the interval is $\pm0.06$ around $-0.02302$: twelve seeds do not
+resolve graphs-sized variance, and we record that as no information rather than as a null.
+
+The repair arm's selected-risk contrast could not have registered the repair in any case: by
+protocol its official development risk is the \emph{candidate's} risk, with the averaged value a
+diagnostic. Coverage is where the correction shows. At the selected candidate the ring gate fires
+$0/12$ under the implemented screen (4 attempted, 0 firing) and $3/12$ under the corrected screen,
+where averaging is worth $-0.00300$, CI $[-0.00416,-0.00195]$; on graphs coverage rises from $7/12$
+to $9/12$ with the averaging step worth $-0.06693$ $[-0.08532,-0.04742]$. The frozen graphs figure
+($-0.04862$, CI $[-0.07106,-0.02845]$) reproduces the development estimate above to five decimals,
+which is an internal consistency check on the two pipelines.
 
 \section{Discussion}
 \label{sec:discussion}
@@ -1261,17 +1294,21 @@ implemented, the label screen contained two specification defects, and once they
 screen captures the full benefit on a valid group ($-0.00345$ at $0.0017$\,s of gate time),
 rejects $58$ of $58$ harmful repairs under a mismatched group, and forfeits the benefit
 entirely once the target is only approximately symmetric --- with the crossover sitting exactly
-at the numerical tolerance. (e)~At matched budgets a hand-built equivariant block and a
+at the numerical tolerance. (e)~Re-running the search loop under corrected feedback changes what
+the model is told by a factor of $17$ on the ring and changes development-selected risk by an
+amount bounded inside the prespecified $\pm0.002$ band, while raising the ring repair gate from
+$0/12$ firings to $3/12$. (f)~At matched budgets a hand-built equivariant block and a
 one-threshold classical rule beat LLM search on development splits, and the equivariant block
 still dominates on fresh held-out ring inputs ($0.00026$ against the best arm's $0.00648$);
 the classical rule's development advantage does not survive matched held-out rows.
 
 \paragraph{What that implies for the ``verification helps automated science'' thesis.}
 Verification helped in exactly one place, and it is a \emph{safety} place: it is what stops a
-wrong supplied group from being averaged over. It did not help the model find the group, the
-feedback channel we built left development-selected risk with a difference we cannot detect,
-and it is not a precondition for the repair benefit --- averaging over a group we supply helps
-whether or not any gate checks it. That reframes the design question. A label-preservation
+wrong supplied group from being averaged over. It did not help the model find the group; the
+feedback channel, even after its own defects were corrected and its content demonstrably changed,
+moved development-selected risk by less than the threshold this protocol treats as meaningful on
+the family where the study has power; it is not a precondition for the repair benefit --- averaging
+over a group we supply helps whether or not any gate checks it. That reframes the design question. A label-preservation
 screen should be judged the way one judges a fuse: by the harm it prevents, at the frequency
 the hazard occurs, relative to its cost --- not by whether it improves average performance on
 a benchmark where the supplied group happens to be right. On these tasks that frequency is
@@ -1317,7 +1354,10 @@ $2$--$12$ are exact), so exact-projector guarantees do not transfer to it; the d
 the decision-rule ablation is one statistic on one dataset per family, so it is a measured
 comparison on this benchmark and not a validated method;
 all repair inference conditions on a single dataset and task family, so no interval here
-covers newly sampled datasets or families;
+covers newly sampled datasets or families; the corrected-feedback search study has 12 seeds per
+arm and resolves the ring but not \texttt{graphs\_n6}, where its interval is thirty times wider
+than the threshold it is tested against, and its repair-arm endpoint is the candidate's risk by
+protocol, so that arm's selected-risk contrast is insensitive to the repair step by construction;
 the model serving alias exposes no immutable
 checkpoint revision, so reproducibility of the LLM component is temporal rather than
 bit-level; and no quantum-advantage claim is made or implied.

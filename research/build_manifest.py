@@ -83,7 +83,7 @@ ROWS = [
     ("Corrected-feedback search study (A6.7)", "research/search/analyze_corrected.py",
      "research/search/corrected_search.json",
      "development-selected risk, paired by seed",
-     "72 new runs, label_mode=corrected, budget 32, 200 steps, max_train 256",
+     "72 new runs, label_mode=corrected, budget 12 / steps 120 / max_train 256 (settings read from the frozen confirmatory run JSONs, not the job template's 32/200)",
      "A6.7", "see record"),
     ("Claim-binding report (A6.8)", "research/paper/claim_bind.py",
      "research/paper/claim_binding_report.md",
