@@ -47,9 +47,9 @@ quantum predictor, under matched evaluation budgets. The mathematical tools we u
 (group twirls, channel and predictor equivariance residuals, an orthogonal-projection
 risk identity) are established; the object of study is behavioural and measurable: the
 gap between \emph{proposing} a transformation, \emph{implementing} it, and
-\emph{performing}. This version was written against a referee report, and every change
-below is traceable to a frozen revised protocol, a corrected analysis, or a
-bibliographic record. Four things survive measurement. (i)~A self-audit of our own prior
+\emph{performing}. Every claim below is traceable to a frozen revised protocol, a corrected
+analysis, or a bibliographic record; the change history is in Appendix~\ref{app:audit} rather
+than in the narrative. Four things survive measurement. (i)~A self-audit of our own prior
 LLM-evolutionary study: its selection score used test data, one architecture-wide
 equivariance claim is false (measured channel defect $0.0597$), and significance was
 computed at proposal rather than run level. (ii)~A causal repair experiment on a ring
@@ -60,7 +60,8 @@ experiment with $24$ genuine $\eta{=}0$ units finds that the repaired arm beats 
 ($-0.00134$, Holm $p{=}0.043$) but \emph{not} the gate-count-matched duplicate control
 ($-0.00060$, CI $[-0.00135,+0.00019]$), so the symmetry-specific benefit is not established,
 while the $\eta{=}1$ cost of enforced invariance is large, robust and budget-increasing
-($+0.03605$, CI $[+0.03134,+0.04087]$ at $200$ steps, rising to $+0.057$ at $1800$). (iii)~In the frozen $120$-run search study,
+($+0.03605$, CI $[+0.02998,+0.04210]$ under the primary estimand at $200$ steps, rising to
+$+0.057$ at $1800$). (iii)~In the frozen $120$-run search study,
 the endpoint that had been omitted --- inference-time Reynolds averaging of the deployed
 predictor --- is the one effect that is consistent and large
 ($-0.0486$, CI $[-0.0708,-0.0284]$, $7/12$ runs eligible on \texttt{graphs\_n6}), whereas
@@ -494,8 +495,8 @@ $\eta$ & contrast & rows & units & mean diff & $95\%$ CI & $p_{\text{boot}}$ & $
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:v1} resolves the referee's points 1, 5 and 8 on the existing record. The
-$\eta{=}0$ benefit shrinks to a borderline interval with sign-flip $p{=}0.125$, and
+Table~\ref{tab:v1} recomputes the original repair record under the corrected replication
+units. The
 nothing in the $\eta{=}0$ family survives multiplicity (Holm $p{=}0.166$, $0.103$,
 $0.191$ for the three contrasts); the
 prose/table contradiction disappears (control minus original now includes $0$, but that is
@@ -650,7 +651,8 @@ E-S2 deployed verify-repair $-$ verify & ring   & 12 & $-0.00046$ & $[-0.00127,+
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:search} is the substance of referee point 2. The first version reported
+Table~\ref{tab:search} separates the two endpoints that the original study conflated. An
+earlier version reported
 \texttt{verify-repair} versus \texttt{verify} on the \emph{unaveraged} candidate risk and
 concluded that an averaging benefit seen in a $3$-seed pilot ``did not survive''
 confirmation. Measured on the deployed predictor, the averaging effect on graphs is
@@ -673,10 +675,14 @@ arm's selected predictor (E-S5b) lowers development risk for \emph{all} arms, in
 the non-LLM ones: graphs $-0.0639$ (\texttt{llm-fitness}) to $-0.1114$ (\texttt{random});
 ring $-0.0031$ to $-0.0039$; all intervals exclude $0$. Whatever the averaging buys, it
 does not require an LLM to buy it. \textbf{Approximation, stated plainly:} the declared
-group of \texttt{graphs\_n6} is $S_6$ with $720$ elements, so every graphs twirl in this
-paper is a \emph{Monte-Carlo} average over $24$ sampled group elements, not the exact
-Reynolds projection --- the MC share is $1.00$ on graphs and $0.00$ on the ring, where
-$|D_6| = 12$ is enumerated exactly. Guarantees that hold for the exact projector
+group of \texttt{graphs\_n6} is $S_6$ with $720$ elements, so every \emph{declared-group}
+twirl for graphs in this paper is a \emph{Monte-Carlo} average over $24$ sampled group
+elements, not the exact Reynolds projection --- the MC share is $1.00$ on graphs and $0.00$
+on the ring, where $|D_6| = 12$ is enumerated exactly. The deployed endpoint is the
+exception and must not be conflated with it: there the hypothesis groups are small subgroups
+($2$--$12$ elements, all seven fired graph repairs included) enumerated \emph{exactly}, so
+deployed graph risks are exact averages while the declared-group column is the
+$24$-element approximation. Guarantees that hold for the exact projector
 (equivariance of the averaged predictor, the projection identity) do \emph{not} transfer to
 a $24$-element average; what we report for graphs is the measured risk change of that
 approximation, and its cost is $12.5$\,s per candidate against $0.18$\,s on the ring.
@@ -884,9 +890,9 @@ splits consumed by the defective run.
 \subsection{The deployed endpoint on held-out inputs (A5.5)}
 \label{sec:deployed}
 
-The previous version's held-out search numbers scored the selected \emph{candidate} circuit,
-so they did not evaluate the pipeline the paper emphasises: averaging at inference time. This
-subsection measures that pipeline on held-out rows, with the development self-check running
+Held-out search numbers for the selected \emph{candidate} circuit are in \S\ref{sec:holdout};
+they do not evaluate the pipeline this paper emphasises --- averaging at inference time --- so
+this subsection measures that pipeline on held-out rows, with the development self-check running
 \emph{before} any held-out array is opened ($120/120$ refits reproduce their logged
 development risk, max $1.73\times10^{-18}$). Three endpoints are scored on one shared
 $1024$-row subsample per family (seed $5150$), so every comparison below is on identical rows:
@@ -906,8 +912,9 @@ command and recorded in the consumption ledger.
 \centering
 \caption{Deployed-endpoint evaluation on held-out rows (means over the $12$ frozen runs per
 arm, identical rows within a family). ``Repair fired'' counts the development-frozen deployed
-decision. The graphs twirl is a $24$-element Monte-Carlo average of a $720$-element group; the
-ring twirl is exact.}
+decision. Deployed hypothesis groups ($2$--$12$ elements) are enumerated exactly; the
+declared-group column for graphs is a $24$-element Monte-Carlo average of a $720$-element
+group, while the ring declared group ($12$) is exact.}
 \label{tab:deployed}
 \small
 \begin{tabular}{@{}llrrrr@{}}
@@ -939,8 +946,10 @@ ring & best constant & --- & 0.01946 & --- & --- \\
 where the frozen decision fires: \texttt{llm-verify-repair} on graphs, $0.52913 \to 0.50067$
 ($-0.02846$, CI $[-0.04704, -0.01190]$, $7/12$ runs). Everywhere else deployed equals
 candidate exactly. On the ring that equality is itself a result: the deployed gate fires on
-$0/12$ runs on \emph{fresh} inputs, independently reproducing the $0/60$ firing rate of the
-decision-rule ablation (\S\ref{sec:decision}).
+$0/12$ runs on \emph{fresh} inputs. Because the evaluator uses the development-\emph{frozen}
+decision, that zero is guaranteed by the evaluation design: fresh inputs validate the
+\emph{risks} of the frozen policies and cannot test the firing mechanism, which requires
+newly fitted candidates (\S\ref{sec:corrected} refits candidates under corrected gates).
 
 \paragraph{The tool still dominates the arm.} Applying the declared group to every arm beats
 every arm's own selection: \texttt{random} with the twirl reaches $0.40915$ on graphs, below
@@ -949,22 +958,112 @@ arm's candidate ($0.00648$). The constructive equivariant block reaches $0.00026
 \emph{fresh} ring inputs --- $25\times$ below the best arm's candidate and $12\times$ below the
 best arm's own twirl. Held-out data does not rescue the search from either comparison.
 
-\paragraph{A baseline claim of ours does not survive matched rows.} The edge-count rule
+\paragraph{A development-only baseline advantage does not transfer.} The edge-count rule
 reaches development risk $0.351$ against the arms' $0.538$--$0.566$
-(\S\ref{sec:baselines}), and the previous version of this paper stated that it ``beats every
-arm''. Scored on the \emph{same} held-out rows as the arms it does not: $0.57812$ against
+(\S\ref{sec:baselines}); that comparison alone invites the claim that it ``beats every arm''.
+Scored on the \emph{same} held-out rows as the arms it does not: $0.57812$ against
 $0.50067$--$0.54472$. Its development advantage does not transfer. The splits also differ in
 label composition --- the best-constant reference moves from $0.65667$ on development
 validation to $0.58968$ here --- so risk \emph{levels} are not comparable across splits, which
-is exactly why cross-split comparisons were removed from every other table. We report this as
-a correction produced by the referee's point about mixed splits, not as a new finding about
-the rule.
+is why every table in this paper scores arms and baselines on one shared row set.
+
+\subsection{The corrected gate is the comparator that matters (A6)}
+\label{sec:corrected}
+
+The two defects above mean the preceding section describes \emph{our implementation}, not
+verification in general. So we built the corrected screen exactly as declared in Addendum A6.1
+(scored target only; a violation means
+$|y_t(gx)-y_t(x)| > 10^{-12} + 10^{-9}|y_t(x)|$, the probe's own tolerance, so the gate cannot
+be stricter than the instrument that defines soundness), re-ran the whole decision comparison
+on the \emph{same} $120$ frozen predictors, and added the regimes that make the decision
+non-trivial: the supplied group is the declared group (\emph{valid}), a valid proper subgroup,
+a \emph{mismatched} group that is not a label symmetry, and the declared group under label
+perturbations $\epsilon \in \{10^{-12},10^{-9},10^{-6},10^{-3}\}$. Every rule is scored under
+\emph{its own} firing mask in every regime; costs are measured, including the cost of the
+defect statistic, which needs the averaged predictions on its own sample.
+
+\begin{table}[t]
+\centering
+\caption{Corrected vs defective gate on identical frozen ring candidates ($60$).
+$\Delta$ is risk after $-$ risk before (negative helps); ``realised'' counts a non-firing
+candidate as $0$; costs are measured seconds per candidate. On \texttt{graphs\_n6} the
+mismatched and approximate regimes do not exist (no mismatched group exists), and in the valid
+regimes every gate fires on every candidate, so no rule differs there.}
+\label{tab:corrected}
+\small
+\begin{tabular}{@{}llrrrrrr@{}}
+\toprule
+regime & rule & fired & realised $\Delta$ & always & harm rejected & benefit missed & gate s \\
+\midrule
+valid ($D_6$) & R0 always            & 60/60 & $-0.00345$ & $-0.00345$ & 0/0   & 0/60   & 0.0000 \\
+              & R1 defective         & 0/60  & $0.00000$  & $-0.00345$ & 0/0   & 60/60  & 0.0015 \\
+              & \textbf{R1 corrected} & \textbf{60/60} & $\mathbf{-0.00345}$ & $-0.00345$ & 0/0 & 0/60 & \textbf{0.0017} \\
+              & R3 defect ($q_1$)    & 45/60 & $-0.00275$ & $-0.00345$ & 0/0   & 15/60  & 0.0755 \\
+              & R\_rand75            & 45/60 & $-0.00254$ & $-0.00345$ & 0/0   & 15/60  & 0.0000 \\
+\midrule
+mismatched    & R0 always            & 60/60 & $+0.00266$ & $+0.00266$ & 0/58  & 0/2    & 0.0000 \\
+              & R1 defective         & 0/60  & $0.00000$  & $+0.00266$ & 58/58 & 2/2    & 0.0015 \\
+              & \textbf{R1 corrected} & 0/60 & $\mathbf{0.00000}$ & $+0.00266$ & \textbf{58/58} & 2/2 & \textbf{0.0005} \\
+              & R3 defect ($q_1$)    & 45/60 & $+0.00209$ & $+0.00266$ & 15/58 & 0/2    & 0.0189 \\
+              & R\_rand75            & 45/60 & $+0.00208$ & $+0.00266$ & 14/58 & 1/2    & 0.0000 \\
+\midrule
+$\epsilon{=}10^{-12}$ & R1 corrected   & 60/60 & $-0.00345$ & $-0.00345$ & 0/0 & 0/60 & 0.0017 \\
+$\epsilon{=}10^{-9}$  & R1 corrected   & 0/60  & $0.00000$  & $-0.00345$ & 0/0 & 60/60 & 0.0017 \\
+$\epsilon{=}10^{-6}$  & R1 corrected   & 0/60  & $0.00000$  & $-0.00345$ & 0/0 & 60/60 & 0.0017 \\
+$\epsilon{=}10^{-3}$  & R1 corrected   & 0/60  & $0.00000$  & $-0.00344$ & 0/0 & 60/60 & 0.0017 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Four results, none of which was available before the corrected comparator existed.
+
+\paragraph{(1) The recall bottleneck on the valid group was the bug, not the gate.}
+The corrected screen accepts all $60$ ring candidates and captures the entire benefit
+($-0.00345$, identical to unconditional averaging) for $0.0017$\,s of gate time. The
+implemented screen accepts none. Any statement of the form ``verification is a recall
+bottleneck'' is therefore withdrawn: it described a screen that tested the wrong labels at
+zero tolerance.
+
+\paragraph{(2) The gate does have a safety role, and now we have measured it.}
+Under a mismatched group, averaging harms $58$ of $60$ candidates (mean $+0.00266$). Both
+screens reject all $58$; the defect statistic rejects $15$ and a size-matched random rule
+$14$, so both let roughly three quarters of the harm through. Under the cost objective of
+A6.3 ($J = $ risk $+ w\cdot$(gate $+$ one-off averaging $+$ $H$ per-prediction overhead)),
+the corrected label gate dominates unconditional averaging, the defect rule and the random
+rule at every $(H,w)$ considered in this regime, while on the valid group it is itself
+dominated by averaging --- which is the honest answer to ``is a verifier worth it'':
+\emph{only} for the risk that the supplied group is wrong, and its value depends on how often
+that risk is real.
+
+\paragraph{(3) A strict label gate forfeits benefit under approximate symmetry, and the
+tolerance \emph{is} the policy.} With the frozen tolerance, the corrected gate accepts at
+$\epsilon = 10^{-12}$ and rejects at every larger perturbation, while averaging still helps by
+$-0.00345$ at all of them. The crossover sits exactly at the tolerance, so the choice of
+tolerance is not an implementation detail but the decision boundary; a sweep over
+$\{0,10^{-15},10^{-12},10^{-9},10^{-6},10^{-3}\}$ is reported so no single frozen value is
+load-bearing. This is a limitation of \emph{any} exact label test, not of our code.
+
+\paragraph{(4) The defect rule is neither cheap nor much better than random.} Its statistic
+costs $0.0755$\,s on the ring against $0.0017$\,s for the corrected label test ($44\times$)
+and $3.66$\,s against $1.39$\,s on graphs, because it needs averaged predictions on its own
+sample --- an accounting this module makes explicit because the statistic is not free.
+Retaining $75\%$ of candidates by this
+statistic yields $-0.00275$ against $-0.00254$ for a size-matched random selection: a
+difference of $0.00021$, which we do not present as a method. It is also not verifier-free in
+the earlier sense: it measures predictive symmetry, it simply omits the label test.
+
+\paragraph{A structural point about gate metrics.} In every regime the label test's decision
+is \emph{constant across candidates} (it tests the supplied group against the target on gate
+rows; nothing about the candidate enters). Precision and recall of a pure label gate over
+candidates are therefore degenerate by construction --- $45/45$ precision for a rule that
+never looks at the candidate is not evidence about the rule. Only the channel and defect tests
+vary per candidate. We report per-arm and seed-vector results in the generated record and
+reserve interval language for quantities with a defensible sampling unit.
 
 \subsection{What a label-preservation verifier can decide (A5.2, A5.3)}
 \label{sec:semantics}
 
-The referee's second point is correct as a matter of definition, and checking it changed
-what we report. A hypothesis closure $H$ is now classified against the declared group $G$
+A hypothesis closure $H$ is classified against the declared group $G$
 and the \emph{measured} label-symmetry group $L_t$ of the scored target (every one of the
 $n!$ site permutations tested on an independent probe panel of 512 development rows that the
 gate never reads). Counting $H \ne G$ as a wrong group was wrong: $H < G$ is a genuine
@@ -972,10 +1071,13 @@ symmetry that is merely weaker than declared.
 
 \begin{table}[t]
 \centering
-\caption{Measured label-symmetry groups. $|L_t|/|S_n|$ is the fraction of the permutation
-hypothesis space that the label test can \emph{not} reject for target $t$; it is computable
-before any model is trained, and it decides whether a label-preservation verifier can carry
-information at all. $\textsc{all}$ is the conjunction the implemented gate actually checks.}
+\caption{Measured label-symmetry groups. $|L_t|/|S_n|$ is the fraction of \emph{individual
+uniformly drawn permutations} that the target's labels preserve, under an exact
+membership test and a known true $L_t$. It is \emph{not} the acceptance probability of a
+search proposal, which is a generator list whose closure is sampled non-uniformly; that
+quantity is $\Pr_{H\sim Q}[H \le L_t]$ and is estimated separately (Table~\ref{tab:accept}).
+$|L_t|/|S_n| = 1$ still entails vacuity for \emph{any} proposal distribution supported on
+permutations of this domain, which is the only claim this table carries.}
 \label{tab:semantics}
 \small
 \begin{tabular}{llrrll}
@@ -995,29 +1097,72 @@ ring & \textsc{all} & 2 & 0.0028 & no & no \\
 Two consequences. First, on \texttt{graphs\_n6} the label gate is \emph{vacuous by
 construction}: connectedness is invariant under every relabelling of the vertices, so no
 permutation hypothesis can violate it, and the observed $144/144$ acceptances say nothing
-about the quality of the proposals. The $289$ hypotheses we previously called ``wrong group''
-are \texttt{valid\_proper\_subgroup}: sound, incomplete, and \textbf{zero} false accepts.
+about the quality of the proposals. The $289$ hypotheses classified as
+\texttt{valid\_proper\_subgroup} are sound, incomplete, and \textbf{zero} false accepts.
 Second, on the ring the scored target $\alpha_0$ admits $12$ of $720$ permutations, but the
 implemented gate checks \emph{every} target column in the dataset, whose conjunction admits
 only $2$ of $720$ --- six times stricter than the scored target requires.
 
 \begin{table}[t]
 \centering
-\caption{Fixed-panel selectivity (A5.3): identical ring inputs, only the target varies. The
-panel is fixed in advance (identity, rotation, reflection, the declared dihedral group, its
-$C_3$ and $C_2$ subgroups, the full symmetric group, 20 random permutations, all 15 single
-transpositions). Wilson intervals; denominators are panel members, not elements.}
+\caption{Acceptance probability of the proposal distribution that matters,
+$\Pr_{H\sim Q}[H \le L_t]$, by $400$ independent Monte-Carlo draws per cell (Wilson
+intervals are defensible here because the draws are independent by construction, which the
+fixed panel was not). The ``uniform model'' column is $\Pr$ under the idealised
+$Q$ the text describes: $|L_t|/|S_n|$ for one uniform permutation and $(|L_t|/|S_n|)^k$ for
+$k$ independent ones. The empirical row draws the generator lists actually proposed by the
+model in the frozen search runs ($819$ hypotheses). At $n=9$ the $362880$ permutations are
+never enumerated: the estimate is probe-based, and the algebraic anchor (the eight square
+symmetries, all sound on the probe) gives $|L|/|S_9| = 2.2\times10^{-5}$.}
+\label{tab:accept}
+\small
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+& & ring $\alpha_0$ & & uniform model & graphs & tictactoe \\
+$Q$ & $k$ & accept & 95\% CI & (idealised) & accept & accept \\
+\midrule
+uniform single & 1 & 0.0225 & [0.0119, 0.0422] & 0.01667 & 1.0000 & 0.0000 \\
+uniform $k$ & 2 & 0.0025 & [0.0004, 0.0140] & 0.00028 & 1.0000 & 0.0000 \\
+uniform $k$ & 3 & 0.0000 & [0.0000, 0.0095] & 0.0000046 & 1.0000 & 0.0000 \\
+\textbf{empirical LLM} & 1 & \textbf{0.4700} & [0.4216, 0.5190] & --- & 1.0000 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The uniform models are right and irrelevant.} An independent $4000$-draw check
+gives single-generator soundness $0.0179$ and two-generator soundness $0.00025$, matching
+$|L_t|/|S_n|$ and $(|L_t|/|S_n|)^k$. But the proposals the model actually made accept at
+$0.4700$: $21\times$ the uniform single-permutation rate and roughly $1700\times$ the
+two-generator model. A diagnostic that ignores $Q$ is off by three orders of magnitude on the
+only $Q$ this paper studies, which is why we now report the distribution-aware quantity and
+treat the ratio as a special case of it. The two degenerate ends are measured rather than
+asserted: graphs accepts under every $Q$ (no predicate on this domain can discriminate), and
+the $n=9$ board task rejects under every $Q$ (a gate that rejects everything discriminates
+nothing either). A useful gate needs $Q$ to put mass on both sides of $L_t$.
+
+\begin{table}[t]
+\centering
+\caption{Fixed-panel selectivity (A5.3, units corrected by A6.6): identical ring
+inputs, only the target varies. The panel is \emph{nine generator sets}, fixed in advance
+(identity, rotation, reflection, the declared dihedral group, its $C_3$ and $C_2$ subgroups,
+the full symmetric group, $20$ random permutations as one joint generator list, and $15$ single
+transpositions as one joint generator list). These are \emph{not} independent draws from a
+population of transformations, so no interval is attached: counts are descriptive coverage, and
+the distinct-subgroup column is given next to the entry count because the last three entries all
+generate $S_6$ (seven distinct subgroups among nine entries; the full listing is in
+\texttt{research/search/corrected\_gate.json}).}
 \label{tab:panel}
 \small
-\begin{tabular}{llccc}
+\begin{tabular}{@{}llcccrr@{}}
 \toprule
-target & gate variant & sensitivity & false-accept & $|L_t|$ \\
+target & gate variant & sound accepted & of distinct & false & $|L_t|$ \\
+ & & (entries) & sound subgroups & accepts & \\
 \midrule
-$\alpha_0$ & implemented (all columns, tol.\ $0$) & $1/6 = 0.167$ $[0.030,0.564]$ & $0/3$ $[0.000,0.561]$ & 12 \\
-$\alpha_0$ & scored target, tol.\ $0$ & $1/6 = 0.167$ $[0.030,0.564]$ & $0/3$ $[0.000,0.561]$ & 12 \\
-$\alpha_0$ & scored target, tol.\ $10^{-9}$ & $\mathbf{6/6 = 1.000}$ $[0.610,1.000]$ & $0/3$ $[0.000,0.561]$ & 12 \\
-$\alpha_1$ & implemented & $1/2 = 0.500$ $[0.095,0.905]$ & $0/7$ $[0.000,0.354]$ & 2 \\
-connected & implemented & $9/9 = 1.000$ $[0.701,1.000]$ & $0/0$ (no violator exists) & 720 \\
+$\alpha_0$ & implemented (all columns, tol.\ $0$) & 1/6 & 1/6 & 0/3 & 12 \\
+$\alpha_0$ & scored target, tol.\ $0$ & 1/6 & 1/6 & 0/3 & 12 \\
+$\alpha_0$ & scored target, tol.\ $10^{-9}$ & \textbf{6/6} & \textbf{6/6} & 0/3 & 12 \\
+$\alpha_1$ & implemented & 1/2 & 1/2 & 0/7 & 2 \\
+connected & implemented & 9/9 & 7/7 & 0/0 (no violator exists) & 720 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1046,10 +1191,13 @@ a rule's \emph{realised} change counts a non-firing candidate as $0$.
 
 \begin{table}[t]
 \centering
-\caption{Decision-rule comparison on the $120$ frozen candidates ($60$ per family).
-Precision is the share of fired repairs that helped; recall the share of beneficial repairs
-that fired; both with Wilson intervals in \texttt{research/results\_summary2.md}. The
-mismatched-group control is undefined on graphs because no mismatched group exists there.}
+\caption{Decision-rule comparison on the $120$ frozen candidates ($60$ per family), for the
+gate \emph{as implemented} --- the corrected gate is compared separately in
+\S\ref{sec:corrected} and changes the reading. Precision is the share of fired repairs that
+helped; recall the share of beneficial repairs that fired. The final row is \emph{not} a rule:
+it averages the mismatched-group risk change over every candidate with no firing mask, so it
+is an unconditional stress test and not any gate's realised risk. It is undefined on graphs
+because no mismatched group exists there.}
 \label{tab:decision}
 \small
 \begin{tabular}{llrrrrr}
@@ -1060,13 +1208,13 @@ graphs & R0 supplied group (always) & 60/60 & $-0.08705$ & $-0.08705$ & 60/60 & 
 graphs & R1 label gate & 60/60 & $-0.08705$ & $-0.08705$ & 60/60 & 0 \\
 graphs & R2 deployed gate & 60/60 & $-0.08705$ & $-0.08705$ & 60/60 & 0 \\
 graphs & R3 defect gate ($q_1$) & 45/60 & $-0.07544$ & $-0.08705$ & 45/45 & 15 \\
-graphs & R4 mismatched group & --- & \multicolumn{4}{l}{undefined: $L_t$ is the whole space} \\
+graphs & unconditional mismatch stress test & --- & \multicolumn{4}{l}{undefined: $L_t$ is the whole space} \\
 \midrule
 ring & R0 supplied group (always) & 60/60 & $-0.00345$ & $-0.00345$ & 60/60 & 0 \\
 ring & R1 label gate & $\mathbf{0/60}$ & $\mathbf{0.00000}$ & $-0.00345$ & 0/0 & 60 \\
 ring & R2 deployed gate & $\mathbf{0/60}$ & $\mathbf{0.00000}$ & $-0.00345$ & 0/0 & 60 \\
 ring & R3 defect gate ($q_1$) & 45/60 & $-0.00274$ & $-0.00345$ & 45/45 & 15 \\
-ring & R4 mismatched group & 60 & $+0.00399$ & --- & --- & --- \\
+ring & unconditional mismatch stress test (no mask) & n/a & $+0.00399$ & --- & --- & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1089,24 +1237,47 @@ $3.6\%$ of the work it is supposed to save, and it filters nothing.
 \section{Discussion}
 \label{sec:discussion}
 
-\paragraph{What the evidence supports.} (a) Enforcing equivariance has a large, robust
-\emph{cost} when the target breaks the symmetry ($+0.03605$, CI $[+0.03134,+0.04087]$, $192$
-units, rising to $+0.057$ at $1800$ optimiser steps), and at $\eta{=}0$ a benefit that the
-gate-count-matched control removes: the repaired arm beats the original architecture but not
-the duplicate-gate control, so no symmetry-specific benefit is established.
-(b) The analytic repair --- inference-time averaging over a declared group --- is the only
-intervention in this study that improves the deployed predictor consistently, and it does
-so for non-LLM pipelines too. (c) Executable verification as implemented does not
-identify symmetry groups, for a reason visible from group theory before the experiment.
-(d) At matched budgets, constructive equivariant design and a one-threshold classical rule
-beat LLM search on these two tasks.
+\paragraph{What the evidence supports.}
+(a)~Enforcing equivariance has a large, robust \emph{cost} when the target breaks the
+symmetry: $+0.03605$, CI $[+0.02998,+0.04210]$ under the primary estimand (fixed direction
+set, resampled optimiser seeds), rising to $+0.057$ at $1800$ optimiser steps; the
+direction-cluster, crossed and legacy cell-level resamplings give
+$[+0.02610,+0.04597]$, $[+0.02366,+0.04828]$ and $[+0.03134,+0.04087]$, and all four exclude
+$0$. (b)~At $\eta{=}0$ a benefit that the gate-count-matched control removes: the repaired arm
+beats the original architecture but not the duplicate-gate control, so no symmetry-specific
+benefit is established. (c)~The analytic repair --- inference-time averaging over a supplied
+group --- is the only intervention in this study that improves the deployed predictor
+consistently ($-0.04862$ on development rows, $-0.02846$ on held-out rows), and it does so for
+non-LLM pipelines too. (d)~Verification is worth studying as a \emph{decision}: as
+implemented, the label screen contained two specification defects, and once they are fixed the
+screen captures the full benefit on a valid group ($-0.00345$ at $0.0017$\,s of gate time),
+rejects $58$ of $58$ harmful repairs under a mismatched group, and forfeits the benefit
+entirely once the target is only approximately symmetric --- with the crossover sitting exactly
+at the numerical tolerance. (e)~At matched budgets a hand-built equivariant block and a
+one-threshold classical rule beat LLM search on development splits, and the equivariant block
+still dominates on fresh held-out ring inputs ($0.00026$ against the best arm's $0.00648$);
+the classical rule's development advantage does not survive matched held-out rows.
 
 \paragraph{What that implies for the ``verification helps automated science'' thesis.}
-Verification helped in exactly one place: turning a wrong-but-implemented circuit into a
-better predictor by post-processing it with a group we supplied. It did not help the model
-\emph{find} the group, and the feedback channel we built (residual plus label report) did
-not move selected risk. We therefore reposition the claim: in this setting the value of an
-executable verifier is as a precondition for an analytic repair, not as a teacher.
+Verification helped in exactly one place, and it is a \emph{safety} place: it is what stops a
+wrong supplied group from being averaged over. It did not help the model find the group, the
+feedback channel we built left development-selected risk with a difference we cannot detect,
+and it is not a precondition for the repair benefit --- averaging over a group we supply helps
+whether or not any gate checks it. That reframes the design question. A label-preservation
+screen should be judged the way one judges a fuse: by the harm it prevents, at the frequency
+the hazard occurs, relative to its cost --- not by whether it improves average performance on
+a benchmark where the supplied group happens to be right. On these tasks that frequency is
+$0$ on \texttt{graphs\_n6} (no mismatched group exists) and $1$ of $1$ on the ring's mismatched
+regime, and the same screen that is free insurance in the second case is pure overhead in the
+first.
+
+\paragraph{What would change these conclusions.}
+Two things, both expensive and neither performed here. First, matched search runs with the
+corrected feedback: post-processing frozen candidates cannot recover the trajectories that
+corrected feedback would have produced, so no behavioural claim about LLM feedback in this
+paper is stronger than ``difference not detected''. Second, an independent task family whose
+target is approximately rather than exactly symmetric, which is the regime where the choice of
+tolerance, rather than the presence of a verifier, decides the outcome.
 
 \paragraph{Relation to the pilot.} A $48$-run pilot (3 seeds, 3 treatments) preceded the
 $120$-run study and is retained as exploratory. Its variance check set the confirmatory
@@ -1132,8 +1303,9 @@ the \emph{graphs} benchmark cannot supply a fresh test distribution at all --- a
 labeled six-vertex graphs, hence all isomorphism classes, are already consumed by
 development and the earlier holdouts, so the graphs deployed-endpoint result is a labelled
 second read rather than untouched data;
-every \texttt{graphs\_n6} average in this paper is a $24$-element Monte-Carlo twirl of a
-$720$-element group, so exact-projector guarantees do not transfer to it; the defect gate in
+every \emph{declared-group} \texttt{graphs\_n6} average in this paper is a $24$-element
+Monte-Carlo twirl of a $720$-element group (deployed hypothesis subgroups of order
+$2$--$12$ are exact), so exact-projector guarantees do not transfer to it; the defect gate in
 the decision-rule ablation is one statistic on one dataset per family, so it is a measured
 comparison on this benchmark and not a validated method;
 all repair inference conditions on a single dataset and task family, so no interval here
@@ -1317,5 +1489,64 @@ claims to have been frozen before any outcome was seen first appears in git
 \emph{after} the pilot and confirmatory runs, so the search study is described as
 protocol-consistent, not verifiably pre-registered. Full dated chain, sealed-file digests
 and the access incident: \texttt{research/PROVENANCE.md}.
+\section{Change history and audit trail}
+\label{app:audit}
+
+The scientific narrative above is written once, in the present tense. Because the manuscript
+went through three review rounds, the record of what changed and why lives here instead, so a
+reader can identify the current estimand and claim without reconstructing the review history.
+Each row names the artifact that carries the evidence; none of it is required to follow the
+argument.
+
+\begin{table}[t]
+\centering
+\caption{What changed under review, with the artifact that documents it. Withdrawn claims are
+listed because a reader who saw an earlier version needs to know which sentences no longer
+hold.}
+\label{tab:audit}
+\small
+\begin{tabular}{@{}p{0.30\linewidth}p{0.60\linewidth}@{}}
+\toprule
+round & change \\
+\midrule
+1 & Replication units corrected (24 cells were $8$ units); orbit-completed floors;
+fresh-input repair evaluation; one-shot holdout policy; projection-identity sign error found
+and corrected (verified to $3.7\times10^{-16}$ over $2340$ fits); references re-checked against
+primary records. \texttt{REVISED\_PROTOCOL.md} \texttt{ecd1be72}, A3, A4. \\
+1 $\to$ withdrawn & ``Test-split'' numbers from the original evaluator (shown to be an
+adaptively reused development set); the ``pinned near the invariant floor'' phrasing; the
+$0.866$ pooled floor. \\
+2 & Deployed endpoint added on held-out rows; hypothesis taxonomy replaced an equality test
+that counted sound subgroups as false accepts; fixed-panel selectivity; decision-rule ablation;
+four estimands for the crossed design; numeric-token lint added; five reporting bugs fixed
+(reversed verdict wording, CI-only verdicts, $0.000$ p-floors, mislabelled identity columns,
+equality phrasing). A5. \\
+2 $\to$ withdrawn & ``Verification is a precondition for repair''; ``$289$ wrong-group
+proposals passed the gate''; ``a classical rule beats every arm on graphs'' (true on
+development, not on matched held-out rows); the claim that our citation audit was itself
+reliable; ``independent replication'' of a frozen decision. \\
+3 & Corrected gate as first-class comparator; per-rule mismatch masks (the previous
+mismatched-group row applied no mask); measured costs including the defect statistic's own
+averaging; approximate-symmetry regimes; panel counts reported as descriptive coverage over
+$9$ generator sets ($7$ distinct subgroups on the $n{=}6$ families; $6$ identities established at $n{=}9$, where three entries exceed the enumeration cap) instead of binomial trials; the group-size
+ratio replaced by $\Pr_{H\sim Q}[H \le L_t]$; ``wider by construction'' removed; claim binding
+with mutation testing. A6. \\
+3 $\to$ withdrawn & ``The gate is a recall bottleneck'' (it was the implementation); the
+group-size ratio as a predictor of gate behaviour; ``verifier-free'' for the defect rule; the
+numeric checker described as validation rather than lint. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two invariants held throughout: no held-out split was read twice without an explicit,
+logged authorisation (one such authorisation exists, for \texttt{graphs\_n6}, because no fresh
+class-disjoint graphs inputs exist), and every number in the manuscript is regenerated from
+result JSONs by \texttt{research/compile\_results2.py}. The lint
+(\texttt{research/paper/check\_numbers.py}) confirms that each manuscript token appears in the
+generated record; the claim binder (\texttt{research/paper/claim\_bind.py}) additionally binds
+headline values to result keys with their arm, endpoint and split in the surrounding context,
+and reports its own mutation-detection rates. Neither is a proof of correctness, and both are
+described by what they can and cannot detect.
+
 
 \end{document}

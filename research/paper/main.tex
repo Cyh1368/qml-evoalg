@@ -1101,21 +1101,64 @@ only $2$ of $720$ --- six times stricter than the scored target requires.
 
 \begin{table}[t]
 \centering
-\caption{Fixed-panel selectivity (A5.3): identical ring inputs, only the target varies. The
-panel is fixed in advance (identity, rotation, reflection, the declared dihedral group, its
-$C_3$ and $C_2$ subgroups, the full symmetric group, 20 random permutations, all 15 single
-transpositions). Wilson intervals; denominators are panel members, not elements.}
+\caption{Acceptance probability of the proposal distribution that matters,
+$\Pr_{H\sim Q}[H \le L_t]$, by $400$ independent Monte-Carlo draws per cell (Wilson
+intervals are defensible here because the draws are independent by construction, which the
+fixed panel was not). The ``uniform model'' column is $\Pr$ under the idealised
+$Q$ the text describes: $|L_t|/|S_n|$ for one uniform permutation and $(|L_t|/|S_n|)^k$ for
+$k$ independent ones. The empirical row draws the generator lists actually proposed by the
+model in the frozen search runs ($819$ hypotheses). At $n=9$ the $362880$ permutations are
+never enumerated: the estimate is probe-based, and the algebraic anchor (the eight square
+symmetries, all sound on the probe) gives $|L|/|S_9| = 2.2\times10^{-5}$.}
+\label{tab:accept}
+\small
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+& & ring $\alpha_0$ & & uniform model & graphs & tictactoe \\
+$Q$ & $k$ & accept & 95\% CI & (idealised) & accept & accept \\
+\midrule
+uniform single & 1 & 0.0225 & [0.0119, 0.0422] & 0.01667 & 1.0000 & 0.0000 \\
+uniform $k$ & 2 & 0.0025 & [0.0004, 0.0140] & 0.00028 & 1.0000 & 0.0000 \\
+uniform $k$ & 3 & 0.0000 & [0.0000, 0.0095] & 0.0000046 & 1.0000 & 0.0000 \\
+\textbf{empirical LLM} & 1 & \textbf{0.4700} & [0.4216, 0.5190] & --- & 1.0000 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The uniform models are right and irrelevant.} An independent $4000$-draw check
+gives single-generator soundness $0.0179$ and two-generator soundness $0.00025$, matching
+$|L_t|/|S_n|$ and $(|L_t|/|S_n|)^k$. But the proposals the model actually made accept at
+$0.4700$: $21\times$ the uniform single-permutation rate and roughly $1700\times$ the
+two-generator model. A diagnostic that ignores $Q$ is off by three orders of magnitude on the
+only $Q$ this paper studies, which is why we now report the distribution-aware quantity and
+treat the ratio as a special case of it. The two degenerate ends are measured rather than
+asserted: graphs accepts under every $Q$ (no predicate on this domain can discriminate), and
+the $n=9$ board task rejects under every $Q$ (a gate that rejects everything discriminates
+nothing either). A useful gate needs $Q$ to put mass on both sides of $L_t$.
+
+\begin{table}[t]
+\centering
+\caption{Fixed-panel selectivity (A5.3, units corrected by A6.6): identical ring
+inputs, only the target varies. The panel is \emph{nine generator sets}, fixed in advance
+(identity, rotation, reflection, the declared dihedral group, its $C_3$ and $C_2$ subgroups,
+the full symmetric group, $20$ random permutations as one joint generator list, and $15$ single
+transpositions as one joint generator list). These are \emph{not} independent draws from a
+population of transformations, so no interval is attached: counts are descriptive coverage, and
+the distinct-subgroup column is given next to the entry count because the last three entries all
+generate $S_6$ (seven distinct subgroups among nine entries; the full listing is in
+\texttt{research/search/corrected\_gate.json}).}
 \label{tab:panel}
 \small
-\begin{tabular}{llccc}
+\begin{tabular}{@{}llcccrr@{}}
 \toprule
-target & gate variant & sensitivity & false-accept & $|L_t|$ \\
+target & gate variant & sound accepted & of distinct & false & $|L_t|$ \\
+ & & (entries) & sound subgroups & accepts & \\
 \midrule
-$\alpha_0$ & implemented (all columns, tol.\ $0$) & $1/6 = 0.167$ $[0.030,0.564]$ & $0/3$ $[0.000,0.561]$ & 12 \\
-$\alpha_0$ & scored target, tol.\ $0$ & $1/6 = 0.167$ $[0.030,0.564]$ & $0/3$ $[0.000,0.561]$ & 12 \\
-$\alpha_0$ & scored target, tol.\ $10^{-9}$ & $\mathbf{6/6 = 1.000}$ $[0.610,1.000]$ & $0/3$ $[0.000,0.561]$ & 12 \\
-$\alpha_1$ & implemented & $1/2 = 0.500$ $[0.095,0.905]$ & $0/7$ $[0.000,0.354]$ & 2 \\
-connected & implemented & $9/9 = 1.000$ $[0.701,1.000]$ & $0/0$ (no violator exists) & 720 \\
+$\alpha_0$ & implemented (all columns, tol.\ $0$) & 1/6 & 1/6 & 0/3 & 12 \\
+$\alpha_0$ & scored target, tol.\ $0$ & 1/6 & 1/6 & 0/3 & 12 \\
+$\alpha_0$ & scored target, tol.\ $10^{-9}$ & \textbf{6/6} & \textbf{6/6} & 0/3 & 12 \\
+$\alpha_1$ & implemented & 1/2 & 1/2 & 0/7 & 2 \\
+connected & implemented & 9/9 & 7/7 & 0/0 (no violator exists) & 720 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1481,7 +1524,7 @@ reliable; ``independent replication'' of a frozen decision. \\
 3 & Corrected gate as first-class comparator; per-rule mismatch masks (the previous
 mismatched-group row applied no mask); measured costs including the defect statistic's own
 averaging; approximate-symmetry regimes; panel counts reported as descriptive coverage over
-$9$ generator sets ($6$--$7$ unique subgroups) instead of binomial trials; the group-size
+$9$ generator sets ($7$ distinct subgroups on the $n{=}6$ families; $6$ identities established at $n{=}9$, where three entries exceed the enumeration cap) instead of binomial trials; the group-size
 ratio replaced by $\Pr_{H\sim Q}[H \le L_t]$; ``wider by construction'' removed; claim binding
 with mutation testing. A6. \\
 3 $\to$ withdrawn & ``The gate is a recall bottleneck'' (it was the implementation); the

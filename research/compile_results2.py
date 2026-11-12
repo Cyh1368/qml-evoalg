@@ -683,8 +683,11 @@ def gatefix_section(path, out):
         for row in p["entries"]:
             for tgt in e["targets"]:
                 t = row[tgt]
-                out.append("| %s | %s | %d | %s | %s | %s | %.6f | %.6f |"
-                           % (tgt, row["entry"], row["closure_order"], t["sound"],
+                order = row["closure_order"]
+                out.append("| %s | %s | %s | %s | %s | %s | %.6f | %.6f |"
+                           % (tgt, row["entry"],
+                              ("%d" % order) if order is not None else ">cap (not enumerated)",
+                              t["sound"],
                               t["implemented_accepts"], t["corrected_accepts"],
                               t["implemented_violated"], t["corrected_violated"]))
         out.append("")
@@ -732,6 +735,41 @@ def gatefix_section(path, out):
                           e["board_symmetries"]["all_sound_on_probe"], e["factorial_n"]))
 
 
+
+def corrected_search_section(path, out):
+    """A6.7: matched search runs under the corrected label semantics."""
+    import os
+    if not os.path.exists(path):
+        out.append("## Corrected-feedback search runs (A6.7)\n\n"
+                   "_not run yet; see Addendum A6.7 for the frozen design._\n")
+        return
+    d = _load(path)
+    out.append("## Corrected-feedback search runs (A6.7)\n")
+    out.append("- frozen decision rule: a contrast is *detected at the prespecified threshold* "
+               "only if the seed-pair bootstrap CI excludes 0 **and** |mean| >= %s absolute risk; "
+               "otherwise the wording stays \"difference not detected\", which is not \"no effect\". "
+               "Unit is the paired seed.\n" % _fmt(d["threshold_abs_risk"], 3))
+    out.append("- corrected runs per cell: %s\n" % json.dumps(d["runs_per_cell"]))
+    out.append("| family | arm | seeds | mean dev risk | repaired | LLM calls | tokens |")
+    out.append("|---|---|---|---|---|---|---|")
+    for a in d["arms"]:
+        out.append("| %s | %s/%s | %d | %.5f | %d/%d | %d | %d |"
+                   % (a["family"], a["arm"], a["mode"], a["n_seeds"], a["risk_mean"],
+                      sum(1 for x in a["repaired"] if x), a["n_seeds"],
+                      sum(a["llm_calls"]), sum(a["tokens"])))
+    out.append("")
+    out.append("| family | a | b | pairs | mean diff | 95% CI | sign-flip p | Holm p | a better | verdict |")
+    out.append("|---|---|---|---|---|---|---|---|---|---|")
+    for c in d["contrasts"]:
+        out.append("| %s | %s | %s | %d | %s | [%s, %s] | %s | %s | %.2f | %s |"
+                   % (c["family"], c["a"], c["b"], c["n_pairs"],
+                      _fmt(c["mean_diff"], 5), _fmt(c["ci95_low"], 5),
+                      _fmt(c["ci95_high"], 5), _fmt(c["sign_flip_p"], 4),
+                      _fmt(c.get("holm_p"), 4), c["a_better_fraction"], c["verdict"]))
+    out.append("")
+    out.append("_%s_\n" % d["note"])
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("--out", default="research/results_summary2.md")
@@ -760,6 +798,7 @@ def main(argv=None):
                      "research/HOLDOUT_DEPLOYED_ACCESS.json", out)
     corrected_section("research/search/decision_rules2.json", out)
     gatefix_section("research/search/corrected_gate.json", out)
+    corrected_search_section("research/search/corrected_search.json", out)
     with open(a.out, "w") as fh:
         fh.write("\n".join(out) + "\n")
     print("wrote %s (%d lines)" % (a.out, len(out)))

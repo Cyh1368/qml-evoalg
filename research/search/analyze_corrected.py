@@ -93,6 +93,7 @@ def contrast(a, b, family):
     diffs = np.array([ra[s] - sb[s] for s in shared])
     ci = P.bootstrap_ci(diffs, n_boot=20000, seed=20261112)
     flip = P.signflip_p(diffs, n_boot=200000, seed=20261112)
+    flip = float(flip["p"]) if isinstance(flip, dict) else float(flip)
     mean = float(diffs.mean())
     detected = (ci["ci95_low"] > 0 or ci["ci95_high"] < 0)
     meaningful = abs(mean) >= THRESHOLD

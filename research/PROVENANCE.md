@@ -173,3 +173,39 @@ module load ycrc-llm && curl -sS -H "Authorization: Bearer $(id -un).api" \
 # jobs actually used
 sacct -j 32982225,32983298 --format=jobid,jobname,state,start,end,ncpus,TotalCPU,Elapsed
 ```
+
+
+## Round 3 (Addendum A6)
+
+**Order of operations.** Addendum A6 was committed to `research/REVISED_PROTOCOL.md` in commit
+`4ab15f81` before any A6 analysis was run. The A6.7 analysis module
+`research/search/analyze_corrected.py` — including the 0.002 prespecified threshold and the rule
+that a contrast counts as detected only if the CI excludes 0 *and* the threshold is met — was
+committed before the corrected-feedback runs finished.
+
+**Jobs.**
+
+| job | what | state |
+|---|---|---|
+| 33050023 | A6.2/A6.3 decision-rule comparison, 7 rules x 5 regimes, 120 frozen candidates | completed |
+| 33050360 | A6.5/A6.6 corrected-gate run, first attempt | cancelled: at n=9 it tried to enumerate 362880 permutations per panel entry |
+| 33051692 | same, with enumeration cap | completed, **superseded** — used a local copy of the panel that had drifted from the canonical one |
+| 33053412 | same, canonical panel | completed; `research/search/corrected_gate.json` is this run |
+| 33053054-33053059 | A6.7 corrected-feedback runs, first submission | failed in 4 s: `ycrc-llm/1.0.0` is not a module version (correct: `ycrc-llm/1.0`). No run logs were written, so nothing was consumed |
+| 33053428-33053434 | A6.7 corrected-feedback runs, 72 runs | see below |
+| 33054054 | manuscript preview build | completed, 25 pages, no undefined references |
+
+**Defect found in our own tooling while writing the rebuttal.** `research/search/corrected_gate.py`
+carried its own copy of the A5.3 transformation panel and its docstring asserted the copy was the
+canonical panel. It was not (reflection `-1-i` vs `-i`; `rotation_subgroup_c2` = rho^4 vs rho^3;
+different `full_symmetric` generators), and the drift changed the reported number of distinct
+subgroups (6 instead of 7). Found by cross-checking closure digests against
+`verify_semantics.panel`, not by the reviewer. The copy is deleted, the canonical panel is
+imported, and `test_corrected_gate.TestCanonicalPanel` pins the two mappings. The superseded
+output is retained as `research/search/corrected_gate_driftedpanel.json` rather than deleted, so
+the difference is inspectable.
+
+**Sealed data.** A6 uses no held-out split: the decision-rule comparison and the corrected-gate
+analysis run on development rows and on already-frozen development-selected candidates. The
+A6.7 rerun selects on development rows only. `research/HOLDOUT_ACCESS.json` is unchanged by this
+round; no split was read that was not already consumed in rounds 1-2.

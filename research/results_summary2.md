@@ -806,4 +806,191 @@ Thresholds (development only): median 0.00385, q1 0.00326, q3 0.0044
 | approx_1e-3 | True | R3_defect | -0.002750 | -0.002420 | 1.048039 |
 | approx_1e-3 | True | R_rand75 | -0.002536 | -0.002274 | 1.013124 |
 
-_(A6 corrected-gate diagnostics not yet run)_
+## Corrected gate, panel units and the distribution-aware diagnostic (A6.1, A6.5, A6.6)
+
+- frozen tolerance: atol_abs 1e-12, atol_rel 1e-09; sweep [0.0, 1e-15, 1e-12, 1e-09, 1e-06, 0.001]; probe rows 256 (seed 777); gate rows 64; MC draws 400 (seed 60606)
+
+### ring_n6 (n = 6, |S_n| = 720)
+
+- panel: **9 generator-set entries**, **7 unique subgroups** (descriptive coverage over a hand-chosen panel; no binomial interpretation)
+  - generator sets generating the same subgroup: full_symmetric, random_permutations, single_transpositions
+
+| target | entry | closure order | sound on probe | implemented accepts | corrected accepts | implemented violated fraction | corrected violated fraction |
+|---|---|---|---|---|---|---|---|
+| alpha_0 | identity | 1 | True | True | True | 0.000000 | 0.000000 |
+| alpha_0.1 | identity | 1 | True | True | True | 0.000000 | 0.000000 |
+| alpha_0.25 | identity | 1 | True | True | True | 0.000000 | 0.000000 |
+| alpha_0.5 | identity | 1 | True | True | True | 0.000000 | 0.000000 |
+| alpha_1 | identity | 1 | True | True | True | 0.000000 | 0.000000 |
+| alpha_0 | cyclic_rotation | 6 | True | False | True | 0.745833 | 0.000000 |
+| alpha_0.1 | cyclic_rotation | 6 | False | False | False | 0.745833 | 0.833333 |
+| alpha_0.25 | cyclic_rotation | 6 | False | False | False | 0.745833 | 0.833333 |
+| alpha_0.5 | cyclic_rotation | 6 | False | False | False | 0.745833 | 0.833333 |
+| alpha_1 | cyclic_rotation | 6 | False | False | False | 0.745833 | 0.833333 |
+| alpha_0 | reflection | 2 | True | False | True | 0.164062 | 0.000000 |
+| alpha_0.1 | reflection | 2 | True | False | True | 0.164062 | 0.000000 |
+| alpha_0.25 | reflection | 2 | True | False | True | 0.164062 | 0.000000 |
+| alpha_0.5 | reflection | 2 | True | False | True | 0.164062 | 0.000000 |
+| alpha_1 | reflection | 2 | True | False | True | 0.164062 | 0.000000 |
+| alpha_0 | dihedral_declared | 12 | True | False | True | 0.769010 | 0.000000 |
+| alpha_0.1 | dihedral_declared | 12 | False | False | False | 0.769010 | 0.833333 |
+| alpha_0.25 | dihedral_declared | 12 | False | False | False | 0.769010 | 0.833333 |
+| alpha_0.5 | dihedral_declared | 12 | False | False | False | 0.769010 | 0.833333 |
+| alpha_1 | dihedral_declared | 12 | False | False | False | 0.769010 | 0.833333 |
+| alpha_0 | rotation_subgroup_c3 | 3 | True | False | True | 0.595833 | 0.000000 |
+| alpha_0.1 | rotation_subgroup_c3 | 3 | False | False | False | 0.595833 | 0.666667 |
+| alpha_0.25 | rotation_subgroup_c3 | 3 | False | False | False | 0.595833 | 0.666667 |
+| alpha_0.5 | rotation_subgroup_c3 | 3 | False | False | False | 0.595833 | 0.666667 |
+| alpha_1 | rotation_subgroup_c3 | 3 | False | False | False | 0.595833 | 0.666667 |
+| alpha_0 | rotation_subgroup_c2 | 2 | True | False | True | 0.446875 | 0.000000 |
+| alpha_0.1 | rotation_subgroup_c2 | 2 | False | False | False | 0.446875 | 0.500000 |
+| alpha_0.25 | rotation_subgroup_c2 | 2 | False | False | False | 0.446875 | 0.500000 |
+| alpha_0.5 | rotation_subgroup_c2 | 2 | False | False | False | 0.446875 | 0.500000 |
+| alpha_1 | rotation_subgroup_c2 | 2 | False | False | False | 0.446875 | 0.500000 |
+| alpha_0 | full_symmetric | 720 | False | False | False | 0.996150 | 0.983333 |
+| alpha_0.1 | full_symmetric | 720 | False | False | False | 0.996150 | 0.997222 |
+| alpha_0.25 | full_symmetric | 720 | False | False | False | 0.996150 | 0.997222 |
+| alpha_0.5 | full_symmetric | 720 | False | False | False | 0.996150 | 0.997222 |
+| alpha_1 | full_symmetric | 720 | False | False | False | 0.996150 | 0.997222 |
+| alpha_0 | random_permutations | 720 | False | False | False | 0.996150 | 0.983333 |
+| alpha_0.1 | random_permutations | 720 | False | False | False | 0.996150 | 0.997222 |
+| alpha_0.25 | random_permutations | 720 | False | False | False | 0.996150 | 0.997222 |
+| alpha_0.5 | random_permutations | 720 | False | False | False | 0.996150 | 0.997222 |
+| alpha_1 | random_permutations | 720 | False | False | False | 0.996150 | 0.997222 |
+| alpha_0 | single_transpositions | 720 | False | False | False | 0.996150 | 0.983333 |
+| alpha_0.1 | single_transpositions | 720 | False | False | False | 0.996150 | 0.997222 |
+| alpha_0.25 | single_transpositions | 720 | False | False | False | 0.996150 | 0.997222 |
+| alpha_0.5 | single_transpositions | 720 | False | False | False | 0.996150 | 0.997222 |
+| alpha_1 | single_transpositions | 720 | False | False | False | 0.996150 | 0.997222 |
+
+| target | exact L_t order | ratio to S_n | enumerate s | Q | draws | accepted | accept rate | Wilson 95% | MC s |
+|---|---|---|---|---|---|---|---|---|---|
+| alpha_0 | 12 | 0.016667 | 0.22 | uniform_single | 400 | 9 | 0.0225 [0.0119, 0.0422] | 0.29 |
+| alpha_0 | 12 | 0.016667 | 0.22 | uniform_k k=2 | 400 | 1 | 0.0025 [0.0004, 0.0140] | 1.20 |
+| alpha_0 | 12 | 0.016667 | 0.22 | uniform_k k=3 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 2.38 |
+| alpha_0 | 12 | 0.016667 | 0.22 | empirical_llm | 400 | 188 | 0.4700 [0.4216, 0.5190] | 0.40 |
+| alpha_0.1 | 2 | 0.002778 | 0.22 | uniform_single | 400 | 0 | 0.0000 [0.0000, 0.0095] | 0.29 |
+| alpha_0.1 | 2 | 0.002778 | 0.22 | uniform_k k=2 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 1.20 |
+| alpha_0.1 | 2 | 0.002778 | 0.22 | uniform_k k=3 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 2.41 |
+| alpha_0.1 | 2 | 0.002778 | 0.22 | empirical_llm | 400 | 6 | 0.0150 [0.0069, 0.0323] | 0.40 |
+| alpha_0.25 | 2 | 0.002778 | 0.22 | uniform_single | 400 | 0 | 0.0000 [0.0000, 0.0095] | 0.29 |
+| alpha_0.25 | 2 | 0.002778 | 0.22 | uniform_k k=2 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 1.22 |
+| alpha_0.25 | 2 | 0.002778 | 0.22 | uniform_k k=3 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 2.47 |
+| alpha_0.25 | 2 | 0.002778 | 0.22 | empirical_llm | 400 | 6 | 0.0150 [0.0069, 0.0323] | 0.40 |
+| alpha_0.5 | 2 | 0.002778 | 0.22 | uniform_single | 400 | 0 | 0.0000 [0.0000, 0.0095] | 0.29 |
+| alpha_0.5 | 2 | 0.002778 | 0.22 | uniform_k k=2 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 1.21 |
+| alpha_0.5 | 2 | 0.002778 | 0.22 | uniform_k k=3 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 2.41 |
+| alpha_0.5 | 2 | 0.002778 | 0.22 | empirical_llm | 400 | 6 | 0.0150 [0.0069, 0.0323] | 0.40 |
+| alpha_1 | 2 | 0.002778 | 0.22 | uniform_single | 400 | 0 | 0.0000 [0.0000, 0.0095] | 0.29 |
+| alpha_1 | 2 | 0.002778 | 0.22 | uniform_k k=2 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 1.21 |
+| alpha_1 | 2 | 0.002778 | 0.22 | uniform_k k=3 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 2.38 |
+| alpha_1 | 2 | 0.002778 | 0.22 | empirical_llm | 400 | 6 | 0.0150 [0.0069, 0.0323] | 0.40 |
+
+| eps | defective accepts valid | corrected accepts valid | defective accepts invalid | corrected accepts invalid | probe worst (valid) | max label shift |
+|---|---|---|---|---|---|---|
+| 0 | False | True | False | False | 1.110e-16 | 0.000e+00 |
+| 1e-12 | False | True | False | False | 4.194e-12 | 2.290e-12 |
+| 1e-09 | False | False | False | False | 4.194e-09 | 2.290e-09 |
+| 1e-06 | False | False | False | False | 4.194e-06 | 2.290e-06 |
+| 0.001 | False | False | False | False | 4.194e-03 | 2.290e-03 |
+| 0.01 | False | False | False | False | 4.194e-02 | 2.290e-02 |
+
+### graphs_n6 (n = 6, |S_n| = 720)
+
+- panel: **9 generator-set entries**, **7 unique subgroups** (descriptive coverage over a hand-chosen panel; no binomial interpretation)
+  - generator sets generating the same subgroup: full_symmetric, random_permutations, single_transpositions
+
+| target | entry | closure order | sound on probe | implemented accepts | corrected accepts | implemented violated fraction | corrected violated fraction |
+|---|---|---|---|---|---|---|---|
+| connected | identity | 1 | True | True | True | 0.000000 | 0.000000 |
+| triangle | identity | 1 | True | True | True | 0.000000 | 0.000000 |
+| connected | cyclic_rotation | 6 | True | True | True | 0.000000 | 0.000000 |
+| triangle | cyclic_rotation | 6 | True | True | True | 0.000000 | 0.000000 |
+| connected | reflection | 2 | True | True | True | 0.000000 | 0.000000 |
+| triangle | reflection | 2 | True | True | True | 0.000000 | 0.000000 |
+| connected | dihedral_declared | 12 | True | True | True | 0.000000 | 0.000000 |
+| triangle | dihedral_declared | 12 | True | True | True | 0.000000 | 0.000000 |
+| connected | rotation_subgroup_c3 | 3 | True | True | True | 0.000000 | 0.000000 |
+| triangle | rotation_subgroup_c3 | 3 | True | True | True | 0.000000 | 0.000000 |
+| connected | rotation_subgroup_c2 | 2 | True | True | True | 0.000000 | 0.000000 |
+| triangle | rotation_subgroup_c2 | 2 | True | True | True | 0.000000 | 0.000000 |
+| connected | full_symmetric | 720 | True | True | True | 0.000000 | 0.000000 |
+| triangle | full_symmetric | 720 | True | True | True | 0.000000 | 0.000000 |
+| connected | random_permutations | 720 | True | True | True | 0.000000 | 0.000000 |
+| triangle | random_permutations | 720 | True | True | True | 0.000000 | 0.000000 |
+| connected | single_transpositions | 720 | True | True | True | 0.000000 | 0.000000 |
+| triangle | single_transpositions | 720 | True | True | True | 0.000000 | 0.000000 |
+
+| target | exact L_t order | ratio to S_n | enumerate s | Q | draws | accepted | accept rate | Wilson 95% | MC s |
+|---|---|---|---|---|---|---|---|---|---|
+| connected | 720 | 1.000000 | 2.75 | uniform_single | 400 | 400 | 1.0000 [0.9905, 1.0000] | 1.92 |
+| connected | 720 | 1.000000 | 2.75 | uniform_k k=2 | 400 | 400 | 1.0000 [0.9905, 1.0000] | 4.38 |
+| connected | 720 | 1.000000 | 2.75 | uniform_k k=3 | 400 | 400 | 1.0000 [0.9905, 1.0000] | 7.19 |
+| connected | 720 | 1.000000 | 2.75 | empirical_llm | 400 | 400 | 1.0000 [0.9905, 1.0000] | 1.98 |
+| triangle | 720 | 1.000000 | 2.72 | uniform_single | 400 | 400 | 1.0000 [0.9905, 1.0000] | 1.93 |
+| triangle | 720 | 1.000000 | 2.72 | uniform_k k=2 | 400 | 400 | 1.0000 [0.9905, 1.0000] | 4.41 |
+| triangle | 720 | 1.000000 | 2.72 | uniform_k k=3 | 400 | 400 | 1.0000 [0.9905, 1.0000] | 7.26 |
+| triangle | 720 | 1.000000 | 2.72 | empirical_llm | 400 | 400 | 1.0000 [0.9905, 1.0000] | 2.05 |
+
+### tictactoe_n9 (n = 9, |S_n| = 362880)
+
+- panel: **9 generator-set entries**, **6 unique subgroups** (descriptive coverage over a hand-chosen panel; no binomial interpretation)
+  - generator sets generating the same subgroup: cyclic_rotation, rotation_subgroup_c3; full_symmetric, random_permutations, single_transpositions
+
+| target | entry | closure order | sound on probe | implemented accepts | corrected accepts | implemented violated fraction | corrected violated fraction |
+|---|---|---|---|---|---|---|---|
+| winner | identity | 1 | True | True | True | 0.000000 | 0.000000 |
+| winner_designated | identity | 1 | True | True | True | 0.000000 | 0.000000 |
+| winner_designated_corner | identity | 1 | True | True | True | 0.000000 | 0.000000 |
+| winner | cyclic_rotation | 9 | False | False | False | 0.609375 | 0.510417 |
+| winner_designated | cyclic_rotation | 9 | False | False | False | 0.609375 | 0.656250 |
+| winner_designated_corner | cyclic_rotation | 9 | False | False | False | 0.609375 | 0.661458 |
+| winner | reflection | 2 | False | False | False | 0.296875 | 0.359375 |
+| winner_designated | reflection | 2 | False | False | False | 0.296875 | 0.289062 |
+| winner_designated_corner | reflection | 2 | False | False | False | 0.296875 | 0.242188 |
+| winner | dihedral_declared | 18 | False | False | False | 0.609375 | 0.510417 |
+| winner_designated | dihedral_declared | 18 | False | False | False | 0.609375 | 0.656250 |
+| winner_designated_corner | dihedral_declared | 18 | False | False | False | 0.609375 | 0.661458 |
+| winner | rotation_subgroup_c3 | 9 | False | False | False | 0.609375 | 0.510417 |
+| winner_designated | rotation_subgroup_c3 | 9 | False | False | False | 0.609375 | 0.656250 |
+| winner_designated_corner | rotation_subgroup_c3 | 9 | False | False | False | 0.609375 | 0.661458 |
+| winner | rotation_subgroup_c2 | 3 | False | False | True | 0.284722 | 0.000000 |
+| winner_designated | rotation_subgroup_c2 | 3 | False | False | False | 0.284722 | 0.401042 |
+| winner_designated_corner | rotation_subgroup_c2 | 3 | False | False | False | 0.284722 | 0.453125 |
+| winner | full_symmetric | >cap (not enumerated) | False | False | False | 0.715739 | 0.698975 |
+| winner_designated | full_symmetric | >cap (not enumerated) | False | False | False | 0.715739 | 0.738281 |
+| winner_designated_corner | full_symmetric | >cap (not enumerated) | False | False | False | 0.715739 | 0.709961 |
+| winner | random_permutations | >cap (not enumerated) | False | False | False | 0.715739 | 0.698975 |
+| winner_designated | random_permutations | >cap (not enumerated) | False | False | False | 0.715739 | 0.738281 |
+| winner_designated_corner | random_permutations | >cap (not enumerated) | False | False | False | 0.715739 | 0.709961 |
+| winner | single_transpositions | >cap (not enumerated) | False | False | False | 0.715739 | 0.698975 |
+| winner_designated | single_transpositions | >cap (not enumerated) | False | False | False | 0.715739 | 0.738281 |
+| winner_designated_corner | single_transpositions | >cap (not enumerated) | False | False | False | 0.715739 | 0.709961 |
+
+| target | exact L_t order | ratio to S_n | enumerate s | Q | draws | accepted | accept rate | Wilson 95% | MC s |
+|---|---|---|---|---|---|---|---|---|---|
+| winner | not enumerated (n! = 362880) | - | - | uniform_single | 400 | 0 | 0.0000 [0.0000, 0.0095] | 0.51 |
+| winner | not enumerated (n! = 362880) | - | - | uniform_k k=2 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 2.86 |
+| winner | not enumerated (n! = 362880) | - | - | uniform_k k=3 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 2.97 |
+| winner_designated | not enumerated (n! = 362880) | - | - | uniform_single | 400 | 0 | 0.0000 [0.0000, 0.0095] | 0.52 |
+| winner_designated | not enumerated (n! = 362880) | - | - | uniform_k k=2 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 2.86 |
+| winner_designated | not enumerated (n! = 362880) | - | - | uniform_k k=3 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 2.97 |
+| winner_designated_corner | not enumerated (n! = 362880) | - | - | uniform_single | 400 | 0 | 0.0000 [0.0000, 0.0095] | 0.51 |
+| winner_designated_corner | not enumerated (n! = 362880) | - | - | uniform_k k=2 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 2.86 |
+| winner_designated_corner | not enumerated (n! = 362880) | - | - | uniform_k k=3 | 400 | 0 | 0.0000 [0.0000, 0.0095] | 2.96 |
+
+| eps | defective accepts valid | corrected accepts valid | defective accepts invalid | corrected accepts invalid | probe worst (valid) | max label shift |
+|---|---|---|---|---|---|---|
+| 0 | True | True | False | False | 0.000e+00 | 0.000e+00 |
+| 1e-12 | False | True | False | False | 3.709e-12 | 4.194e-12 |
+| 1e-09 | False | False | False | False | 3.709e-09 | 4.194e-09 |
+| 1e-06 | False | False | False | False | 3.709e-06 | 4.194e-06 |
+| 0.001 | False | False | False | False | 3.709e-03 | 4.194e-03 |
+| 0.01 | False | False | False | False | 3.709e-02 | 4.194e-02 |
+
+- algebraic anchor: 8 board symmetries enumerated directly, all sound on probe = True (9! = 362880 permutations are never enumerated)
+
+## Corrected-feedback search runs (A6.7)
+
+_not run yet; see Addendum A6.7 for the frozen design._
+
