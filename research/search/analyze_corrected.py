@@ -189,6 +189,40 @@ def feedback_content(runs):
     return out
 
 
+
+def repair_coverage(runs):
+    """Deployed repair coverage and its diagnostic effect, per family.
+
+    The protocol scores the repaired arm's official development risk as the *candidate's*
+    risk, with the averaged value logged as a diagnostic. The primary contrast therefore
+    cannot register a repair benefit by construction, and this block is where the repair's
+    effect is visible: how often the gate fires at the selected candidate, and how much the
+    averaging step moves risk on the runs where it fires.
+    """
+    out = []
+    for fam in FAMILIES:
+        for arm in ("llm-verify-repair",):
+            runs_f = [(s, d) for (f, a, s), d in runs.items() if f == fam and a == arm]
+            attempted = sum(1 for _, d in runs_f
+                            if ((d.get("best") or {}).get("repair") or {}).get("attempted"))
+            fired = sum(1 for _, d in runs_f
+                        if ((d.get("best") or {}).get("repair") or {}).get("repaired"))
+            deltas = []
+            for _, d in runs_f:
+                br = (d.get("best") or {}).get("repair") or {}
+                if br.get("repaired") and br.get("dev_risk_repaired_diagnostic") is not None:
+                    deltas.append(br["dev_risk_repaired_diagnostic"] - d["best"]["dev_risk"])
+            row = {"family": fam, "arm": arm, "n_runs": len(runs_f),
+                   "attempted": attempted, "fired": fired}
+            if deltas:
+                ci = P.bootstrap_ci(deltas, n_boot=20000, seed=20261112)
+                row.update({"n_diagnostic": len(deltas),
+                            "mean_averaged_minus_candidate": statistics.fmean(deltas),
+                            "ci95_low": ci["ci95_low"], "ci95_high": ci["ci95_high"]})
+            out.append(row)
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="research/search/analyze_corrected.py")
     ap.add_argument("--corrected", default="logs/runs_corrected/*.json")
@@ -242,6 +276,17 @@ def main(argv=None):
            "skipped_records": {"corrected": skipped_corr, "frozen": skipped_froz},
            "arms_present_in_corrected_runs": arms_present,
            "runs_per_cell": n_by, "arms": arms_rows, "contrasts": rows,
+           "repair_coverage": {
+               "corrected": repair_coverage(corr),
+               "implemented_frozen": repair_coverage(froz),
+               "note": ("official dev risk is the candidate's risk by protocol, so the primary "
+                        "contrast is structurally insensitive to the repair step; coverage and "
+                        "the diagnostic averaged-minus-candidate delta are where it shows")},
+           "feedback_content_descriptive": {
+               "corrected": feedback_content(corr),
+               "implemented_frozen": feedback_content(froz),
+               "note": ("descriptive only; added after the primary decision rule was frozen, "
+                        "and it changes no verdict")},
            "note": ("Unit is the paired seed. 'difference not detected' means the interval "
                     "covers 0; it is not a claim of no effect. Corrected and frozen runs are "
                     "separate LLM draws, so the corrected-vs-frozen contrast mixes the "

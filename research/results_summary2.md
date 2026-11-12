@@ -992,7 +992,65 @@ Thresholds (development only): median 0.00385, q1 0.00326, q3 0.0044
 
 ## Corrected-feedback search runs (A6.7)
 
-_not run yet; see Addendum A6.7 for the frozen design._
+- frozen decision rule: a contrast is *detected at the prespecified threshold* only if the seed-pair bootstrap CI excludes 0 **and** |mean| >= 0.0019999999999999376 absolute risk; otherwise the wording stays "difference not detected", which is not "no effect". Unit is the paired seed.
+
+- corrected runs per cell: {"ring_n6/llm-fitness": 12, "ring_n6/llm-verify": 12, "ring_n6/llm-verify-repair": 12, "graphs_n6/llm-fitness": 12, "graphs_n6/llm-verify": 12, "graphs_n6/llm-verify-repair": 12}
+
+| family | arm | seeds | mean dev risk | repaired | LLM calls | tokens |
+|---|---|---|---|---|---|---|
+| ring_n6 | llm-fitness/corrected | 12 | 0.00643 | 0/12 | 96 | 196296 |
+| ring_n6 | llm-verify/corrected | 12 | 0.00682 | 0/12 | 96 | 206645 |
+| ring_n6 | llm-verify-repair/corrected | 12 | 0.00692 | 0/12 | 97 | 207593 |
+| graphs_n6 | llm-fitness/corrected | 12 | 0.55964 | 0/12 | 99 | 220277 |
+| graphs_n6 | llm-verify/corrected | 12 | 0.53662 | 0/12 | 96 | 225625 |
+| graphs_n6 | llm-verify-repair/corrected | 12 | 0.53714 | 0/12 | 97 | 227765 |
+
+| family | a | b | pairs | mean diff | 95% CI | sign-flip p | Holm p | a better | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| ring_n6 | llm-verify/corrected | llm-fitness/corrected | 12 | +0.00039 | [-0.00016, +0.00093] | 0.2031 | 1 | 0.33 | difference not detected |
+| ring_n6 | llm-verify-repair/corrected | llm-fitness/corrected | 12 | +0.00049 | [-0.00020, +0.00120] | 0.2197 | 1 | 0.42 | difference not detected |
+| ring_n6 | llm-verify-repair/corrected | llm-verify/corrected | 12 | +0.00010 | [-0.00051, +0.00068] | 0.7715 | 1 | 0.42 | difference not detected |
+| ring_n6 | llm-fitness/corrected | llm-fitness/implemented | 12 | -0.00008 | [-0.00058, +0.00043] | 0.7578 | 1 | 0.33 | difference not detected |
+| ring_n6 | llm-verify/corrected | llm-verify/implemented | 12 | -0.00027 | [-0.00100, +0.00046] | 0.4946 | 1 | 0.67 | difference not detected |
+| ring_n6 | llm-verify-repair/corrected | llm-verify-repair/implemented | 12 | +0.00028 | [-0.00026, +0.00092] | 0.4062 | 1 | 0.42 | difference not detected |
+| graphs_n6 | llm-verify/corrected | llm-fitness/corrected | 12 | -0.02302 | [-0.08802, +0.02815] | 0.625 | 1 | 0.17 | difference not detected |
+| graphs_n6 | llm-verify-repair/corrected | llm-fitness/corrected | 12 | -0.02249 | [-0.07236, +0.01926] | 0.4062 | 1 | 0.25 | difference not detected |
+| graphs_n6 | llm-verify-repair/corrected | llm-verify/corrected | 12 | +0.00053 | [-0.06736, +0.07254] | 0.9688 | 1 | 0.25 | difference not detected |
+| graphs_n6 | llm-fitness/corrected | llm-fitness/implemented | 12 | -0.00608 | [-0.04119, +0.03183] | 0.8125 | 1 | 0.33 | difference not detected |
+| graphs_n6 | llm-verify/corrected | llm-verify/implemented | 12 | -0.01496 | [-0.05608, +0.01969] | 0.625 | 1 | 0.25 | difference not detected |
+| graphs_n6 | llm-verify-repair/corrected | llm-verify-repair/implemented | 12 | -0.01536 | [-0.06882, +0.03566] | 0.6562 | 1 | 0.25 | difference not detected |
+
+### Deployed repair coverage and its diagnostic effect
+
+_official dev risk is the candidate's risk by protocol, so the primary contrast is structurally insensitive to the repair step; coverage and the diagnostic averaged-minus-candidate delta are where it shows_
+
+| mode | family | runs | attempted | fired | mean averaged - candidate | 95% CI |
+|---|---|---|---|---|---|---|
+| corrected | ring_n6 | 12 | 3 | 3 | -0.00300 | [-0.00416, -0.00195] |
+| corrected | graphs_n6 | 12 | 9 | 9 | -0.06693 | [-0.08532, -0.04742] |
+| implemented_frozen | ring_n6 | 12 | 4 | 0 | n/a | n/a |
+| implemented_frozen | graphs_n6 | 12 | 7 | 7 | -0.04862 | [-0.07106, -0.02845] |
+
+### What the model was actually told (descriptive, post-hoc)
+
+_descriptive only; added after the primary decision rule was frozen, and it changes no verdict_
+
+| mode | family | arm | reports | status ok | label pass of ok | fraction | median channel residual |
+|---|---|---|---|---|---|---|---|
+| corrected | graphs_n6 | llm-fitness | 0 | 0 | 0 | n/a | n/a |
+| corrected | graphs_n6 | llm-verify | 96 | 66 | 66 | 1.000 | 0.8330 |
+| corrected | graphs_n6 | llm-verify-repair | 101 | 74 | 74 | 1.000 | 0.8329 |
+| corrected | ring_n6 | llm-fitness | 0 | 0 | 0 | n/a | n/a |
+| corrected | ring_n6 | llm-verify | 96 | 53 | 53 | 1.000 | 0.8330 |
+| corrected | ring_n6 | llm-verify-repair | 96 | 53 | 53 | 1.000 | 0.8330 |
+| implemented_frozen | graphs_n6 | llm-fitness | 0 | 0 | 0 | n/a | n/a |
+| implemented_frozen | graphs_n6 | llm-verify | 96 | 67 | 67 | 1.000 | 0.8329 |
+| implemented_frozen | graphs_n6 | llm-verify-repair | 99 | 77 | 77 | 1.000 | 0.8329 |
+| implemented_frozen | ring_n6 | llm-fitness | 0 | 0 | 0 | n/a | n/a |
+| implemented_frozen | ring_n6 | llm-verify | 96 | 53 | 3 | 0.057 | 0.8330 |
+| implemented_frozen | ring_n6 | llm-verify-repair | 96 | 49 | 4 | 0.082 | 0.8330 |
+
+_Unit is the paired seed. 'difference not detected' means the interval covers 0; it is not a claim of no effect. Corrected and frozen runs are separate LLM draws, so the corrected-vs-frozen contrast mixes the semantics change with run-to-run LLM variation and is labelled as such._
 
 ## Uniform proposal models vs measured acceptance (A6.5 addendum)
 

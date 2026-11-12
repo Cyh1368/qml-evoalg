@@ -768,6 +768,37 @@ def corrected_search_section(path, out):
                       ("%.4g" % c["holm_p"]) if c.get("holm_p") is not None else "n/a",
                       c["a_better_fraction"], c["verdict"]))
     out.append("")
+    rc = d.get("repair_coverage") or {}
+    if rc:
+        out.append("### Deployed repair coverage and its diagnostic effect\n")
+        out.append("_%s_\n" % rc.get("note", ""))
+        out.append("| mode | family | runs | attempted | fired | mean averaged - candidate | 95% CI |")
+        out.append("|---|---|---|---|---|---|---|")
+        for mode in ("corrected", "implemented_frozen"):
+            for r in rc.get(mode, []):
+                out.append("| %s | %s | %d | %d | %d | %s | %s |"
+                           % (mode, r["family"], r["n_runs"], r["attempted"], r["fired"],
+                              ("%+.5f" % r["mean_averaged_minus_candidate"])
+                              if r.get("mean_averaged_minus_candidate") is not None else "n/a",
+                              ("[%+.5f, %+.5f]" % (r["ci95_low"], r["ci95_high"]))
+                              if r.get("ci95_low") is not None else "n/a"))
+        out.append("")
+    fc = d.get("feedback_content_descriptive") or {}
+    if fc:
+        out.append("### What the model was actually told (descriptive, post-hoc)\n")
+        out.append("_%s_\n" % fc.get("note", ""))
+        out.append("| mode | family | arm | reports | status ok | label pass of ok | fraction | median channel residual |")
+        out.append("|---|---|---|---|---|---|---|---|")
+        for mode in ("corrected", "implemented_frozen"):
+            for r in fc.get(mode, []):
+                frac = r["label_pass_fraction_of_ok"]
+                res = r["median_channel_residual"]
+                out.append("| %s | %s | %s | %d | %d | %d | %s | %s |"
+                           % (mode, r["family"], r["arm"], r["reports"], r["status_ok"],
+                              r["label_pass_of_ok"],
+                              ("%.3f" % frac) if frac is not None else "n/a",
+                              ("%.4f" % res) if res is not None else "n/a"))
+        out.append("")
     out.append("_%s_\n" % d["note"])
 
 
