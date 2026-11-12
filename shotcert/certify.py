@@ -160,15 +160,32 @@ def calib_ledger(menu, n_instances, n_switches=None):
     whole menu on every instance, which is n * sum_p shots_used(p) = n*S*m shots. The frontier was
     therefore not at a matched total budget. Preparations are counted per shot-batch executed, since
     every repeated shot needs a fresh physical state copy even when the classical input is shared.
+
+    A3.2 corrections. (i) Preparations equal shots: the access model is scalar single-copy
+    measurement, so every destructive shot consumes a freshly prepared state; counting one
+    preparation per policy *batch* (400 preparations for 3,200 shots) contradicted this function's own
+    docstring. (ii) Compilations are the DISTINCT circuits across the menu, not the sum over
+    policies: a two-element group compiles two circuits, not twelve. (iii) Switches come from the
+    schedule actually executed, which for a shared-record calibration pass is one circuit change per
+    additional distinct circuit per instance.
     """
-    shots = sum(p.shots_used for p in menu)
-    batches = sum(1 for p in menu if p.shots_used > 0)
+    circuits = set()
+    for p in menu:
+        circuits |= set(p.circuit_ids)
+    n_circ = max(len(circuits), 1)
+    shots_per_instance = sum(p.shots_used for p in menu)
+    shared_shots_per_instance = n_circ * max((p.shots_used for p in menu), default=0)
     return {"instances": int(n_instances),
-            "shots_per_instance_all_policies": int(shots),
-            "shots_total": int(shots) * int(n_instances),
-            "preparations_total": int(batches) * int(n_instances),
+            "distinct_circuits": int(n_circ),
+            "shots_per_instance_all_policies": int(shots_per_instance),
+            "shots_total": int(shots_per_instance) * int(n_instances),
+            "preparations_total": int(shots_per_instance) * int(n_instances),
+            "shared_shots_total": int(shared_shots_per_instance) * int(n_instances),
+            "shared_preparations_total": int(shared_shots_per_instance) * int(n_instances),
+            "switches_total": int(max(n_circ - 1, 0)) * int(n_instances),
             "policies": len(menu),
-            "compilations": int(sum(p.circuits for p in menu))}
+            "compilations": int(n_circ),
+            "preparation_convention": "one physical state copy per destructive single-copy shot"}
 
 
 def wilson(k, n, z=1.96):

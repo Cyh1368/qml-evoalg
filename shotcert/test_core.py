@@ -9,6 +9,8 @@ import unittest
 
 import numpy as np
 
+from shotcert.certify import calib_ledger
+
 from shotcert.core import (Group, Policy, born_prob, components, exact_risk, label_vector,
                            orbit_expectations, orbit_probs, predict_once, shot_variance)
 from shotcert.tasks import control_task
@@ -222,3 +224,36 @@ class TestGroupClosure(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestLedgerConventions(unittest.TestCase):
+    """A3.2: the ledger conventions the second review said were wrong, pinned as tests."""
+
+    def setUp(self):
+        G = 2
+        self.sym = [Policy("a0", "raw", S=8, orbit_size=G),
+                    Policy("strat", "stratified", S=8, orbit_size=G)]
+        self.gen = [Policy("a0", "raw", S=8, orbit_size=G)] + [
+            Policy("sh%d" % int(g * 100), "shrink", S=8, gamma=g, orbit_size=G)
+            for g in (0.1, 0.2, 0.3, 0.4)]
+
+    def test_preparations_equal_shots(self):
+        """Single-copy destructive measurement: one state copy per shot, not per batch."""
+        for menu in (self.sym, self.gen):
+            L = calib_ledger(menu, 50)
+            self.assertEqual(L["preparations_total"], L["shots_total"])
+
+    def test_compilations_are_distinct_circuits(self):
+        """A two-element group compiles two circuits, not one per policy."""
+        L = calib_ledger(self.sym, 50)
+        self.assertEqual(L["compilations"], 2)
+        self.assertEqual(calib_ledger(self.gen, 50)["compilations"], 1)
+
+    def test_sharing_reduces_charged_shots_below_the_naive_sum(self):
+        """A3.3: deterministic policies read one record, so shared cost < sum over policies."""
+        L = calib_ledger(self.gen, 50)
+        self.assertLess(L["shared_shots_total"], L["shots_total"])
+
+    def test_switches_come_from_the_executed_schedule(self):
+        self.assertEqual(calib_ledger(self.sym, 50)["switches_total"], 50 * 1)
+        self.assertEqual(calib_ledger(self.gen, 50)["switches_total"], 0)

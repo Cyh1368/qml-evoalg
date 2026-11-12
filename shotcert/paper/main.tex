@@ -27,29 +27,36 @@ limit that both are approximating. We formalise this as a \emph{risk-at-budget} 
 decompose it into three separately measurable parts: an orbit-mean model bias, a group-draw variance
 that more shots cannot reduce, and a shot variance that more group draws cannot reduce. The
 decomposition is exact and we verify it against brute-force enumeration to
-$3\times10^{-17}$ rather than asserting it. Two consequences follow. First, at fixed total shots the
-split between ``how many symmetry images'' and ``how many shots per image'' leaves the shot term
-untouched, so orbit randomisation is free in shots. The interior optimum in that split, which an
-earlier version of this paper reported, is \emph{retracted}: it was produced by charging eight
-distinct circuits in an experiment with two (\S\ref{sec:switchretract}). Second, when the \emph{decision} about how to spend shots must itself be certified from an
-independent calibration experiment, the cost decomposes bound-independently as
-$\mathrm{Var}(D)=\mathrm{Var}_x(\mathbb{E}[D\mid x])+\mathbb{E}[\mathrm{Var}(D\mid x)]$: at four
-shots per prediction the deployed-noise term exceeds the between-instance term by $15\times$
-($0.07851$ vs $0.00507$), and at 256 shots the ordering reverses ($0.00038$ vs $0.00244$), so shots
-buy the first and only preparations buy the second, down to a floor that no number of shots can
-cross. \emph{Where} the certification frontier sits, however, is a property of the inequality rather
-than of the problem, and we report that as a withdrawal: with a distribution-free
-empirical-Bernstein bound, power is $0.000$ up to $n=200$ and $1.000$ at $n=400$; with a Studentised
-bound whose measured violation rate is $0.005$ across 90 cells (nominal $0.05$), power is already
-$0.995$ at $n=100$. At matched total budget the direction of the preparations-versus-shots tradeoff
-is not robust --- at $B=1600$ the allocation $n{=}50,S{=}32$ reaches power $0.917$ while
-$n{=}200,S{=}8$ reaches $0.870$, the opposite of what the loose bound suggests. We therefore claim
-the variance decomposition and not an allocation rule. On a bond-alternating Heisenberg response with a control-line rectification
-error, the same structure reproduces: full orbit averaging reduces deployed risk by $0.00800$ when
-the target is mirror-even, and \emph{increases} it by $0.00212$ when the target is the raw response,
-so the value of spending shots on symmetry is governed by how much odd signal the target contains,
-not by whether a symmetry exists. We state explicitly which parts of this are already owned by prior
-work on shot/sample budget allocation and on certified symmetry release, and what remains.
+$3\times10^{-17}$ rather than asserting it. Three things follow, and the third is the paper's finding.
+
+First, at fixed total shots the split between ``how many symmetry images'' and ``how many shots per
+image'' leaves the shot term untouched, so orbit randomisation is free in shots. The interior optimum in
+that split, which an earlier version reported, is \emph{retracted}: it came from charging eight distinct
+circuits in an experiment with two (\S\ref{sec:switchretract}).
+
+Second, the calibration cost of a decision decomposes bound-independently as
+$\mathrm{Var}(D)=\mathrm{Var}_x(\mathbb{E}[D\mid x])+\mathbb{E}[\mathrm{Var}(D\mid x)]$: deployed noise,
+which shots reduce, and between-instance variability of the contrast, which only more labelled
+preparations reduce, down to a floor no number of shots crosses. \emph{Where} a certification frontier
+sits is a property of the inequality used, not of the problem, and every frontier number produced before
+that was understood is confined to a historical appendix (\S\ref{sec:historical}).
+
+Third, and the reason for this submission: \textbf{once measurement is shared honestly and resources are
+matched, spending shots on symmetry does not beat generic paired calibration.} An earlier version
+compared a symmetry menu against a group-free menu whose shrinkage levels were each resampled and
+charged separately, inflating the comparator. With one measurement record per distinct circuit and every
+deterministic policy evaluated from it at zero additional shot cost, the group-free arm reaches the power
+threshold at half the total cost of the group arm on six of seven tasks, including both physical
+mechanisms, and generic plug-in selection matches or beats the certified rule everywhere. The frozen
+stop criterion for claiming an advantage therefore fails, and this paper reports that scoped negative as
+its operational result rather than restating the withdrawn advantage.
+
+We also report what a correct simultaneous distribution-free certificate costs here --- five to twenty
+thousand labelled preparations for gaps of order $10^{-3}$, a cost of that particular conservative bound
+and not a lower bound for the problem --- and, on a bond-alternating Heisenberg response with a
+control-line rectification error, that the sign of orbit averaging's benefit is governed by how much odd
+signal the target contains rather than by whether a symmetry exists. Every number in this paper is
+emitted from the result files by scripts that also generate the sentences quoting them.
 \end{abstract}
 
 \section{Introduction}
@@ -74,7 +81,7 @@ how well we \emph{know} the risk; it changes \emph{which} risk we have.
 Three things follow, and all three are measured rather than asserted.
 
 \textbf{(1) A decomposition with two invariances.} The deployed risk separates as
-$\risk_S(a)=\mathrm{bias}^2 + V_G/k + \Sigma/S$. The shot term $\Sigma/S$ does not depend on $k$, and
+$\risk_S(a)=D_a + V_G/k + \Sigma/S$, where $D_a$ is an integrated squared discrepancy,. The shot term $\Sigma/S$ does not depend on $k$, and
 the draw term $V_G/k$ does not depend on $S$. At fixed total shots, moving shots between ``more
 images'' and ``more shots per image'' leaves one term exactly fixed and moves the other. There is no
 interior optimum in shots alone: $k=S$ weakly dominates. The interior optimum that practitioners
@@ -129,7 +136,7 @@ For input $x$ and group element $g$, let $\mu_g(x)=\mathbb{E}[\text{shot}\mid g,
 $\sigma_g^2(x)=1-\mu_g(x)^2$ for a $\pm1$-valued readout. A policy draws $k$ images, spends $S$
 shots total with $S/k$ per draw and equal weights, and outputs $Z_a(x)$. Then, exactly,
 \begin{equation}
-\risk_S(a)\;=\;\underbrace{\mathbb{E}_x\big[(\bar\mu_a(x)-y)^2\big]}_{\text{bias}^2}
+\risk_S(a)\;=\;\underbrace{\mathbb{E}_x\big[(\bar\mu_a(x)-y)^2\big]}_{\text{integrated squared discrepancy}}
 \;+\;\underbrace{\mathbb{E}_x\big[\mathrm{Var}_{g}\mu_g(x)\big]/k}_{V_G/k}
 \;+\;\underbrace{\mathbb{E}_x\big[\mathbb{E}_g\,\sigma_g^2(x)\big]/S}_{\Sigma/S},
 \label{eq:decomp}
@@ -143,6 +150,188 @@ difference between the enumerated risk and the closed form; it is machine precis
 \end{table}
 
 \input{tabs_risk}
+
+\section{Certification rule, and the two comparisons it enables}
+\label{sec:certify}
+
+\subsection{The rule, and what it is worth}
+Calibration uses $n$ independent labelled instances; the independence unit is the instance, not the
+shot or the seed. For each instance we deploy the candidate and $a_0$ and record
+$D_i=(Z_a-Y_i)^2-(Z_{a_0}-Y_i)^2$, with $D_i\in[-4,4]$, and bound $\mathbb{E}[D]$ simultaneously over
+the fixed menu with Maurer-Pontil Corollary 5, $\ln=\log(2m/\delta)$ and range $8$. This is an
+application of a known result to a fixed finite menu, not a new bound.
+
+Its cost is worth stating as a number, because it is why the rest of this section is about something
+else. For the gaps this decision turns on, the range term alone requires five to twenty thousand
+labelled preparations before the bound can close, independently of how shots are allocated. That is a
+property of this conservative bound, \emph{not} a lower bound for the statistical problem and not a
+measurement-complexity result: a sharper distribution-free inequality, or one exploiting the paired
+structure beyond the contrast range, would move it. What it establishes is that in this study the valid
+rule almost never fires, so a report of a certification frontier at $n$ in the hundreds was not doing
+distribution-free certification.
+
+Two selectors are carried side by side and named for what they are. The \emph{certified} selector uses
+the rule above and has the finite-sample guarantee. The \emph{plug-in} selector is generic paired
+calibration: it selects the candidate with the most negative paired mean loss and has no guarantee at
+all. A third, Studentised selector is reported only as descriptive simulation evidence; Wilson intervals
+on its simulated violation rate quantify Monte-Carlo uncertainty in these regimes, not coverage for a
+future task.
+
+\subsection{(a) What the group buys, with honest measurement sharing}
+\label{sec:matched}
+Every deterministic policy of a finite-shot record costs nothing extra to evaluate. Shrinkage is a
+rescaling of the raw estimate, so eight shrinkage levels need \emph{one} raw batch; an earlier version of
+this study resampled a batch per level and charged all eight, inflating the group-free comparator by the
+number of levels. Here one calibration record is $s$ shots per distinct circuit per instance, and every
+policy in an arm is computed from that record at zero additional shot cost. The arms then differ only in
+the circuits their candidate sets need: one for the group-free arm, $|G|$ for the group arm. That is the
+group's honest measurement price.
+
+Only policies whose deployed semantics match a shared record are admitted: the raw baseline and full
+equal-shot averaging at $s$ shots per orbit point for the group arm, raw plus shrinkage for the
+group-free arm. Policies that allocate shots per \emph{draw} rather than per orbit point would gain shots
+they do not pay for under sharing while being scored by their deployed risk, comparing an estimator
+against a different estimand; they are studied in the deployed-cost experiment instead.
+
+\input{tabs_matched}
+\input{claims_matched}
+
+On the physical mechanisms the group-free arm is not merely cheaper but better: at matched shots per
+circuit, mild shrinkage of the raw estimate reduces deployed risk by more than full orbit averaging does
+on both the Heisenberg and the cluster task, as the two $\Delta_{\mathrm{best}}$ columns of
+Table~\ref{tab:matched} show without needing a prose restatement. The group's bias reduction is real
+--- it is the same effect measured in Table~\ref{tab:physics2} --- but at these budgets it is smaller
+than what the same shots buy when spent on the identity circuit alone.
+
+\subsection{(b) What certification buys, on the same candidate set}
+\label{sec:plugin}
+On the same symmetry menu, generic plug-in selection matches the Studentised selector wherever either
+reaches high power and dominates the certified rule, which almost never fires. This is the expected
+outcome and it was stated before running: the certificate in this paper \emph{is} generic paired
+certification, so there is no symmetry-specific method advantage to find. Any advantage in
+\S\ref{sec:matched} is therefore an advantage of a candidate set at a measurement price --- never a
+better certification estimator, allocation rule, or shot complexity from exploiting group structure.
+
+\subsection{Resource ledger}
+\label{sec:ledger}
+Five quantities are counted separately. Preparations equal shots: the access model is scalar single-copy
+measurement, so every destructive shot consumes a freshly prepared state, and a batch of $s$ shots at one
+circuit costs $s$ preparations, not one. Compilations are the number of \emph{distinct} circuits across a
+menu, $|G|$ for a group menu, not the sum over policies. Switches come from the schedule actually
+executed.
+
+\input{tabs_ledger}
+
+\subsection{Retraction: the switching optimum was an impossible circuit count}
+\label{sec:switchretract}
+The control orbit has two elements, so at most two distinct circuits exist. The implementation reported
+$\min(k,4|G|)$, reaching eight, and the switching experiment charged that number; the reported $k=2$
+optimum at large $c$ was the price of circuits that cannot be compiled. With circuits correctly
+bounded, a per-circuit cost is flat for every $k\ge2$ and the optimum is always at a boundary. Charging
+\emph{switches} under an explicit interleaved schedule does produce an interior optimum, but in only 18
+of 144 priced cells, and in none of the 72 per-circuit cells.
+
+\input{tabs_switch}
+
+\section{Physical tasks}
+\label{sec:physics}
+
+\textbf{Primary.} Bond-alternating spin-$1/2$ Heisenberg chain, $n=6$ and $n=8$, open boundaries,
+quench from the N\'eel state, target the site-0 magnetisation. The control parameter treated as odd
+is the staggered field $\Delta$, and the deployed policy pairs $\Delta$ with $-\Delta$.
+
+\textbf{What the symmetry claim requires, and where it fails.} An earlier version asserted that
+$\Delta\to-\Delta$ \emph{is} the chain mirror. It is not, and the check is cheap. The operator
+relation $M H(\lambda) M = H(-\lambda)$ does hold, to $8.9\times10^{-16}$. But a symmetry of the
+\emph{deployed prediction} also needs the preparation and the readout to transform with it, and
+neither does: the N\'eel state maps to the shifted N\'eel state at distance $\sqrt{2}$, and
+$Z_0$ maps to $Z_{n-1}$. The relation that survives is
+$\langle Z_0\rangle_t(\lambda)=\langle Z_{n-1}\rangle_t(-\lambda)$, which holds to $10^{-15}$ and which describes a
+\emph{different experiment} (mirrored preparation, mirrored readout). The relation this study
+actually exploits, $\langle Z_0\rangle_t(\lambda)=\langle Z_0\rangle_t(-\lambda)$, is off by $0.19$. So
+$\Delta\to-\Delta$ is a paired control transformation whose odd component is measurable and
+cancellable, not a symmetry of the full experiment, and the risk decomposition is unaffected because
+it needs only the response functions $\mu_g$, not a physical group action. The deployed device mis-sets that parameter by a second-order rectification of
+the analogue control line, $\Delta_{\mathrm{eff}}=\Delta+c\Delta^2$, whose error is odd in $\Delta$
+to leading order --- which is exactly the component that averaging over $\Delta\to-\Delta$ cancels.
+A fixed-site readout bias would \emph{not} be cancelable by input averaging, and we say so rather
+than claiming credit for a symmetry that the mechanism does not have.
+
+The three regimes differ by how much of the odd response the target contains:
+$y_a=(1-a)\,y_{\mathrm{even}}+a\,y_{\mathrm{raw}}$, with $y_{\mathrm{even}}$ the part even under
+$\Delta\to-\Delta$. Table~\ref{tab:physics2} shows raw, full averaging and the best partial mixture
+side by side, because a best-policy-only table cannot display a sign flip.
+
+\input{tabs_physics}
+\input{tabs_physics2}
+\input{tabs_mirror}
+
+\textbf{Independent evaluation.} A transverse-field three-body cluster Hamiltonian at $n=7$, a
+different dynamical mechanism and a different observable, with the same rectification error. The
+split is by task family, declared before generation.
+
+\section{What is and is not claimed}
+
+\textbf{Claimed.} (i) The risk-at-budget decomposition~\eqref{eq:decomp} with its two invariances,
+verified against an independent enumeration of the predictor and distinguished from the algebraic
+consistency check that an earlier version mislabelled as enumeration. (ii) That under a pure shot budget
+orbit randomisation is free in shots, and that the interior optimum in the split is \emph{not} a
+circuit-count phenomenon (\S\ref{sec:switchretract}): it survives only as a per-switch cost on an
+interleaved schedule, in $18$ of $144$ priced cells. (iii) A measurement-shared, matched-total-resource
+comparison in which the group-free arm is cheaper on six of seven tasks including both physical
+mechanisms, and in which generic plug-in selection is not beaten by the certified rule --- a scoped
+negative, obtained by correcting an advantage this study previously and wrongly reported. (iv) The cost
+of a valid simultaneous distribution-free certificate at these effect sizes, stated as the cost of that
+bound and not of the problem. (v) On a physical mechanism, that the sign of orbit averaging's benefit
+tracks the odd content of the target, with the input flip explicitly \emph{not} claimed to be a symmetry
+of the deployed experiment (\S\ref{sec:physics}).
+
+\textbf{Not claimed.} No new concentration inequality. No joint sample/shot allocation rule for a
+generalization bound --- that is~\citet{catak2026budget}. No certified symmetry release, no
+post-selection oracle inequality for adaptive families, no two-copy measurement primitive --- that
+is~\citet{chen2026release}. No symmetry discovery from finite probes --- that is~\citet{chen2026symmetry}.
+\textbf{Withdrawn.} The interior switching optimum (\S\ref{sec:switchretract}); the claim that
+$\Delta\mapsto-\Delta$ is the chain mirror of the deployed experiment (\S\ref{sec:physics},
+Table~\ref{tab:mirror}); the claim that the certification frontier locates a resource limit rather
+than a property of the inequality used (\S\ref{sec:withdraw}); and every coverage, power and
+frontier number produced by the pre-correction bound, which used $\log(4/(\delta n))$ inside a
+one-sided radius and the loss width where the contrast width belongs.
+
+No device results, no quantum advantage, and no claim that stratified allocation
+$S_g\propto |w_g|\sigma_g$ is anything other than classical.
+
+\section{Limitations and what would falsify this}
+
+\begin{itemize}\itemsep2pt
+\item Every task here is a dense statevector simulation with binomial shot sampling. The mechanisms
+      are physical (control-line rectification, staggered-field mirror parity) but the data are not
+      from hardware, and no device claim is made.
+\item The policy menu is finite and fixed before calibration. Policies generated from calibration
+      losses would require the post-selection accounting of~\citet{chen2026release}, which this paper
+      does not develop; our certificate would not cover them.
+\item The certification frontier depends strongly on the chosen inequality --- by a factor of four
+      in $n$ between the two bounds we tried --- and the direction of the preparations-versus-shots
+      tradeoff at matched budget is not robust to that choice (\S\ref{sec:withdraw}). The
+      bound-independent content is the variance decomposition, not a frontier location.
+\item On the independent-evaluation task the two target variants ($a=0$ and $a=1$) give identical
+      risk to five decimals, i.e.\ that task's response is nearly even in $\Delta$ and does not
+      exercise the odd-content axis at all. It is a transfer check for the decomposition, not for the
+      sign-flip phenomenon.
+\item The independent-evaluation task is small ($n=7$) and its rectification gap is an order of
+      magnitude smaller than the primary task's, so it is a transfer check, not a demonstration.
+\item If a hardware or publicly measured dataset showed the opposite sign for the benefit of orbit
+      averaging at matched shots, the decomposition would survive but the operational reading would
+      not; that is the experiment that would most directly refute the useful part of this paper.
+\end{itemize}
+
+\section*{Historical (superseded) results}
+\label{sec:historical}
+\textbf{Nothing in this appendix supports any claim in this paper.} It is retained because the
+objections raised in review are only checkable if the superseded numbers remain visible. These
+results were produced by the pre-correction bound (a radius with $\log(4/(\delta n))$ inside a
+one-sided confidence bound, and the loss width where the contrast width belongs) and by a ledger
+that counted one preparation per policy batch and summed circuits across policies. They are
+invalid for every certificate, coverage, power and frontier claim.
 
 \section{Certification, and what it costs}
 \label{sec:certify}
@@ -199,16 +388,7 @@ budgets this study can pay. The frontier numbers in this paper therefore use a S
 coverage is audited rather than assumed (Table~\ref{tab:bound}), and the distribution-free statement is
 the cost statement above.
 
-\subsection{Retraction: the switching optimum was an impossible circuit count}
-\label{sec:switchretract}
-The control orbit has two elements, so at most two distinct circuits exist. The implementation reported
-$\min(k,4|G|)$, reaching eight, and the switching experiment charged that number; the reported $k=2$
-optimum at large $c$ was the price of circuits that cannot be compiled. With circuits correctly
-bounded, a per-circuit cost is flat for every $k\ge2$ and the optimum is always at a boundary. Charging
-\emph{switches} under an explicit interleaved schedule does produce an interior optimum, but in only 18
-of 144 priced cells, and in none of the 72 per-circuit cells.
 
-\input{tabs_switch}
 
 \subsection{Withdrawal: the frontier was mostly the inequality}
 \label{sec:withdraw}
@@ -224,91 +404,6 @@ resolve a true rate far below $0.05$.
 
 \input{tabs_bound}
 
-\section{Physical tasks}
-\label{sec:physics}
-
-\textbf{Primary.} Bond-alternating spin-$1/2$ Heisenberg chain, $n=6$ and $n=8$, open boundaries,
-quench from the N\'eel state, target the site-0 magnetisation. The control parameter treated as odd
-is the staggered field $\Delta$, and the deployed policy pairs $\Delta$ with $-\Delta$.
-
-\textbf{What the symmetry claim requires, and where it fails.} An earlier version asserted that
-$\Delta\to-\Delta$ \emph{is} the chain mirror. It is not, and the check is cheap. The operator
-relation $M H(\lambda) M = H(-\lambda)$ does hold, to $8.9\times10^{-16}$. But a symmetry of the
-\emph{deployed prediction} also needs the preparation and the readout to transform with it, and
-neither does: the N\'eel state maps to the shifted N\'eel state at distance $\sqrt{2}$, and
-$Z_0$ maps to $Z_{n-1}$. The relation that survives is
-$\langle Z_0\rangle_t(\lambda)=\langle Z_{n-1}\rangle_t(-\lambda)$, which holds to $10^{-15}$ and which describes a
-\emph{different experiment} (mirrored preparation, mirrored readout). The relation this study
-actually exploits, $\langle Z_0\rangle_t(\lambda)=\langle Z_0\rangle_t(-\lambda)$, is off by $0.19$. So
-$\Delta\to-\Delta$ is a paired control transformation whose odd component is measurable and
-cancellable, not a symmetry of the full experiment, and the risk decomposition is unaffected because
-it needs only the response functions $\mu_g$, not a physical group action. The deployed device mis-sets that parameter by a second-order rectification of
-the analogue control line, $\Delta_{\mathrm{eff}}=\Delta+c\Delta^2$, whose error is odd in $\Delta$
-to leading order --- which is exactly the component that averaging over $\Delta\to-\Delta$ cancels.
-A fixed-site readout bias would \emph{not} be cancelable by input averaging, and we say so rather
-than claiming credit for a symmetry that the mechanism does not have.
-
-The three regimes differ by how much of the odd response the target contains:
-$y_a=(1-a)\,y_{\mathrm{even}}+a\,y_{\mathrm{raw}}$, with $y_{\mathrm{even}}$ the part even under
-$\Delta\to-\Delta$. Table~\ref{tab:physics2} shows raw, full averaging and the best partial mixture
-side by side, because a best-policy-only table cannot display a sign flip.
-
-\input{tabs_physics}
-\input{tabs_physics2}
-\input{tabs_mirror}
-
-\textbf{Independent evaluation.} A transverse-field three-body cluster Hamiltonian at $n=7$, a
-different dynamical mechanism and a different observable, with the same rectification error. The
-split is by task family, declared before generation.
-
-\section{What is and is not claimed}
-
-\textbf{Claimed.} (i) The risk-at-budget decomposition~\eqref{eq:decomp} with its two invariances,
-verified against an independent enumeration of the predictor. (ii) That under a pure shot budget orbit randomisation is free in shots, and
-that the interior optimum in the split is \emph{not} a circuit-count phenomenon
-(\S\ref{sec:switchretract}): it survives only as a per-switch cost on an interleaved schedule. (iii) That at matched total cost, including the factor of the menu size that calibration
-actually pays, a symmetry menu certifies where a group-free shrinkage menu cannot, and why; and that
-a correct distribution-free simultaneous certificate for decisions of this size costs five to twenty
-thousand labelled preparations, which is a cost statement, not an achievement. (iv) That on a physical mechanism the sign of the benefit is
-controlled by the target's odd content, not by the presence of a symmetry.
-
-\textbf{Not claimed.} No new concentration inequality. No joint sample/shot allocation rule for a
-generalization bound --- that is~\citet{catak2026budget}. No certified symmetry release, no
-post-selection oracle inequality for adaptive families, no two-copy measurement primitive --- that
-is~\citet{chen2026release}. No symmetry discovery from finite probes --- that is~\citet{chen2026symmetry}.
-\textbf{Withdrawn.} The interior switching optimum (\S\ref{sec:switchretract}); the claim that
-$\Delta\mapsto-\Delta$ is the chain mirror of the deployed experiment (\S\ref{sec:physics},
-Table~\ref{tab:mirror}); the claim that the certification frontier locates a resource limit rather
-than a property of the inequality used (\S\ref{sec:withdraw}); and every coverage, power and
-frontier number produced by the pre-correction bound, which used $\log(4/(\delta n))$ inside a
-one-sided radius and the loss width where the contrast width belongs.
-
-No device results, no quantum advantage, and no claim that stratified allocation
-$S_g\propto |w_g|\sigma_g$ is anything other than classical.
-
-\section{Limitations and what would falsify this}
-
-\begin{itemize}\itemsep2pt
-\item Every task here is a dense statevector simulation with binomial shot sampling. The mechanisms
-      are physical (control-line rectification, staggered-field mirror parity) but the data are not
-      from hardware, and no device claim is made.
-\item The policy menu is finite and fixed before calibration. Policies generated from calibration
-      losses would require the post-selection accounting of~\citet{chen2026release}, which this paper
-      does not develop; our certificate would not cover them.
-\item The certification frontier depends strongly on the chosen inequality --- by a factor of four
-      in $n$ between the two bounds we tried --- and the direction of the preparations-versus-shots
-      tradeoff at matched budget is not robust to that choice (\S\ref{sec:withdraw}). The
-      bound-independent content is the variance decomposition, not a frontier location.
-\item On the independent-evaluation task the two target variants ($a=0$ and $a=1$) give identical
-      risk to five decimals, i.e.\ that task's response is nearly even in $\Delta$ and does not
-      exercise the odd-content axis at all. It is a transfer check for the decomposition, not for the
-      sign-flip phenomenon.
-\item The independent-evaluation task is small ($n=7$) and its rectification gap is an order of
-      magnitude smaller than the primary task's, so it is a transfer check, not a demonstration.
-\item If a hardware or publicly measured dataset showed the opposite sign for the benefit of orbit
-      averaging at matched shots, the decomposition would survive but the operational reading would
-      not; that is the experiment that would most directly refute the useful part of this paper.
-\end{itemize}
 
 \section*{Reproducibility}
 

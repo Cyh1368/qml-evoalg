@@ -199,6 +199,21 @@ class Policy:
         return min(self.k, self.orbit_size)
 
     @property
+    def circuit_ids(self):
+        """A3.2: the identity of the circuits this policy needs, so a menu can share them.
+
+        A circuit here is an orbit point of the model, so two policies that read the same orbit point
+        with the same shot count compile it once. Summing p.circuits over a menu charged twelve
+        circuits for a two-element group; the distinct count is what a compilation budget pays.
+        """
+        G = self.orbit_size
+        if self.mode in ("raw", "shrink"):
+            return frozenset({0})
+        if self.mode in ("stratified", "mix"):
+            return frozenset(range(G))
+        return frozenset(range(min(self.k, G)))
+
+    @property
     def max_switches(self):
         """Circuit-setting changes in one prediction's shot sequence, under the sorted schedule.
 
