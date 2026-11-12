@@ -159,7 +159,9 @@ def main(argv=None):
     a = ap.parse_args(argv)
 
     corr = load(a.corrected, "corrected", matched=not a.allow_unmatched)
+    skipped_corr = dict(getattr(load, "last_skipped", {}))
     froz = load(a.frozen, "implemented", matched=False)
+    skipped_froz = dict(getattr(load, "last_skipped", {}))
     if not corr:
         raise SystemExit("no corrected runs found at %s" % a.corrected)
 
@@ -196,8 +198,7 @@ def main(argv=None):
     out = {"protocol": "Addendum A6.7 (frozen before analysis)",
            "threshold_abs_risk": THRESHOLD,
            "matched_configuration": MATCH,
-           "skipped_records": {"corrected": getattr(load, "last_skipped", {}),
-                               "frozen": getattr(load, "last_skipped", {})},
+           "skipped_records": {"corrected": skipped_corr, "frozen": skipped_froz},
            "arms_present_in_corrected_runs": arms_present,
            "runs_per_cell": n_by, "arms": arms_rows, "contrasts": rows,
            "note": ("Unit is the paired seed. 'difference not detected' means the interval "
