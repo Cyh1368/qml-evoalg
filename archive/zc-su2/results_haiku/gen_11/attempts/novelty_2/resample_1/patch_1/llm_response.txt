@@ -1,0 +1,45 @@
+Looking at the prior programs and current performance:
+
+1. **Prior Program 1** (RY with two-param alternation + XX/YY gates): Score 0.64, 38 params
+2. **Prior Program 2** (RY shared + RZ sandwich + CZ chain): Score 0.68, 20 params ✓ **Best**
+3. **Current Program** (same as Prior 2, with explicit "rz_pre_shared" and "rz_post_shared"): Score 0.68, 20 params
+
+The recommendation suggests testing **RX as the shared axis rotation** instead of RY, while keeping the pre/post RZ sandwich and CZ chain structure intact. This is a principled hypothesis because:
+
+- **Axis isolation**: RY vs RX is a fundamental variable in the unitary landscape. The current RY achieves perfect accuracy with extreme parameter economy (20 params), but the axis choice may not be optimal for the underlying data structure.
+- **Prior 1 vs Prior 2**: Prior 1 achieved 0.64 with mixed XX/YY interactions but more parameters. Switching the central rotation axis could rebalance the expressiveness-efficiency tradeoff.
+- **Convergence hint**: Prior 2 (current best) converges in 60 steps while Prior 1 converged in 30. Testing RX might improve convergence speed while maintaining accuracy.
+
+The hypothesis: RX may provide better initial gradient flow or align better with the data manifold, potentially increasing parameter efficiency or convergence speed without sacrificing the perfect 1.00 accuracy and 0.00 generalization gap.
+
+<NAME>
+test_rx_shared_axis
+</NAME>
+
+<DESCRIPTION>
+Replace the shared RY rotation (ry_shared on all wires) with a shared RX rotation (rx_shared on all wires), keeping the pre/post RZ sandwich structure and CZ chain intact. This isolates the single-qubit rotation axis as a variable to test whether RX provides better expressiveness, convergence, or parameter efficiency than RY for this specific learning task while maintaining perfect accuracy and generalization. The structure remains maximally minimal with only 3 unique parameters.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+=======
+ANSATZ_SPEC = [
+    {"gate": "RX", "wire": 0, "param": "rx_shared"},
+    {"gate": "RX", "wire": 1, "param": "rx_shared"},
+    {"gate": "RX", "wire": 2, "param": "rx_shared"},
+    {"gate": "RX", "wire": 3, "param": "rx_shared"},
+    {"gate": "RX", "wire": 4, "param": "rx_shared"},
+    {"gate": "RX", "wire": 5, "param": "rx_shared"},
+    {"gate": "RX", "wire": 6, "param": "rx_shared"},
+    {"gate": "RX", "wire": 7, "param": "rx_shared"},
+>>>>>>> REPLACE
+</DIFF>

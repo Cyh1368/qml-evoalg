@@ -1,0 +1,145 @@
+<NAME>
+parity_ry_sharing_with_crz_entanglement
+</NAME>
+
+<DESCRIPTION>
+The current program achieves 0.90 combined score with 44 parameters. Analysis of prior programs shows:
+
+1. **Generation 1** (8 params, score 0.89): Extreme parameter sharing with single "theta" for all RY gates achieved high accuracy but limited expressivity.
+
+2. **Generation 2** (50 params, score 0.89): Added more structure with parity-based sharing (rx_even/rx_odd, ry_even/ry_odd, rz_even/rz_odd) plus parametrized two-qubit gates, but the added complexity didn't improve test accuracy and hurt parameter efficiency.
+
+3. **Current** (44 params, score 0.90): Better balance with selective parameter sharing and targeted entanglement patterns.
+
+The key insight from the recommendation is that **parity-based parameter sharing for RY rotations** (even/odd qubits) preserves test accuracy while dramatically improving parameter efficiency. The current program uses full sharing on some layers (ry_0, rz_pre, rz_post) which may be too restrictive.
+
+**Proposed improvement:**
+- Replace the three fully-shared RY/RZ layers (ry_0, rz_pre, rz_post) with parity-based sharing: ry_even/ry_odd and rz_even/rz_odd
+- This increases expressivity from 1 parameter per layer to 2, but maintains efficiency
+- Keep the successful long-range entanglement pattern (CRY, CRZ, CRX on qubit pairs 0-4, 1-5, 2-6, 3-7)
+- Reduce the middle RY layer (ry_mid) to also use parity sharing for consistency
+- This should improve test accuracy by allowing more nuanced per-parity rotations while keeping total parameters reasonable (~20-24 per block)
+
+Expected outcome:
+- Test accuracy: 0.90 → 0.91+ (better expressivity from parity sharing)
+- Parameter efficiency: 0.02 → 0.03+ (fewer total params for same/better accuracy)
+- Generalization gap: maintain or improve (parity sharing is a form of regularization)
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_0"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_0"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_0"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_a"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cry_a"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry_a"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cry_a"},
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_b"},
+    {"gate": "RY", "wire": 0, "param": "ry_mid"},
+    {"gate": "RY", "wire": 2, "param": "ry_mid"},
+    {"gate": "RY", "wire": 4, "param": "ry_mid"},
+    {"gate": "RY", "wire": 6, "param": "ry_mid"},
+    {"gate": "CRX", "wires": [0, 5], "param": "crx_c"},
+    {"gate": "CRX", "wires": [1, 6], "param": "crx_c"},
+    {"gate": "CRX", "wires": [2, 7], "param": "crx_c"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_c"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: RY rotations with parity-based parameter sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    
+    # Layer 2: RZ rotations with parity-based parameter sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    
+    # Layer 3: Nearest-neighbor entanglement (fixed)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    
+    # Layer 4: Next-nearest-neighbor entanglement (fixed)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    
+    # Layer 5: Long-range parametrized entanglement (qubit pairs 0-4, 1-5, 2-6, 3-7)
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_lr"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cry_lr"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry_lr"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cry_lr"},
+    
+    # Layer 6: Long-range CRZ entanglement
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_lr"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_lr"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_lr"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_lr"},
+    
+    # Layer 7: Cross-pair CRX entanglement for additional mixing
+    {"gate": "CRX", "wires": [0, 5], "param": "crx_cross"},
+    {"gate": "CRX", "wires": [1, 6], "param": "crx_cross"},
+    {"gate": "CRX", "wires": [2, 7], "param": "crx_cross"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_cross"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

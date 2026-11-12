@@ -1,0 +1,14 @@
+{
+  "generation": 30,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "coarse_grained_entanglement_dual_tying",
+  "patch_description": "The current program scores 0.89, while the second prior program (with 5 unique parameters and structured nearest/next-nearest-neighbor entanglement) achieves 0.91. The key insight from that program is that it uses **selective two-qubit parametrization** with distinct parameters for nearest-neighbor vs. next-nearest-neighbor edges, achieving better expressivity with fewer parameters (26 vs. 38).\n\nThe current program uses 4 parametrized two-qubit gates (cry_long_a, cry_long_b, cry_even, cry_odd) applied sparsely across long-range pairs, which lacks the structured locality that helps with efficient entanglement learning.\n\n**Proposed improvement:** Introduce **coarse-grained entanglement parameter tying** by adding nearest-neighbor CRY gates with a dedicated shared parameter (\"cry_nn\"), complementing the existing next-nearest-neighbor structure:\n\n1. **Layer 4a (NEW):** Apply CRY(cry_nn) to all nearest-neighbor pairs: (0,1), (1,2), ..., (7,0) \u2014 this gives local, learnable entanglement.\n2. **Layer 4b (EXISTING):** Retain CRY(cry_nnn) on next-nearest-neighbor pairs: (0,2), (2,4), (4,6), (6,0), (1,3), (3,5), (5,7), (7,1) \u2014 this provides mid-range correlations.\n\nThis stratifies entanglement into two learnable scales:\n- **Local scale (cry_nn):** captures fine-grained feature interactions via nearest-neighbor gates.\n- **Mid-range scale (cry_nnn):** captures broader correlations via next-nearest-neighbor gates.\n\n**Effect:** N_PARAMS_PER_BLOCK will increase from 6 to 7 (one new parameter), for a total of 44 parameters across the circuit. This is comparable to the best prior program (26\u201344 range) and matches the first seed (44 params, 0.90 score). The structured parametrization should improve expressivity and generalization similar to the second program's success.\n\n**Trade-off:** Slightly higher parameter count but better expressivity through principled entanglement hierarchy.",
+  "error_msg": null,
+  "timestamp": "2026-07-24T11:27:06.905516",
+  "llm_cost": 0.02667,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

@@ -1,0 +1,101 @@
+<NAME>
+lean_global_bottleneck
+</NAME>
+
+<DESCRIPTION>
+This edit replaces the parity-heavy 50-parameter block with a leaner global bottleneck ansatz. The new design keeps the full ring of CZ entanglers to spread feature-map correlations, but collapses the local mixing into shared all-qubit RX/RY layers and adds only two shared CRZ links across complementary long-range pairs. A final shared RZ layer preserves phase flexibility for the Z-readout. The goal is to reduce overfitting, lower depth and gate count, and improve optimization speed while retaining enough nonlinearity for the binary classification task.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Parity-shared local mixing
+    {"gate": "RX", "wire": 0, "param": "rx_even"},
+    {"gate": "RX", "wire": 2, "param": "rx_even"},
+    {"gate": "RX", "wire": 4, "param": "rx_even"},
+    {"gate": "RX", "wire": 6, "param": "rx_even"},
+    {"gate": "RX", "wire": 1, "param": "rx_odd"},
+    {"gate": "RX", "wire": 3, "param": "rx_odd"},
+    {"gate": "RX", "wire": 5, "param": "rx_odd"},
+    {"gate": "RX", "wire": 7, "param": "rx_odd"},
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Full ring entanglement to propagate feature-map correlations
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Cross-half controlled rotations add higher-order coupling with low parameter cost
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_cross"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_cross"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_cross"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_cross"},
+    {"gate": "CRY", "wires": [4, 0], "param": "cry_cross"},
+    {"gate": "CRY", "wires": [5, 1], "param": "cry_cross"},
+    {"gate": "CRY", "wires": [6, 2], "param": "cry_cross"},
+    {"gate": "CRY", "wires": [7, 3], "param": "cry_cross"},
+    # Symmetric rephasing
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+=======
+ANSATZ_SPEC = [
+    # Lean global bottleneck: a shared pre-rotation on every qubit
+    {"gate": "RX", "wire": 0, "param": "rx_global"},
+    {"gate": "RX", "wire": 1, "param": "rx_global"},
+    {"gate": "RX", "wire": 2, "param": "rx_global"},
+    {"gate": "RX", "wire": 3, "param": "rx_global"},
+    {"gate": "RX", "wire": 4, "param": "rx_global"},
+    {"gate": "RX", "wire": 5, "param": "rx_global"},
+    {"gate": "RX", "wire": 6, "param": "rx_global"},
+    {"gate": "RX", "wire": 7, "param": "rx_global"},
+    # Full ring entanglement to spread the fixed feature-map correlations
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Two long-range controlled-phase couplings with shared parameters
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_left"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_left"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_right"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_right"},
+    # Shared post-rotation and phase rephasing for the Z-readout
+    {"gate": "RY", "wire": 0, "param": "ry_global"},
+    {"gate": "RY", "wire": 1, "param": "ry_global"},
+    {"gate": "RY", "wire": 2, "param": "ry_global"},
+    {"gate": "RY", "wire": 3, "param": "ry_global"},
+    {"gate": "RY", "wire": 4, "param": "ry_global"},
+    {"gate": "RY", "wire": 5, "param": "ry_global"},
+    {"gate": "RY", "wire": 6, "param": "ry_global"},
+    {"gate": "RY", "wire": 7, "param": "ry_global"},
+    {"gate": "RZ", "wire": 0, "param": "rz_global"},
+    {"gate": "RZ", "wire": 1, "param": "rz_global"},
+    {"gate": "RZ", "wire": 2, "param": "rz_global"},
+    {"gate": "RZ", "wire": 3, "param": "rz_global"},
+    {"gate": "RZ", "wire": 4, "param": "rz_global"},
+    {"gate": "RZ", "wire": 5, "param": "rz_global"},
+    {"gate": "RZ", "wire": 6, "param": "rz_global"},
+    {"gate": "RZ", "wire": 7, "param": "rz_global"},
+]
+>>>>>>> REPLACE
+</DIFF>

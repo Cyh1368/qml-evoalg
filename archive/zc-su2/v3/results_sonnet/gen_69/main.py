@@ -1,0 +1,77 @@
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+def _parity_rotation(gate, even_param, odd_param):
+    """Apply `gate` to every wire, using `even_param` on even wires and
+    `odd_param` on odd wires. Breaks parity symmetry in the encoding."""
+    gates = []
+    for w in range(N_QUBITS):
+        param = even_param if w % 2 == 0 else odd_param
+        gates.append({"gate": gate, "wire": w, "param": param})
+    return gates
+
+
+def _shared_rotation(gate, param):
+    """Apply `gate` to every wire with a single shared parameter."""
+    return [{"gate": gate, "wire": w, "param": param} for w in range(N_QUBITS)]
+
+
+def _cnot_ladder(reverse=False):
+    """A linear chain of CNOTs across all qubits, optionally reversed."""
+    wires = list(range(N_QUBITS))
+    if reverse:
+        wires = wires[::-1]
+    return [
+        {"gate": "CNOT", "wires": [wires[i], wires[i + 1]]}
+        for i in range(len(wires) - 1)
+    ]
+
+
+def _crz_pairs(param):
+    """Disjoint nearest-neighbor CRZ entangling gates, sharing one parameter."""
+    return [
+        {"gate": "CRZ", "wires": [i, i + 1], "param": param}
+        for i in range(0, N_QUBITS, 2)
+    ]
+
+
+def _build_ansatz():
+    layers = []
+    # Parity-broken input rotation: even/odd wires get distinct parameters
+    # so the circuit can respond asymmetrically to encoded features.
+    layers += _parity_rotation("RY", "ry_a", "ry_b")
+    # Forward entangling ladder to spread information across the register.
+    layers += _cnot_ladder(reverse=False)
+    # Single shared global phase rotation (merged from a previous
+    # parity-split RZ pair to reduce parameter count safely).
+    layers += _shared_rotation("RZ", "rz_c")
+    # Backward entangling ladder to further mix information.
+    layers += _cnot_ladder(reverse=True)
+    # Disjoint shared CRZ entangling layer for tunable pairwise correlations.
+    layers += _crz_pairs("ent")
+    # Final shared closing rotation before readout.
+    layers += _shared_rotation("RY", "ry_c")
+    return layers
+
+
+ANSATZ_SPEC = _build_ansatz()
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)

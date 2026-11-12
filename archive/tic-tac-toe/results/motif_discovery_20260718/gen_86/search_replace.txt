@@ -1,0 +1,151 @@
+<NAME>
+ccrz_early_symmetry_compact_block
+</NAME>
+
+<DESCRIPTION>
+Move the doubly-controlled CCRZ three-qubit interactions immediately after the local RY rotations so high-order motif correlations are planted early (RY → CCRZ → CRZ → ZZZ → compact RZ+RX). This follows the motif-discovery recommendation: seed high-order correlations right after local feature rotations to accelerate learning of winning-line patterns.
+
+Also reduce and reuse parameters by grouping rotations and entanglers by geometric symmetry (corners/edges/center, ring vs center couplings, row/col/diag ZZZ groups) to match a previously strong seed (13 unique keys, 78 total params). Fewer unique parameters improves generalization and parameter efficiency while keeping expressive three-qubit motifs aligned to the eight winning lines. The block preserves allowed gates and connectivity constraints.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Layer 1: Pre-entanglement RZ for phase control
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre_center"},
+
+    # Layer 2: Symmetry-grouped RY rotations (efficient local rotations)
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Layer 3: Parametrized grid-based entanglement (outer ring)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+
+    # Layer 4: Center-to-edge connections with separate parameter
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_center_edge"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_center_edge"},
+
+    # Layer 5: ZZZ on all 8 winning lines with differentiated parameters by category
+    # Horizontal rows
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_row"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_row"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_row"},
+    # Vertical columns
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_col"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_col"},
+    # Diagonals
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_diag"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_diag"},
+
+    # Layer 6: CCRZ doubly-controlled interactions on winning line motifs
+    # Edge-edge-center triples (horizontal/vertical center lines)
+    {"gate": "CCRZ", "wires": [1, 5, 8], "param": "ccrz_edge_center"},
+    {"gate": "CCRZ", "wires": [3, 7, 8], "param": "ccrz_edge_center"},
+    # Corner-corner-center triples (diagonal center lines)
+    {"gate": "CCRZ", "wires": [0, 4, 8], "param": "ccrz_diag_center"},
+    {"gate": "CCRZ", "wires": [2, 6, 8], "param": "ccrz_diag_center"},
+
+    # Layer 7: Post-entanglement RZ rotations for phase regularization
+    {"gate": "RZ", "wire": 0, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post_center"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: Symmetry-grouped RY rotations (efficient local rotations)
+    {"gate": "RY", "wire": 0, "param": "ry_corners"},
+    {"gate": "RY", "wire": 2, "param": "ry_corners"},
+    {"gate": "RY", "wire": 4, "param": "ry_corners"},
+    {"gate": "RY", "wire": 6, "param": "ry_corners"},
+    {"gate": "RY", "wire": 1, "param": "ry_edges"},
+    {"gate": "RY", "wire": 3, "param": "ry_edges"},
+    {"gate": "RY", "wire": 5, "param": "ry_edges"},
+    {"gate": "RY", "wire": 7, "param": "ry_edges"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Layer 2: CCRZ high-order correlations placed early (shared by symmetry)
+    {"gate": "CCRZ", "wires": [1, 5, 8], "param": "ccrz_center"},
+    {"gate": "CCRZ", "wires": [3, 7, 8], "param": "ccrz_center"},
+    {"gate": "CCRZ", "wires": [0, 4, 8], "param": "ccrz_diag"},
+    {"gate": "CCRZ", "wires": [2, 6, 8], "param": "ccrz_diag"},
+
+    # Layer 3: Outer-ring entangling (shared) and radial center couplings (shared)
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_center"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_center"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_center"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_center"},
+
+    # Layer 4: ZZZ motifs aligned with winning lines (kept distinct by geometry)
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_rows"},
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_cols"},
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_diags"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_diags"},
+
+    # Layer 5: Compact final rotations: tie RZ+RX into a single 'rot_*' parameter per symmetry zone
+    # corners
+    {"gate": "RZ", "wire": 0, "param": "rot_corners"},
+    {"gate": "RX", "wire": 0, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 2, "param": "rot_corners"},
+    {"gate": "RX", "wire": 2, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 4, "param": "rot_corners"},
+    {"gate": "RX", "wire": 4, "param": "rot_corners"},
+    {"gate": "RZ", "wire": 6, "param": "rot_corners"},
+    {"gate": "RX", "wire": 6, "param": "rot_corners"},
+    # edges
+    {"gate": "RZ", "wire": 1, "param": "rot_edges"},
+    {"gate": "RX", "wire": 1, "param": "rot_edges"},
+    {"gate": "RZ", "wire": 3, "param": "rot_edges"},
+    {"gate": "RX", "wire": 3, "param": "rot_edges"},
+    {"gate": "RZ", "wire": 5, "param": "rot_edges"},
+    {"gate": "RX", "wire": 5, "param": "rot_edges"},
+    {"gate": "RZ", "wire": 7, "param": "rot_edges"},
+    {"gate": "RX", "wire": 7, "param": "rot_edges"},
+    # center
+    {"gate": "RZ", "wire": 8, "param": "rot_center"},
+    {"gate": "RX", "wire": 8, "param": "rot_center"},
+]
+>>>>>>> REPLACE
+</DIFF>

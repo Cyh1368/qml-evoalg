@@ -1,0 +1,64 @@
+Looking at the performance metrics, I can see a clear pattern:
+
+**Analysis:**
+1. **Program 1** (62 params): Score 0.91 with mid-circuit RZ sandwich + alternating CRZ parameters
+2. **Program 2** (50 params): Score 0.91 with simpler architecture but slower convergence (330 steps vs 150)
+3. **Current** (32 params): Score 0.88 with over-simplified unified CRZ parameter
+
+The current program sacrificed too much expressivity by unifying the CRZ parameters. Program 1 shows that alternating CRZ parameters (crz_rev_a, crz_rev_b) significantly improve performance. The current program also lost the mid-circuit RZ sandwich that added phase flexibility without many parameters.
+
+**Key insights:**
+- Alternating CRZ parameters improve accuracy by ~3% compared to unified
+- Mid-circuit RZ sandwich helps with generalization gap
+- The sweet spot appears to be around 50-62 parameters with good structure
+
+**Proposed improvement:**
+Restore the alternating CRZ pattern from Program 2 (which achieved 0.91) and add back a streamlined mid-circuit RZ sandwich using only the existing rz_phase_a/rz_phase_b parameters (not new ones). This reuses parameters efficiently while restoring the proven expressivity gains.
+
+<NAME>
+restore_alternating_crz_with_midcircuit_rz
+</NAME>
+
+<DESCRIPTION>
+The current program oversimplified by using a unified CRZ parameter, which reduced accuracy to 0.88. Program 1 and 2 both achieved 0.91 by using alternating CRZ parameters (crz_rev_a, crz_rev_b). This change:
+
+1. Restores alternating CRZ parameters on the reverse chain (crz_rev_a for odd indices, crz_rev_b for even indices), matching the proven pattern from Program 2
+2. Adds a mid-circuit RZ sandwich immediately after the forward CZ chain, reusing the existing rz_phase_a and rz_phase_b parameters on alternating qubits to add phase flexibility without new parameter overhead
+3. This recovers the expressivity that was lost in over-simplification while maintaining reasonable parameter efficiency (~50 params)
+
+The goal is to recover the 0.91 score while maintaining the parameter efficiency gains.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Reverse chain with unified CRZ parameter for minimal parameter overhead
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_unified"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_unified"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_unified"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_unified"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_unified"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_unified"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_unified"},
+=======
+    # Mid-circuit RZ sandwich for enhanced phase flexibility
+    # Reuse rz_phase parameters on alternating qubits to add expressivity without new parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_phase_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_phase_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_phase_a"},
+    {"gate": "RZ", "wire": 6, "param": "rz_phase_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_phase_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_phase_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_phase_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_phase_b"},
+
+    # Reverse chain with alternating CRZ parameters for proven expressivity
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+>>>>>>> REPLACE
+
+</DIFF>

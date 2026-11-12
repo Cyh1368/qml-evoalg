@@ -1,0 +1,108 @@
+Looking at the current performance metrics and the ansatz structure, I can identify several optimization opportunities:
+
+**Current Analysis:**
+- The worst_group_margin_mean (0.35) is significantly lower than validation_margin_mean (0.73), indicating the model struggles with hard samples
+- Parameter efficiency is very low (0.04), meaning 24 distinct parameters is high for this task
+- The architecture has many independent parameters with no sharing, which hurts generalization on small training sets
+- Fixed linear chain entanglement might be too restrictive
+
+**Proposed improvements:**
+
+1. **Parameter sharing for better generalization**: Share parameters across qubits to reduce parameter count, which should improve generalization on small datasets and help with worst-group margin
+2. **Enhanced entanglement connectivity**: Add cross-connections (not just linear chain) to capture more complex interactions
+3. **Simplified rotation pre-layer**: Use parameter sharing in the RZ pre-layer to reduce overhead while maintaining expressivity
+
+The key insight is that for a small training set, parameter economy (fewer distinct params) is crucial for generalization, especially for hard samples. The scoring explicitly prioritizes parameter efficiency without diminishing returns.
+
+<NAME>
+param_sharing_enhanced_entanglement
+</NAME>
+
+<DESCRIPTION>
+Reduce the distinct parameter count through strategic parameter sharing while adding richer entanglement patterns. This addresses the worst_group_margin_mean bottleneck by:
+
+1. Sharing RY parameters across all qubits (same rotation applied to all qubits)
+2. Sharing RZ pre-layer parameters in pairs (qubits 0-1, 2-3, 4-5, 6-7 share)
+3. Sharing RZ post-layer parameters in pairs similarly
+4. Adding diagonal cross-entanglement (CZ gates between non-adjacent qubits: 0-2, 1-3, 3-5, 4-6, 5-7) to capture longer-range correlations
+
+This reduces distinct parameters from 24 to 11, dramatically improving parameter efficiency while maintaining expressivity through richer connectivity patterns. The parameter sharing helps the model generalize better from small training sets, which should particularly help with the worst-group margin.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_3"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_3"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

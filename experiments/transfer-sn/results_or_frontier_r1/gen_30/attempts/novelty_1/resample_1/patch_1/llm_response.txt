@@ -1,0 +1,31 @@
+<NAME>
+tie_mixers_reduce_params
+</NAME>
+
+<DESCRIPTION>
+The previous candidate dramatically increased accuracy and expressivity by introducing a mid-circuit mixer that breaks the commutativity of the full 28-CZ complete graph, splitting it into a 16-edge half and a 12-edge half. However, it introduced two new parameters per block (`mid_ry` and `mid_rx`), bringing the total parameter count to 38 and limiting the parameter efficiency score.
+
+We can improve the parameter efficiency by tying the parameters of the mid-circuit mixer to those of the input mixer (`collective_ry` -> `mix_ry`, `collective_rx_in` -> `mix_rx`, etc.). Applying the same rotational unitary twice (interleaved by different non-commuting diagonal CZ layers) still perfectly breaks commutativity and provides deep state evolution (similar to a Trotter step or a discrete time crystal), but it halves the parameters needed for the mixing layers. We also rename the output parameters for consistency (`out_rz`, `out_rx`). 
+
+This reduces the block parameters from 6 to 4, dropping total parameters from 38 to 26, which significantly boosts the parameter efficiency metric while preserving the exact same powerful entangling structure and depth.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Two-axis input mixer (proven effective in the 0.98-scoring prior).
+    {"gate": "RY", "wire": 0, "param": "collective_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_in"},

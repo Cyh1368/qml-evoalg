@@ -1,0 +1,52 @@
+<NAME>
+conditional_hierarchical_ansatz
+</NAME>
+
+<DESCRIPTION>
+This approach moves away from collective parameter sharing, which constrains the circuit to symmetric transformations. Instead, it implements a hierarchical, conditional rotation ansatz. By using controlled-Z rotations (CRZ) as the primary entangling mechanism, the circuit becomes capable of modeling complex, non-linear dependencies between data features. This conditional structure allows the entanglement generated in the circuit to be dynamically shaped by the input state itself, rather than relying on static, uniform rotations. This is significantly more expressive for classification tasks with 28-dimensional feature spaces, enabling higher accuracy while maintaining parameter efficiency through structured weight sharing across qubit pairs.
+</DESCRIPTION>
+
+<CODE>
+```{python}
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Layer 1: Local feature conditioning (4-way shared RY)
+    # Allows each qubit-pair to develop independent basis rotations
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_1"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_2"},
+    {"gate": "RY", "wire": 6, "param": "ry_3"},
+    {"gate": "RY", "wire": 7, "param": "ry_3"},
+
+    # Layer 2: Conditional Entanglement (4-way shared CRZ)
+    # The CRZ gate introduces nonlinearity where the target rotation
+    # depends on the state of the control qubit.
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_1"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_2"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_3"},
+
+    # Layer 3: Topology mixing (Fixed entanglers)
+    # Spreading correlation across the hierarchy.
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [7, 0]},
+
+    # Layer 4: Output projection/mixing (4-way shared RX)
+    # Maps the entangled state into the measurement basis.
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_0"},
+    {"gate": "RX", "wire": 2, "param": "rx_1"},
+    {"gate": "RX", "wire": 3, "param": "rx_1"},
+    {"gate": "RX", "wire": 4, "param": "rx_2"},
+    {"gate": "RX", "wire": 5, "param": "rx_2"},
+    {"gate": "RX", "wire": 6, "param": "rx_3"},
+    {"gate": "RX", "wire": 7, "param": "rx_3"},
+]
+# EVOLVE-BLOCK-END
+```
+</CODE>

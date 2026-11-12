@@ -1,0 +1,112 @@
+<NAME>
+shared_complete_graph_dual_crz
+</NAME>
+
+<DESCRIPTION>
+Replace the overparameterized local-line ansatz with a permutation-regularized block aligned to the symmetric mean-Z readout and the 28 pairwise feature channels. Sharing three rotation parameters and one controlled-phase parameter reduces the model from 146 to 26 total parameters, which should improve generalization and Adam efficiency. Complete-graph CZ coverage distributes every encoded pair interaction, while two central CRZ gates on [3,4] and [2,5] reuse the same parameter to add adaptive phase expressivity without increasing parameter count. This structure is supported by the prior candidate’s substantially higher validation accuracy, lower loss, and zero generalization gap.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RY", "wire": 0, "param": "ry_post_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_post_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_post_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_post_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_post_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_post_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_post_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Symmetric parameter sharing matches the mean-Z readout and regularizes
+    # the six independently parameterized ansatz-block copies.
+    {"gate": "RY", "wire": 0, "param": "ry_pre"},
+    {"gate": "RY", "wire": 1, "param": "ry_pre"},
+    {"gate": "RY", "wire": 2, "param": "ry_pre"},
+    {"gate": "RY", "wire": 3, "param": "ry_pre"},
+    {"gate": "RY", "wire": 4, "param": "ry_pre"},
+    {"gate": "RY", "wire": 5, "param": "ry_pre"},
+    {"gate": "RY", "wire": 6, "param": "ry_pre"},
+    {"gate": "RY", "wire": 7, "param": "ry_pre"},
+    {"gate": "RZ", "wire": 0, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 1, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 2, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 3, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 4, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 5, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 6, "param": "rz_phase"},
+    {"gate": "RZ", "wire": 7, "param": "rz_phase"},
+
+    # Complete pair coverage mirrors the 28 IsingZZ feature channels.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [0, 6]},
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [1, 7]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [2, 7]},
+    {"gate": "CZ", "wires": [3, 4]},
+
+    # Two complementary central bridges share one adaptive phase parameter.
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_center"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_center"},
+
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [3, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [4, 7]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Noncommuting shared mixing converts learned phases into Z populations.
+    {"gate": "RY", "wire": 0, "param": "ry_post"},
+    {"gate": "RY", "wire": 1, "param": "ry_post"},
+    {"gate": "RY", "wire": 2, "param": "ry_post"},
+    {"gate": "RY", "wire": 3, "param": "ry_post"},
+    {"gate": "RY", "wire": 4, "param": "ry_post"},
+    {"gate": "RY", "wire": 5, "param": "ry_post"},
+    {"gate": "RY", "wire": 6, "param": "ry_post"},
+    {"gate": "RY", "wire": 7, "param": "ry_post"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

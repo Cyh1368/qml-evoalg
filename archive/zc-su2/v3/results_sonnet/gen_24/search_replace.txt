@@ -1,0 +1,21 @@
+<NAME>
+split_entangler_two_params
+</NAME>
+
+<DESCRIPTION>
+Split the single shared CRZ entangling parameter "ent1" into two parameters "ent1a" and "ent1b", alternating along the linear chain (even-indexed edges use ent1a, odd-indexed edges use ent1b). This gives the entangling layer more expressive freedom to independently tune "even" vs "odd" bond phases, which can help separate harder-to-classify sample groups that may respond differently to different parts of the chain, at the cost of only one extra trainable parameter (5 distinct total). This mirrors the recommended finer-grained sharing strategy and should improve worst-group margin/robust separation while keeping parameter count low.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Parametrized entangling layer along the same chain, sharing one angle.
+for _i in range(N_QUBITS - 1):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, _i + 1], "param": "ent1"})
+=======
+# Parametrized entangling layer along the same chain, split into two shared
+# angles alternating by edge parity for finer-grained phase control.
+for _i in range(N_QUBITS - 1):
+    _p = "ent1a" if _i % 2 == 0 else "ent1b"
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, _i + 1], "param": _p})
+>>>>>>> REPLACE
+</DIFF>

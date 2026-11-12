@@ -1,0 +1,112 @@
+Looking at the trend, reducing distinct parameters per block while maintaining full accuracy has been rewarded. The current version has 10 params/block (62 total). Let me push further by reducing to fewer bands (2 instead of 4) while keeping ring entanglement, since perfect accuracy is already achieved - there's room to cut parameters more aggressively.
+
+<NAME>
+reduce_bands_to_two_shared_crz
+
+<DESCRIPTION>
+The current spec uses 4 RY bands + 4 RZ bands + 2 CRZ params = 10 distinct params/block (62 total params), achieving perfect accuracy with score 0.90. Since train/val/test accuracy is already saturated at 1.00, there is clear room for further parameter economy. I reduce the banding granularity from mod-4 to mod-2 (alternating even/odd qubits share the same RY and RZ angles), cutting single-qubit params per block from 8 to 4 (2 RY + 2 RZ), while keeping the same ring CZ topology and the 2 shared CRZ parameters. This drops distinct params per block from 10 to 6, reducing total circuit params from 60 to 36 (plus 2 readout = 38 total), a ~39% reduction. Given the task's strong reward for parameter economy and that the model was already overparameterized for this task (perfect accuracy with large margin), this should improve the combined score through higher parameter efficiency while very likely preserving the perfect accuracy, since entangling layers (CZ ring + CRZ) still provide qubit-specific phase structure necessary for the classification task, and mod-2 banding still breaks qubit symmetry enough given the alternating ring entanglers.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Design goal: keep expressivity high enough for perfect classification while
+# drastically cutting the number of *distinct* trainable parameters per block
+# via aggressive parameter sharing (banded/parity sharing) and a ring
+# entangling topology (better connectivity than a line, no extra params).
+#
+# Per-block distinct parameters:
+#   - 4 shared RY angles (banded by qubit index mod 4)   -> ry_b0..ry_b3
+#   - 4 shared RZ angles (banded by qubit index mod 4)   -> rz_b0..rz_b3
+#   - 1 CZ ring (fixed, no params)
+#   - 2 shared CRZ angles (even-start / odd-start bonds) -> crz_even, crz_odd
+# Total distinct params per block = 4 + 4 + 2 = 10 (down from 24 in seed).
+ANSATZ_SPEC = [
+    # Banded RY layer: qubits sharing (wire % 4) reuse the same angle.
+    {"gate": "RY", "wire": 0, "param": "ry_b0"},
+    {"gate": "RY", "wire": 1, "param": "ry_b1"},
+    {"gate": "RY", "wire": 2, "param": "ry_b2"},
+    {"gate": "RY", "wire": 3, "param": "ry_b3"},
+    {"gate": "RY", "wire": 4, "param": "ry_b0"},
+    {"gate": "RY", "wire": 5, "param": "ry_b1"},
+    {"gate": "RY", "wire": 6, "param": "ry_b2"},
+    {"gate": "RY", "wire": 7, "param": "ry_b3"},
+    # Banded RZ layer, same sharing pattern.
+    {"gate": "RZ", "wire": 0, "param": "rz_b0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_b2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_b0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_b2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b3"},
+    # Ring entangler: fixed CZ gates, no trainable parameters.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Parity-shared CRZ layer for extra entangling expressivity, cheap in params.
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_odd"},
+]
+=======
+# Design goal: push parameter economy further than the mod-4 banded version
+# by using mod-2 banding (alternating even/odd qubits) for single-qubit
+# rotations, while keeping the same ring CZ topology and parity-shared CRZ
+# layer for entangling expressivity.
+#
+# Per-block distinct parameters:
+#   - 2 shared RY angles (banded by qubit index mod 2)   -> ry_b0, ry_b1
+#   - 2 shared RZ angles (banded by qubit index mod 2)   -> rz_b0, rz_b1
+#   - 1 CZ ring (fixed, no params)
+#   - 2 shared CRZ angles (even-start / odd-start bonds) -> crz_even, crz_odd
+# Total distinct params per block = 2 + 2 + 2 = 6 (down from 10).
+ANSATZ_SPEC = [
+    # Banded RY layer: qubits sharing (wire % 2) reuse the same angle.
+    {"gate": "RY", "wire": 0, "param": "ry_b0"},
+    {"gate": "RY", "wire": 1, "param": "ry_b1"},
+    {"gate": "RY", "wire": 2, "param": "ry_b0"},
+    {"gate": "RY", "wire": 3, "param": "ry_b1"},
+    {"gate": "RY", "wire": 4, "param": "ry_b0"},
+    {"gate": "RY", "wire": 5, "param": "ry_b1"},
+    {"gate": "RY", "wire": 6, "param": "ry_b0"},
+    {"gate": "RY", "wire": 7, "param": "ry_b1"},
+    # Banded RZ layer, same sharing pattern.
+    {"gate": "RZ", "wire": 0, "param": "rz_b0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_b0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_b0"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_b0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b1"},
+    # Ring entangler: fixed CZ gates, no trainable parameters.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Parity-shared CRZ layer for extra entangling expressivity, cheap in params.
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_odd"},
+]
+>>>>>>> REPLACE
+</DIFF>

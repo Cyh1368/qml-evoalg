@@ -1,0 +1,124 @@
+<NAME>
+diagonal_corner_refinement
+</NAME>
+
+<DESCRIPTION>
+The current program has 72 parameters per block (6 shared parameter keys × 3 uploads × 2 repeats) and achieves a combined score of 0.45 with good test accuracy (0.50) but mediocre validation accuracy (0.47) and a high generalization gap (0.13).
+
+The recommendation suggests refining corner symmetry into two diagonal subclasses:
+- ry_corner_a / rz_corner_a for qubits (0, 4) – main diagonal
+- ry_corner_b / rz_corner_b for qubits (2, 6) – anti-diagonal
+
+This increases parameters per block by 4 (from 6 to 10 unique keys), bringing total to 120 parameters. However, this targeted increase captures diagonal "three-in-a-row" patterns more precisely—a key feature in tic-tac-toe win detection (WIN_LINES includes (0, 8, 4) and (2, 8, 6)).
+
+The motivation:
+1. **Diagonal symmetry breaking**: Tic-tac-toe has two distinct diagonal win lines. The current 4-fold corner sharing treats all corners equally, missing the diagonal structure.
+2. **Modest parameter growth**: Adding only 4 unique parameter keys (shared across 3 uploads × 2 repeats = 24 total parameters per block) is parameter-efficient.
+3. **Improved discrimination**: Separates main-diagonal corners from anti-diagonal corners, allowing the circuit to learn asymmetric patterns.
+4. **Validation improvement target**: The high validation loss (2.92) and generalization gap (0.13) suggest underfitting in diagonal patterns; this refinement should reduce the gap and improve convergence.
+
+Expected outcome: Improved validation accuracy and reduced generalization gap, leading to a higher combined score.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Compact symmetry-aware single-qubit layer:
+    # share rotations by class to regularize and reduce params
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+=======
+ANSATZ_SPEC = [
+    # Refined symmetry-aware single-qubit layer:
+    # Split corner rotations into diagonal subclasses to capture asymmetric win patterns
+    # Main diagonal corners (0, 4)
+    {"gate": "RY", "wire": 0, "param": "ry_corner_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_a"},
+    # Anti-diagonal corners (2, 6)
+    {"gate": "RY", "wire": 2, "param": "ry_corner_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_b"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Phase layer with diagonal-aware corner splitting
+    {"gate": "RZ", "wire": 0, "param": "rz_corner_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner_b"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center"},
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Small final single-qubit adjustment (shared per class)
+    {"gate": "RY", "wire": 0, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_out"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 8, "param": "ry_center_out"},
+
+    # Final Z-phase sharpening (shared per class)
+    {"gate": "RZ", "wire": 0, "param": "rz_corner_out"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner_out"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner_out"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner_out"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge_out"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge_out"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge_out"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge_out"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center_out"},
+=======
+    # Small final single-qubit adjustment with diagonal corner splitting
+    {"gate": "RY", "wire": 0, "param": "ry_corner_a_out"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner_a_out"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner_b_out"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner_b_out"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge_out"},
+    {"gate": "RY", "wire": 8, "param": "ry_center_out"},
+
+    # Final Z-phase sharpening with diagonal corner splitting
+    {"gate": "RZ", "wire": 0, "param": "rz_corner_a_out"},
+    {"gate": "RZ", "wire": 4, "param": "rz_corner_a_out"},
+    {"gate": "RZ", "wire": 2, "param": "rz_corner_b_out"},
+    {"gate": "RZ", "wire": 6, "param": "rz_corner_b_out"},
+    {"gate": "RZ", "wire": 1, "param": "rz_edge_out"},
+    {"gate": "RZ", "wire": 3, "param": "rz_edge_out"},
+    {"gate": "RZ", "wire": 5, "param": "rz_edge_out"},
+    {"gate": "RZ", "wire": 7, "param": "rz_edge_out"},
+    {"gate": "RZ", "wire": 8, "param": "rz_center_out"},
+>>>>>>> REPLACE
+
+</DIFF>

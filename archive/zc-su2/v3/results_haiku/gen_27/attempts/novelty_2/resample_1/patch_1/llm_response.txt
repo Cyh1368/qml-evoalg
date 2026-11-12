@@ -1,0 +1,80 @@
+<NAME>
+hybrid_param_sharing_rz_differentiation
+</NAME>
+
+<DESCRIPTION>
+This crossover combines the best elements from both prior programs to address the current program's poor performance (0.46 score).
+
+Key observations:
+1. The current program over-aggregates parameters (only 6 distinct params), leading to severe underfitting: validation accuracy drops to 0.79, test to 0.77, with worst_group_margin at only 0.21.
+2. Prior Program 1 achieves 0.58 score with 8 distinct params, separating RZ pre/post phases and maintaining parameter economy while achieving 0.93 validation accuracy and 0.35 worst_group_margin.
+3. Prior Program 2 achieves 0.58 score with 10 distinct params, using fully independent RY parameters and independent Ising gate parameters - better generalization (0.04 gap) and higher test accuracy (0.96).
+
+The crossover strategy:
+- Adopt the RY parameter differentiation from Prior Program 2 (ry_0, ry_1) instead of (ry_even, ry_odd) naming - this improves clarity and matches the better-performing architecture
+- Keep the critical RZ pre/post separation from Prior Program 1 (rz_pre vs rz_post) which prevents parameter over-aggregation and enables the model to learn distinct transformations at different circuit stages
+- Use independent Ising gate parameters (xx_01, yy_23, zz_45, xx_67, yy_14, zz_36) from Prior Program 2 instead of shared parameters - this provides sufficient expressivity for robust separation
+- This yields 10 distinct parameters, matching Prior Program 2's parameter efficiency while maintaining the proven structure that achieves 0.58 score
+
+This balances expressivity (avoiding the current program's severe underfitting) with parameter economy (matching the best prior performance).
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_23"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_14"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

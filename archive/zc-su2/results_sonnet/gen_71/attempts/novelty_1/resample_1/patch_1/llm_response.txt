@@ -1,0 +1,36 @@
+<NAME>
+fractional_half_qubit_block_single_theta
+
+<DESCRIPTION>
+The double-block stacking (calling `_add_theta_block` twice) kept the same combined score (0.80) as the single-block version but roughly doubled depth/gate-count and quadrupled the convergence steps (120 vs 30), which is strictly worse for parameter/step economy. Revert to a single full `_add_theta_block` call (matching the best-converging prior variant) and instead add a *lightweight, localized* fractional duplication restricted to only 4 of the 8 qubits (wires 0-3), reusing the same shared "theta" parameter. This targeted local RX→RY→(XX/CZ ring)→RZ sub-pass sharpens correlations among a subset of qubits at a fraction of the gate-count cost of a full second block, aiming to preserve the fast (~30-step) convergence and low depth of the single-block design while potentially improving accuracy/generalization via the extra localized non-linearity, with zero additional trainable parameters.
+
+Argumentation: Since parameter count is already minimal (1 shared parameter, 8 total due to per-block instantiation) and the score is dominated by parameter economy and few-shot generalization, the marginal cost of the fractional block is small (16 extra gates on 4 qubits vs 240 extra gates for a full second block), while it still deepens the circuit non-uniformly, which can help expressivity without hurting convergence speed as much as full duplication did.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE
+_add_theta_block(ANSATZ_SPEC)
+_add_theta_block(ANSATZ_SPEC)
+=======
+_add_theta_block(ANSATZ_SPEC)
+
+# Fractional block duplication restricted to wires 0-3 only, reusing the
+# SAME shared "theta" parameter (no new trainable parameters). This
+# localized second pass sharpens correlations among half the register at
+# a fraction of the gate-count/depth cost of a full second block, aiming
+# to preserve the fast (~30-step) convergence and low depth of the
+# single-block design while adding targeted expressivity.
+for wire in range(4):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+for wire in range(4):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+for i in range(4):
+    a, b = i, (i + 1) % 4
+    if i % 2 == 0:
+        ANSATZ_SPEC.append({"gate": "XX", "wires": [a, b], "param": "theta"})
+    else:
+        ANSATZ_SPEC.append({"gate": "CZ", "wires": [a, b]})
+for wire in range(4):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+>>>>>>> REPLACE
+</DIFF>

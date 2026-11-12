@@ -1,0 +1,94 @@
+<reduce_shared_phase_ringcrz>
+<DESCRIPTION>
+Make the ansatz more parameter-efficient and better aligned with typical expressivity patterns for ZZ/phase feature maps:
+
+- Replace the current RX+RY-per-qubit (16 params/block) with only RY (8 params/block).
+- Introduce only two *shared* global RZ calibration parameters per block (applied to all qubits), instead of many independent RZ/phase degrees of freedom.
+- Keep a CZ “ring backbone” (fixed, no parameters).
+- Add only two parametrized CRZ “odd/even” layers, where each layer reuses the same parameter across 4 edges (2 params/block).
+
+This should reduce total circuit parameters substantially (better parameter efficiency) while retaining enough tunable controlled-phase structure to fit the data, improving convergence speed/validation/generalization.
+</DESCRIPTION>
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Layer 1: Expressive Single-Qubit Rotations
+    {"gate": "RX", "wire": 0, "param": "rx_0"}, {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"}, {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"}, {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"}, {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_4"}, {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_5"}, {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_6"}, {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_7"}, {"gate": "RY", "wire": 7, "param": "ry_7"},
+    # Layer 2: Staircase Parameterized Entanglement
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_01"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_12"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_23"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_34"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_45"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_56"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_67"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_70"},
+    # Layer 3: Fixed Mixing
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+]
+=======
+ANSATZ_SPEC = [
+    # Per-qubit mixing (8 params total)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # Shared global phase (1 param)
+    {"gate": "RZ", "wire": 0, "param": "rz_shared_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared_pre"},
+
+    # Fixed entanglement backbone: CZ ring (no params)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Sparse parametrized controlled phases using shared params (2 params total)
+    # Odd edges share crz_odd
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_odd"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_odd"},
+    # Even edges share crz_even
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_even"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_even"},
+
+    # Shared global final phase (1 param)
+    {"gate": "RZ", "wire": 0, "param": "rz_shared_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared_post"},
+]
+>>>>>>> REPLACE
+</DIFF>

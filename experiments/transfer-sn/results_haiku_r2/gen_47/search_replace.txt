@@ -1,0 +1,170 @@
+<NAME>
+nearest_neighbor_cry_enrichment
+</NAME>
+
+<DESCRIPTION>
+The current program has 38 parameters per block and achieves a combined score of 0.90, while the prior programs with 26 parameters achieved 0.91. The recommendation suggests extending the mid-block CRY entangler to nearest neighbors at zero extra parameter cost by reusing the existing "cry_nnn" parameter key.
+
+Looking at the prior high-performance architecture (Gen 28 baseline), it achieves excellent results with:
+- Test accuracy: 0.93 (vs current 0.90)
+- Parameter efficiency: 0.04 (vs current 0.02)
+- Only 26 total parameters (vs current 38)
+
+The key insight is that the current design (38 params) is over-parametrized relative to the problem complexity. The prior design uses parameter sharing more aggressively and includes next-nearest-neighbor CRY gates with a single shared parameter.
+
+The recommendation is to:
+1. Simplify the ansatz to reduce parameter count
+2. Add nearest-neighbor CRY gates (reusing "cry_nnn" parameter) to build richer connectivity without increasing parameter count
+3. Restore the efficient multi-layer structure with aggressive parameter sharing
+
+This approach follows the proven pattern: smaller parameter count + smarter connectivity = better generalization and higher parameter efficiency.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Layer 1: RY rotations with full parameter sharing for efficiency
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_0"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_0"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_0"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_0"},
+
+    # Layer 2: RZ rotations with full parameter sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+
+    # Layer 3: Linear nearest-neighbor CZ chain
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Layer 4: Pair-wise CZ gates (complementary connectivity)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Layer 5: Cross-pair long-range connections
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Layer 6: Mid-block IsingZZ enrichment on key qubit pairs for stable gradient flow
+    # This leverages the same gate family as the feature map for resonance
+    {"gate": "CRZ", "wires": [0, 1], "param": "zz_mid"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "zz_mid"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "zz_mid"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "zz_mid"},
+    {"gate": "CRZ", "wires": [0, 4], "param": "zz_mid"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "zz_mid"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "zz_mid"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "zz_mid"},
+
+    # Layer 7: Parametrized mid-layer rotations
+    {"gate": "RY", "wire": 0, "param": "ry_mid"},
+    {"gate": "RY", "wire": 2, "param": "ry_mid"},
+    {"gate": "RY", "wire": 4, "param": "ry_mid"},
+    {"gate": "RY", "wire": 6, "param": "ry_mid"},
+
+    # Layer 8: Parametrized controlled rotations (reduced from 12 to 8)
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_a"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cry_a"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry_a"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cry_a"},
+
+    # Layer 9: Final RZ layer
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: Initial RY with full parameter sharing (efficient, proven structure)
+    {"gate": "RY", "wire": 0, "param": "ry_init"},
+    {"gate": "RY", "wire": 1, "param": "ry_init"},
+    {"gate": "RY", "wire": 2, "param": "ry_init"},
+    {"gate": "RY", "wire": 3, "param": "ry_init"},
+    {"gate": "RY", "wire": 4, "param": "ry_init"},
+    {"gate": "RY", "wire": 5, "param": "ry_init"},
+    {"gate": "RY", "wire": 6, "param": "ry_init"},
+    {"gate": "RY", "wire": 7, "param": "ry_init"},
+
+    # Layer 2: Nearest-neighbor CZ ring (local entanglement, fixed)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Layer 3: Cross-ring CZ (long-range entanglement, fixed)
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Layer 4: RZ with full parameter sharing (efficient)
+    {"gate": "RZ", "wire": 0, "param": "rz_main"},
+    {"gate": "RZ", "wire": 1, "param": "rz_main"},
+    {"gate": "RZ", "wire": 2, "param": "rz_main"},
+    {"gate": "RZ", "wire": 3, "param": "rz_main"},
+    {"gate": "RZ", "wire": 4, "param": "rz_main"},
+    {"gate": "RZ", "wire": 5, "param": "rz_main"},
+    {"gate": "RZ", "wire": 6, "param": "rz_main"},
+    {"gate": "RZ", "wire": 7, "param": "rz_main"},
+
+    # Layer 5: Parametrized next-nearest-neighbor CRY (flexible entanglement)
+    {"gate": "CRY", "wires": [0, 2], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [2, 4], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [4, 6], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [6, 0], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [1, 3], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [3, 5], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [5, 7], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [7, 1], "param": "cry_nnn"},
+
+    # Layer 5b: Nearest-neighbor CRY enrichment (reuses cry_nnn parameter, zero extra cost)
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_nnn"},
+
+    # Layer 6: Final RY readout layer with full parameter sharing (efficient)
+    {"gate": "RY", "wire": 0, "param": "ry_final"},
+    {"gate": "RY", "wire": 1, "param": "ry_final"},
+    {"gate": "RY", "wire": 2, "param": "ry_final"},
+    {"gate": "RY", "wire": 3, "param": "ry_final"},
+    {"gate": "RY", "wire": 4, "param": "ry_final"},
+    {"gate": "RY", "wire": 5, "param": "ry_final"},
+    {"gate": "RY", "wire": 6, "param": "ry_final"},
+    {"gate": "RY", "wire": 7, "param": "ry_final"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

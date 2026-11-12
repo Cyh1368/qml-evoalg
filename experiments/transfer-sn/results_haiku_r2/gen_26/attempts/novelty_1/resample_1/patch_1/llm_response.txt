@@ -1,0 +1,103 @@
+<NAME>
+mid_block_isingzz_enrichment
+</NAME>
+
+<DESCRIPTION>
+The current program achieves a combined score of 0.88 with validation loss of 0.38. The prior programs show that simpler architectures can achieve 0.89-0.90 scores with better convergence (120-180 steps vs 270 steps).
+
+The key insight from the recommendation is to add IsingZZ gates mid-block after the CZ chains. This leverages:
+
+1. **Gradient flow stability**: IsingZZ gates, already used in the feature map with stable gradients, can safely be reused in the ansatz without introducing vanishing gradient issues.
+
+2. **Feature-aligned nonlinearity**: By applying IsingZZ on the same FEATURE_PAIRS used by the fixed feature map, we create a resonance between the data encoding and the variational circuit, allowing the ansatz to more effectively learn feature interactions.
+
+3. **Efficient parameter count**: A single shared parameter "zz_mid" applied across all feature pairs adds minimal overhead (1 parameter per block) while enriching the circuit's expressiveness.
+
+4. **Faster convergence**: The current program converges at step 270, while prior programs reached 180 steps. Adding structured entanglement with aligned feature encoding should accelerate convergence toward or beyond the 120-180 step range.
+
+The insertion point is strategic: after the nearest-neighbor and next-nearest-neighbor CZ layers (which establish local structure) but before the long-range parametrized gates (which require richer intermediate states). This creates a natural flow: local → mid-block enrichment → long-range correlation.
+
+Expected improvements:
+- Reduce convergence_step from 270 to ~150-180
+- Reduce validation_loss from 0.38 to ~0.35-0.36
+- Improve test_accuracy from 0.90 to 0.91+
+- Better generalization (reduce gap from 0.04 to ~0.02)
+- Combined score from 0.88 to 0.91+
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 4: Next-nearest-neighbor entanglement (fixed)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Layer 5: Long-range parametrized entanglement (qubit pairs 0-4, 1-5, 2-6, 3-7)
+=======
+    # Layer 4: Next-nearest-neighbor entanglement (fixed)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Layer 4b: Mid-block IsingZZ enrichment on feature map pairs
+    # This leverages stable IsingZZ gradients and aligns with the fixed feature encoding
+    # to enrich nonlinearity and accelerate convergence
+    {"gate": "IsingZZ", "wires": [0, 1], "param": "zz_mid"},
+    {"gate": "IsingZZ", "wires": [1, 2], "param": "zz_mid"},
+    {"gate": "IsingZZ", "wires": [2, 3], "param": "zz_mid"},
+    {"gate": "IsingZZ", "wires": [3, 4], "param": "zz_mid"},
+    {"gate": "IsingZZ", "wires": [4, 5], "param": "zz_mid"},
+    {"gate": "IsingZZ", "wires": [5, 6], "param": "zz_mid"},
+    {"gate": "IsingZZ", "wires": [6, 7], "param": "zz_mid"},
+
+    # Layer 5: Long-range parametrized entanglement (qubit pairs 0-4, 1-5, 2-6, 3-7)
+>>>>>>> REPLACE
+</DIFF>
+
+Now we need to support the IsingZZ gate in the validation and application logic. The IsingZZ gate is a fixed parametrized two-qubit gate already available in PennyLane, so we need to add it to our allowed gates:
+
+<DIFF>
+<<<<<<< SEARCH
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+=======
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ", "IsingZZ"}
+>>>>>>> REPLACE
+</DIFF>
+
+Now we need to update the apply_ansatz_block function to handle the IsingZZ gate:
+
+<DIFF>
+<<<<<<< SEARCH
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+=======
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[offset + key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+            elif gate == "ISINGZZ":
+                qml.IsingZZ(angle, wires=wires)
+>>>>>>> REPLACE
+</DIFF>

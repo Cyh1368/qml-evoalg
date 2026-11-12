@@ -1,0 +1,76 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Evolved 8-Qubit Ansatz Binary Classifier**  
+- **Implementation**: Builds an 8-qubit PennyLane QNode with a fixed IsingZZ feature map over 28 binary features, followed by three data re-uploads each containing two repeats of an ansatz block (RY rotations, a chain of CZ entanglers, and post-entangling RZ rotations as per ANSATZ_SPEC), plus trainable gain and bias readouts, optimized via Adam with early stopping.  
+- **Performance**: Combined raw score 0.97 with train/validation/test accuracies of 1.00/0.99/0.98, a generalization gap of 0.01, circuit depth ≈99 and 270 gates.  
+- **Feedback**: The ansatz delivers near-perfect accuracy and fast convergence (≈180 steps) but incurs a high parameter count (146) and circuit depth, leading to modest parameter efficiency.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: 8-Qubit ShinkaEvolve Binary Classifier**  
+- **Implementation**: Uses a fixed two-qubit IsingZZ feature map on 28 features and an ansatz of interleaved RY rotations and CRZ entangling gates across 8 qubits, repeated over 3 data uploads and 2 repeats, with trainable gain/bias output calibration, optimized via Pennylane’s autograd and Adam with early stopping.  
+- **Performance**: Achieved perfect train/validation/test accuracy (1.00) and raw combined score 0.98 with validation/test loss ≈0.10, using 140 parameters, circuit depth 81, and 222 gates (parameter efficiency 0.01).  
+- **Feedback**: The expressive but overparameterized ansatz yields flawless generalization yet low parameter efficiency, indicating room to simplify the circuit; multi-upload repeats and early stopping enabled convergence by step ∼210.
+**Program Identifier:** Generation 1 - Patch Name enhanced_ansatz_with_crz - Correct Program: True
+
+**Program Name: 8-Qubit Shared-Phase Ansatz Classifier**  
+- **Implementation**: Implements an 8-qubit binary classifier in PennyLane with three data re-uploads and two ansatz repeats, featuring per-qubit RY rotations, globally shared pre- and post-RZ phases, a shared RX mixing layer, and fixed CZ entanglers, for a total of 68 trainable parameters (including output gain and bias) optimized via Adam on an L₂ loss with early stopping.  
+- **Performance**: Achieved a combined raw score of 0.97 with perfect training accuracy (1.00) and 0.99 validation/test accuracy.  
+- **Feedback**: The shared-parameter strategy substantially cut down parameter count while preserving expressivity, yielding negligible generalization gap; however, the low parameter efficiency (0.01) indicates scope for further ansatz compression.
+**Program Identifier:** Generation 3 - Patch Name none - Correct Program: True
+
+**Program Name: Layered RY-RZ-CZ-CRY Ansatz Classifier**  
+- **Implementation**: This circuit encodes 28-dimensional binary features via three IsingZZ feature-map uploads and applies a custom ansatz block—eight RY, eight RZ, a linear chain of CZ gates, multiple CRY entangling rotations, and post-RZ rotations—repeated twice per upload, with 212 total trainable parameters plus two readout calibration parameters, trained using Adam with L2 loss and early stopping.  
+- **Performance**: Achieved a combined_score_raw of 0.98 with perfect (1.00) train, validation, and test accuracies, 0.04 validation loss, 0.03 test loss, circuit depth 129, and 336 gates.  
+- **Feedback**: The expressive ansatz delivers flawless classification and zero generalization gap. However, parameter efficiency is low relative to the high circuit depth and parameter count, despite early stopping stabilizing convergence.
+**Program Identifier:** Generation 4 - Patch Name enhanced_entanglement_ansatz - Correct Program: True
+
+**Program Name: Parameter-efficient 8-qubit quantum classifier**  
+- **Implementation**: Implements a three-upload, two-repeat ansatz of shared RY/RZ rotations on qubit halves and parities, a fixed CZ entangling backbone, two long-range CRZ links, and shared final RZs, with linear gain/bias readout calibration.  
+- **Performance**: Achieved a combined raw score of 0.88 with 0.90 train, 0.87 validation, and 0.88 test accuracy, a 0.02 generalization gap over 50 parameters, 99-depth, and 300 gates.  
+- **Feedback**: The low-parameter design delivered competitive accuracy and robust generalization but yielded low parameter efficiency (0.02) and high circuit depth/gate count, indicating a trade-off between expressivity and resource cost; convergence occurred around step 1170.
+**Program Identifier:** Generation 5 - Patch Name sharedparity_cz_ring_crz - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Incorporating parameterized two-qubit rotations (CRZ) into the entangling layers (8-Qubit ShinkaEvolve, raw 0.98 vs. initial raw 0.97) boosted expressivity without adding depth, achieving perfect accuracies at depth 81 and only 140 params.  
+- Maintaining the three-upload × two-repeat layout of the IsingZZ feature map combined with interleaved single-qubit RY and CRZ blocks (Generation 1) yielded faster convergence (≈210 steps) and zero generalization gap.  
+- Early-stopping on validation loss plus gain/bias calibration readouts consistently stabilized training across top performers (ShinkaEvolve and Layered RY-RZ-CZ-CRY programs), ensuring perfect test accuracy with minimal overfitting.  
+- A moderate parameter count (~140 params) strikes the best balance: reducing just a few parameters from the 146-param initial ansatz cut circuit depth by ~20% while preserving full classification performance.  
+
+## Ineffective Approaches  
+- Aggressive parameter reduction (Parameter-efficient 8-qubit classifier, 50 params) led to a sharp drop in combined score (0.88 raw) and slower convergence (~1,170 steps), indicating under-parameterization hurt expressivity.  
+- Excessive parameter sharing (Shared-Phase Ansatz, 68 params) preserved accuracy (0.97 raw) but failed to outperform the CRZ-enhanced design, suggesting shared pre/post phases alone are insufficient for top‐tier generalization.  
+- Very deep entangling schemes with high gate counts (Layered RY-RZ-CZ-CRY, depth 129, 336 gates) matched 0.98 raw score but at significant resource cost and no further accuracy gain, demonstrating diminishing returns from over-entanglement.  
+
+## Implementation Insights  
+- Key to the best ShinkaEvolve design is replacing some fixed CZ links with tunable CRZ gates on nearest‐neighbor pairs, preserving a chain entangler while enhancing parameter flexibility.  
+- Defining ANSATZ_SPEC as a flat list of dicts and programmatically mapping parameter-keys→indices (via `validate_ansatz_spec` and `apply_ansatz_block`) simplified block indexing across uploads/repeats.  
+- Leveraging PennyLane’s backprop‐style `qml.AdamOptimizer` with per-epoch validation checks and restore‐best‐weights ensures robust early stopping without manual weight rollback.  
+- The compact 8-qubit IsingZZ feature map plus interleaved RY/CRZ blocks demonstrates that depth and parameter efficiency can co-exist: ShinkaEvolve hits perfect generalization at depth 81, undercutting deeper variants.  
+
+## Performance Analysis  
+- Transitioning from the initial 146-param, depth ≈99 ansatz (raw 0.97) to the 140-param, depth 81 ShinkaEvolve model yielded a +0.01 raw score bump and eliminated the 0.01 generalization gap.  
+- The top two performers (ShinkaEvolve and Layered RY-RZ-CZ-CRY) both reached raw 0.98 and perfect accuracies, but ShinkaEvolve used ~34% fewer gates (222 vs. 336) and 72 fewer parameters.  
+- Parameter-efficiency (test accuracy / n_params) for ShinkaEvolve (0.01) matches heavier models, but its convergence in ~210 steps far outpaces the 1,170 steps of the lightweight but underperforming design, highlighting the importance of balanced parameter counts.  
+- Shared-parameter reductions capped out at raw 0.97, underscoring that modest pruning plus strategic insertion of parametric two-qubit rotations is more effective than broad weight sharing alone.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Insert an RZ rotation layer into each ansatz block to diversify single‐qubit mixing: immediately after the CRZ gates in ANSATZ_SPEC, add entries  
+   `{"gate":"RZ","wire":q,"param":"lz_block{b}_q{q}"}` for q∈0…7 and block index b. Mixed Y–Z rotations have been shown to boost expressivity with only a marginal depth increase, so this variant may converge even faster while preserving perfect accuracy.
+
+2. Partially share CRZ parameters across the two repeats within each upload: redefine your CRZ param keys to depend solely on the upload_index (e.g. `"crz_u{upload_index}_01"`) and reuse them for both repeats. This cuts the total CRZ parameters in half—trimming from 48 to 24—while testing if the redundant degrees of freedom can be pruned without degrading performance, in line with the moderate‐pruning sweet spot.
+
+3. Mix controlled‐rotation axes in the chain entangler by swapping every second CRZ for CRY: in ANSATZ_SPEC replace, for example, gates on wires [0,1] and [4,5] with `"CRY"` (and new param names) instead of `"CRZ"`. This preserves depth and gate count but evaluates whether introducing controlled‐Y rotations further accelerates convergence or improves robustness compared to a pure-CRZ layer.
+
+4. Parameterize the feature‐map strength per feature pair: change `FEATURE_SCALE` from a scalar π/2 to a trainable array of length N_FEATURES (initialized at π/2) and update `feature_map` to use these per‐pair scales. Allowing the model to learn optimal encoding amplitudes has proven beneficial in other architectures; you can offset the extra ~28 parameters by sharing calibration gain/bias only once per upload.
+
+5. Replace the two‐stage RY layer in each block with a single U3 gate per qubit: in ANSATZ_SPEC, swap out the pairs of `{"gate":"RY","param":"lyr0_ryq"}` and `{"gate":"RY","param":"lyr1_ryq"}` for a single  
+   `{"gate":"U3","wires":[q],"param":["theta_b_q","phi_b_q","lambda_b_q"]}`. U3 delivers full SU(2) coverage with comparable or lower depth than back‐to‐back RY rotations, testing whether richer single‐qubit rotations can further reduce gate count or training steps.

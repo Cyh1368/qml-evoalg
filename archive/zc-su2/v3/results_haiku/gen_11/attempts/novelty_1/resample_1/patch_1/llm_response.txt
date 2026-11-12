@@ -1,0 +1,95 @@
+# Analysis
+
+Looking at the performance metrics:
+
+1. **Seed program (0.44 score)**: Good baseline with 12 distinct params, decent validation margin (0.44) but weak worst_group_margin (0.18).
+
+2. **Second program (0.58 score)**: Best performer with 10 distinct params, excellent validation accuracy (0.97), strong worst_group_margin (0.28), and good generalization (gap 0.04). Uses diverse gate types (XX, YY, ZZ) on different qubit pairs.
+
+3. **Current program (0.42 score)**: Over-regularized with only 3 distinct params. This extreme parameter sharing has collapsed performance:
+   - Train accuracy drops to 0.62
+   - Validation margin nearly zero (0.02)
+   - Worst group margin is zero (0.00)
+   - The circuit lacks expressivity despite minimal parameters
+
+The problem is clear: the current program took parameter sharing too far. Sharing RY across all qubits, XX across all even/odd pairs, and RZ globally removes critical flexibility needed for classification, especially for the hardest samples (worst_group_margin).
+
+The recommendation to test "modest additional parameter sharing among entanglers" is the right direction. The second program (0.58) demonstrates that:
+- Alternating RY parameters (ry_0, ry_1) work better than full sharing
+- Diverse two-qubit gates (XX, YY, ZZ) with modest sharing significantly improves worst_group_margin
+- 10 distinct parameters balances expressivity and regularization
+
+I propose to implement the recommendation: reduce the entangler sharing by introducing YY and ZZ gates with selective parameter sharing, moving closer to the high-performing second program structure.
+
+<NAME>
+restore_diversity_modest_sharing
+</NAME>
+
+<DESCRIPTION>
+The current program has collapsed performance due to extreme parameter sharing (only 3 distinct params). The second program achieved 0.58 score with 10 distinct params using diverse gate types (XX, YY, ZZ) and modest sharing.
+
+This edit restores circuit expressivity by:
+1. Using alternating RY parameters (ry_0, ry_1) instead of full sharing
+2. Introducing YY and ZZ two-qubit gates alongside XX for richer entanglement patterns
+3. Implementing modest parameter sharing on entanglers: xx_even for all even pairs, yy_shared for YY gates, zz_distinct for ZZ gates
+4. Using rz_shared for all RZ gates (single post-rotation layer)
+
+This balances parameter economy (10 distinct params) with circuit expressivity, which should significantly improve worst_group_margin and validation margin while maintaining generalization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_shared"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_shared"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_shared"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "XX", "wires": [1, 2], "param": "xx_shared"},
+    {"gate": "XX", "wires": [3, 4], "param": "xx_shared"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx_shared"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_0"},
+    {"gate": "RY", "wire": 3, "param": "ry_1"},
+    {"gate": "RY", "wire": 4, "param": "ry_0"},
+    {"gate": "RY", "wire": 5, "param": "ry_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_1"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_even"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_even"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_even"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_even"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_shared"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_shared"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE
+</DIFF>

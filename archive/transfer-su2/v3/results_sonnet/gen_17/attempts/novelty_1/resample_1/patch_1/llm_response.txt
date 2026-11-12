@@ -1,0 +1,113 @@
+<NAME>
+full_connectivity_shared_zz
+</NAME>
+
+<DESCRIPTION>
+Replace the current 5-distinct-parameter ansatz (even/odd RY, ZZ ring, antipodal CRZ, global RZ) with a minimal 3-distinct-parameter design that outperformed it in prior runs (global RY + global RZ + one shared entangling angle), but extend the entangling structure from a partial set of shells (distance 1,2,4) to the *complete* graph on 8 qubits (all pairwise distances 1,2,3,4 covering every one of the 28 edges) using a single shared IsingZZ angle.
+
+Rationale: the earlier ablation showed that collapsing to 3 shared parameters (global RY, global RZ, one shared entangler reused across several distance shells) scored substantially higher (0.60) than the current 5-parameter even/odd design (0.52), confirming that parameter economy dominates the score here. We push this further by making the entangling layer fully connected (every qubit pair gets exactly one shared-angle interaction) instead of only three shells, which should let correlations relevant to *any* dataset-chosen readout pair be captured without adding any new trainable parameters (still exactly 3 circuit params + 2 readout params = 5 total). We switch CRZ (asymmetric, needs a specific control/target) to the symmetric IsingZZ gate for the entangler, since a fully-symmetric interaction should generalize better across permutation-like structure in the readout pairs and is consistent with the improved generalization seen when moving from asymmetric to shared symmetric operations in the prior experiment. This keeps the trainable-parameter count minimal while maximizing the diversity/robustness of correlations available to the calibrated readout, targeting worst-group margin generalization on held-out difficulty groups.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Alternating local rotations: even/odd qubits share one parameter each,
+    # giving a translation-invariant local feature instead of 8 independent
+    # per-qubit angles (fewer params, less overfitting on few-shot data).
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Translation-invariant nearest-neighbor entangling ring, one shared angle.
+    {"gate": "ZZ", "wires": [0, 1], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "zz_ring"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "zz_ring"},
+    # Long-range entanglement between antipodal qubits, one shared angle.
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_long"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_long"},
+    # Global phase-shaping layer, one shared angle for all qubits.
+    {"gate": "RZ", "wire": 0, "param": "rz_all"},
+    {"gate": "RZ", "wire": 1, "param": "rz_all"},
+    {"gate": "RZ", "wire": 2, "param": "rz_all"},
+    {"gate": "RZ", "wire": 3, "param": "rz_all"},
+    {"gate": "RZ", "wire": 4, "param": "rz_all"},
+    {"gate": "RZ", "wire": 5, "param": "rz_all"},
+    {"gate": "RZ", "wire": 6, "param": "rz_all"},
+    {"gate": "RZ", "wire": 7, "param": "rz_all"},
+]
+=======
+ANSATZ_SPEC = [
+    # Global single-qubit layer: one shared RY angle for all 8 qubits. Fewer
+    # distinct params than per-qubit or even/odd rotations, minimizing
+    # overfitting risk on the small training set.
+    {"gate": "RY", "wire": 0, "param": "theta_ry"},
+    {"gate": "RY", "wire": 1, "param": "theta_ry"},
+    {"gate": "RY", "wire": 2, "param": "theta_ry"},
+    {"gate": "RY", "wire": 3, "param": "theta_ry"},
+    {"gate": "RY", "wire": 4, "param": "theta_ry"},
+    {"gate": "RY", "wire": 5, "param": "theta_ry"},
+    {"gate": "RY", "wire": 6, "param": "theta_ry"},
+    {"gate": "RY", "wire": 7, "param": "theta_ry"},
+    # Global single-qubit layer: one shared RZ angle for all 8 qubits.
+    {"gate": "RZ", "wire": 0, "param": "theta_rz"},
+    {"gate": "RZ", "wire": 1, "param": "theta_rz"},
+    {"gate": "RZ", "wire": 2, "param": "theta_rz"},
+    {"gate": "RZ", "wire": 3, "param": "theta_rz"},
+    {"gate": "RZ", "wire": 4, "param": "theta_rz"},
+    {"gate": "RZ", "wire": 5, "param": "theta_rz"},
+    {"gate": "RZ", "wire": 6, "param": "theta_rz"},
+    {"gate": "RZ", "wire": 7, "param": "theta_rz"},
+    # Fully-connected symmetric entangler: every one of the 28 distinct
+    # qubit pairs on the 8-qubit register gets exactly one IsingZZ
+    # interaction, all sharing a single angle. Covering the complete graph
+    # (distance-1, distance-2, distance-3 rings plus the 4 antipodal pairs)
+    # means every possible dataset-chosen readout pair is directly coupled
+    # by this layer, without adding any extra trainable parameters. IsingZZ
+    # is symmetric under qubit exchange (unlike CRZ), which should generalize
+    # better across the a-priori-unknown pair structure.
+    # Distance-1 ring.
+    {"gate": "ZZ", "wires": [0, 1], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [1, 2], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [2, 3], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [3, 4], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [5, 6], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [6, 7], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [7, 0], "param": "theta_ent"},
+    # Distance-2 ring.
+    {"gate": "ZZ", "wires": [0, 2], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [1, 3], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [2, 4], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [3, 5], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [4, 6], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [5, 7], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [6, 0], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [7, 1], "param": "theta_ent"},
+    # Distance-3 ring.
+    {"gate": "ZZ", "wires": [0, 3], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [1, 4], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [2, 5], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [5, 0], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [6, 1], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [7, 2], "param": "theta_ent"},
+    # Distance-4 antipodal pairs (only 4 unique edges).
+    {"gate": "ZZ", "wires": [0, 4], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "theta_ent"},
+    {"gate": "ZZ", "wires": [3, 7], "param": "theta_ent"},
+]
+>>>>>>> REPLACE
+</DIFF>

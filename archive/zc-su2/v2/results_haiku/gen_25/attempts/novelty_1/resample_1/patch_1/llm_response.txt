@@ -1,0 +1,81 @@
+Looking at the performance metrics across the three programs, I can identify key patterns:
+
+**Analysis:**
+1. **Prior Program 1** (score 0.66): Uses CRZ gates, achieves worst_group_margin of 0.35
+2. **Prior Program 2** (score 0.67): Adds fixed CZ skip-3 layer, improves worst_group_margin to 0.36, but convergence degrades (60→30 steps suggests overfitting help)
+3. **Current Program** (score 0.65): Switches XX→ZZ for long-range, but loses margin discrimination (0.36→0.35), adds RZ mid-layer (8→10 params), and convergence slows to 60 steps
+
+**Key Observations:**
+- The worst_group_margin (hard-sample discrimination) is the limiting factor
+- Prior Program 2's +0.01 margin improvement came from adding the skip-3 CZ layer
+- Current program's ZZ substitution for CRZ didn't help
+- The recommendation suggests inserting CRX between XX and YY layers for controlled entanglement variety
+- Parameter efficiency is critical: fewer distinct params always scores higher
+
+**Strategy:**
+- Return to the proven XX→YY→CRZ motif from Prior Program 1 (better margin performance)
+- Insert a narrow CRX layer between XX and YY to enrich entanglement without adding new parameters (reuse shared param)
+- This follows the recommendation and should improve worst_group_margin while keeping parameter economy tight
+
+The CRX gates on pairs [1,2], [3,4], [5,6] create controlled rotations that complement the Ising gates and can help discriminate hard samples better, similar to how the CZ layer helped in Prior Program 2.
+
+<NAME>
+add_crx_enrichment_xx_yy
+</NAME>
+
+<DESCRIPTION>
+Restore the proven XX→YY→CRZ structure from Prior Program 1 (which achieved margin 0.36) and insert a narrow CRX entanglement layer between XX and YY blocks. This follows the recommendation to enrich two-qubit phase interactions with minimal overhead by reusing the "ent_nn" parameter. The CRX gates on wire pairs [1,2], [3,4], and [5,6] add controlled rotation variety that complements the Ising gates and improves hard-sample discrimination without increasing the distinct parameter count. This should recover the better worst_group_margin performance while maintaining parameter efficiency.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+    
+    # Mid-range rotations after first entanglement
+    {"gate": "RZ", "wire": 0, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid"},
+    
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+=======
+    # First entangling block: nearest-neighbor XX gates
+    {"gate": "XX", "wires": [0, 1], "param": "ent_nn"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_nn"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_nn"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_nn"},
+    
+    # Narrow CRX layer to enrich entanglement variety
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_nn"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_nn"},
+    
+    # Second entangling block: offset nearest-neighbor YY gates
+    {"gate": "YY", "wires": [1, 2], "param": "ent_off"},
+    {"gate": "YY", "wires": [3, 4], "param": "ent_off"},
+    {"gate": "YY", "wires": [5, 6], "param": "ent_off"},
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    # Third entangling block: long-range ZZ gates
+    {"gate": "ZZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "ZZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "ZZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "ent_lr"},
+=======
+    # Third entangling block: long-range CRZ gates with shared parameter
+    {"gate": "CRZ", "wires": [0, 3], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [1, 4], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [3, 6], "param": "ent_lr"},
+    {"gate": "CRZ", "wires": [4, 7], "param": "ent_lr"},
+>>>>>>> REPLACE
+</DIFF>

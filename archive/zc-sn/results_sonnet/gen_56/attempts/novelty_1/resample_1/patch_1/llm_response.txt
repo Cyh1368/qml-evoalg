@@ -1,0 +1,62 @@
+<NAME>
+add_mirrored_rz_mid_layer
+</NAME>
+
+<DESCRIPTION>
+Insert a lightweight mid-circuit RZ rotation layer between the RX rotations (Layer 3) and the skip/diameter entangling blocks. The RZ parameters are tied in mirror pairs across the qubit register (wire 0 with wire 7, wire 1 with wire 6, etc.), so only 4 unique parameters are added regardless of qubit count. This introduces structured phase control that can sharpen local expressivity (by giving each qubit an extra rotation axis right before the longer-range entangling gates) while keeping the parameter count essentially unchanged, since the mirror-sharing trick reuses the "shared depth" regularization idea that has previously improved generalization gap and test accuracy in this ansatz family. The expectation is a modest boost in validation/test accuracy and possibly faster convergence, without the parameter-count blow-up that a fully independent RZ layer would cause.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< REPLACE
+=======
+placeholder
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def _rx_layer(qubits, prefix="rx"):
+    """Per-qubit RX rotations, one trainable parameter each."""
+    return [{"gate": "RX", "wire": q, "param": f"{prefix}_{q}"} for q in qubits]
+=======
+def _rx_layer(qubits, prefix="rx"):
+    """Per-qubit RX rotations, one trainable parameter each."""
+    return [{"gate": "RX", "wire": q, "param": f"{prefix}_{q}"} for q in qubits]
+
+
+def _rz_mid_layer(n, prefix="rz_mid"):
+    """Per-qubit RZ rotations with mirror-pair parameter sharing
+    (wire i shares its parameter with wire n-1-i). This yields only
+    ceil(n/2) unique parameters (4 for n=8) while still giving every
+    qubit an extra phase-control rotation right before the longer-range
+    entangling layers, sharpening local expressivity at negligible
+    parameter cost."""
+    gates = []
+    for i in range(n):
+        j = n - 1 - i
+        idx = min(i, j)
+        gates.append({"gate": "RZ", "wire": i, "param": f"{prefix}_{idx}"})
+    return gates
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    block = []
+    block += _ry_layer(range(n))
+    block += _ring_crz(n)
+    block += _rx_layer(range(n))
+    block += _skip_crz(n, step=2)
+    block += _diameter_crz(n)
+    return block
+=======
+    block = []
+    block += _ry_layer(range(n))
+    block += _ring_crz(n)
+    block += _rx_layer(range(n))
+    block += _rz_mid_layer(n)
+    block += _skip_crz(n, step=2)
+    block += _diameter_crz(n)
+    return block
+>>>>>>> REPLACE
+</DIFF>

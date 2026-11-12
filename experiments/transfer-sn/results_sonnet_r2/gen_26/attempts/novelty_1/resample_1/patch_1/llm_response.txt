@@ -1,0 +1,36 @@
+<NAME>
+alternate_crz_ring_direction
+
+<DESCRIPTION>
+The current ANSATZ_SPEC applies a fixed static CRZ ring topology on every block, regardless of upload index. Since `apply_ansatz_block` is a static function called with different `block_index` values, we can't directly branch inside the spec list itself — but we can restructure the ansatz to use both forward and backward ring passes within a single block, effectively giving bidirectional entanglement coverage without adding parameters. This diversifies the correlation pathways covered by the entangling layer in every application (not just every-other-upload), increasing expressivity while sharing the same parameters (crz_a/crz_b) to avoid parameter bloat. This should help close the generalization gap (currently 0.12) by encouraging more symmetric information flow across the qubit ring in both directions, while keeping n_params unchanged.
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_b"},
+=======
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_a"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_b"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_a"},
+>>>>>>> REPLACE
+
+</DIFF>

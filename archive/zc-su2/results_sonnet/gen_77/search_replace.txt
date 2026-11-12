@@ -1,0 +1,45 @@
+<NAME>
+localized_mini_block_wires0to3
+</NAME>
+
+<DESCRIPTION>
+The previous experiment showed that appending a small localized "mini-block" on qubits 0-3 (reusing the single shared "theta" parameter) after the main block dramatically improved convergence speed (30 steps vs 60) at a modest depth/gate-count cost, while keeping accuracy at 1.0 and parameter count unchanged. The current version dropped this mini-block in favor of a fully tunable ring (XX/CRX), which reduced depth/gate-count but regressed convergence back to 60 steps. This edit re-introduces the localized half-register mini-block (RX, RY, alternating XX/CZ on the 4-cycle 0-1-2-3-0, then RZ, all sharing "theta") appended after the final RZ layer, aiming to recover the faster 30-step convergence while retaining the more expressive full-ring entangler already present, at a smaller depth overhead than a full second block duplication.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# 5. Post-entanglement rotation layer, axis RZ, reusing the SAME "theta"
+#    parameter, keeping the total unique parameter count per block at
+#    exactly 1.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+
+=======
+# 5. Post-entanglement rotation layer, axis RZ, reusing the SAME "theta"
+#    parameter, keeping the total unique parameter count per block at
+#    exactly 1.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+
+# 6. Localized half-register mini-block on wires 0-3, reusing the SAME
+#    shared "theta" parameter (no new trainable name introduced). This
+#    small "mini-ansatz" sharpens local correlations among half the
+#    register at a fraction of the cost of a full second block,
+#    reproducing the fast (~30-step) convergence observed in prior
+#    single-parameter designs that included this pattern, while keeping
+#    the more expressive fully-tunable ring entangler from step 2.
+for wire in range(4):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+for wire in range(4):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+for i in range(4):
+    a, b = i, (i + 1) % 4
+    if i % 2 == 0:
+        ANSATZ_SPEC.append({"gate": "XX", "wires": [a, b], "param": "theta"})
+    else:
+        ANSATZ_SPEC.append({"gate": "CZ", "wires": [a, b]})
+for wire in range(4):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+
+>>>>>>> REPLACE
+</DIFF>

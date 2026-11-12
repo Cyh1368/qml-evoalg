@@ -1,0 +1,708 @@
+<title>S₈ Null Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root {
+  --paper:      #f7f9fa;
+  --surface:    #ffffff;
+  --sunken:     #eef2f5;
+  --ink:        #101820;
+  --body:       #26333d;
+  --muted:      #5c6b78;
+  --rule:       #d8e2e8;
+  --rule-soft:  #e7eef2;
+  --real:       #0d6e78;
+  --real-soft:  #dcedef;
+  --null:       #9c5a26;
+  --null-soft:  #f3e6d9;
+  --flag:       #7a3550;
+  --flag-soft:  #f5e2e8;
+
+  --f-display: "Spectral", Georgia, "Times New Roman", serif;
+  --f-body:    "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --measure: 68ch;
+  --pad: clamp(1.15rem, 4vw, 2.5rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:     #0d1319;
+    --surface:   #141d25;
+    --sunken:    #18232c;
+    --ink:       #eef4f7;
+    --body:      #c6d3dc;
+    --muted:     #8ea0ad;
+    --rule:      #2a3945;
+    --rule-soft: #1f2b35;
+    --real:      #57c3cb;
+    --real-soft: #123037;
+    --null:      #dc9c62;
+    --null-soft: #33241a;
+    --flag:      #e5899f;
+    --flag-soft: #331d26;
+  }
+}
+:root[data-theme="dark"] {
+  --paper:     #0d1319;
+  --surface:   #141d25;
+  --sunken:    #18232c;
+  --ink:       #eef4f7;
+  --body:      #c6d3dc;
+  --muted:     #8ea0ad;
+  --rule:      #2a3945;
+  --rule-soft: #1f2b35;
+  --real:      #57c3cb;
+  --real-soft: #123037;
+  --null:      #dc9c62;
+  --null-soft: #33241a;
+  --flag:      #e5899f;
+  --flag-soft: #331d26;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--body);
+  font-family: var(--f-body);
+  font-size: 1rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 0 var(--pad) 6rem;
+}
+
+.col { max-width: var(--measure); }
+
+h1, h2, h3 { color: var(--ink); text-wrap: balance; font-family: var(--f-display); }
+
+h1 {
+  font-size: clamp(2.1rem, 5.2vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.6rem;
+}
+h2 {
+  font-size: clamp(1.45rem, 3vw, 1.95rem);
+  font-weight: 600;
+  line-height: 1.18;
+  margin: 0 0 0.35rem;
+}
+h3 {
+  font-family: var(--f-body);
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  margin: 0 0 0.5rem;
+}
+
+p { margin: 0 0 1.05rem; }
+a { color: var(--real); }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--real);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+code, .mono { font-family: var(--f-mono); font-size: 0.855em; }
+code {
+  background: var(--sunken);
+  padding: 0.1em 0.36em;
+  border-radius: 3px;
+  color: var(--ink);
+}
+
+/* ---- masthead ---- */
+
+header.masthead {
+  border-bottom: 1px solid var(--rule);
+  padding: clamp(2.5rem, 7vw, 4.5rem) 0 2rem;
+  margin-bottom: 2.75rem;
+}
+
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 1.1rem;
+}
+
+.standfirst {
+  font-family: var(--f-display);
+  font-size: clamp(1.1rem, 2.4vw, 1.32rem);
+  line-height: 1.5;
+  color: var(--body);
+  margin: 0 0 1.75rem;
+  max-width: 60ch;
+}
+
+.runline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1.6rem;
+  font-family: var(--f-mono);
+  font-size: 0.775rem;
+  color: var(--muted);
+}
+.runline b { color: var(--ink); font-weight: 500; }
+
+/* ---- verdict banner ---- */
+
+.verdict {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--real);
+  padding: 1.4rem 1.5rem;
+  margin: 0 0 3.25rem;
+  max-width: var(--measure);
+}
+.verdict .label {
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--real);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+.verdict p { margin: 0; }
+.verdict p + p { margin-top: 0.7rem; }
+
+/* ---- sections ---- */
+
+section { margin: 0 0 3.5rem; scroll-margin-top: 1.5rem; }
+
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+.sec-head .n {
+  font-family: var(--f-mono);
+  font-size: 0.74rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  flex: none;
+  padding-top: 0.35rem;
+}
+
+/* ---- glossary ---- */
+
+.gloss-group { margin: 0 0 1.9rem; }
+.gloss-group > h3 {
+  font-family: var(--f-mono);
+  font-size: 0.73rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--rule-soft);
+  margin-bottom: 1rem;
+}
+dl.gloss { margin: 0; display: grid; gap: 0.95rem; }
+dl.gloss > div {
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: 0.3rem 1.5rem;
+  align-items: baseline;
+}
+@media (max-width: 42rem) {
+  dl.gloss > div { grid-template-columns: 1fr; gap: 0.15rem; }
+}
+dl.gloss dt {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 0.93rem;
+}
+dl.gloss dt .alt {
+  display: block;
+  font-family: var(--f-mono);
+  font-size: 0.76rem;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+dl.gloss dd { margin: 0; font-size: 0.94rem; }
+
+/* ---- condition tags ---- */
+
+.tag {
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 0.14em 0.5em;
+  border-radius: 2px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.tag.real { background: var(--real-soft); color: var(--real); }
+.tag.null { background: var(--null-soft); color: var(--null); }
+
+/* ---- tables ---- */
+
+.tablewrap {
+  overflow-x: auto;
+  margin: 0 0 0.7rem;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+caption {
+  caption-side: top;
+  text-align: left;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 0.85rem 1rem 0.7rem;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 0.9rem;
+}
+th, td {
+  padding: 0.5rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--rule-soft);
+}
+thead th {
+  font-family: var(--f-mono);
+  font-size: 0.71rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-family: var(--f-mono); }
+tr.cond-real td:first-child { border-left: 3px solid var(--real); }
+tr.cond-null td:first-child { border-left: 3px solid var(--null); }
+tbody td:first-child { font-weight: 500; color: var(--ink); }
+.hit { color: var(--real); font-weight: 600; }
+.miss { color: var(--null); font-weight: 600; }
+tr.sep td { border-top: 1px solid var(--rule); }
+
+.prov {
+  font-family: var(--f-mono);
+  font-size: 0.735rem;
+  color: var(--muted);
+  margin: 0 0 2rem;
+  line-height: 1.55;
+}
+.prov::before { content: "source  "; letter-spacing: 0.1em; }
+
+/* ---- prereg decision block ---- */
+
+.branches { display: grid; gap: 0.75rem; margin: 1.4rem 0 0.8rem; max-width: var(--measure); }
+.branch {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 1.1rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  align-items: start;
+}
+.branch .cond {
+  font-family: var(--f-mono);
+  font-size: 0.8rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+.branch .what { font-size: 0.92rem; margin: 0; }
+.branch.fired {
+  border-color: var(--real);
+  background: var(--real-soft);
+}
+.branch.fired .cond, .branch.fired .what { color: var(--ink); }
+.branch .fired-mark {
+  display: block;
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--real);
+  margin-top: 0.4rem;
+  font-weight: 500;
+}
+
+/* ---- callout ---- */
+
+.note {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--flag);
+  background: var(--surface);
+  padding: 1.15rem 1.3rem;
+  margin: 1.6rem 0;
+  max-width: var(--measure);
+}
+.note h3 { color: var(--flag); margin-bottom: 0.4rem; }
+.note p:last-child { margin-bottom: 0; }
+.note.neutral { border-left-color: var(--muted); }
+.note.neutral h3 { color: var(--ink); }
+
+ul.tight { margin: 0 0 1.05rem; padding-left: 1.15rem; }
+ul.tight li { margin-bottom: 0.45rem; }
+ul.tight li:last-child { margin-bottom: 0; }
+
+footer.foot {
+  border-top: 1px solid var(--rule);
+  padding-top: 1.5rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  max-width: var(--measure);
+}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Negative control · S<sub>n</sub> transfer task</p>
+  <h1>Does the discovery criterion survive a task with nothing to discover?</h1>
+  <p class="standfirst">Three frontier-ensemble runs on a dataset built to have no permutation symmetry, testing whether the structural criterion in <code>VALIDATION_CRITERIA.md</code> correctly returns “nothing here” instead of manufacturing agreement.</p>
+  <div class="runline">
+    <span><b>Runs</b> 3 × 15 generations</span>
+    <span><b>Jobs</b> 22546135–37</span>
+    <span><b>Completed</b> 2026-08-18</span>
+    <span><b>Ensemble</b> gpt-5.6-sol · opus-4.6 · gemini-3.1-pro</span>
+  </div>
+</header>
+
+<div class="verdict">
+  <span class="label">Result against the pre-registered readout</span>
+  <p><b>0 of 3</b> null runs produced a fully tied parameter family, against <b>3 of 3</b> on the real task. That falls in the branch the launch script pre-registered as “the criterion discriminates.”</p>
+  <p>Fisher exact on 3/3 versus 0/3 gives <b>p = 0.10</b>, which the pre-registration itself labelled suggestive rather than significant. The result is consistent with the hypothesis and is not on its own strong evidence for it.</p>
+</div>
+
+<!-- ============ GLOSSARY ============ -->
+<section id="glossary">
+  <div class="sec-head">
+    <span class="n">00</span>
+    <h2>Definitions</h2>
+  </div>
+  <div class="col">
+    <p>Every term used later in this page is defined here. Nothing below introduces new vocabulary.</p>
+  </div>
+
+  <div class="gloss-group">
+    <h3>The task</h3>
+    <dl class="gloss">
+      <div>
+        <dt>Ansatz</dt>
+        <dd>A fixed template of quantum gates with adjustable rotation angles. Training fits the angles; evolution changes the template itself.</dd>
+      </div>
+      <div>
+        <dt>Qubit / wire</dt>
+        <dd>One of the 8 quantum bits in the circuit. “Wire” is the horizontal line each qubit traces in a circuit diagram. Used interchangeably here.</dd>
+      </div>
+      <div>
+        <dt><code>ANSATZ_SPEC</code></dt>
+        <dd>The only part of the program the evolution loop is allowed to edit: a list of gate entries, each naming a gate type, the wire(s) it acts on, and (for rotations) the name of the parameter driving it.</dd>
+      </div>
+      <div>
+        <dt>Single-qubit rotation<span class="alt">RX, RY, RZ</span></dt>
+        <dd>A gate that rotates one qubit by a trainable angle about the x, y, or z axis.</dd>
+      </div>
+      <div>
+        <dt>Two-qubit gate<span class="alt">CZ, CNOT, CRX/CRY/CRZ</span></dt>
+        <dd>A gate acting on a pair of qubits, entangling them. The CR-prefixed forms carry a trainable angle; CZ and CNOT do not.</dd>
+      </div>
+      <div>
+        <dt>Parameter</dt>
+        <dd>One trainable angle, referenced by name. Two gates written with the same parameter name are driven by a single shared number.</dd>
+      </div>
+      <div>
+        <dt>Seed program</dt>
+        <dd>The starting circuit every run begins from, identical across all runs and both conditions. It has 24 distinct parameters per block and 146 trainable parameters in total.</dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="gloss-group">
+    <h3>The symmetry</h3>
+    <dl class="gloss">
+      <div>
+        <dt>S<sub>8</sub> permutation symmetry</dt>
+        <dd>The group of all 8! relabellings of the 8 vertices. A rule is <em>invariant</em> under S<sub>8</sub> if renaming the vertices never changes its answer.</dd>
+      </div>
+      <div>
+        <dt>Real task<span class="alt">label rule</span></dt>
+        <dd>Label = +1 if and only if the graph is connected. Connectivity does not care what the vertices are called, so this rule <em>is</em> S<sub>8</sub>-invariant.</dd>
+      </div>
+      <div>
+        <dt>Null task<span class="alt">label rule</span></dt>
+        <dd>Label = +1 if and only if <code>deg(v*) ≥ 2</code>, the degree of one fixed vertex. Relabelling moves v*, so this rule is <em>not</em> S<sub>8</sub>-invariant. The best circuit here must single out one qubit, which is the opposite of tying parameters together.</dd>
+      </div>
+      <div>
+        <dt>Parameter tying</dt>
+        <dd>Reusing one parameter name across several gates so they share a single angle. This is how a circuit expresses “these wires are interchangeable.”</dd>
+      </div>
+      <div>
+        <dt>Fully tied family<span class="alt">the motif</span></dt>
+        <dd>One parameter driving the same single-qubit rotation on <em>all 8</em> wires. This is the structural fingerprint of S<sub>8</sub> invariance and the thing the criterion looks for. Counted by <code>symmetry_analysis.py</code> as <code>fully_tied_single_families</code>.</dd>
+      </div>
+      <div>
+        <dt>Equivariance</dt>
+        <dd>The behavioural version of the same idea: permute the inputs, and the model’s output is unchanged. Measurable directly, with no fingerprint to choose. <em>Not run for this report</em>; every structural claim here is structural only.</dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="gloss-group">
+    <h3>The search</h3>
+    <dl class="gloss">
+      <div>
+        <dt>ShinkaEvolve</dt>
+        <dd>The evolutionary loop under test. Each generation it asks language models to propose an edited program, evaluates the result, and keeps a population of the survivors.</dd>
+      </div>
+      <div>
+        <dt>Generation</dt>
+        <dd>One propose-and-evaluate cycle. These runs were given 15 generations each.</dd>
+      </div>
+      <div>
+        <dt>Proposal / program</dt>
+        <dd>One candidate circuit produced by a model in one generation, together with the model’s own patch name and description of what it changed.</dd>
+      </div>
+      <div>
+        <dt>Ensemble / arm</dt>
+        <dd>The set of models allowed to propose. <b>Frontier</b> is gpt-5.6-sol + opus-4.6 + gemini-3.1-pro; <b>mid</b> and <b>weak</b> are cheaper sets used in earlier experiments.</dd>
+      </div>
+      <div>
+        <dt>Run / replicate</dt>
+        <dd>One complete execution of the loop. Replicates here use byte-identical configs; all variation is the pipeline’s own nondeterminism.</dd>
+      </div>
+      <div>
+        <dt>Orchestrator / eval job</dt>
+        <dd>The orchestrator is the long-lived cluster job driving the loop; it launches a separate short eval job per candidate to train and score it.</dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="gloss-group">
+    <h3>The measurements</h3>
+    <dl class="gloss">
+      <div>
+        <dt>Raw combined score<span class="alt">combined_score_raw</span></dt>
+        <dd>A weighted blend of validation accuracy, train accuracy, generalization gap, loss, parameter efficiency, and convergence speed. Bounded above by 1.0.</dd>
+      </div>
+      <div>
+        <dt>Rescaled score<span class="alt">the displayed number</span></dt>
+        <dd>The raw score mapped through a fixed affine transform so that <b>0.0 = the real task’s seed</b> (raw 0.8546) and <b>1.0 = the best symmetric solution ever found on the real task</b> (raw 0.9483). These two anchors are hardcoded and were <em>not</em> re-measured for the null task, which is why null numbers exceed 1.0.</dd>
+      </div>
+      <div>
+        <dt>Motif recurrence, across runs<span class="alt">criterion 5</span></dt>
+        <dd>How many independent runs have the motif in their best program. Rated <b>WORKS</b> in <code>VALIDATION_CRITERIA.md</code> and the pre-registered readout for this experiment.</dd>
+      </div>
+      <div>
+        <dt>Motif recurrence, within a run<span class="alt">criterion 6</span></dt>
+        <dd>What fraction of <em>all</em> proposals in a single run contain the motif. Also rated <b>WORKS</b>; the cheapest signal, since it needs only one run.</dd>
+      </div>
+      <div>
+        <dt>Parameter-count collapse<span class="alt">criterion 8</span></dt>
+        <dd>Whether the best program uses far fewer distinct parameters than the seed’s 24. Rated only <b>PARTIAL</b>: good precision, but it misses true positives, so it is a screen and not the test.</dd>
+      </div>
+      <div>
+        <dt>Say-versus-build<span class="alt">criterion 2</span></dt>
+        <dd>Whether a proposal that <em>uses symmetry language</em> in its patch notes actually <em>builds</em> a tied family. Rated <b>FAILS</b> as a criterion: on the real task mid-tier models say it as often as frontier models and build it far less.</dd>
+      </div>
+      <div>
+        <dt>Linear probe</dt>
+        <dd>Least-squares fit of the label directly from the 28 raw input features, with no circuit. A high score means the task is nearly solvable without any quantum structure at all.</dd>
+      </div>
+      <div>
+        <dt>Ceiling effect</dt>
+        <dd>When the starting point already scores near the maximum, leaving little room for improvement, so gains compress and are hard to compare across tasks.</dd>
+      </div>
+      <div>
+        <dt>Fisher exact test</dt>
+        <dd>A significance test for small 2×2 count tables. Reported here for 3/3 versus 0/3.</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<!-- ============ HYPOTHESIS ============ -->
+<section id="hypothesis">
+  <div class="sec-head">
+    <span class="n">01</span>
+    <h2>What was hypothesized, before any results</h2>
+  </div>
+  <div class="col">
+    <p>The broader programme asks whether ShinkaEvolve can be turned into a benchmark for scientific discovery, and whether a researcher with no answer key could tell a genuine discovery from a confabulated one. <code>VALIDATION_CRITERIA.md</code> tested nine candidate criteria against 18 runs on a task that <em>does</em> contain a symmetry, and found that the reliable signals were all recurrence measures: the motif showing up across independent runs (3/3 frontier, 1/5 mid, 2/10 weak) and repeatedly within a single run.</p>
+    <p>That leaves an obvious hole, stated in <code>make_dataset_null.py</code>: every test so far was on a task that has the structure. A criterion that fires on a symmetric task and <em>also</em> fires when there is no symmetry is detecting “frontier models like tying parameters,” not “the problem has a symmetry.” This experiment is the missing negative control.</p>
+    <p>The design holds everything constant except the one thing under test. Inputs are distributionally identical between conditions: same 8 vertices, same 28 adjacency bits, same scrambled qubit relabelling, same edge-density sampling, same random seed and call sequence, so the feature-pair table matches the real dataset exactly. I verified this independently: <code>feature_pairs</code> is byte-identical across the two files. Only the label rule changes, from connectivity to <code>deg(v*) ≥ 2</code>.</p>
+  </div>
+
+  <h3 style="max-width:var(--measure); margin-top:1.9rem;">The pre-registered decision rule</h3>
+  <div class="col"><p>Recorded in <code>transfer-sn/launch_null.sh</code> before the runs were submitted, in terms of how many of the three runs end with the motif in their best program:</p></div>
+  <div class="branches">
+    <div class="branch">
+      <span class="cond">3/3 or 2/3</span>
+      <p class="what">The criterion false-positives. It fires with no symmetry present, so it is measuring a model habit rather than a property of the problem, and the hypothesis fails.</p>
+    </div>
+    <div class="branch fired">
+      <span class="cond">0/3 or 1/3</span>
+      <p class="what">The criterion discriminates. Explicitly annotated in advance with “Fisher p = 0.10 at n = 3, so suggestive rather than significant.”
+      <span class="fired-mark">← this branch fired</span></p>
+    </div>
+  </div>
+  <div class="col">
+    <p style="margin-top:1.3rem;">Two design choices matter for reading the results. The readout is the <em>structural motif rate</em>, never the score, so score comparisons across conditions were never part of the test. And the budget was set at 15 generations on the stated grounds that the frontier signal saturates by generation 9–14 on the real task.</p>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section id="results">
+  <div class="sec-head">
+    <span class="n">02</span>
+    <h2>Results</h2>
+  </div>
+  <div class="col">
+    <p>All three runs completed cleanly: 15 of 15 programs correct in every run, 1h19m–1h44m each. The comparison set is the three frontier runs on the real task, measured here with the same two scripts rather than quoted from the earlier write-up.</p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Primary readout — the motif in each run’s best program</caption>
+      <thead>
+        <tr>
+          <th>Run</th>
+          <th class="num">Gens</th>
+          <th class="num">Distinct params</th>
+          <th class="num">Fully tied families</th>
+          <th>Motif?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="cond-null"><td>null frontier r1</td><td class="num">15</td><td class="num">16</td><td class="num">0</td><td class="miss">no</td></tr>
+        <tr class="cond-null"><td>null frontier r2</td><td class="num">15</td><td class="num">24</td><td class="num">0</td><td class="miss">no</td></tr>
+        <tr class="cond-null"><td>null frontier r3</td><td class="num">15</td><td class="num">20</td><td class="num">0</td><td class="miss">no</td></tr>
+        <tr class="cond-real sep"><td>real frontier e1_r1</td><td class="num">20</td><td class="num">4</td><td class="num">4</td><td class="hit">yes</td></tr>
+        <tr class="cond-real"><td>real frontier e1_r2</td><td class="num">20</td><td class="num">2</td><td class="num">2</td><td class="hit">yes</td></tr>
+        <tr class="cond-real"><td>real frontier r1</td><td class="num">50</td><td class="num">5</td><td class="num">6</td><td class="hit">yes</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prov"><code>symmetry_analysis.py --results-dir &lt;run&gt;</code> · seed program = 24 distinct params, 0 tied families · null <b>0/3</b> vs real <b>3/3</b>, Fisher exact two-sided p = 0.10</p>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Secondary readout — motif recurrence within each run, and say-versus-build</caption>
+      <thead>
+        <tr>
+          <th>Run</th>
+          <th class="num">Proposals</th>
+          <th class="num">Built the motif</th>
+          <th class="num">First built at gen</th>
+          <th class="num">Used symmetry language</th>
+          <th class="num">Built it | said it</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="cond-null"><td>null frontier r1</td><td class="num">14</td><td class="num">1 (7%)</td><td class="num">2</td><td class="num">2</td><td class="num">1/2</td></tr>
+        <tr class="cond-null"><td>null frontier r2</td><td class="num">14</td><td class="num">2 (14%)</td><td class="num">1</td><td class="num">4</td><td class="num">2/4</td></tr>
+        <tr class="cond-null"><td>null frontier r3</td><td class="num">14</td><td class="num">1 (7%)</td><td class="num">5</td><td class="num">1</td><td class="num">0/1</td></tr>
+        <tr class="cond-real sep"><td>real frontier e1_r1</td><td class="num">19</td><td class="num">12 (63%)</td><td class="num">3</td><td class="num">8</td><td class="num">7/8</td></tr>
+        <tr class="cond-real"><td>real frontier e1_r2</td><td class="num">19</td><td class="num">8 (42%)</td><td class="num">3</td><td class="num">3</td><td class="num">3/3</td></tr>
+        <tr class="cond-real"><td>real frontier r1</td><td class="num">48</td><td class="num">40 (83%)</td><td class="num">3</td><td class="num">20</td><td class="num">20/20</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prov"><code>analyze_symmetry_talk_vs_build.py &lt;db&gt;</code>, run from <code>transfer-sn/</code> · pooled: null <b>9.5%</b> mean within-run motif rate vs real <b>62.9%</b>; symmetry language null <b>7/42 (16.7%)</b> vs real <b>31/86 (36.0%)</b>; built-given-said null <b>3/7 (43%)</b> vs real <b>30/31 (96.8%)</b></p>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Scores — reported for completeness, and not usable as evidence (see §03)</caption>
+      <thead>
+        <tr>
+          <th>Run</th>
+          <th class="num">Seed, rescaled</th>
+          <th class="num">Best, rescaled</th>
+          <th class="num">Seed, raw</th>
+          <th class="num">Best, raw</th>
+          <th class="num">Raw gain</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="cond-null"><td>null frontier r1</td><td class="num">1.249</td><td class="num">1.408</td><td class="num">0.9717</td><td class="num">0.9865</td><td class="num">0.0149</td></tr>
+        <tr class="cond-null"><td>null frontier r2</td><td class="num">1.249</td><td class="num">1.428</td><td class="num">0.9717</td><td class="num">0.9884</td><td class="num">0.0167</td></tr>
+        <tr class="cond-null"><td>null frontier r3</td><td class="num">1.249</td><td class="num">1.457</td><td class="num">0.9717</td><td class="num">0.9912</td><td class="num">0.0195</td></tr>
+        <tr class="cond-real sep"><td>real frontier e1_r1</td><td class="num">0.000</td><td class="num">0.937</td><td class="num">0.8546</td><td class="num">0.9424</td><td class="num">0.0878</td></tr>
+        <tr class="cond-real"><td>real frontier e1_r2</td><td class="num">0.000</td><td class="num">1.045</td><td class="num">0.8546</td><td class="num">0.9525</td><td class="num">0.0979</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prov">run databases + <code>gen_0/results/metrics.json</code> · raw = rescaled × (0.9483 − 0.8546) + 0.8546</p>
+</section>
+
+<!-- ============ INTERPRETATION ============ -->
+<section id="interpretation">
+  <div class="sec-head">
+    <span class="n">03</span>
+    <h2>Interpretation</h2>
+  </div>
+
+  <div class="col">
+    <h3>The primary readout matches the hypothesis</h3>
+    <p>The criterion returned “nothing here.” Zero of three null runs ended with a fully tied family, against three of three on the real task, and the separation is categorical rather than marginal: null best programs carry 16, 24, and 20 distinct parameters, essentially the seed’s 24, while real best programs collapse to 4, 2, and 5. The criterion is not simply detecting a frontier-model habit of tying parameters.</p>
+    <p>This is what the null task’s design predicts. Because the label depends on one distinguished vertex, the optimal circuit must <em>single out</em> a qubit, so tying all eight wires together is not merely unhelpful, it is the wrong shape. The search behaved accordingly.</p>
+
+    <h3>The 15-generation budget is not what produced the null</h3>
+    <p>The obvious objection is that the null runs simply had less time: 15 generations against 20 and 50. The data answers it. On the real task the motif is first built at <b>generation 3 in all three runs</b>, well inside the null budget. The null runs also had ample opportunity in a second sense: they <em>did</em> produce tied circuits, first at generations 2, 1, and 5. The structure was proposed early in every condition. Only on the real task did it survive.</p>
+
+    <h3>Selection rejected the motif, rather than the models failing to propose it</h3>
+    <p>This is the sharpest thing in the results. In null r1 the most heavily tied proposal scored −1.222 with 3 parameters, and in null r2, −1.174 with 2 parameters. Negative on this axis means worse than the real task’s seed, and both are far below their own run’s seed at 1.249. The models reached for the symmetry hypothesis, built it, and were punished for it by the fitness function.</p>
+    <p>The say-versus-build numbers point the same way. Frontier models used symmetry language in 16.7% of null proposals versus 36.0% of real ones, so the language did not vanish. What changed is what happened next: 96.8% of real proposals that said it also built it, against 43% in the null condition. The discrimination is being performed by evaluation and selection, not by the models declining to entertain the idea.</p>
+    <p>This sits alongside, rather than overturning, the earlier say-versus-build finding. That result was about models <em>differing from each other</em> on a fixed task, where mid and frontier talk at the same rate and build at 22% versus 97%. This one is about a fixed ensemble across <em>differing tasks</em>. Both say the verbal claim is unreliable evidence.</p>
+
+    <div class="note">
+      <h3>The scores cannot carry any of this argument</h3>
+      <p>The score gap looks decisive and is not. Two independent problems compound. First, the displayed score is affinely anchored to the real task’s seed and best solution, and those constants were never re-measured for the null dataset, so the null <em>seed alone</em> reads 1.249 — above the best solution ever found on the real task. Second, the null task is far easier: a linear probe on the raw features reaches 97.3% against 87.3% on the real task, which follows directly from the label rule, since <code>deg(v*) ≥ 2</code> is a threshold on a sum of seven incident edge bits and is therefore nearly a linear function of the inputs.</p>
+      <p>The consequence is a ceiling. Measured as a fraction of the headroom remaining to raw 1.0, the null arm captures 60.1% and the real arm 60.4% and 67.3% — indistinguishable. So the raw-score gap is mostly the ceiling, not the condition. This is why the pre-registration used the structural motif and not the score, and that choice looks well made in hindsight.</p>
+    </div>
+
+    <h3>What this does not establish</h3>
+    <ul class="tight">
+      <li><b>Significance.</b> Fisher exact on 3/3 versus 0/3 gives p = 0.10. The pre-registration said so in advance. Three runs per condition cannot do better, and the honest reading is “consistent with the hypothesis,” not “demonstrated.”</li>
+      <li><b>Behaviour.</b> Every claim here is structural. The equivariance check, which measures the invariance directly and has no fingerprint to choose, was not run. <code>symmetry_analysis.py</code> wrote a <code>best_program_local.py</code> for each null run, so it is available cheaply.</li>
+      <li><b>The fingerprint problem.</b> <code>VALIDATION_CRITERIA.md</code> flags this as the protocol’s weakest point: the strict motif definition was chosen knowing the answer, and a looser one degrades the criterion badly. This control tests the strict fingerprint against a negative task, which is a real strengthening, but it does not resolve the underlying circularity.</li>
+      <li><b>Generality.</b> One task, one symmetry, one ensemble. The null arm was run only at the frontier tier, so nothing here says how mid or weak arms behave without a symmetry to find.</li>
+    </ul>
+
+    <div class="note neutral">
+      <h3>Two discrepancies I did not chase</h3>
+      <p>My first-hand measurement of within-run motif recurrence on the real frontier runs gives 63%, 42%, and 83%, a mean of 62.9%. <code>VALIDATION_CRITERIA.md</code> reports 69.7% for the same arm. Similarly I measure built-given-said as 30/31 where that document reports 32/33. Both gaps are small and most likely come from a different count of parseable proposals, but I did not track them down; the numbers on this page are the ones I measured.</p>
+    </div>
+
+    <h3>Methodological note on the first attempt</h3>
+    <p>An earlier submission of these same three runs (jobs 22465035–37) returned 0 of 15 correct programs in about nine minutes each and is void. The task directory was missing its <code>activate_eval_cluster.sh</code>, so eval jobs never activated the conda environment and died at <code>import numpy</code>. The loop did not stall; the models spent all 15 generations writing patches about the infrastructure error, with names like <code>env_error_bypass</code>. Those results are archived, not deleted. The rerun added the activate script with its data and log paths pointed at the null directory, leaving the evaluation protocol otherwise byte-identical between conditions.</p>
+
+    <h3>What would settle it</h3>
+    <p>The cheapest strengthening is more null replicates. At roughly $5.50 and ninety minutes per run, taking the null arm from 3 to 10 would bring the comparison to the same n as the weak arm and, if the motif rate stays at 0, move Fisher well below 0.05. Running the behavioural equivariance check on the six best programs already extracted would remove the dependence on the structural fingerprint entirely. Adding mid and weak null arms would show whether the criterion’s discrimination holds for the cheaper ensembles, where the real-task motif rates were 1/5 and 2/10 and there is much less signal to lose.</p>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>Sources: <code>transfer-sn/launch_null.sh</code>, <code>transfer-sn/make_dataset_null.py</code>, <code>transfer-sn/VALIDATION_CRITERIA.md</code>, <code>transfer-sn/symmetry_analysis.py</code>, <code>transfer-sn/analyze_symmetry_talk_vs_build.py</code>, and the six run databases under <code>transfer-sn/null/</code> and <code>transfer-sn/</code>. Every figure on this page was measured from those artifacts for this report rather than quoted, except where a discrepancy with the earlier write-up is noted above.</p>
+</footer>
+
+</div>

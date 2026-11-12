@@ -1,0 +1,73 @@
+# Analysis
+
+Looking at the performance metrics:
+
+1. **Prior best** (score 0.91): Removed the CRY bridge, kept reverse CRZ chain with full parameter sharing on 7 gates
+2. **Current** (score 0.88): Replaced parametrized CRZ gates with fixed CZ gates + added global RX layer
+3. **Problem**: The current approach trades expressivity for simplicity—losing the parametrized reverse chain hurt accuracy
+
+The recommendation suggests splitting the reverse CRZ chain into two parameters (odd-indexed and even-indexed links) to increase expressivity while maintaining parameter efficiency. This is a natural evolution from the prior best that removed intermediate structures but kept the core reverse chain.
+
+**Key insight**: The prior best achieved 0.91 with parametrized reverse entanglement. We can improve it by:
+- Restoring parametrized CRZ gates (which outperformed fixed CZ gates)
+- Using two separate parameters for the reverse chain instead of one: "crz_rev_a" for odd-indexed backward links and "crz_rev_b" for even-indexed backward links
+- This maintains parameter efficiency (only +1 parameter) while providing richer entangling angle diversity
+- Remove the global RX layer (it didn't help and adds parameters)
+
+<NAME>
+split_crz_reverse_chain
+</NAME>
+
+<DESCRIPTION>
+The prior best candidate (score 0.91) achieved strong performance with a parametrized reverse CRZ chain using a single shared parameter. The current candidate (score 0.88) replaced this with fixed CZ gates and added a global RX layer, which decreased accuracy. 
+
+This edit restores the parametrized reverse CRZ chain but splits it into two complementary parameters:
+- "crz_rev_a": controls odd-indexed backward links (7→6, 5→4, 3→2, 1→0)
+- "crz_rev_b": controls even-indexed backward links (6→5, 4→3, 2→1)
+
+This design doubles the entangling-angle variety with minimal parameter overhead (+1 parameter vs. single shared parameter), allowing the circuit to probe richer correlations between even and odd qubits while maintaining excellent parameter efficiency. The global RX layer is removed since it didn't improve performance and adds unnecessary overhead.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # ========== Entanglement Layer 2: Reverse Chain ==========
+    # Reverse chain for enhanced two-way entanglement
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CZ", "wires": [5, 4]},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CZ", "wires": [3, 2]},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CZ", "wires": [1, 0]},
+=======
+    # ========== Entanglement Layer 2: Reverse Chain with Split Parameters ==========
+    # Odd-indexed backward links use crz_rev_a
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_rev_a"},
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_rev_a"},
+    # Even-indexed backward links use crz_rev_b
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_rev_b"},
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_rev_b"},
+>>>>>>> REPLACE
+
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    # ========== Final Global RX Layer ==========
+    # Single global RX per qubit using one shared parameter
+    # Enhances Hilbert-space mixing with minimal overhead
+    {"gate": "RX", "wire": 0, "param": "rx_global"},
+    {"gate": "RX", "wire": 1, "param": "rx_global"},
+    {"gate": "RX", "wire": 2, "param": "rx_global"},
+    {"gate": "RX", "wire": 3, "param": "rx_global"},
+    {"gate": "RX", "wire": 4, "param": "rx_global"},
+    {"gate": "RX", "wire": 5, "param": "rx_global"},
+    {"gate": "RX", "wire": 6, "param": "rx_global"},
+    {"gate": "RX", "wire": 7, "param": "rx_global"},
+=======
+>>>>>>> REPLACE
+
+</DIFF>

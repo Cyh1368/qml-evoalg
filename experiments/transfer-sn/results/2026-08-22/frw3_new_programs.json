@@ -1,0 +1,898 @@
+[
+  {
+    "id": "eb976e39-47fa-4d09-a074-88484bd3d6f2",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 4,
+    "score": 0.23121604193593218,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "enhanced_collective_ansatz",
+    "desc": "The current program achieves excellent performance (0.90 test accuracy, minimal 0.01 generalization gap) through aggressive collective parameter sharing, reducing 194 parameters to just 26. However, there is still room for improvement in expressivity while maintaining efficiency.  Key parameters in the current approach: - 5 unique parameters (collective_ry_in, collective_rz, collective_ry_out, collective_rx_out, plus fixed CZ gates) - Simple structure: input mixer \u2192 phase layer \u2192 fixed entanglement \u2192 output mixers - Convergence in 270 steps  The new approach introduces: - 7-8 unique parameters by adding parametrized entanglement layers - Shared CRZ gates for learnable two-qubit interactions (not just fixed CZ) - Additional middle-layer phase correction with shared RZ parameters - More entanglement depth while maintaining parameter efficiency - Expected improvement: enhanced non-linear function approximation capacity while keeping parameter count under 60  This maintains the proven collective parameter sharing strategy that works well, but adds learnable two-qubit gates for better adaptability to the specific classification task.",
+    "arm": "mid",
+    "run": "mid_r1",
+    "meas": {
+      "angles": 8,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": true,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "63085f6f-9193-457b-b6a2-2bd56d47fae4",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 5,
+    "score": 0.3947964229578875,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "dual_group_hybrid_cube",
+    "desc": "This candidate performs a crossover between the highly efficient collective parameter sharing of the current best program and the more expressive non-diagonal CNOT entanglers used in the inspiration programs.  Key improvements: 1.  **Dual-Group Parameter Sharing**: Instead of a single global parameter for all 8 qubits, the register is split into two groups (qubits 0-3 and 4-7). This doubles the degrees of freedom (8 unique parameters per block instead of 4) while still maintaining high parameter efficiency (50 total parameters) to prevent overfitting and ensure high generalization. 2.  **Hybrid Cube Entangler**: We adapt the regular degree-three cube connectivity. To balance the diagonal phase interaction of CZ gates (from the current program) and the basis-flipping power of CNOT gates (from the inspiration program), we use a hybrid matching:     *   Matching 1: CNOTs (local neighbors)     *   Matching 2: CZs (intermediate range)     *   Matching 3: CNOTs (long range) 3.  **Rotation Sequence**: We maintain a robust RY-RZ sequence before the entangler and an RY-RX sequence after, allowing the circuit to map the IsingZZ-encoded features efficiently into the Z-readout basis.",
+    "arm": "mid",
+    "run": "mid_r1",
+    "meas": {
+      "angles": 8,
+      "max_family": 4,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "a63579ef-6f29-43b9-84bf-a74c90488ae2",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 6,
+    "score": 0.4720648260114089,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "hypercube_parity_ansatz",
+    "desc": "This candidate combines the efficient hypercube entanglement structure of the current program with a \"parity-based\" parameter sharing scheme (crossover from the unique-parameter approach).   1. **Connectivity**: It uses the degree-three hypercube matching (three disjoint perfect matchings), which provides high connectivity with low depth (3 CZ layers), ensuring information propagates efficiently across the 8-qubit register. 2. **Parameter Sharing**: Instead of purely collective parameters (1 param for 8 qubits) or unique parameters (8 params for 8 qubits), it uses a parity-based sharing approach (one parameter for even-indexed wires, one for odd-indexed wires). This doubles the expressivity of each layer compared to the current program while maintaining strong regularization and low parameter count (50 total parameters vs the previous 26 and 146). 3. **Rotation Layers**: It implements an RZ-RY-CZ-RY-RZ sandwich. The non-commuting RY and RZ gates, combined with the bipartite sharing, allow the circuit to learn more complex decision boundaries without the high generalization gap associated with unique-parameter architectures.",
+    "arm": "mid",
+    "run": "mid_r1",
+    "meas": {
+      "angles": 8,
+      "max_family": 4,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "1d719896-4bd8-42e5-b8f0-c3df75813898",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 7,
+    "score": 0.19990336310916004,
+    "correct": true,
+    "model": "openai/gpt-5.4-mini",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "parity_tied_butterfly",
+    "desc": "This edit keeps the ansatz parameter budget unchanged at 4 learned angles per block, but redistributes them into a more expressive and better-regularized structure.  Key idea: - split the single-qubit mixers into even/odd parity groups instead of one global angle per layer; - insert a two-stage fixed CZ scaffold: a local brickwork plus a long-range half-register bridge; - reuse the same parity mixer parameters before and after entangling to create a deeper effective block without increasing `N_PARAMS_PER_BLOCK`.  Why this should help: - the current model is highly symmetric and may underfit some qubit-specific structure in the encoded features; - parity-tied mixers can break that symmetry just enough to improve accuracy; - the extra entangling scaffold improves phase-to-amplitude conversion for the fixed ZZ feature map; - parameter count stays at 26 total, so the efficiency metric is preserved while validation/test accuracy has room to improve.",
+    "arm": "mid",
+    "run": "mid_r1",
+    "meas": {
+      "angles": 4,
+      "max_family": 8,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "6acf7119-1e38-45bb-a984-c92043516f3a",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 4,
+    "score": 0.2696908027657301,
+    "correct": true,
+    "model": "openai/gpt-5.4-mini",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "checkerboard_mixer",
+    "desc": "This update replaces the fully uniform block with a parity-aware \u201ccheckerboard\u201d mixer that is lighter but more expressive in the right places.  Key ideas: - Keep parameter sharing strong to preserve generalization and parameter efficiency. - Split the input and output mixers into even/odd wire groups so the circuit can learn asymmetric structure without exploding the parameter count. - Replace the all-CZ entangling scaffold with a CZ + CNOT ladder, which is better suited for converting the fixed ZZ feature-map phases into measurable Z-basis signal. - Remove redundant full-width single-qubit layers and reduce gate count per block substantially, which should help the combined score while keeping the ansatz trainable.  This keeps the fixed architecture intact and only changes ANSATZ_SPEC, as required.",
+    "arm": "mid",
+    "run": "mid_r2",
+    "meas": {
+      "angles": 5,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "45251792-d542-46e8-912a-2c920e553f0e",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 5,
+    "score": 0.3892164455076536,
+    "correct": true,
+    "model": "openai/gpt-5.4-mini",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": true,
+    "patch_name": "butterfly_message_passing",
+    "desc": "This ansatz replaces the uniform mixer pattern with a hierarchical butterfly/message-passing block. Each block uses shared parameters to form a compact quantum graph network: a collective input rotation, a local CNOT pooling step, a shifted controlled-phase correlation layer, a global phase adjustment, a long-range CZ mixing step, and a final collective output rotation. Compared with the prior design, this should improve phase-to-amplitude conversion, capture multi-scale feature interactions more directly, and reduce overfitting by using a structured low-parameter inductive bias.",
+    "arm": "mid",
+    "run": "mid_r2",
+    "meas": {
+      "angles": 4,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": true,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "7f28fb16-1767-47e3-80ac-bbbe7b3b4a12",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 6,
+    "score": 0.20914254228427512,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "symmetric_parity_mixing_ansatz",
+    "desc": "This candidate evolves the successful \"collective parameter\" strategy by introducing parity-based symmetry breaking and a highly-connected hypercube entanglement structure.   1.  **Parity-Based Sharing**: Instead of a single collective parameter for all 8 qubits, we split parameters into 'even' and 'odd' wire groups (e.g., `ry_in_e` and `ry_in_o`). This doubles the degrees of freedom (from 4 to 8 per block) while maintaining a high degree of parameter efficiency and regularization, which is crucial for the low generalization gap observed in prior high-scoring candidates. 2.  **Hypercube Entanglement**: We use a 3-regular hypercube graph for the CZ gates. This ensures that every qubit is entangled with three others in a single block, providing a better flow of information than linear or ring architectures, especially given the 28-feature IsingZZ map which represents a complete graph (K8) of feature interactions. 3.  **Non-Commuting Mixer Layers**: The block uses a sequence of RY, RZ, CZ, RY, and RX gates. This sequence ensures the circuit can explore a broad area of the Hilbert space and effectively convert the phase information encoded by the feature map into the Z-basis measurements required for the readout. 4.  **Parameter Efficiency**: With 8 parameters per block and $l=3, p=2$, the total parameter count is $8 \\times 6 + 2 = 50$, which is still significantly lower than the independent-parameter seed programs while offering more expressive power than the 26-parameter collective seed.",
+    "arm": "mid",
+    "run": "mid_r2",
+    "meas": {
+      "angles": 8,
+      "max_family": 4,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "0935c801-a5c6-4229-bede-2a8f941f9b15",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 7,
+    "score": 0.47547943271118986,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "add_parameterized_entanglement",
+    "desc": "The current program achieves excellent results (0.90 test accuracy, very low generalization gap, high parameter efficiency with only 26 params) through aggressive parameter sharing with collective layers. However, the gate count is high (348) relative to the parameter count, suggesting the structure is very efficient but potentially limited in expressiveness.  To improve further, I propose adding a parameterized two-qubit layer using selective CRZ gates in a complementary pattern to the existing fixed CZ entanglement. This introduces controlled parameterized interactions while maintaining the efficient shared parameter structure. The new layer will:  1. Add 4 parameterized CRZ gates using complementary diagonal pairs: [0,3], [1,4], [2,5], [6,7] 2. Use a shared parameter \"param_cz\" for all 4 CRZ gates to keep the parameter count low while increasing expressiveness 3. Place this layer after the fixed CZ entangler to allow both fixed and parameterized interactions  This approach: - Increases expressiveness by allowing tunable entanglement on complementary pairs - Keeps parameter growth minimal (only +1 param per block = +6 params total) - Maintains the proven symmetry benefits of collective parameter sharing - Complements rather than replaces the existing fixed CZ pattern",
+    "arm": "mid",
+    "run": "mid_r2",
+    "meas": {
+      "angles": 5,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": true,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "1ec34469-04e1-4421-a7ca-0fbcdbb1b2ab",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 4,
+    "score": 0.35985823568137776,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "add_individual_phase_tuning",
+    "desc": "Insert individual (non-shared) RZ rotations for each qubit between the hypercube entanglement and the output mixing stage. This allows per-qubit phase fine-tuning after entanglement while preserving the symmetric collective input/output mixers that enable the excellent generalization. The added 8 parameters break symmetry strategically without significantly increasing total parameter count (26\u219234), maintaining parameter efficiency while gaining expressivity for improved accuracy on both validation and test sets.",
+    "arm": "mid",
+    "run": "mid_r3",
+    "meas": {
+      "angles": 12,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "3ce69c48-71dc-4528-8721-94f682fbed9d",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 5,
+    "score": 0.4207267233672394,
+    "correct": true,
+    "model": "openai/gpt-5.4-mini",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "staged_parity_bridge",
+    "desc": "I replaced the wide symmetric mixer with a compact staged block: parity-separated local rotations, a shallow local entangler, long-range bridge couplings, and a final shared readout rotation. This keeps the parameter budget low, reduces circuit size, and adds a clearer inductive bias for distributed binary features, which should improve generalization while preserving the fixed training and measurement pipeline.",
+    "arm": "mid",
+    "run": "mid_r3",
+    "meas": {
+      "angles": 4,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "f35531e3-8e5a-4ded-bcce-b79383b24c72",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 6,
+    "score": 0.3178607190310279,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "selective_per_qubit_phases",
+    "desc": "The current ansatz achieves excellent performance (test_accuracy=0.90, generalization_gap=0.01) with heavy parameter sharing using collective gates. To push accuracy higher while maintaining generalization, I propose adding selective per-qubit phase parameters after the collective input mixer.  The key insight: the model has strong symmetry which aids generalization, but per-qubit RZ gates inserted after the collective RY input allow fine-grained control over individual qubit states before entanglement, without breaking the overall efficiency.  This modification: 1. Adds 8 per-qubit RZ parameters (per_rz_0 through per_rz_7) for individual phase calibration 2. Maintains the highly efficient collective parameter structure (only modest increase from 26 to 34 params per block) 3. Improves expressiveness while preserving the small generalization gap through controlled parameter growth 4. Preserves convergence speed by keeping the fundamental circuit structure  This is inspired by the success of hybrid architectures that use both collective and per-qubit parameters to balance expressiveness and efficiency.",
+    "arm": "mid",
+    "run": "mid_r3",
+    "meas": {
+      "angles": 12,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "8290d4ba-9692-43c9-b836-d2c1d54434d9",
+    "parent": "52e0e020-0e58-42ac-aee4-13479c183aa5",
+    "gen": 7,
+    "score": 0.31736564499494374,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "collective_bilateral_ansatz",
+    "desc": "This update evolves the ansatz by leveraging bilateral parameter sharing and structured cube-connectivity entanglement.   Key improvements: 1.  **Bilateral Sharing**: Instead of using a single collective parameter for all 8 qubits, we split the qubits into two groups (0-3 and 4-7). This doubles the expressive capacity while maintaining the strong regularization benefits observed in high-performing candidates. 2.  **Structured Entanglement**: We use a perfect matching strategy based on a 3-dimensional hypercube. This ensures high connectivity (all qubits are entangled) with minimal depth. 3.  **Parametrized Entanglement**: We introduce `CRY` (Controlled-RY) gates using the hypercube matchings. This allows the circuit to learn conditional rotations, which is more powerful than fixed `CZ` gates for transforming the IsingZZ-encoded phase features into the Z-basis. 4.  **Symmetry-Aware Mixing**: The block alternates between bilateral single-qubit rotations and structured two-qubit operations, providing a robust framework for re-uploading gradients.  This design aims to improve validation accuracy beyond 0.90 while keeping the parameter count low (44 total) to ensure a small generalization gap.",
+    "arm": "mid",
+    "run": "mid_r3",
+    "meas": {
+      "angles": 8,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "dfb58d31-eaff-4467-95e8-bbddd31803b3",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 4,
+    "score": 0.47904341882365137,
+    "correct": true,
+    "model": "openai/gpt-5.4-mini",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "cry_bridge_ring",
+    "desc": "The current approach is a 26-parameter, 6-block re-uploading circuit trained with Adam, using a fully symmetric collective mixer: shared RY/RZ layers, three CZ matching layers, and a final RX layer. Its strongest metrics come from good regularization, but it may still be underusing non-diagonal entanglement.  My revised block keeps the same parameter budget as the current program, but changes the internal structure to improve phase-to-amplitude conversion and gradient flow: - preserves symmetry with shared parameters across qubits, - replaces one of the purely diagonal sections with a non-diagonal CRY bridge, - keeps three complementary entangling matchings for broad connectivity, - maintains a compact 4-parameter-per-block design, so the total parameter count stays efficient.  This should help validation/test accuracy and reduce the train-test gap without increasing model size.",
+    "arm": "mid",
+    "run": "mid_r4",
+    "meas": {
+      "angles": 4,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": true,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "09ad624f-21dc-4dec-b2ea-30c79a3c0f48",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 5,
+    "score": 0.613999949194498,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "bipartite_cube_ansatz",
+    "desc": "The bipartite_cube_ansatz improves upon the collective model by transitioning from global parameter sharing to a bipartite sharing strategy. The 8-qubit register is divided into even and odd groups, allowing the circuit to learn distinct transformation rules for different subsets of the Hilbert space while maintaining high parameter efficiency.   Key structural changes include: 1. **Bipartite Rotation Layers**: Instead of a single collective parameter for all 8 qubits, the input and output mixers use independent parameters for even (0, 2, 4, 6) and odd (1, 3, 5, 7) wires. This doubles the local flexibility without the risk of over-parameterization. 2. **Hybrid Entanglement**: Combines the highly efficient 3D hypercube (Cube) CZ connectivity with a layer of parameterized CRY gates. The Cube structure ensures any qubit pair can interact within at most 3 hops, while the CRY layer allows the model to learn the optimal strength of entanglement between even-odd pairs. 3. **Multi-Axis Mixing**: Sequentially applies RY, RZ (input) and RY, RX (output) rotations. This non-commuting sequence expands the reachable state space, improving the ability to map binary feature patterns to Z-expectation values. 4. **Efficiency**: Maintains a low parameter count (56 total circuit parameters) to minimize the generalization gap and improve convergence speed compared to fully independent-parameter designs.",
+    "arm": "mid",
+    "run": "mid_r4",
+    "meas": {
+      "angles": 9,
+      "max_family": 4,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "5dcda2cc-dc4f-48a1-b33f-caf8b6acfbd9",
+    "parent": "52e0e020-0e58-42ac-aee4-13479c183aa5",
+    "gen": 6,
+    "score": 0.5294722726296157,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "collective_interleaved_cube",
+    "desc": "This evolution proposes an ansatz block that leverages three key architectural principles to improve the combined score:  1. **Collective Parameter Sharing**: Following the success of prior experiments, all eight qubits share a single parameter for each rotation layer. This serves as a strong regularization prior, significantly reducing the generalization gap (as seen in the 0.01 gap of Seed 2) and increasing parameter efficiency. 2. **Interleaved Entanglement matchings**: Instead of applying all entangling gates in a single cluster, the three perfect matchings of a 3-cube (dimension 0, 1, and 2 edges) are interleaved with parametrized rotation layers. This increases the effective expressivity and mixing of the circuit per unit depth. 3. **Multi-Axis Mixing**: The block utilizes RY, RZ, and RX rotations. Interspersing these non-commuting rotations between the Ising-like entanglement layers allows the model to better navigate the Hilbert space and transform the phase-encoded feature information into the Z-basis for measurement.  The resulting block has 5 unique parameters, leading to a highly efficient total of 32 trainable parameters (including readout) across the full re-uploading circuit.",
+    "arm": "mid",
+    "run": "mid_r4",
+    "meas": {
+      "angles": 5,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": true,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "fddb0efa-3acc-4a31-bb6d-17eacb567a9c",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 7,
+    "score": 0.35985823568137776,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "perqubit_phase_tuning",
+    "desc": "The current ansatz achieves excellent results (test accuracy 0.90, generalization gap 0.01) through extreme parameter sharing with only 4 unique parameters per block. To improve further, I propose adding per-qubit phase tuning via individual RZ rotations after the collective phase layer.   Rationale: 1. The collective approach maintains symmetry and efficiency but limits fine-grained expressivity 2. Adding 8 individual RZ parameters allows each qubit to learn its own phase offset while preserving the structured collective input/output mixers 3. This increases expressivity (12 unique params per block vs. current 4) while remaining highly parameter-efficient (74 total params vs. previous 146-194) 4. Per-qubit phases are computationally cheap but can capture subtle qubit-specific effects from the feature map encoding 5. The pattern fits naturally between the collective phase and entanglement, allowing phase information to influence the interaction structure  Expected impact: - Modest increase in test accuracy (targeting 0.91-0.92) - Maintained small generalization gap - Fast convergence due to low parameter count - Improved parameter efficiency through targeted expressivity",
+    "arm": "mid",
+    "run": "mid_r4",
+    "meas": {
+      "angles": 12,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "e3a4cfe6-6c6e-48ef-8099-ebd89459735f",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 4,
+    "score": 0.34312402852828366,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "even_odd_cube_mixer",
+    "desc": "This candidate performs a crossover between the high-efficiency collective sharing of the current program and the multi-axis per-qubit rotation layers of the inspiration program.   1. **Even-Odd Parametric Symmetry**: Instead of a single collective parameter for all 8 qubits, we split the wires into even (0, 2, 4, 6) and odd (1, 3, 5, 7) groups. This doubles the parameter count per block from 4 to 8, significantly increasing expressivity for binary feature patterns (like parity or XOR) while still benefiting from the gradient reinforcement of shared weights. 2. **Rotation Sandwich**: We use a sequence of RY and RZ gates before entanglement and RX and RY gates after. This ensures that the circuit can perform arbitrary single-qubit basis transformations to map the phase-encoded features (from the IsingZZ feature map) into the Z-measurement basis. 3. **Hypercube Connectivity**: We maintain the 3-regular hypercube (cube) entanglement structure. By using three perfect matchings, we ensure that every qubit is entangled with three others in a balanced way, facilitating rapid information spread across the 8-qubit register. 4. **Efficiency Balance**: With 8 parameters per block and 6 blocks, the total parameter count is 50. This remains highly efficient compared to the 146+ parameters of standard ans\u00e4tze, aiming to maintain the high generalization scores seen in the collective-weight models.",
+    "arm": "mid",
+    "run": "mid_r5",
+    "meas": {
+      "angles": 8,
+      "max_family": 4,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "0d1fdd38-efb9-4b46-8aa7-67e3f969c5c9",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 5,
+    "score": -1.3381142412584779,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "bipartite_symmetry_chain",
+    "desc": "The structural redesign moves from a 'collective' approach (where all 8 qubits share a single parameter) to a 'bipartite' architecture. By splitting the 8-qubit register into two groups (0-3 and 4-5) and assigning independent parameters to these groups, we introduce targeted flexibility while maintaining strong regularization.   Specifically, the design: 1.  **Dual-Block Parametrization**: Uses two parameter sets per rotation layer (qubits 0-3 vs 4-7). This allows the ansatz to differentiate between the 'left' and 'right' halves of the high-dimensional Ising-ZZ feature graph. 2.  **Circular Entanglement Flow**: Replaces the cube-style entangler with a continuous CNOT ring. This provides a uniform Hamiltonian path for information to circulate through all qubits, which better complements the all-pairs connectivity of the feature map. 3.  **Non-Commuting Mixer Sequence**: Organizes the rotations in an RY-RZ-RX sequence interspersed with entanglement. This ensures that the circuit can reach any point on the Bloch sphere and generates complex multi-qubit correlations necessary for the binary classification task. 4.  **Efficiency and Scaling**: Keeps the total parameter count low (32 parameters total) to preserve the excellent generalization gap and high parameter efficiency observed in earlier iterations, while providing enough degrees of freedom to improve raw accuracy.",
+    "arm": "mid",
+    "run": "mid_r5",
+    "meas": {
+      "angles": 5,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "b01f1bfb-1b88-47a8-ad0f-02fdd554830f",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 6,
+    "score": 0.3278259652936091,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "bipartite_butterfly_ansatz",
+    "desc": "The bipartite_butterfly_ansatz improves on previous designs by combining structural bipartite parameter sharing with a M\u00f6bius ladder entangling topology.   Key changes: 1. **Bipartite Parameter Sharing**: Qubits are divided into even and odd groups. Parameters are shared within these groups (e.g., all even qubits share 'ry_even'), which significantly reduces the parameter count to prevent overfitting while allowing the circuit to learn bipartite correlations inherent in the two-qubit IsingZZ feature map. 2. **M\u00f6bius Ladder Connectivity**: Instead of a standard chain or cube, we implement a ring of CZ gates plus 'bridge' connections between opposite qubits (0-4, 1-5, etc.). This maximizes the spread of entanglement across the 8-qubit register in minimal depth. 3. **Hybrid Parametric Entanglement**: We introduce a shared-parameter CRX layer. Unlike fixed CZ gates, CRX allows the optimizer to tune the strength of the entanglement between adjacent pairs, providing a mechanism for adaptive basis transformation. 4. **RX/RY/RZ Mixing**: The ansatz uses a more robust RY-RZ-RY sequence (simplified here to RY-RZ-CRX-RY) to ensure sufficient coverage of the Bloch sphere, allowing the model to transform the phase-encoded features into the Z-measurement basis more effectively.",
+    "arm": "mid",
+    "run": "mid_r5",
+    "meas": {
+      "angles": 7,
+      "max_family": 4,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "eab6c5d5-48f8-4c9b-b875-24f78c595bcd",
+    "parent": "52e0e020-0e58-42ac-aee4-13479c183aa5",
+    "gen": 7,
+    "score": 0.44771504252627536,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "hypercube_shared_params",
+    "desc": "The best-performing prior program achieved a combined score of 0.45 by using aggressive parameter sharing and a hypercube entanglement pattern, dramatically reducing parameter count from 194 to 26 while improving generalization gap from 0.10 to 0.01 and convergence speed.  The current program uses 146 parameters with independent per-qubit gates and a line entanglement pattern, leading to worse generalization (gap 0.07) and slower convergence (750 steps vs 270).  I propose to adapt the best-performer's strategy: 1. **Parameter sharing**: Replace 24 independent parameters (ry_0..ry_7, rz_pre_0..rz_pre_7, rz_post_0..rz_post_7) with just 3-4 collective parameters. This dramatically improves parameter efficiency and generalization. 2. **Hypercube entanglement**: Replace the line entanglement (0-1, 1-2, ..., 6-7) with three perfect matchings corresponding to the 3D hypercube connectivity. This provides balanced all-to-all coupling in fewer gates. 3. **Output mixing**: Add a collective RX layer after the RY mixer to provide diverse unitary coverage for readout conversion.  These changes will: - Reduce n_params from 146 to ~26 (improving parameter efficiency from 0.01 to 0.03+) - Improve generalization (reduce gap from 0.07 to near 0.01) - Speed up convergence (reduce from 750 to ~300 steps) - Maintain or improve accuracy by leveraging the proven architecture",
+    "arm": "mid",
+    "run": "mid_r5",
+    "meas": {
+      "angles": 4,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": true,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "773ec8d1-4ef3-4aa9-af8d-151f0a6a8952",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 4,
+    "score": 0.48566017351812146,
+    "correct": true,
+    "model": "openai/gpt-5.4-mini",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "parity_brickwork_mixer",
+    "desc": "This edit replaces the fully collective 8-qubit layers with a parity-split brickwork ansatz.  Why this should help: - It keeps the same parameter budget per block as the current program (4 trainable angles per block, 24 total circuit parameters), so efficiency is not sacrificed. - It breaks the overly rigid global symmetry of the seed by giving even and odd qubits separate mixers, which is often better for binary-feature data with heterogeneous feature-pair couplings. - It reduces gate count substantially by removing the redundant RZ layer and compressing the entangling pattern to two staggered CZ matchings. - The sequence RY -> CZ -> RX -> CZ provides a strong noncommuting mixer-entangler-mixer structure that should convert the fixed phase encodings into measurable Z-population differences more effectively, while remaining shallow enough to train well.  Overall, this is a targeted shift toward a lighter, more expressive hardware-efficient ansatz that should improve validation/test accuracy and convergence speed while also lowering depth and gate count.",
+    "arm": "mid",
+    "run": "mid_r6",
+    "meas": {
+      "angles": 4,
+      "max_family": 4,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "49c5c116-6c54-47a8-a9f2-c981a9803104",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 5,
+    "score": -1.3470655577870418,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "parity_shared_expressive_ansatz",
+    "desc": "The previous candidate achieved a high accuracy (0.90) with very few parameters (26) by using total parameter sharing across all qubits in each layer. To further improve accuracy while maintaining high parameter efficiency, I propose breaking the global symmetry slightly by using parity-based parameter sharing (even vs. odd wires).   This modification: 1. Increases the number of parameters per block from 4 to 8, allowing for more nuanced feature processing without a significant complexity penalty. 2. Replaces the fixed CZ cube with a combination of a CZ hypercube matching and a CNOT ring, enhancing the entangling power of each block. 3. Maintains the sequence of RY, RZ, and RX gates, which are effective for non-commuting rotations in the Bloch sphere. 4. Total parameters will increase from 26 to 50 (8 params/block * 6 blocks + 2 readout params), which remains highly efficient for an 8-qubit system.",
+    "arm": "mid",
+    "run": "mid_r6",
+    "meas": {
+      "angles": 8,
+      "max_family": 4,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "caa3efcc-db71-4b2e-a86c-978ebee97f65",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 6,
+    "score": 0.007566260301280162,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "add_individual_parametrized_rotations",
+    "desc": "The current design achieves excellent performance (test accuracy 0.90, generalization gap 0.01) through heavy parameter sharing with only 4 unique parameters per ansatz block. While highly efficient, this aggressive symmetry may limit the model's expressiveness.  To improve further, I propose adding individual per-qubit RX rotations after the CZ entangler layer. This breaks the collective symmetry in a controlled way, allowing the optimizer to learn qubit-specific corrections while maintaining the efficient collective structure for the main mixing layers.  The new structure will be: 1. Collective RY input mixer (shared across all 8 qubits) 2. Collective RZ phase (shared across all 8 qubits) 3. CZ entangler (fixed structure) 4. **Individual RX rotations on each qubit** (NEW - 8 per block) 5. Collective RY output mixer (shared across all 8 qubits) 6. Collective RX output mixer (shared across all 8 qubits)  This increases parameters from 26 to ~74 total (12 unique per block \u00d7 6 blocks + 2 readout), a conservative increase that should improve expressiveness while maintaining reasonable parameter efficiency and low generalization gap.  The motivation: individual rotations after entanglement can capture qubit-specific phase corrections without breaking the efficient symmetry-preserving design of the main layers.",
+    "arm": "mid",
+    "run": "mid_r6",
+    "meas": {
+      "angles": 12,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "6882479a-11fa-4bf5-8e9c-cdaf45a32e32",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 7,
+    "score": 0.44431203930693247,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "parametrized_matchings",
+    "desc": "The current program achieves excellent performance (0.90 test accuracy, 0.45 combined score) with a very parameter-efficient design using collective parameter sharing and fixed CZ entanglement along three disjoint perfect matchings.  To improve further while maintaining efficiency, I propose adding light parametrization to the entanglement layers themselves. This preserves the elegant matching structure while adding expressiveness: each of the three matchings will include both a fixed CZ gate (depth) and a corresponding parametrized controlled rotation gate (with shared parameters across all qubit pairs in that matching). This follows the principle of structured expressiveness without breaking the hypercube connectivity.  The modifications: 1. After each CZ matching layer, insert a corresponding parametrized controlled rotation (CRZ, CRY, CRX respectively) 2. Use shared parameters within each matching to maintain parameter efficiency 3. Total adds only 3 new unique parameters, bringing the block from 4 to 7 unique params 4. Final parameter count: 7*3*2 + 2 = 44 (up from 26 but still highly efficient)  This should improve the expressiveness of the ansatz while keeping the beneficial structure that achieved the current strong performance.",
+    "arm": "mid",
+    "run": "mid_r6",
+    "meas": {
+      "angles": 7,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": true,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "486a6fa7-a1dc-4c81-8464-2c69444c82e1",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 4,
+    "score": 0.19852139351098608,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "bipartite_parameter_sharing",
+    "desc": "The previous collective parameter sharing (one parameter for all 8 qubits) was highly efficient but potentially under-parametrized for the 28-feature IsingZZ map, which couples all possible qubit pairs.   This update introduces a bipartite sharing scheme: qubits are divided into two groups of four (Group A: 0-3, Group B: 4-7). Each layer of rotations now uses two independent parameters (one per group) rather than one. This respects the topology of the hypercube entangler, where the first two sets of CZ gates (Matchings 1 and 2) act internally within these groups, while the third set (Matching 3) provides the necessary communication between them.   This change increases the parameters per block from 4 to 8, bringing the total parameter count to 50. This remains highly efficient but doubles the expressive power of the model, allowing it to better differentiate and process the information from the 28 different feature couplings.",
+    "arm": "mid",
+    "run": "mid_r7",
+    "meas": {
+      "angles": 8,
+      "max_family": 4,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "7522e2da-8003-4c9a-8c84-7344e63a8378",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 5,
+    "score": -0.7887423098117726,
+    "correct": true,
+    "model": "openai/gpt-5.4-mini",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "parity_mix_entangler",
+    "desc": "This edit keeps the ansatz at the same parameter budget as the current winner, but makes it more expressive by breaking the global qubit symmetry into even/odd sublattices and by replacing the purely diagonal entangling scaffold with a mixed CZ/CNOT pattern.  Why this should help: - The current block uses the same angle on all 8 qubits, which is very parameter-efficient but can underfit subtle class structure. - Even/odd parameter sharing adds just enough asymmetry to capture localized correlations without inflating the model. - Interleaving CNOT with CZ gives both phase entanglement and amplitude mixing, which is often beneficial when the data map is phase-based and the readout is in the Z basis. - The gate count stays compact and the number of trainable parameters per block remains 4, so the model should preserve the strong generalization and optimization behavior while improving fit.",
+    "arm": "mid",
+    "run": "mid_r7",
+    "meas": {
+      "angles": 4,
+      "max_family": 4,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "987e18b0-bd15-4ab3-b83e-1fc537961523",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 6,
+    "score": 0.2567385986912347,
+    "correct": true,
+    "model": "google/gemini-3-flash-preview",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "grouped_symmetric_ansatz",
+    "desc": "The structural redesign moves from a global collective parameter sharing scheme to a grouped-symmetric architecture. By splitting the 8-qubit register into two groups (even and odd wires) and assigning shared parameters within these groups, the model increases its expressivity while maintaining high parameter efficiency. The entanglement strategy is also updated: it combines a fixed circular CZ-chain for global connectivity with trainable long-range CRY gates that allow the network to learn the strength of correlations between non-adjacent qubits. This approach maintains a low parameter count (38 total) to prevent overfitting, which was the key to the success of the previous iteration, while providing enough flexibility to capture more complex feature dependencies.",
+    "arm": "mid",
+    "run": "mid_r7",
+    "meas": {
+      "angles": 6,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "07eea0b7-3444-45f0-843e-f027b4fc1674",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 7,
+    "score": 0.21294652657709803,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "enhance_expressiveness_with_individual_tuning",
+    "desc": "The current program achieves excellent performance (score 0.45) with a highly parameter-efficient collective parameter sharing strategy. However, there is room to improve test accuracy and expressiveness while maintaining efficiency.  **Key observation from metrics:** - Current: 26 params, test_acc=0.90, generalization_gap=0.01 - The parameter sharing yields excellent generalization, but may limit expressiveness  **Proposed enhancement:** Add individual RX rotations after the collective RY input mixer and before the collective RZ phase. This allows per-qubit fine-tuning early in the circuit without sacrificing the parameter-sharing benefits of the later stages.  **Rationale:** 1. Adds only 8 new parameters per block (individually tuned RX on each qubit), bringing total to ~74 params 2. Provides expressiveness boost by allowing asymmetric contributions early in the ansatz 3. Maintains collective phases and output stages which were working well 4. Early individual tuning can help the circuit adapt to dataset asymmetries while collective later stages preserve good generalization 5. Expected to improve test accuracy from 0.90 toward 0.92-0.94 range while keeping generalization gap low  This follows the pattern seen in prior program 2 which achieved test_acc=0.87 with 146 params; we're finding a better middle ground.",
+    "arm": "mid",
+    "run": "mid_r7",
+    "meas": {
+      "angles": 12,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "4bec0286-586f-47a7-bec1-23f5987e7ac1",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 4,
+    "score": 0.4671435405633507,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "adaptive_entanglement_with_crz",
+    "desc": "The current design achieves excellent performance (0.90 test accuracy, 0.01 generalization gap) through symmetric collective parameter sharing, but the entanglement is fixed (unparameterized CZ gates).   To improve further, I propose introducing parameterized controlled rotations (CRZ gates) in the entangling layers. This allows the circuit to: 1. Learn adaptive coupling strengths between qubits 2. Maintain symmetry through collective parameter sharing (all pairs in a matching layer share one parameter) 3. Increase expressiveness while keeping parameter growth modest  The key insight is that by making the entanglement adaptive while preserving symmetry, we can improve expressiveness without sacrificing parameter efficiency. Each matching layer will have one learnable CRZ parameter, adding only 3 parameters per block (one for each of the three matchings).  This approach maintains the successful architectural components: - Collective mixers preserve gradient reinforcement - Symmetric parameter sharing keeps the parameter count low - Perfect matching structure ensures efficient connectivity  The modification changes the three disjoint matchings from fixed CZ to parameterized CRZ gates with collective sharing.",
+    "arm": "mid",
+    "run": "mid_r10",
+    "meas": {
+      "angles": 7,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": true,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "667d858f-21e3-4d7e-9f39-a665eb0a58a0",
+    "parent": "52e0e020-0e58-42ac-aee4-13479c183aa5",
+    "gen": 5,
+    "score": -0.11956964719910691,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": false,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "hybrid_shared_and_individual_params",
+    "desc": "The second program achieved the best combined score (0.45) by using collective (shared) parameters across all qubits, dramatically reducing the parameter count from 194 to 26 while achieving excellent generalization (gap 0.01) and fast convergence (270 steps).  The current program (score 0.00) regressed to individual per-qubit parameters (146 params), resulting in slower convergence (750 steps) and worse generalization gap (0.07).  My improvement strategy: 1. Restore the hypercube connectivity structure from the winning program 2 (3 disjoint perfect matchings providing complete 8-vertex graph coverage) 2. Use a hybrid parameter-sharing approach: keep collective shared parameters for the main transformations (input/output mixers, global phases) but add per-qubit RX parameters for fine-tuning expressiveness 3. This balances the parameter efficiency and fast convergence of program 2 with slightly more flexibility  The resulting ansatz: - Collective RY rotation (shared across all 8 qubits) - input mixer - Per-qubit RZ rotations - local phase fine-tuning - Three layers of CZ gates covering the hypercube edges - efficient entanglement - Collective RY rotation (shared) - output mixer - Collective RX rotation (shared) - additional mixing basis  This yields ~12 unique parameters per block (vs 26 in program 2, vs 24 in current), which should: - Maintain fast convergence - Keep good generalization gap - Provide slightly more expressiveness than program 2 for potentially higher accuracy - Be significantly more parameter-efficient than the current approach",
+    "arm": "mid",
+    "run": "mid_r10",
+    "meas": {
+      "angles": 11,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "42b1e226-737d-4c29-b37c-8755ec6d7309",
+    "parent": "24a76c04-fa1d-4682-934c-57ec57e7de24",
+    "gen": 6,
+    "score": -0.4562950039564187,
+    "correct": true,
+    "model": "anthropic/claude-haiku-4.5",
+    "seed": false,
+    "says_any": true,
+    "says_perm": false,
+    "says_mirror": false,
+    "patch_name": "sparse_individual_rotations_with_fixed_entanglement",
+    "desc": "This approach uses a fundamentally different strategy from the collective-parameter-sharing design. Instead of using heavily-shared parameters (collective RY/RZ/RX across all qubits), it employs **sparse per-qubit individual rotations** interleaved with dense fixed entanglement layers.   Key algorithmic differences: 1. **Per-qubit rather than collective**: Each qubit gets independent RY, RZ, and RX parameters, allowing them to specialize based on encoded features 2. **Entanglement depth vs. width**: Uses three separate fixed CZ entanglement layers (hypercube edges grouped into matchings) instead of one, creating stronger information mixing 3. **Reduced parameter sharing**: Breaks the symmetry constraint of the collective approach, enabling qubits to learn different feature combinations 4. **Dense but structured connectivity**: Maintains the efficient 3-matching structure but applies it multiple times with rotation gates in between  This design should achieve better test accuracy by allowing individual qubits to adapt to the feature map encoding, while maintaining a reasonable parameter count (~24 params) and fast convergence through early stopping. The structural difference (per-qubit vs. collective) is the core algorithmic shift.",
+    "arm": "mid",
+    "run": "mid_r10",
+    "meas": {
+      "angles": 32,
+      "max_family": 1,
+      "tied8": false,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": false,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  },
+  {
+    "id": "af76db32-3e32-46bb-b3d8-3d0ba2bbd99c",
+    "parent": "52e0e020-0e58-42ac-aee4-13479c183aa5",
+    "gen": 7,
+    "score": 0.44771504252627536,
+    "correct": true,
+    "model": "openai/gpt-5.4-mini",
+    "seed": false,
+    "says_any": true,
+    "says_perm": true,
+    "says_mirror": false,
+    "patch_name": "cube_mixer_symmetry",
+    "desc": "Replace the over-parameterized line-entangler block with a compact, symmetry-preserving cube mixer. This ansatz uses only four shared trainable parameters per block: a collective RY input mixer, a collective RZ phase, a second collective RY mixer after full 3D cube entanglement, and a final collective RX readout mixer.  Why this should help: - Much fewer parameters: 4 per block instead of 24, improving parameter efficiency and reducing overfitting. - Better inductive bias: shared parameters enforce permutation-like symmetry across qubits, which is often beneficial when labels depend on many distributed binary features. - Stronger entanglement coverage: the 3 perfect-matchings CZ pattern connects all qubits with short depth and better mixing than a single nearest-neighbor chain. - Noncommuting single-qubit layers before and after entanglement increase expressivity while keeping the optimization landscape manageable.  This structure is aligned with the best-performing prior candidate and should improve validation/test accuracy while lowering the train-test gap and reducing the total circuit parameter count.",
+    "arm": "mid",
+    "run": "mid_r10",
+    "meas": {
+      "angles": 4,
+      "max_family": 8,
+      "tied8": true,
+      "mirror_built": false,
+      "s8": false,
+      "s8_parts": {
+        "sq_ok": true,
+        "tq_ok": false,
+        "has_2q": true
+      }
+    }
+  }
+]

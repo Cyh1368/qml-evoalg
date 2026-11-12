@@ -1,0 +1,114 @@
+<NAME>
+economical_d2_d4_d1_butterfly
+</NAME>
+
+<DESCRIPTION>
+Collapse the parity-specific RY angles into one globally shared mixer, reducing the ansatz from three distinct parameters to two. Remove the redundant second recurrent pass to halve gate count and depth, matching the more parameter-efficient single-pass structure that previously scored better. Reorder the commuting CZ butterfly layers to distance-2 → distance-4 → distance-1, an untested permutation that preserves multiscale connectivity while changing how correlations interact with surrounding encoding, mixer, and repeated-block boundaries.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # First tied multiscale pass: parity-sensitive local mixing.
+    {"gate": "RY", "wire": 0, "param": "mix_even"},
+    {"gate": "RY", "wire": 1, "param": "mix_odd"},
+    {"gate": "RY", "wire": 2, "param": "mix_even"},
+    {"gate": "RY", "wire": 3, "param": "mix_odd"},
+    {"gate": "RY", "wire": 4, "param": "mix_even"},
+    {"gate": "RY", "wire": 5, "param": "mix_odd"},
+    {"gate": "RY", "wire": 6, "param": "mix_even"},
+    {"gate": "RY", "wire": 7, "param": "mix_odd"},
+=======
+    # One globally tied mixer provides a strong symmetry prior and minimizes
+    # the number of trainable parameters for the small training set.
+    {"gate": "RY", "wire": 0, "param": "global_mix"},
+    {"gate": "RY", "wire": 1, "param": "global_mix"},
+    {"gate": "RY", "wire": 2, "param": "global_mix"},
+    {"gate": "RY", "wire": 3, "param": "global_mix"},
+    {"gate": "RY", "wire": 4, "param": "global_mix"},
+    {"gate": "RY", "wire": 5, "param": "global_mix"},
+    {"gate": "RY", "wire": 6, "param": "global_mix"},
+    {"gate": "RY", "wire": 7, "param": "global_mix"},
+>>>>>>> REPLACE
+
+</DIFF>
+<DIFF>
+<<<<<<< SEARCH
+    # Distance-1 correlations.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Distance-2 correlations.
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Distance-4 correlations connect both halves.
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+=======
+    # Start at distance 2 to aggregate within four-qubit neighborhoods.
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Then connect corresponding sites across the two halves.
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Finish with local distance-1 correlations at the block boundary.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+>>>>>>> REPLACE
+
+</DIFF>
+<DIFF>
+<<<<<<< SEARCH
+
+    # Second recurrent pass, reusing all three parameters.
+    {"gate": "RY", "wire": 0, "param": "mix_even"},
+    {"gate": "RY", "wire": 1, "param": "mix_odd"},
+    {"gate": "RY", "wire": 2, "param": "mix_even"},
+    {"gate": "RY", "wire": 3, "param": "mix_odd"},
+    {"gate": "RY", "wire": 4, "param": "mix_even"},
+    {"gate": "RY", "wire": 5, "param": "mix_odd"},
+    {"gate": "RY", "wire": 6, "param": "mix_even"},
+    {"gate": "RY", "wire": 7, "param": "mix_odd"},
+
+    # Repeat the complete butterfly after basis conversion.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    {"gate": "RX", "wire": 0, "param": "global_tilt"},
+    {"gate": "RX", "wire": 1, "param": "global_tilt"},
+    {"gate": "RX", "wire": 2, "param": "global_tilt"},
+    {"gate": "RX", "wire": 3, "param": "global_tilt"},
+    {"gate": "RX", "wire": 4, "param": "global_tilt"},
+    {"gate": "RX", "wire": 5, "param": "global_tilt"},
+    {"gate": "RX", "wire": 6, "param": "global_tilt"},
+    {"gate": "RX", "wire": 7, "param": "global_tilt"},
+=======
+>>>>>>> REPLACE
+
+</DIFF>

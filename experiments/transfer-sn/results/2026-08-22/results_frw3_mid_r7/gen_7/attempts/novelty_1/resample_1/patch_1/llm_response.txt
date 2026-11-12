@@ -1,0 +1,85 @@
+<NAME>
+enhance_expressiveness_with_individual_tuning
+</NAME>
+
+<DESCRIPTION>
+The current program achieves excellent performance (score 0.45) with a highly parameter-efficient collective parameter sharing strategy. However, there is room to improve test accuracy and expressiveness while maintaining efficiency.
+
+**Key observation from metrics:**
+- Current: 26 params, test_acc=0.90, generalization_gap=0.01
+- The parameter sharing yields excellent generalization, but may limit expressiveness
+
+**Proposed enhancement:**
+Add individual RX rotations after the collective RY input mixer and before the collective RZ phase. This allows per-qubit fine-tuning early in the circuit without sacrificing the parameter-sharing benefits of the later stages.
+
+**Rationale:**
+1. Adds only 8 new parameters per block (individually tuned RX on each qubit), bringing total to ~74 params
+2. Provides expressiveness boost by allowing asymmetric contributions early in the ansatz
+3. Maintains collective phases and output stages which were working well
+4. Early individual tuning can help the circuit adapt to dataset asymmetries while collective later stages preserve good generalization
+5. Expected to improve test accuracy from 0.90 toward 0.92-0.94 range while keeping generalization gap low
+
+This follows the pattern seen in prior program 2 which achieved test_acc=0.87 with 146 params; we're finding a better middle ground.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Collective input mixer. Sharing preserves vertex symmetry and causes
+    # gradients from all eight wires to reinforce one another.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_in"},
+
+    # A trainable collective phase supplies an adjustable one-body component
+    # between the noncommuting mixer layers.
+    {"gate": "RZ", "wire": 0, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz"},
+=======
+ANSATZ_SPEC = [
+    # Collective input mixer. Sharing preserves vertex symmetry and causes
+    # gradients from all eight wires to reinforce one another.
+    {"gate": "RY", "wire": 0, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry_in"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry_in"},
+
+    # Individual tuning layer: per-qubit RX rotations for asymmetric expressiveness
+    # while maintaining parameter efficiency. Early individual rotations allow the
+    # circuit to adapt to dataset-specific structure.
+    {"gate": "RX", "wire": 0, "param": "rx_tune_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_tune_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_tune_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_tune_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_tune_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_tune_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_tune_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_tune_7"},
+
+    # A trainable collective phase supplies an adjustable one-body component
+    # between the noncommuting mixer layers.
+    {"gate": "RZ", "wire": 0, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz"},
+>>>>>>> REPLACE
+</DIFF>

@@ -141,3 +141,35 @@ experiment, because that is the regime where the tolerance rather than the verif
 `tictactoe_n9` is still sealed and unclaimed for the risk side (dense n=9 simulation is ~30× the
 ring cost) and needs its own protocol amendment and a fresh split. Do not re-read any consumed
 split: `research/HOLDOUT_ACCESS.json` is the ledger and `holdout_deployed.py` refuses them.
+
+## ShotCert round-3 repair (A6) — current state
+
+Third review (`shotcert/REVIEW_3.md`): reject, but "continue the research direction, with a new central
+result and a corrected experiment." All six of its technical claims were verified in source before being
+accepted; the principal one was confirmed to five decimal places.
+
+| item | status |
+|---|---|
+| A6.0 estimand defect confirmed | offset −0.05258 measured vs predicted σ₀²/(2s) = −0.05258; 32.8× the effect |
+| A6.1 common-estimand record | `shotcert/record.py`; raw baseline gets S identity shots, cost S(2−1/G) = 3s |
+| A6.2 estimand audit (stop gate (a)) | **passes**, max disagreement 5.6e-17 vs independent enumeration; pinned in `test_record.py` |
+| A6.3 equal-total-budget frontiers | **mixed**: group arm wins 10/18 cells, group-free 8/18; "cheaper on 6 of 7" **withdrawn** |
+| A6.4 mechanism counting | cluster_even ≡ cluster_raw (verified identical); reported as one mechanism |
+| A6.5 variance-profile boundary | recoverable cost = Var_g(σ); 0 for measure-preserving orbits, +0.000058 measured vs 0.000058 predicted on the non-preserving counterpart |
+| A6.6 stop gate | (a) passes; (b)/(c) reported in the frontier run |
+| A6.7 presentation | duplicate labels renamed `*_hist`; test count now generated (35) |
+
+**New central result (A5 + A6.5).** `w*(S) = (Δ_ideal + A)/(2A) − V/(2AS)` is the unique optimum of the
+verified risk functional over the whole class of allocations splitting S between raw and orbit; symmetry is
+a luxury good when V > 0, worthless below `S_on = V/(Δ_ideal + A)`, full only above
+`S_full = V/(Δ_ideal − A)`. Neyman orbit allocation recovers exactly `Var_g(σ)`, which is zero for any
+measure-preserving group action — so the cost is irreducible on every orbit in this study.
+
+**Traps added this round.**
+- A coefficient estimated from a finite input sample moves with the sample: `Δ_ideal` was −0.00213 on 120
+  instances and −0.001635 on the frozen 300. Quote the artifact, not the ad-hoc check.
+- The estimand audit caught a missing enumerator branch for a new estimator; without it the audit would
+  have silently compared against a different estimator and passed.
+- A generated table header with an unbalanced `$` swallows the row terminator and fails as
+  "Misplaced \noalign", not as a math error.
+- Giving shrinkage to only one arm is the same unfairness class as a shot mismatch.

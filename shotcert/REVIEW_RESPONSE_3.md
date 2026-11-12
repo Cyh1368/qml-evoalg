@@ -79,12 +79,20 @@ Two further unfairnesses the referee's framing exposed, both now removed:
   this the group-free arm had two ways to buy variance reduction and the group arm one.
 
 **The blanket negative does not survive the repair.** With parallel menus at equal total budget the
-result is mixed: on `cluster_n7` at `B = 16000` the group arm attains realised risk **0.06536** against
-the group-free arm's **0.06629**, while on `heisenberg_raw_n6` at `B = 64000` the group-free arm wins
-(0.02638 vs 0.02937). The abstract's "cheaper on six of seven tasks" is therefore withdrawn; the
-repaired statement is scoped to the tested tasks and budgets and reports both directions. As the
+result is **mixed**: across 18 (task, budget) cells the group arm attains lower realised risk in **10**
+and the group-free arm in **8**, with violation probability 0.000 in every cell for both. For example on
+`cluster_n7` at `B = 16000` the group arm attains **0.06536** against the group-free arm's **0.06629**,
+while on `heisenberg_raw_n6` at `B = 64000` the group-free arm wins (**0.02638** vs **0.02937**). The
+abstract's "cheaper on six of seven tasks" is therefore withdrawn, along with the corresponding
+contribution sentence; the repaired statement is scoped to the tested tasks and budgets and reports both
+directions. The old matched table is retained in the manuscript but explicitly marked superseded, with
+the defect's magnitude generated from a reproduction script rather than quoted from memory. As the
 referee put it, A2.7 properly prohibits an *advantage* claim, but its failure never established that
 symmetry spending is dominated.
+
+Because the endpoint is absolute realised risk at a fixed total budget, and because the group arm's
+extra calibration cost (`S(2 − 1/G)` per instance) is charged rather than assumed away, this is the
+comparison the referee asked for; we report it as neither arm dominating.
 
 ---
 
@@ -108,9 +116,13 @@ partial symmetrisation occupies an explicit band — which is the pattern the ph
 empirically *before* the derivation existed; and when `V ≤ 0` symmetry pays at every budget. The
 grid-argmin of the **enumerated** risk agrees with `w*` to within one grid step on every task.
 
-The non-obvious case is the interesting one: on `heisenberg_raw_n6`, `Δ_ideal = −0.00213`, so
-symmetrisation **hurts** the ideal predictor and full averaging is worse than using no symmetry at all —
-yet `w* ≈ 0.37`, and the enumerated risk's argmin is 0.36–0.37. Estimated from shots by cross-fitted
+The non-obvious case is the interesting one: on `heisenberg_raw_n6`, `Δ_ideal = −0.001635` and
+`V = +0.000763` (the values in the artifact backing the table), so symmetrisation **hurts** the ideal
+predictor and full averaging is worse than using no symmetry at all — yet `w* = 0.383`, and the
+enumerated risk's argmin is 0.36–0.37. Both coefficients are expectations estimated from a finite input
+sample, and they move with the sample (`Δ_ideal` was `−0.00213` on a 120-instance draw and `−0.001635`
+on the frozen 300-instance one); the *sign* is what the argument uses and it is stable, which is exactly
+why the rule must estimate these quantities from shots rather than assume them. Estimated from shots by cross-fitted
 half-record products (each quadratic functional formed as a product of one statistic from each of two
 independent half-records, which is unbiased without any bias correction), the rule attains **0.00563**
 against raw **0.00660** and full averaging **0.00887** at the same `S = 256`. Its noise is reported

@@ -1,0 +1,92 @@
+<NAME>
+complementary_mixer_block
+</NAME>
+
+<DESCRIPTION>
+This edit replaces the current phase-heavy block with a more balanced, symmetry-preserving ansatz that is better matched to the binary feature map. It keeps the efficient mirrored single-qubit calibration layers, but strengthens the entangling core by combining the existing standard long-range/local CZ scaffold with a complementary long-range mixer built from CNOT and CRY gates on the alternate mesh. The goal is to improve optimization speed and generalization by exposing the circuit to both correlation patterns without changing the fixed training loop or measurement pipeline.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Pre-upload phase calibration: mirrored RZ layer
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_c"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_c"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_d"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_d"},
+    # Fixed entangling mixer to propagate feature-map correlations
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Non-commuting mixer layer
+    {"gate": "RY", "wire": 0, "param": "ry_mix_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_mix_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_mix_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_mix_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_mix_c"},
+    {"gate": "RY", "wire": 5, "param": "ry_mix_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_mix_d"},
+    {"gate": "RY", "wire": 4, "param": "ry_mix_d"},
+    # Echo-style closing phase calibration reuses the pre-layer parameters
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_c"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_c"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_d"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_d"},
+]
+=======
+ANSATZ_SPEC = [
+    # Symmetric input lift: mirrored Y rotations
+    {"gate": "RY", "wire": 0, "param": "ry_pre_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_pre_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_pre_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_pre_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_pre_c"},
+    {"gate": "RY", "wire": 5, "param": "ry_pre_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_pre_d"},
+    {"gate": "RY", "wire": 4, "param": "ry_pre_d"},
+
+    # Baseline feature-correlation scaffold: long-range then local CZs
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Complementary long-range mixer: non-commuting cross-links on the alternate mesh
+    {"gate": "CNOT", "wires": [0, 5]},
+    {"gate": "CNOT", "wires": [1, 4]},
+    {"gate": "CNOT", "wires": [2, 7]},
+    {"gate": "CNOT", "wires": [3, 6]},
+    {"gate": "CRY", "wires": [0, 5], "param": "cry_x"},
+    {"gate": "CRY", "wires": [1, 4], "param": "cry_y"},
+    {"gate": "CRY", "wires": [2, 7], "param": "cry_z"},
+    {"gate": "CRY", "wires": [3, 6], "param": "cry_w"},
+
+    # Symmetric output refinement: mirrored phase readout calibration
+    {"gate": "RZ", "wire": 0, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_b"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_c"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_c"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_d"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_d"},
+]
+>>>>>>> REPLACE
+</DIFF>

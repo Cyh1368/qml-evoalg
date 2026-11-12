@@ -1,0 +1,107 @@
+# Analysis
+
+The current program has 24 distinct parameters with poor generalization (0.31 gap between train and validation accuracy). Key issues:
+
+1. **Over-parametrization**: 24 distinct parameters for 8 qubits is excessive, leading to overfitting
+2. **Poor worst-group margin**: 0.03 indicates the classifier fails on hard samples
+3. **Linear chain entanglement**: Only sequential CZ gates miss cross-qubit correlations
+4. **Weak parameter sharing**: No deliberate sharing to reduce capacity
+5. **Validation accuracy low**: 0.63 suggests the ansatz lacks expressiveness for generalization
+
+**Key insight from scoring**: Parameter economy is paramount with "no point of diminishing returns" – fewer parameters always score higher. The worst_group_margin dominance means we need robust separation of hard samples through better feature learning, not overfitting to training data.
+
+**New strategy**:
+- Reduce parameters through aggressive sharing (use same parameter across multiple qubits where possible)
+- Add two-qubit parametrized gates (XX/YY/ZZ) for better entanglement and feature interaction
+- Simplify to essential gates: RY for initial state preparation, then parametrized two-qubit interactions
+- Use all-to-all or star-pattern connectivity instead of linear chain
+- Reduce depth by eliminating redundant single-qubit gates
+
+This should improve:
+- **Generalization gap**: Fewer parameters = less overfitting
+- **Worst-group margin**: Richer entanglement patterns help separate hard samples
+- **Parameter efficiency**: Massive reduction in distinct parameters
+- **Convergence**: Simpler circuits converge faster
+
+<NAME>
+reduced_shared_entangling
+</NAME>
+
+<DESCRIPTION>
+The new approach dramatically reduces parameters from 24 to ~6-8 distinct by:
+
+1. **Parameter sharing**: Use single shared parameters across all qubits in initial rotations
+2. **Removing redundant gates**: Eliminate pre/post RZ ladder structure (replaced by two-qubit parametrized gates)
+3. **All-to-all parametrized entanglement**: Replace fixed CZ chain with XX/YY/ZZ gates that share parameters across pairs
+4. **Simpler topology**: Focus on local and cross interactions with parameter reuse
+
+Key parameters reduced: From 24 distinct (8 RY + 8 RZ_pre + 8 RZ_post) to 6-8 distinct (2 single-qubit + 4-6 two-qubit parametrized gates with sharing).
+
+This prioritizes robustness and generalization over capacity, directly addressing the largest margin term (worst-group-margin) by learning simpler, more generalizable features.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Reduced and parameter-shared ansatz focused on generalization.
+
+Dramatically fewer distinct parameters through sharing and parametrized
+two-qubit gates to improve worst-group margin and reduce overfitting.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Initial single-qubit rotations with parameter sharing across qubits
+    {"gate": "RY", "wire": 0, "param": "ry_init"},
+    {"gate": "RY", "wire": 1, "param": "ry_init"},
+    {"gate": "RY", "wire": 2, "param": "ry_init"},
+    {"gate": "RY", "wire": 3, "param": "ry_init"},
+    {"gate": "RY", "wire": 4, "param": "ry_init"},
+    {"gate": "RY", "wire": 5, "param": "ry_init"},
+    {"gate": "RY", "wire": 6, "param": "ry_init"},
+    {"gate": "RY", "wire": 7, "param": "ry_init"},
+    
+    # Parametrized local XX couplings (nearest neighbors + diagonals)
+    # Sharing parameter across pairs to reduce distinct count
+    {"gate": "XX", "wires": [0, 1], "param": "xx_local"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_local"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_local"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_local"},
+    
+    # Parametrized YY couplings (cross pairs)
+    {"gate": "YY", "wires": [1, 2], "param": "yy_cross"},
+    {"gate": "YY", "wires": [3, 4], "param": "yy_cross"},
+    {"gate": "YY", "wires": [5, 6], "param": "yy_cross"},
+    
+    # Parametrized ZZ couplings (long-range to break linearity)
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz_long"},
+    {"gate": "ZZ", "wires": [1, 4], "param": "zz_long"},
+    {"gate": "ZZ", "wires": [2, 5], "param": "zz_long"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_long"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "zz_long"},
+    
+    # Final RZ layer with sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_final"},
+    {"gate": "RZ", "wire": 1, "param": "rz_final"},
+    {"gate": "RZ", "wire": 2, "param": "rz_final"},
+    {"gate": "RZ", "wire": 3, "param": "rz_final"},
+    {"gate": "RZ", "wire": 4, "param": "rz_final"},
+    {"gate": "RZ", "wire": 5, "param": "rz_final"},
+    {"gate": "RZ", "wire": 6, "param": "rz_final"},
+    {"gate": "RZ", "wire": 7, "param": "rz_final"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

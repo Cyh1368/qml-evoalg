@@ -1,0 +1,14 @@
+{
+  "generation": 59,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "crz_diagonal_enrichment",
+  "patch_description": "The current program achieves a combined score of 0.90 with 32 parameters. Analysis of prior generations shows:\n\n1. **Gen 47 (score 0.92)**: Used 20 parameters with a simpler structure (RY + CZ ring + CRY layers), achieving better parameter efficiency (0.05 vs 0.03).\n\n2. **Gen 48 (score 0.92)**: Used 26 parameters with an enriched structure that added nearest-neighbor CRY gates reusing the same parameter as next-nearest-neighbor CRY, gaining +0.02 accuracy with zero extra parameters.\n\n3. **Current (score 0.90)**: Uses 32 parameters with CRZ diagonal gates replacing the fixed CZ cross-ring, but this added 4 new parameters without sufficient accuracy gain.\n\n**Key insight**: The recommendation to replace fixed cross-ring CZs with learnable CRZ gates was well-intentioned but introduced too many parameters (4 new ones) relative to the accuracy improvement. The prior success of Gen 48 came from *parameter sharing* (reusing cry_nnn across multiple gate types), not from adding new parameters.\n\n**Proposed fix**: Replace the 4 independent CRZ gates (crz_cr parameter) with a single shared-parameter CRZ gate applied to each diagonal pair. This reduces parameters from 32 to 29 while maintaining the tunable long-range entanglement structure. The shared parameter approach mirrors Gen 48's successful zero-cost enrichment strategy.\n\nAdditionally, add back the nearest-neighbor CRY enrichment layer (reusing cry_nnn) that was present in Gen 48, which provided +0.02 accuracy boost. This adds no new parameters but increases expressivity through gate diversity.\n\n**Expected outcome**:\n- Reduce n_params from 32 to 29 (better parameter efficiency)\n- Recover the nearest-neighbor CRY enrichment that boosted Gen 48\n- Maintain tunable diagonal entanglement via shared CRZ\n- Target: test_accuracy \u2265 0.92, parameter_efficiency \u2265 0.04",
+  "error_msg": null,
+  "timestamp": "2026-07-24T15:44:43.811221",
+  "llm_cost": 0.028653,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

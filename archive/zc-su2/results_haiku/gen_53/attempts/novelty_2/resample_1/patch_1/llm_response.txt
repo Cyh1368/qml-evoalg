@@ -1,0 +1,109 @@
+<NAME>
+rx_initialized_alternating_entanglement
+</NAME>
+
+<DESCRIPTION>
+The prior programs achieved perfect accuracy with 2 parameters (ry_shared, rz_shared) using RY–RZ sandwiches with fixed CZ entanglement. The current program adds XX gates (3 parameters), increasing parameter count and reducing parameter efficiency from 0.07 to 0.05 while maintaining the same accuracy.
+
+Key insight from prior analysis: The recommendation suggests that a global RX initialization layer can diversify initial state sampling and improve convergence. Combined with the observation that the simplest 2-parameter approach (prior program #2) achieved excellent performance with minimal depth, I propose a novel strategy that:
+
+1. **Prepends a shared RX layer** for initialization (adding 1 parameter: rx_shared)
+2. **Alternates between two complementary entanglement patterns** within a single ansatz block:
+   - First half uses a chain of CZ gates (fixed, no parameters)
+   - Second half uses a chain of XX gates with a distinct parameter (xx_alt)
+3. **Maintains tight parameter sharing** across all rotation layers to keep n_params low
+4. **Uses asymmetric coupling** to break symmetries that might limit expressiveness while staying parameter-efficient
+
+This design draws inspiration from:
+- The RX initialization recommendation (global kickstart)
+- The parameter-efficient prior program (2 params achieving 0.72 score)
+- The current program's insight that Ising gates can enhance expressiveness
+- Novel alternation strategy to combine both fixed and parametric entanglement without quadrupling parameters
+
+The goal is to recover the parameter efficiency (back toward 0.07) while potentially improving accuracy through the RX initialization and dual entanglement strategy, thus improving the combined score beyond 0.68.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Global RX initialization layer (1 shared parameter)
+    {"gate": "RX", "wire": 0, "param": "rx_shared"},
+    {"gate": "RX", "wire": 1, "param": "rx_shared"},
+    {"gate": "RX", "wire": 2, "param": "rx_shared"},
+    {"gate": "RX", "wire": 3, "param": "rx_shared"},
+    {"gate": "RX", "wire": 4, "param": "rx_shared"},
+    {"gate": "RX", "wire": 5, "param": "rx_shared"},
+    {"gate": "RX", "wire": 6, "param": "rx_shared"},
+    {"gate": "RX", "wire": 7, "param": "rx_shared"},
+    # Main ansatz block: RY-RZ sandwich with alternating entanglement
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # First entanglement: fixed CZ chain
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # Second entanglement: parametric XX chain (alternative coupling)
+    {"gate": "XX", "wires": [0, 1], "param": "xx_alt"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_alt"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_alt"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_alt"},
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+]
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

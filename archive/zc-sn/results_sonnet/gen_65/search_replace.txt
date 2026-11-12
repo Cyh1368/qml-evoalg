@@ -1,0 +1,137 @@
+<NAME>
+alternating_skip_entanglers
+
+<DESCRIPTION>
+The best-performing prior generation (score 0.89, lowest test loss/gap) used a modular layer structure with skip-2, skip-3 and diameter entangling layers. The current program regressed to a simpler, less effective topology (single skip-2 layer + distance-4 CRX) and dropped the skip-3 layer entirely, hurting both convergence speed and generalization (0.87 score, convergence_step jumped to 540). This edit restores the modular skip-2/skip-3/diameter architecture from the best generation, and additionally implements the recommended improvement: splitting each skip-2 and skip-3 entangling layer into two alternating shared parameters (even/odd indexed edges) rather than a single shared parameter per layer. This mirrors the proven alternating-strength pattern already used successfully in the nearest-neighbor ring layer, giving the mid-range entanglers slightly more expressive freedom (two knobs instead of one) while still keeping parameter count low via sharing. The expectation is tighter long-range mixing, reduced train-test gap, and faster convergence, consistent with the ring layer's alternating design that has repeatedly performed well.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+_BLOCK = [
+    # --- Layer 1: single-qubit RY rotations (per-qubit trainable) ---
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # --- Layer 2: nearest-neighbor ring entanglement with shared alternating strength ---
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring_odd"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring_even"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring_odd"},
+
+    # --- Layer 3: single-qubit RX rotations (second rotation axis) ---
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_7"},
+
+    # --- Layer 4: sparse skip-2 entanglement with a single shared parameter ---
+    {"gate": "CRZ", "wires": [0, 2], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [6, 0], "param": "crz_skip"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "crz_skip"},
+
+    # --- Layer 5: long-range "diamond" (distance-4) entanglement, single shared
+    # parameter on a different rotation axis (CRX) to add cheap extra
+    # expressivity/global mixing without inflating the parameter count. ---
+    {"gate": "CRX", "wires": [0, 4], "param": "crx_diam"},
+    {"gate": "CRX", "wires": [1, 5], "param": "crx_diam"},
+    {"gate": "CRX", "wires": [2, 6], "param": "crx_diam"},
+    {"gate": "CRX", "wires": [3, 7], "param": "crx_diam"},
+]
+
+# Duplicate the block, reusing the same parameter names, to double the
+# effective depth while keeping the parameter count unchanged.
+ANSATZ_SPEC = _BLOCK + _BLOCK
+
+=======
+
+def _ry_layer(qubits, prefix="ry"):
+    """Per-qubit RY rotations, one trainable parameter each."""
+    return [{"gate": "RY", "wire": q, "param": f"{prefix}_{q}"} for q in qubits]
+
+
+def _rx_layer(qubits, prefix="rx"):
+    """Per-qubit RX rotations, one trainable parameter each."""
+    return [{"gate": "RX", "wire": q, "param": f"{prefix}_{q}"} for q in qubits]
+
+
+def _ring_crz(n, even_param="crz_ring_even", odd_param="crz_ring_odd"):
+    """Nearest-neighbor ring entanglement with alternating shared strength."""
+    gates = []
+    for i in range(n):
+        j = (i + 1) % n
+        param = even_param if i % 2 == 0 else odd_param
+        gates.append({"gate": "CRZ", "wires": [i, j], "param": param})
+    return gates
+
+
+def _skip_crz(n, step=2, even_param="crz_skip_even", odd_param="crz_skip_odd"):
+    """Sparse skip-`step` entanglement with two alternating shared
+    parameters (even/odd indexed edges), mirroring the proven alternating
+    strength pattern used in the nearest-neighbor ring layer. This gives
+    mid-range entanglers slightly more expressive freedom than a single
+    shared knob, while still keeping the parameter count low via sharing."""
+    gates = []
+    for i in range(n):
+        j = (i + step) % n
+        param = even_param if i % 2 == 0 else odd_param
+        gates.append({"gate": "CRZ", "wires": [i, j], "param": param})
+    return gates
+
+
+def _diameter_crx(n, param="crx_diam"):
+    """Antipodal (distance n/2) entanglement with a single shared parameter
+    on a different rotation axis (CRX), giving cheap global mixing."""
+    half = n // 2
+    return [{"gate": "CRX", "wires": [i, i + half], "param": param} for i in range(half)]
+
+
+def _build_block(n=N_QUBITS):
+    """Compose one full ansatz block from modular layers:
+      1. Per-qubit RY rotations (expressivity).
+      2. Ring CRZ entanglement, alternating shared strength (local mixing).
+      3. Per-qubit RX rotations (second rotation axis, more expressivity).
+      4. Skip-2 CRZ entanglement, alternating shared parameters (mid-range
+         mixing with slightly more freedom than a single shared knob).
+      5. Skip-3 CRZ entanglement, alternating shared parameters (fills the
+         distance-3 connectivity gap with the same alternating pattern).
+      6. Diameter CRX entanglement, single shared parameter (global mixing
+         on a different rotation axis).
+    """
+    block = []
+    block += _ry_layer(range(n))
+    block += _ring_crz(n)
+    block += _rx_layer(range(n))
+    block += _skip_crz(n, step=2, even_param="crz_skip2_even", odd_param="crz_skip2_odd")
+    block += _skip_crz(n, step=3, even_param="crz_skip3_even", odd_param="crz_skip3_odd")
+    block += _diameter_crx(n)
+    return block
+
+
+_BLOCK = _build_block(N_QUBITS)
+
+# Duplicate the block, reusing the same parameter names, to double the
+# effective depth while keeping the parameter count unchanged.
+ANSATZ_SPEC = _BLOCK + _BLOCK
+
+>>>>>>> REPLACE
+</DIFF>

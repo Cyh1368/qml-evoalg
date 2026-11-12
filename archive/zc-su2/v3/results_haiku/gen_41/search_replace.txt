@@ -1,0 +1,44 @@
+Looking at the current program and the performance metrics, I can see that:
+
+1. **Current performance**: Combined score 0.59 with excellent test accuracy (0.95) but worst_group_margin_mean is only 0.31
+2. **Prior best**: Combined score 0.57 had a worse worst_group_margin (0.37 is actually better when I reconsider - but the current has 0.31)
+3. **Key issue**: The worst_group_margin_mean of 0.31 suggests the hardest samples aren't being separated well enough
+
+The recommendation to add long-range CRZ entangler on diagonal pairs `[(0,5),(1,6),(2,7),(3,4)]` makes sense because:
+- It introduces cross-layer entanglement that hasn't been captured by the current nearest-neighbor XX/YY/ZZ gates
+- Diagonal pairs create long-range correlations that can help distinguish hard samples
+- Parameter sharing (single `crz_diag` param) keeps parameter count low while gaining expressive power
+- This follows the pattern that "prior mixes of parameterized two-qubit couplings improved worst-group margins"
+
+The timing (before `rz_post`) allows the CRZ layer to create entanglement that the final RZ layer can exploit for better classification.
+
+<NAME>
+add_diagonal_crz_entangler
+</NAME>
+
+<DESCRIPTION>
+Add a long-range CRZ entangler layer on diagonal qubit pairs before the final RZ post-processing layer. This introduces cross-layer entanglement via the four diagonal pairs (0,5), (1,6), (2,7), (3,4), sharing a single parameter `crz_diag` to maintain parameter economy.
+
+The rationale:
+1. Current nearest-neighbor couplings (XX/YY/ZZ on adjacent pairs) may not capture correlations between distant qubits
+2. Diagonal pairs create fundamentally new entanglement patterns that can improve separation on hard samples
+3. Prior results show parameterized two-qubit coupling mixes improve worst-group margins
+4. Single shared parameter keeps distinct parameter count at 11 (no efficiency penalty)
+5. Placement before rz_post allows the final layer to exploit these new entanglement patterns
+
+This targets the worst_group_margin_mean (currently 0.31) which dominates the robustness score.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+=======
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "CRZ", "wires": [0, 5], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [1, 6], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [2, 7], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_diag"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+>>>>>>> REPLACE
+</DIFF>

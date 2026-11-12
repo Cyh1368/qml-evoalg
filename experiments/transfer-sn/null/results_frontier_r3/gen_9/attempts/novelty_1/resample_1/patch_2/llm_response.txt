@@ -1,0 +1,67 @@
+Looking at this problem, I need to design an effective ansatz for an 8-qubit binary classifier. I'll create a brick-layer pattern with alternating rotation layers and staggered CZ entangling layers, plus some long-range connections for better expressibility while keeping the parameter count manageable.
+
+<NAME>
+brick_layer_ring_longrange
+</NAME>
+
+<DESCRIPTION>
+This ansatz uses a brick-layer architecture with three rotation layers interleaved with two CZ entangling layers. The first CZ layer connects even pairs (0-1, 2-3, 4-5, 6-7), the second CZ layer connects odd pairs (1-2, 3-4, 5-6, 7-0) forming a ring topology. An additional set of long-range CZ connections (0-4, 2-6) bridges distant qubits to improve information flow. The rotation layers alternate between RY and RZ for full Bloch sphere coverage, totaling 32 parameters per block. With p=2 and l=3, this gives 192 trainable parameters - expressive enough for classification but not so large as to overfit.
+</DESCRIPTION>
+
+<CODE>
+```python
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Layer 1: RY rotations on all qubits
+    {"gate": "RY", "wire": 0, "param": "a0"},
+    {"gate": "RY", "wire": 1, "param": "a1"},
+    {"gate": "RY", "wire": 2, "param": "a2"},
+    {"gate": "RY", "wire": 3, "param": "a3"},
+    {"gate": "RY", "wire": 4, "param": "a4"},
+    {"gate": "RY", "wire": 5, "param": "a5"},
+    {"gate": "RY", "wire": 6, "param": "a6"},
+    {"gate": "RY", "wire": 7, "param": "a7"},
+    # Layer 1: RZ rotations on all qubits
+    {"gate": "RZ", "wire": 0, "param": "b0"},
+    {"gate": "RZ", "wire": 1, "param": "b1"},
+    {"gate": "RZ", "wire": 2, "param": "b2"},
+    {"gate": "RZ", "wire": 3, "param": "b3"},
+    {"gate": "RZ", "wire": 4, "param": "b4"},
+    {"gate": "RZ", "wire": 5, "param": "b5"},
+    {"gate": "RZ", "wire": 6, "param": "b6"},
+    {"gate": "RZ", "wire": 7, "param": "b7"},
+    # Entangling layer 1: even pairs
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Layer 2: RY rotations
+    {"gate": "RY", "wire": 0, "param": "c0"},
+    {"gate": "RY", "wire": 1, "param": "c1"},
+    {"gate": "RY", "wire": 2, "param": "c2"},
+    {"gate": "RY", "wire": 3, "param": "c3"},
+    {"gate": "RY", "wire": 4, "param": "c4"},
+    {"gate": "RY", "wire": 5, "param": "c5"},
+    {"gate": "RY", "wire": 6, "param": "c6"},
+    {"gate": "RY", "wire": 7, "param": "c7"},
+    # Entangling layer 2: odd pairs (ring closure)
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Long-range entanglement
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [2, 6]},
+    # Final RZ layer
+    {"gate": "RZ", "wire": 0, "param": "d0"},
+    {"gate": "RZ", "wire": 1, "param": "d1"},
+    {"gate": "RZ", "wire": 2, "param": "d2"},
+    {"gate": "RZ", "wire": 3, "param": "d3"},
+    {"gate": "RZ", "wire": 4, "param": "d4"},
+    {"gate": "RZ", "wire": 5, "param": "d5"},
+    {"gate": "RZ", "wire": 6, "param": "d6"},
+    {"gate": "RZ", "wire": 7, "param": "d7"},
+]
+# EVOLVE-BLOCK-END
+```
+</CODE>

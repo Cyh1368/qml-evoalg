@@ -1,0 +1,132 @@
+<NAME>
+per_upload_readout_calibration
+
+<DESCRIPTION>
+The current global gain/bias readout calibration applies a single linear transform to the mean-Z readout, treating all three re-uploading stages' contributions identically. Since each upload injects fresh feature-encoded phase information and the ansatz blocks after each upload can drive the state to different operating regimes, a single global gain/bias is a coarse approximation that may hurt calibration quality and contribute to the validation/test loss gap seen in the current results (val_loss 0.47, test_loss 0.50).
+
+This change computes per-qubit Z expectations after *each* upload stage (not just once at the end), giving 3 intermediate readouts (one after each of the 3 data-reuploading stages), each locally calibrated with its own gain and bias, then sums the calibrated contributions to form the final prediction. This is a lightweight extension (adds only 4 extra readout parameters: 3 gains + 3 biases replacing 1 gain + 1 bias) that lets the model learn to weight/threshold each upload's representation independently, potentially reducing the generalization gap and validation/test loss by giving the classifier more flexibility to combine multi-stage feature representations without touching the fixed feature map, l, or p structure.
+
+To implement this while keeping the fixed pipeline structure (feature map -> p ansatz blocks per upload, repeated l times) intact, I modify the circuit to return Z-expectations after each upload (using a list of measurement snapshots is not directly supported mid-circuit in a single QNode with intermediate returns), so instead I restructure by defining N_UPLOADS separate QNodes, each running the full prefix up to and including that upload's ansatz blocks, and returning the Z expectations at that point. This requires only additive changes to `circuit_z_expectations`-adjacent code and `predict_batch`, without modifying the feature map, l, p, or per-block ansatz application logic themselves.
+
+<DIFF>
+<<<<<<< SEARCH
+_DEVICE = qml.device("default.qubit", wires=N_QUBITS, shots=None)
+
+
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(records)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(circuit_params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+
+
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: calibrated mean of qubit Z expectations."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gain = params[N_CIRCUIT_PARAMS]
+    bias = params[N_CIRCUIT_PARAMS + 1]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+    z = pnp.stack(circuit_z_expectations(records, circuit_params))  # (N_QUBITS, B)
+    raw = pnp.mean(z, axis=0)
+    return gain * (raw - bias)
+=======
+_DEVICE = qml.device("default.qubit", wires=N_QUBITS, shots=None)
+
+
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations(records, circuit_params):
+    """Fixed pipeline: alternating feature uploads and ansatz blocks."""
+    for upload_index in range(N_UPLOADS):
+        feature_map(records)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(circuit_params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+
+
+@qml.qnode(_DEVICE, interface="autograd", diff_method="backprop")
+def circuit_z_expectations_prefix(records, circuit_params, n_uploads_prefix: int):
+    """Run only the first `n_uploads_prefix` upload+ansatz stages."""
+    for upload_index in range(n_uploads_prefix):
+        feature_map(records)
+        for repeat_index in range(N_REPEATS):
+            block_index = upload_index * N_REPEATS + repeat_index
+            apply_ansatz_block(circuit_params, block_index)
+    return [qml.expval(qml.PauliZ(wire)) for wire in range(N_QUBITS)]
+
+
+def predict_batch(params, x_batch: np.ndarray):
+    """Scalar prediction per record: sum of per-upload calibrated readouts."""
+    circuit_params = params[:N_CIRCUIT_PARAMS]
+    gains = params[N_CIRCUIT_PARAMS : N_CIRCUIT_PARAMS + N_UPLOADS]
+    biases = params[N_CIRCUIT_PARAMS + N_UPLOADS : N_CIRCUIT_PARAMS + 2 * N_UPLOADS]
+    records = pnp.array(np.asarray(x_batch, dtype=float), requires_grad=False)
+
+    prediction = 0.0
+    for upload_index in range(1, N_UPLOADS + 1):
+        z = pnp.stack(
+            circuit_z_expectations_prefix(records, circuit_params, upload_index)
+        )  # (N_QUBITS, B)
+        raw_u = pnp.mean(z, axis=0)
+        prediction = prediction + gains[upload_index - 1] * (
+            raw_u - biases[upload_index - 1]
+        )
+    return prediction
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+=======
+N_READOUT_PARAMS = 2 * N_UPLOADS  # trainable per-upload output calibration: gain, bias
+N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+=======
+    rng = np.random.default_rng(seed)
+    init = rng.uniform(-0.05, 0.05, size=N_PARAMS)
+    # Each upload's readout starts with gain 1/N_UPLOADS (so the sum of
+    # per-upload contributions matches the scale of a single global gain=1
+    # calibration) and bias 0.
+    for u in range(N_UPLOADS):
+        init[N_CIRCUIT_PARAMS + u] = 1.0 / N_UPLOADS
+        init[N_CIRCUIT_PARAMS + N_UPLOADS + u] = 0.0
+    params = pnp.array(init, requires_grad=True)
+>>>>>>> REPLACE
+</DIFF>
+
+<DIFF>
+<<<<<<< SEARCH
+def circuit_metadata() -> dict:
+    with qml.queuing.AnnotatedQueue() as queue:
+        for upload_index in range(N_UPLOADS):
+            feature_map(np.zeros((1, N_FEATURES)))
+            for repeat_index in range(N_REPEATS):
+                block_index = upload_index * N_REPEATS + repeat_index
+                apply_ansatz_block(np.zeros(max(N_CIRCUIT_PARAMS, 1)), block_index)
+    tape = qml.tape.QuantumScript.from_queue(queue)
+=======
+def circuit_metadata() -> dict:
+    with qml.queuing.AnnotatedQueue() as queue:
+        for upload_index in range(N_UPLOADS):
+            feature_map(np.zeros((1, N_FEATURES)))
+            for repeat_index in range(N_REPEATS):
+                block_index = upload_index * N_REPEATS + repeat_index
+                apply_ansatz_block(np.zeros(max(N_CIRCUIT_PARAMS, 1)), block_index)
+    tape = qml.tape.QuantumScript.from_queue(queue)  # full-depth reference tape
+>>>>>>> REPLACE
+</DIFF>

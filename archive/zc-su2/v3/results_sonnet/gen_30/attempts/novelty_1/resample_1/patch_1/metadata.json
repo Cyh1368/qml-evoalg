@@ -1,0 +1,14 @@
+{
+  "generation": 30,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "replace_second_cnot_chain_with_shared_crz",
+  "patch_description": "The current ansatz contains two full linear CNOT chains (7 gates each) sandwiching the parametrized rotations, giving high depth (54) and gate count (126) but poor generalization (train 0.62 vs test 0.45, gap 0.17). This suggests the second reversed CNOT chain adds entangling depth without contributing useful trainable expressivity, likely encouraging overfitting to the small training set.\n\nI replace the second reversed linear CNOT chain (7 gates, wires 7->0) with a compact long-range entangling layer using CRZ gates on the same disjoint qubit pairs used by the initial ZZ layer ([0,4],[1,5],[2,6],[3,7]), reusing the existing shared parameter \"g\" instead of introducing a new one. This:\n- Reduces gate count and depth (4 gates instead of 7 in that block, lower depth contribution than a full chain),\n- Adds no new trainable parameter (keeps n_distinct_params at 4, satisfying the \"fewer parameters always better\" bias),\n- Reintroduces the same long-range coupling structure as the first entangling layer, creating a more symmetric, parameter-efficient circuit that should generalize better because the same parameter governs both long-range entangling layers, effectively regularizing the entangling structure,\n- Preserves local nearest-neighbor mixing from the first CNOT chain and the ry_a/rz_a/ry_c rotations, retaining expressivity where it matters most.\n\nThis targets the stated goals of reducing depth, reducing train/validation gap, and keeping parameter count minimal while retaining meaningful entangling capacity.",
+  "error_msg": null,
+  "timestamp": "2026-08-03T07:05:14.361527",
+  "llm_cost": 0.045744,
+  "llm_model": "anthropic/claude-sonnet-5"
+}

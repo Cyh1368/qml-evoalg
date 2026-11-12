@@ -1,0 +1,114 @@
+I apologize for the error. I can only modify code within the EVOLVE-BLOCK markers. Let me propose a solution that works within that constraint by adding the variational readout rotations directly into the ANSATZ_SPEC.
+
+<NAME>
+variational_readout_in_ansatz
+</NAME>
+
+<DESCRIPTION>
+The current program achieves 0.89 combined score with only 8 parameters and excellent parameter efficiency (0.11), but test accuracy lags at 0.89 compared to prior programs that reached 0.90.
+
+**Key insight:**
+Since I can only modify ANSATZ_SPEC within EVOLVE-BLOCK, I'll add variational readout rotations as the final gates in the ansatz block itself. These will be applied after the main circuit operations but before measurement (since the ansatz is called before measurement).
+
+**Proposed solution:**
+Extend ANSATZ_SPEC to include final RY and RZ rotations on all qubits using two new shared parameters `ry_read` and `rz_read`. This adds only 2 unique parameters per block, bringing N_PARAMS_PER_BLOCK from 1 → 3, and total params from 8 → 12 (= 3 × 3 uploads × 2 repeats + 2 readout calibration).
+
+**Why this works:**
+1. The minimal ansatz (single θ shared across all rotations) is too restrictive
+2. Adding dedicated readout rotation parameters creates a final transformation layer that can correct phase offsets
+3. Parameter efficiency remains excellent: 0.89/12 ≈ 0.074, still comparable to prior programs
+4. Minimal architectural change while gaining representational capacity
+5. Should lift test accuracy from 0.89 to ~0.91, improving combined score
+
+This maintains the spirit of parameter sharing while adding expressiveness exactly where it's needed—at the readout stage.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Minimal shared-parameter ansatz for full block recycling
+    # All parametrized gates share a single parameter "theta"
+    # This forces N_PARAMS_PER_BLOCK = 1, achieving extreme parameter efficiency
+
+    # Layer 1: Single-qubit rotations with full parameter sharing
+    {"gate": "RY", "wire": 0, "param": "theta"},
+    {"gate": "RY", "wire": 1, "param": "theta"},
+    {"gate": "RY", "wire": 2, "param": "theta"},
+    {"gate": "RY", "wire": 3, "param": "theta"},
+    {"gate": "RY", "wire": 4, "param": "theta"},
+    {"gate": "RY", "wire": 5, "param": "theta"},
+    {"gate": "RY", "wire": 6, "param": "theta"},
+    {"gate": "RY", "wire": 7, "param": "theta"},
+
+    # Layer 2: Nearest-neighbor entanglement (fixed, no parameters)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Layer 3: Next-nearest-neighbor entanglement (fixed, no parameters)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+]
+=======
+ANSATZ_SPEC = [
+    # Minimal shared-parameter ansatz with variational readout corrections
+    # Core block: single shared parameter "theta" for data encoding
+    # Readout layer: two shared parameters for final phase rotations
+
+    # Layer 1: Single-qubit rotations with full parameter sharing
+    {"gate": "RY", "wire": 0, "param": "theta"},
+    {"gate": "RY", "wire": 1, "param": "theta"},
+    {"gate": "RY", "wire": 2, "param": "theta"},
+    {"gate": "RY", "wire": 3, "param": "theta"},
+    {"gate": "RY", "wire": 4, "param": "theta"},
+    {"gate": "RY", "wire": 5, "param": "theta"},
+    {"gate": "RY", "wire": 6, "param": "theta"},
+    {"gate": "RY", "wire": 7, "param": "theta"},
+
+    # Layer 2: Nearest-neighbor entanglement (fixed, no parameters)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Layer 3: Next-nearest-neighbor entanglement (fixed, no parameters)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Layer 4: Variational readout rotations (applied before measurement)
+    # These correct residual phase offsets and lift expressiveness with minimal overhead
+    {"gate": "RY", "wire": 0, "param": "ry_read"},
+    {"gate": "RY", "wire": 1, "param": "ry_read"},
+    {"gate": "RY", "wire": 2, "param": "ry_read"},
+    {"gate": "RY", "wire": 3, "param": "ry_read"},
+    {"gate": "RY", "wire": 4, "param": "ry_read"},
+    {"gate": "RY", "wire": 5, "param": "ry_read"},
+    {"gate": "RY", "wire": 6, "param": "ry_read"},
+    {"gate": "RY", "wire": 7, "param": "ry_read"},
+    {"gate": "RZ", "wire": 0, "param": "rz_read"},
+    {"gate": "RZ", "wire": 1, "param": "rz_read"},
+    {"gate": "RZ", "wire": 2, "param": "rz_read"},
+    {"gate": "RZ", "wire": 3, "param": "rz_read"},
+    {"gate": "RZ", "wire": 4, "param": "rz_read"},
+    {"gate": "RZ", "wire": 5, "param": "rz_read"},
+    {"gate": "RZ", "wire": 6, "param": "rz_read"},
+    {"gate": "RZ", "wire": 7, "param": "rz_read"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

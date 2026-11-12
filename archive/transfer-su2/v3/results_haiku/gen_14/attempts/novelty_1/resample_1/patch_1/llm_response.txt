@@ -1,0 +1,112 @@
+<NAME>
+reduce_depth_add_yy_link
+</NAME>
+
+<DESCRIPTION>
+The recommendation suggests reducing N_REPEATS from 3 to 2 and adding a targeted second cross-YY link to maintain expressivity while reducing circuit depth and the generalization gap.
+
+Current metrics show:
+- depth_mean: 15.00 (per block × 3 repeats = ~45 total depth)
+- generalization_gap_mean: 0.10 (already good but can improve)
+- worst_group_margin_mean: 0.31 (hardest samples need better separation)
+- n_distinct_params: 12 (room to stay lean)
+
+The strategy:
+1. Reduce N_REPEATS to 2: This cuts total circuit depth from ~45 to ~30, reducing overfitting and improving trainability on few samples. The depth was identified as a sweet spot around 8-12 per block in prior analysis.
+2. Add a second targeted YY gate between qubits (1, 3) under a new shared key "cross_b": This adds one more expressivity channel without fragmenting parameter count. YY gates have shown strong performance for capturing non-trivial correlations.
+
+Expected impact:
+- Reduce total depth by ~33%, improving generalization on held-out samples
+- Maintain or improve worst-group margin by introducing targeted cross-coupling that complements the existing (5, 6) YY link
+- Keep parameter count reasonable by sharing the new YY gate parameter with existing cross-entanglement
+- Converge faster due to simpler landscape
+- Improve parameter efficiency and reduce the train-test gap
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Problem constants. The input is a quantum state loaded once by StatePrep, so
+# there is no data re-uploading dimension (it only exists for classical inputs).
+# The block is applied N_REPEATS times with the SAME parameter values each time:
+# the trainable parameter count equals the number of distinct param names.
+N_QUBITS = 8
+N_REPEATS = 3
+=======
+# Problem constants. The input is a quantum state loaded once by StatePrep, so
+# there is no data re-uploading dimension (it only exists for classical inputs).
+# The block is applied N_REPEATS times with the SAME parameter values each time:
+# the trainable parameter count equals the number of distinct param names.
+N_QUBITS = 8
+N_REPEATS = 2
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Layer 1: RY rotations with even/odd parity sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Layer 2: Nearest-neighbor XX gates with per-pair parameters for expressiveness
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_23"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    # Layer 3: RZ rotations with even/odd parity sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    # Layer 4: Cross-layer YY entanglement on staggered pairs
+    {"gate": "YY", "wires": [1, 2], "param": "yy_12"},
+    {"gate": "YY", "wires": [3, 4], "param": "yy_34"},
+    {"gate": "YY", "wires": [5, 6], "param": "yy_56"},
+    # Layer 5: Long-range ZZ coupling on non-overlapping diagonal pairs
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz_diag"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "zz_diag"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: RY rotations with even/odd parity sharing
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Layer 2: Nearest-neighbor XX gates with per-pair parameters for expressiveness
+    {"gate": "XX", "wires": [0, 1], "param": "xx_01"},
+    {"gate": "XX", "wires": [2, 3], "param": "xx_23"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_67"},
+    # Layer 3: RZ rotations with even/odd parity sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    # Layer 4: Cross-layer YY entanglement on staggered pairs
+    {"gate": "YY", "wires": [1, 2], "param": "yy_12"},
+    {"gate": "YY", "wires": [3, 4], "param": "yy_34"},
+    {"gate": "YY", "wires": [5, 6], "param": "yy_56"},
+    # Layer 5: Additional cross-YY link for targeted hard-sample separation
+    {"gate": "YY", "wires": [1, 3], "param": "cross_b"},
+    # Layer 6: Long-range ZZ coupling on non-overlapping diagonal pairs
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz_diag"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "zz_diag"},
+]
+>>>>>>> REPLACE
+</DIFF>

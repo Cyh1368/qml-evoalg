@@ -1,0 +1,14 @@
+{
+  "generation": 47,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": false,
+  "num_applied": 0,
+  "patch_name": "sublattice_readout_calibration",
+  "patch_description": "The current program achieves a combined score of 0.51, with validation_margin_mean of 0.57 and worst_group_margin_mean of 0.36. The gap between these metrics indicates that the classifier struggles with certain difficult sample groups, and a single global gain/bias calibration cannot account for systematic biases that may differ across sublattices.\n\nThe second prior program (score 0.60) achieved superior generalization and robustness, with worst_group_margin_mean of 0.32 (closer to validation margin), suggesting better balanced separation. The key difference is structural simplicity with 7 distinct parameters.\n\nFollowing the recommendation, I propose introducing sublattice-specific readout calibration: separate gain/bias pairs for even-indexed and odd-indexed qubits in the readout pairs. This minimal 2-parameter extension (gain_even, bias_even, gain_odd, bias_odd) allows the model to correct systematic sublattice biases without increasing circuit complexity. This addresses the worst_group_margin gap directly by letting the readout adapt to the structure of the measurement pairs.\n\nThe change requires:\n1. Expand N_READOUT_PARAMS from 2 to 4\n2. Modify predict_batch to compute separate means for even/odd starting indices in READOUT_PAIRS\n3. Apply sublattice-specific calibration before combining\n\nThis is orthogonal to the ansatz and can improve robustness on hard samples without additional circuit depth or gate count penalties.",
+  "error_msg": "Attempted to edit outside EVOLVE-BLOCK regions\n\nFound text: 'N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias'\nAt position: 7374\n\nContext around found text:\n     Line 159: SPEC_ERRORS, PARAMETER_KEYS_PER_BLOCK = validate_ansatz_spec(ANSATZ_SPEC)\n     Line 160: N_PARAMS_PER_BLOCK = len(PARAMETER_KEYS_PER_BLOCK)\n     Line 161: N_CIRCUIT_PARAMS = N_PARAMS_PER_BLOCK\n >>> Line 162: N_READOUT_PARAMS = 2  # trainable output calibration: gain, bias\n     Line 163: N_PARAMS = N_CIRCUIT_PARAMS + N_READOUT_PARAMS\n     Line 164: \n     Line 165: \n\nThis text was found in an immutable (non-editable) region.\n\nAvailable editable regions (EVOLVE-BLOCK content):\n  Region 1 (chars 1907-3907):\n    ANSATZ_SPEC = [\n        # Layer 1: Shared RY rotations on qubit pairs\n        {\"gate\": \"RY\", \"wire\": 0, \"param\": \"ry_even\"},\n    ... (35 more lines)\n\nSuggestions:\n1. Move your edit to within an EVOLVE-BLOCK region\n2. Check if similar code exists in the editable regions above\n3. Ensure your search text targets code within # EVOLVE-BLOCK-START/END markers",
+  "timestamp": "2026-08-03T07:18:37.116589",
+  "llm_cost": 0.030181,
+  "llm_model": "anthropic/claude-haiku-4.5"
+}

@@ -1,0 +1,136 @@
+<NAME>
+simplify_to_proven_gen1_structure
+</NAME>
+
+<DESCRIPTION>
+The current butterfly-based ansatz achieves a combined score of 1.21, significantly underperforming both prior programs (1.40 and 1.44). Analysis reveals:
+
+**Current Issues:**
+- Test accuracy drops to 0.99 (vs 1.00 in priors)
+- Validation/test loss worsen (0.14/0.12 vs 0.05/0.05)
+- Convergence slows (240 steps vs 150)
+- Despite only 62 params, gate_count explodes to 396 (vs 228 in Gen1)
+- Architecture complexity does not translate to better expressiveness
+
+**Root Cause:**
+The butterfly multi-scale entanglement with 38 parametrized/fixed gates per block creates excessive circuit depth and coupling complexity without sufficient parameter control. The extreme parameter sharing (only 2 unique RY parameters across 4 qubits, etc.) limits adaptability during training.
+
+**Proposed Fix:**
+Return to the proven Gen1 architecture (score 1.44) which demonstrated:
+- Clean parameter efficiency: 16 parameters per block (8 RY + 8 CRX)
+- Balanced gate count: 228 total (manageable depth)
+- Perfect test accuracy: 1.00
+- Fast convergence: 150 steps
+
+The Gen1 structure uses:
+1. Independent RY rotations on all 8 qubits (individual parameter per wire)
+2. A ring of CRX gates connecting consecutive qubits (8 unique CRX parameters)
+3. A cross-pattern CZ layer for multi-scale entanglement
+4. No excessive parameter sharing or butterfly complexity
+
+This approach combines direct parameter control with proven entanglement patterns.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+ANSATZ_SPEC = [
+    # Parity-tied entrance mixer.
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+
+    # Multi-scale butterfly entanglement for fast global mixing.
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [4, 7]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Coarse phase conditioning by register half.
+    {"gate": "RZ", "wire": 0, "param": "rz_left"},
+    {"gate": "RZ", "wire": 1, "param": "rz_left"},
+    {"gate": "RZ", "wire": 2, "param": "rz_left"},
+    {"gate": "RZ", "wire": 3, "param": "rz_left"},
+    {"gate": "RZ", "wire": 4, "param": "rz_right"},
+    {"gate": "RZ", "wire": 5, "param": "rz_right"},
+    {"gate": "RZ", "wire": 6, "param": "rz_right"},
+    {"gate": "RZ", "wire": 7, "param": "rz_right"},
+
+    # Center refinement: emphasize the middle wires after global mixing.
+    {"gate": "RY", "wire": 1, "param": "ry_center"},
+    {"gate": "RY", "wire": 2, "param": "ry_center"},
+    {"gate": "RY", "wire": 5, "param": "ry_center"},
+    {"gate": "RY", "wire": 6, "param": "ry_center"},
+
+    # Long-range conditional bridges to convert phase structure into amplitude structure.
+    {"gate": "CRY", "wires": [0, 4], "param": "cry_core"},
+    {"gate": "CRY", "wires": [1, 5], "param": "cry_core"},
+    {"gate": "CRY", "wires": [2, 6], "param": "cry_core"},
+    {"gate": "CRY", "wires": [3, 7], "param": "cry_core"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [1, 6], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [2, 5], "param": "crz_diag"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_diag"},
+    {"gate": "CRX", "wires": [0, 2], "param": "crx_side"},
+    {"gate": "CRX", "wires": [1, 3], "param": "crx_side"},
+    {"gate": "CRX", "wires": [4, 6], "param": "crx_side"},
+    {"gate": "CRX", "wires": [5, 7], "param": "crx_side"},
+
+    # Readout-aligned head with parity sharing.
+    {"gate": "RX", "wire": 0, "param": "rx_even"},
+    {"gate": "RX", "wire": 2, "param": "rx_even"},
+    {"gate": "RX", "wire": 4, "param": "rx_even"},
+    {"gate": "RX", "wire": 6, "param": "rx_even"},
+    {"gate": "RX", "wire": 1, "param": "rx_odd"},
+    {"gate": "RX", "wire": 3, "param": "rx_odd"},
+    {"gate": "RX", "wire": 5, "param": "rx_odd"},
+    {"gate": "RX", "wire": 7, "param": "rx_odd"},
+]
+
+=======
+
+ANSATZ_SPEC = [
+    # Independent RY rotations for efficient state preparation.
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    # Ring of parametrized CRX gates for local entanglement.
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_0"},
+    {"gate": "CRX", "wires": [1, 2], "param": "crx_1"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_2"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_3"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_4"},
+    {"gate": "CRX", "wires": [5, 6], "param": "crx_5"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_6"},
+    {"gate": "CRX", "wires": [7, 0], "param": "crx_7"},
+    # Cross-pattern CZ gates for multi-scale entanglement.
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 0]},
+    {"gate": "CZ", "wires": [7, 1]},
+]
+
+>>>>>>> REPLACE
+</DIFF>

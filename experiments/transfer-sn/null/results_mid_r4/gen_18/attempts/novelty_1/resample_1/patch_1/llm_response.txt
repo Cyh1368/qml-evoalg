@@ -1,0 +1,82 @@
+<NAME>
+efficient_shared_parametrized_entangler
+</NAME>
+
+<DESCRIPTION>
+This update focuses on improving parameter efficiency and reducing validation loss by leveraging a more streamlined ansatz structure with strategic parameter sharing. 
+
+1.  **Reduce Parameter Count**: The current program uses 146 parameters, which is relatively high for an 8-qubit system with data re-uploading. By sharing parameters for the final RZ layer and utilizing a single shared parameter for a circular entangling ring, we significantly increase the "parameter efficiency" metric.
+2.  **Entanglement Topology**: We implement a circular CRZ entangling ring. Since the feature map already includes couplings between all 28 possible qubit pairs, a simple ring is sufficient to provide the necessary cross-talk for the ansatz to learn correlations.
+3.  **Rotation Layers**: We maintain independent RY rotations at the start to ensure sufficient state preparation flexibility, but use a shared RZ parameter for the final layer to orient the state toward the Z-measurement basis without over-parameterizing.
+
+Total parameters per block: 10 (8 RY + 1 CRZ_ring + 1 RZ_final).
+Total circuit parameters: 10 * 3 * 2 = 60.
+Total parameters (including readout): 62.
+This reduction from 146 to 62 parameters should lead to a higher combined score via improved efficiency and likely better generalization.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Layer 1: Initial RY rotations for state preparation
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    
+    # Layer 2: Alternating Mixed-Axis Ring Entanglement (CRX and CRZ)
+    {"gate": "CRX", "wires": [0, 1], "param": "ent_01"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "ent_12"},
+    {"gate": "CRX", "wires": [2, 3], "param": "ent_23"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "ent_34"},
+    {"gate": "CRX", "wires": [4, 5], "param": "ent_45"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "ent_56"},
+    {"gate": "CRX", "wires": [6, 7], "param": "ent_67"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "ent_70"},
+    
+    # Layer 3: Final RX rotations to adjust measurement basis
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: Qubit-specific RY rotations for expressivity
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    # Layer 2: Parametrized circular CRZ ring with a shared parameter for efficiency
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_ring"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_ring"},
+    # Layer 3: Shared RZ rotation for all qubits to orient toward Z measurement basis
+    {"gate": "RZ", "wire": 0, "param": "rz_all"},
+    {"gate": "RZ", "wire": 1, "param": "rz_all"},
+    {"gate": "RZ", "wire": 2, "param": "rz_all"},
+    {"gate": "RZ", "wire": 3, "param": "rz_all"},
+    {"gate": "RZ", "wire": 4, "param": "rz_all"},
+    {"gate": "RZ", "wire": 5, "param": "rz_all"},
+    {"gate": "RZ", "wire": 6, "param": "rz_all"},
+    {"gate": "RZ", "wire": 7, "param": "rz_all"},
+]
+>>>>>>> REPLACE
+</DIFF>

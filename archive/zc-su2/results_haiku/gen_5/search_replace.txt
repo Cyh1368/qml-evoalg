@@ -1,0 +1,127 @@
+I'll analyze the current program and propose targeted improvements to maximize the combined score.
+
+## Analysis
+
+The current ansatz has:
+- 16 parametrized single-qubit gates (2 per qubit × 8 qubits)
+- 7 fixed CZ gates in a linear chain
+- **146 total parameters**, which is quite high
+- Perfect accuracy (1.00) on all sets, but parameter_efficiency is only 0.01 (very low)
+- The combined score is 0.61, which is limited by poor parameter efficiency
+
+The main issue is **parameter inefficiency**: We have 146 parameters but achieve perfect accuracy. This suggests we're over-parameterized and not making good use of parameter sharing.
+
+## Strategy
+
+To improve the combined score, I should:
+1. **Reduce parameter count significantly** through aggressive parameter sharing
+2. **Maintain accuracy** by keeping the essential structure
+3. **Improve parameter efficiency** (which directly impacts the score)
+
+Key observations:
+- We have perfect accuracy, so we can afford to reduce parameters
+- The current structure has independent parameters for each qubit (ry_0 through ry_7, etc.)
+- Parameter sharing on symmetric/similar roles can drastically reduce parameter count
+- Two-qubit interactions via CZ are present but could be made more efficient
+
+## Proposed Changes
+
+I'll implement a more parameter-efficient design that:
+1. Uses **shared parameters across qubits** where appropriate (rotation angles that apply to similar roles)
+2. Keeps the **entangling structure** (CZ chain) to maintain expressivity
+3. Reduces from 32 individual single-qubit parameters to ~8-12 shared parameters
+
+<NAME>
+reduce_parameters_via_sharing
+</NAME>
+
+<DESCRIPTION>
+The current ansatz over-parameterizes the circuit with 146 parameters while achieving perfect accuracy. This suggests significant room for parameter sharing without sacrificing performance.
+
+Strategy:
+1. Share RY parameters across all qubits in the first layer (single param "ry_shared")
+2. Share RZ pre-entanglement parameters across all qubits (single param "rz_pre_shared")
+3. Share RZ post-entanglement parameters across all qubits (single param "rz_post_shared")
+4. Keep the CZ chain for entanglement
+
+This reduces parameters from 146 to just 3 parameters per ansatz block, dramatically improving parameter efficiency while likely maintaining accuracy due to the permutation symmetry of the problem and the role of the fixed input encoding.
+
+Expected impact:
+- Parameter count: 146 → ~24-30 (depending on repetitions)
+- Parameter efficiency score should increase significantly
+- Combined score should improve due to much better parameter economy
+- Accuracy should remain near-optimal since we're using the essential degrees of freedom
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_shared"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

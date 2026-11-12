@@ -1,0 +1,25 @@
+<NAME>
+mixed_axis_entangling_reuse_param
+</NAME>
+
+<DESCRIPTION>
+The current ansatz applies four disjoint CRZ gates all sharing parameter "d" for its entangling layer, which only rotates in the Z-basis and may limit the correlations the classifier can express per parameter. Building on the recommendation to mix entangling axes, I convert two of the four CRZ gates (on pairs [2,3] and [6,7]) into CRX gates while keeping them tied to the SAME shared parameter name "d" (rather than introducing a new "ent_x" parameter). This gives the circuit access to both Z-axis and X-axis controlled correlations from a single trainable angle, increasing expressivity per parameter without increasing the distinct parameter count (still 5), which is important since parameter economy is scored strongly. This should help recover generalization/robustness lost in the current variant while respecting the "fewer distinct params always better" guidance.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Cheap parametrized entangling structure: CRZ(d) shared across disjoint
+# pairs, giving controlled correlation without extra parameter cost.
+for _i in range(0, N_QUBITS, 2):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [_i, _i + 1], "param": "d"})
+=======
+# Cheap parametrized entangling structure: CRZ(d)/CRX(d) mixed-axis gates
+# shared across disjoint pairs. Reusing the SAME parameter name "d" for
+# both gate types keeps the distinct-parameter count unchanged while
+# giving the circuit access to complementary Z- and X-axis controlled
+# correlations from a single trainable angle.
+for _idx, _i in enumerate(range(0, N_QUBITS, 2)):
+    _gate = "CRX" if _idx % 2 == 1 else "CRZ"
+    ANSATZ_SPEC.append({"gate": _gate, "wires": [_i, _i + 1], "param": "d"})
+>>>>>>> REPLACE
+</DIFF>

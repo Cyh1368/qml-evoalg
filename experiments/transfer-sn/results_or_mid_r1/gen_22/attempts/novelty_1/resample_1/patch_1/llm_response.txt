@@ -1,0 +1,107 @@
+<NAME>
+restore_mirror_symmetry_and_reduce_params
+</NAME>
+
+<DESCRIPTION>
+The current program has 146 parameters vs 98 in the prior program, yet achieves worse accuracy (0.86 vs 0.87 test, 0.87 vs 0.91 validation) and converges faster (390 vs 570 steps), suggesting it's converging to a worse local minimum due to overparameterization without sufficient structure.
+
+The issue: The current design breaks the mirror-symmetry parameter sharing that was effective in the prior programs. Each qubit gets independent RY, RZ, and RX parameters (24 unique params), leading to 144 circuit parameters after accounting for re-uploads/repeats.
+
+**Solution approach:**
+Return to mirror-symmetric parameter sharing, which provides:
+1. Regularization via reduced degrees of freedom
+2. Built-in geometric structure that improves generalization
+3. Faster, more robust convergence to better optima
+
+The proposed design:
+- Individual RY rotations (8 params) for qubit-specific rotation flexibility
+- Diagonal and adjacent CZ gates for strong entanglement
+- RZ layer with mirror-symmetric parameter sharing on opposite qubit pairs (4 params)
+- RX layer with mirror-symmetric parameter sharing (4 params)
+
+This restores the parameter count to ~98 (matching prior performance level) while maintaining expressiveness through diverse gate types and robust entanglement patterns. Mirror symmetry acts as an implicit regularizer, improving generalization as evidenced by the prior program's superior validation accuracy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RX", "wire": 0, "param": "rx_post_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_post_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_post_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_post_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_post_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_post_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_post_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Input RY layer: individual parameters for expressiveness
+    {"gate": "RY", "wire": 0, "param": "ry_in_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_in_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_in_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_in_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_in_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_in_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_in_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_in_7"},
+    # Diagonal CZ gates: long-range entanglement
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    # Local CZ gates: adjacent pair entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Middle RZ layer: mirror-symmetric parameter sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_3"},
+    # Output RX layer: mirror-symmetric parameter sharing
+    {"gate": "RX", "wire": 0, "param": "rx_out_0"},
+    {"gate": "RX", "wire": 7, "param": "rx_out_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_out_1"},
+    {"gate": "RX", "wire": 6, "param": "rx_out_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_out_2"},
+    {"gate": "RX", "wire": 5, "param": "rx_out_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_out_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_out_3"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

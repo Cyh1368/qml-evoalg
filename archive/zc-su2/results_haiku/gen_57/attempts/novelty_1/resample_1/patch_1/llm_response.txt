@@ -1,0 +1,105 @@
+Looking at the performance metrics and the current program, I can identify several opportunities for improvement:
+
+## Analysis
+
+**Current State:**
+- All three programs achieve perfect accuracy (1.00 train, validation, test)
+- The single-block version (second prior program) has the best balance: depth=35, gate_count=186, n_params=14
+- The current program uses RX instead of RY, has only one block, and shows slower convergence (120 vs 90 steps)
+- All programs score 0.72, suggesting parameter_efficiency is a bottleneck
+
+**Key Observations:**
+1. The prior two-block program with RY achieved convergence in 90 steps vs current 120 steps → RY is more effective
+2. The single RY block is efficient (depth 35) while maintaining perfect accuracy
+3. Parameter efficiency score is 0.07 for all - we need to reduce n_params or improve accuracy/depth ratio
+4. The recommendation suggests splitting RZ into pre/post phases to reduce parameters
+
+**Strategy:**
+Following the recommendation to split RZ gates while keeping them shared, I'll:
+1. Switch back to RY (proven better convergence)
+2. Split the RZ gates into `rz_pre` (before CZ) and `rz_post` (after CZ)
+3. Keep both within one block to balance depth and expressivity
+4. This reduces n_params from 14 to just 3 (ry_shared, rz_pre, rz_post), significantly improving parameter efficiency
+
+This approach:
+- Maintains the proven RY→RZ→CZ→RZ motif
+- Reduces parameter count to 3, improving parameter_efficiency metric
+- Keeps the circuit compact (depth similar to current)
+- Allows fine-tuning of interference timing before and after entanglement
+
+<NAME>
+split_rz_phases_reduce_params
+</NAME>
+
+<DESCRIPTION>
+Split RZ gates into pre-entanglement (rz_pre) and post-entanglement (rz_post) phases while switching back to RY gates (which showed better convergence in prior programs). This reduces parameter count from 14 to just 3 (ry_shared, rz_pre, rz_post), dramatically improving parameter efficiency while maintaining the proven RY→RZ→CZ→RZ structure. The separate phase controls allow fine-tuning of quantum interference timing around the CZ chain without increasing circuit depth significantly.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RX", "wire": 0, "param": "rx_shared"},
+    {"gate": "RX", "wire": 1, "param": "rx_shared"},
+    {"gate": "RX", "wire": 2, "param": "rx_shared"},
+    {"gate": "RX", "wire": 3, "param": "rx_shared"},
+    {"gate": "RX", "wire": 4, "param": "rx_shared"},
+    {"gate": "RX", "wire": 5, "param": "rx_shared"},
+    {"gate": "RX", "wire": 6, "param": "rx_shared"},
+    {"gate": "RX", "wire": 7, "param": "rx_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+]
+=======
+ANSATZ_SPEC = [
+    # RY rotation layer (shared across all qubits)
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    # Pre-entanglement RZ phase (shared)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    # CZ chain for entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Post-entanglement RZ phase (shared, independent from rz_pre)
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

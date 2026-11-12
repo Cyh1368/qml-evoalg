@@ -1,0 +1,59 @@
+<NAME>
+mixed_scale_init_entanglers
+</NAME>
+
+<DESCRIPTION>
+The current program has degraded significantly from the prior art (0.54 vs 0.60 combined score). Key observations:
+
+1. **Parameter explosion**: The current program has 13 total parameters (11 distinct) vs. the prior's 9 (7 distinct). This hurts parameter efficiency and generalization on few-shot data.
+
+2. **Convergence regression**: Convergence step mean dropped from 780 to 60, indicating the optimizer is overfitting to the training set rapidly, leaving hard validation samples unresolved.
+
+3. **Worst-group margin stagnation**: Despite added parameters, worst_group_margin_mean stayed flat at 0.30, suggesting the extra capacity isn't helping separate difficult samples.
+
+4. **Barren plateau risk**: The current architecture with many independent RY/RZ layers at full scale initialization may be entering barren plateaus early, explaining the poor convergence behavior.
+
+**Recommendation**: Apply mixed-scale initialization targeting Ising-block parameters (ent_near, xx_near, cross, yy_cross, diag, zz_long) to the narrower range [−π/4, π/4], while keeping rotation and readout parameters at full scale [−π, π]. This:
+- Restores high-curvature initialization for two-qubit gates (avoiding barren plateaus)
+- Preserves the ~780-step convergence seen in Gen 50/63
+- Keeps rotation angles at full expressivity for symmetry breaking
+- Uses only initialization tuning (no circuit changes required)
+
+This aligns with the prior observation that entangler initialization is critical for smooth optimization landscapes in parameterized quantum circuits.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    rng = np.random.default_rng(seed)
+    # Angles are initialised across the full period rather than near zero. A
+    # near-identity start is a dead zone for some candidate structures, and the
+    # ranking noise that produces is an optimiser artifact rather than a
+    # property of the circuit. The wide init applies to every candidate alike.
+    init_scale = float(os.environ.get("INIT_SCALE", str(np.pi)))
+    init = rng.uniform(-init_scale, init_scale, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    params = pnp.array(init, requires_grad=True)
+=======
+    rng = np.random.default_rng(seed)
+    # Angles are initialised across the full period rather than near zero. A
+    # near-identity start is a dead zone for some candidate structures, and the
+    # ranking noise that produces is an optimiser artifact rather than a
+    # property of the circuit. The wide init applies to every candidate alike.
+    init_scale = float(os.environ.get("INIT_SCALE", str(np.pi)))
+    init = rng.uniform(-init_scale, init_scale, size=N_PARAMS)
+    init[N_CIRCUIT_PARAMS] = 1.0       # gain starts at 1
+    init[N_CIRCUIT_PARAMS + 1] = 0.0   # bias starts at 0
+    
+    # Mixed-scale initialization: reinitialize Ising-block parameters (entanglers)
+    # to a narrower range to avoid barren plateaus and restore smooth optimization.
+    entangler_keys = {"ent_near", "xx_near", "cross", "yy_cross", "diag", "zz_long"}
+    ent_scale = np.pi / 4.0
+    for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK):
+        if key in entangler_keys:
+            init[i] = rng.uniform(-ent_scale, ent_scale)
+    
+    params = pnp.array(init, requires_grad=True)
+>>>>>>> REPLACE
+
+</DIFF>

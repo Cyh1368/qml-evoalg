@@ -1,0 +1,74 @@
+<NAME>
+duplicate_block_shared_params
+</NAME>
+
+<DESCRIPTION>
+The current ansatz (ry_a/ry_b → ring1 → rz_a/rz_b → ring2 → ry_c) achieves reasonable train/val accuracy but the generalization gap is high (0.20) and score is lower than the simpler seed circuits. Following the recommendation, we duplicate the entire gate sequence back-to-back while reusing the exact same five parameter names (ry_a, ry_b, rz_a, rz_b, ry_c). This doubles the effective circuit depth (adding more entangling structure and expressive re-parametrized rotations) without increasing the trainable parameter count at all, since parameters are shared across the repeated block. Deeper circuits with fixed parameter budgets often improve the expressivity/generalization trade-off by allowing richer feature-map re-use (similar to data re-uploading / parameter-tying strategies), which can help reduce the train-test gap while maintaining separation on harder validation groups. Because n_distinct_params stays at 5, parameter economy is preserved, and since scoring rewards fewer distinct params strongly, this is a low-risk way to test whether extra depth (without extra parameters) improves the worst-group margin and reduces the generalization gap.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RY", "wire": 0, "param": "ry_c"},
+    {"gate": "RY", "wire": 1, "param": "ry_c"},
+    {"gate": "RY", "wire": 2, "param": "ry_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_c"},
+    {"gate": "RY", "wire": 4, "param": "ry_c"},
+    {"gate": "RY", "wire": 5, "param": "ry_c"},
+    {"gate": "RY", "wire": 6, "param": "ry_c"},
+    {"gate": "RY", "wire": 7, "param": "ry_c"},
+]
+
+=======
+    {"gate": "RY", "wire": 0, "param": "ry_c"},
+    {"gate": "RY", "wire": 1, "param": "ry_c"},
+    {"gate": "RY", "wire": 2, "param": "ry_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_c"},
+    {"gate": "RY", "wire": 4, "param": "ry_c"},
+    {"gate": "RY", "wire": 5, "param": "ry_c"},
+    {"gate": "RY", "wire": 6, "param": "ry_c"},
+    {"gate": "RY", "wire": 7, "param": "ry_c"},
+
+    # Duplicate block: reuse the same five parameters to add depth
+    # without increasing the distinct parameter count.
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_a"},
+    {"gate": "RZ", "wire": 2, "param": "rz_a"},
+    {"gate": "RZ", "wire": 4, "param": "rz_a"},
+    {"gate": "RZ", "wire": 6, "param": "rz_a"},
+    {"gate": "RZ", "wire": 1, "param": "rz_b"},
+    {"gate": "RZ", "wire": 3, "param": "rz_b"},
+    {"gate": "RZ", "wire": 5, "param": "rz_b"},
+    {"gate": "RZ", "wire": 7, "param": "rz_b"},
+    {"gate": "CNOT", "wires": [7, 6]},
+    {"gate": "CNOT", "wires": [6, 5]},
+    {"gate": "CNOT", "wires": [5, 4]},
+    {"gate": "CNOT", "wires": [4, 3]},
+    {"gate": "CNOT", "wires": [3, 2]},
+    {"gate": "CNOT", "wires": [2, 1]},
+    {"gate": "CNOT", "wires": [1, 0]},
+    {"gate": "RY", "wire": 0, "param": "ry_c"},
+    {"gate": "RY", "wire": 1, "param": "ry_c"},
+    {"gate": "RY", "wire": 2, "param": "ry_c"},
+    {"gate": "RY", "wire": 3, "param": "ry_c"},
+    {"gate": "RY", "wire": 4, "param": "ry_c"},
+    {"gate": "RY", "wire": 5, "param": "ry_c"},
+    {"gate": "RY", "wire": 6, "param": "ry_c"},
+    {"gate": "RY", "wire": 7, "param": "ry_c"},
+]
+
+>>>>>>> REPLACE
+</DIFF>

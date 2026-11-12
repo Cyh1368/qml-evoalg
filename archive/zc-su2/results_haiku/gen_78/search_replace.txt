@@ -1,0 +1,161 @@
+Looking at the performance data and the recommendation about zigzag patterns, I can see that:
+
+1. **Prior Gen 66** (4 blocks with alternating CZ directions): score 0.72, n_params=14, depth=185, convergence=30
+2. **Prior Gen 62** (2 blocks with different entanglement): score 0.72, n_params=14, depth=102, convergence=30
+3. **Current** (1 block): score 0.68, n_params=20, depth=35, convergence=60
+
+The current program has **worse accuracy** (score 0.68 vs 0.72), **more parameters** (20 vs 14), and **slower convergence** (60 vs 30 steps). The key insight from prior successes is that:
+
+- **Multiple blocks with alternating/zigzag entanglement patterns** consistently achieve 0.72 score
+- **Parameter sharing** is more important than having separate rz_pre/rz_post parameters
+- **Bidirectional CZ chains** (forward then reverse) improve expressivity with fewer total parameters
+
+The recommendation to prepend a reverse-direction CZ sweep before each forward CZ chain aligns with this: it creates a zigzag pattern within blocks that doubles expressivity.
+
+I'll implement a **2-block design with internal zigzag CZ chains** (reverse CZ chain before forward CZ chain in each block). This should:
+- Restore the 0.72 score through better expressivity
+- Reduce parameters by using shared RZ parameters (3 params vs current 20)
+- Improve convergence through better entanglement structure
+
+<NAME>
+zigzag_two_block_ansatz
+</NAME>
+
+<DESCRIPTION>
+Implement a 2-block ansatz where each block uses an internal zigzag pattern: a reverse-direction CZ chain (wires [7,6]→[1,0]) followed by a forward-direction CZ chain (wires [0,1]→[6,7]). This doubles the entangling power within each block.
+
+Key improvements:
+1. **Restore 0.72 accuracy**: Zigzag entanglement pattern proven effective in Gen 66 (alternating blocks) and Gen 62 (varied entanglement)
+2. **Better parameter economy**: Use single shared RZ parameter instead of separate rz_pre/rz_post (3 params instead of 20)
+3. **Faster convergence**: Richer entanglement structure enables learning in fewer steps
+4. **Maintained expressivity**: Two blocks with internal complexity provides similar expressivity to Gen 66's 4 blocks with alternating directions
+
+The bidirectional CZ sweeps create richer entanglement patterns that improve gradient flow and feature extraction on small datasets.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # RY shared layer for amplitude initialization
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    # RZ pre-entanglement phase layer
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    # CZ entanglement chain
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # RZ post-entanglement phase layer
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+=======
+ANSATZ_SPEC = [
+    # Block 1: RY → RZ → zigzag CZ (reverse then forward) → RZ
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # Reverse CZ chain: [7,6] → [1,0]
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CZ", "wires": [5, 4]},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CZ", "wires": [3, 2]},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CZ", "wires": [1, 0]},
+    # Forward CZ chain: [0,1] → [6,7]
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # Block 2: RY → RZ → zigzag CZ (reverse then forward) → RZ
+    {"gate": "RY", "wire": 0, "param": "ry_shared"},
+    {"gate": "RY", "wire": 1, "param": "ry_shared"},
+    {"gate": "RY", "wire": 2, "param": "ry_shared"},
+    {"gate": "RY", "wire": 3, "param": "ry_shared"},
+    {"gate": "RY", "wire": 4, "param": "ry_shared"},
+    {"gate": "RY", "wire": 5, "param": "ry_shared"},
+    {"gate": "RY", "wire": 6, "param": "ry_shared"},
+    {"gate": "RY", "wire": 7, "param": "ry_shared"},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+    # Reverse CZ chain: [7,6] → [1,0]
+    {"gate": "CZ", "wires": [7, 6]},
+    {"gate": "CZ", "wires": [6, 5]},
+    {"gate": "CZ", "wires": [5, 4]},
+    {"gate": "CZ", "wires": [4, 3]},
+    {"gate": "CZ", "wires": [3, 2]},
+    {"gate": "CZ", "wires": [2, 1]},
+    {"gate": "CZ", "wires": [1, 0]},
+    # Forward CZ chain: [0,1] → [6,7]
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_shared"},
+]
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,79 @@
+<NAME>
+nonlocal_cnot_crz_ansatz
+</NAME>
+
+<DESCRIPTION>
+This edit overhauls the `ANSATZ_SPEC` to improve expressivity and global connectivity, drawing inspiration from the successful Seed 2 design (score 1.51) while incorporating the recommended skip-link strategy.
+
+The new block structure consists of:
+1.  **Independent RY rotations** on all 8 qubits (8 parameters) to provide a flexible starting point for basis transformation.
+2.  **Circular CNOT entanglement** (7 ladder gates + 1 wrap-around) to ensure full local connectivity across the qubit ring.
+3.  **Four symmetric CRZ skip links** ([0,4], [1,5], [2,6], [3,7]) with unique parameters (4 parameters). These non-local links are crucial for capturing long-range correlations between binary features that the local feature map might not bridge effectively.
+4.  **A final layer of RZ rotations** with shared parameters across qubit pairs (4 parameters) to refine the phases before the next feature upload or measurement.
+
+Total unique parameters per block: 16 (RY: 8, CRZ_skip: 4, RZ_final: 4). 
+Total circuit parameters: 16 * 3 * 2 = 96. Total parameters: 96 + 2 = 98.
+This design maintains the parameter count of the best-performing prior candidate (1.51) but improves the entanglement structure and adds global connectivity.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RZ", "wire": 0, "param": "rz_init"},
+    {"gate": "RZ", "wire": 1, "param": "rz_init"},
+    {"gate": "RZ", "wire": 2, "param": "rz_init"},
+    {"gate": "RZ", "wire": 3, "param": "rz_init"},
+    {"gate": "RZ", "wire": 4, "param": "rz_init"},
+    {"gate": "RZ", "wire": 5, "param": "rz_init"},
+    {"gate": "RZ", "wire": 6, "param": "rz_init"},
+    {"gate": "RZ", "wire": 7, "param": "rz_init"},
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_pair_0"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_pair_1"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_pair_2"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_pair_3"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "crz_bridge_0"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "crz_bridge_1"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "crz_bridge_2"},
+    {"gate": "CRZ", "wires": [7, 0], "param": "crz_bridge_3"},
+    {"gate": "RY", "wire": 0, "param": "ry_final"},
+    {"gate": "RY", "wire": 1, "param": "ry_final"},
+    {"gate": "RY", "wire": 2, "param": "ry_final"},
+    {"gate": "RY", "wire": 3, "param": "ry_final"},
+    {"gate": "RY", "wire": 4, "param": "ry_final"},
+    {"gate": "RY", "wire": 5, "param": "ry_final"},
+    {"gate": "RY", "wire": 6, "param": "ry_final"},
+    {"gate": "RY", "wire": 7, "param": "ry_final"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [1, 2]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [3, 4]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [5, 6]},
+    {"gate": "CNOT", "wires": [6, 7]},
+    {"gate": "CNOT", "wires": [7, 0]},
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_s0"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_s1"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_s2"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_s3"},
+    {"gate": "RZ", "wire": 0, "param": "rz_p1"},
+    {"gate": "RZ", "wire": 1, "param": "rz_p1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_p2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_p2"},
+    {"gate": "RZ", "wire": 4, "param": "rz_p3"},
+    {"gate": "RZ", "wire": 5, "param": "rz_p3"},
+    {"gate": "RZ", "wire": 6, "param": "rz_p4"},
+    {"gate": "RZ", "wire": 7, "param": "rz_p4"},
+]
+>>>>>>> REPLACE
+</DIFF>

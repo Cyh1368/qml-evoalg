@@ -1,0 +1,42 @@
+The current ansatz structure is quite linear and limited, relying on simple nearest-neighbor entanglement. To improve the expressivity and training stability (and thus generalization), we can introduce "all-to-all" connectivity features (like swapping or more complex entanglement patterns) and potentially use controlled rotations to better leverage the feature-encoding structure.
+
+The following change improves the entanglement block by introducing a more robust "X-shape" or "ladder" entangler using CNOTs, which often performs better than a simple CZ chain in variational circuits, and adds more parameterized flexibility by using `CRZ` gates, which allows the circuit to adapt its entanglement structure dynamically based on the input features.
+
+<NAME>
+enhanced_entanglement_and_parameterization
+</NAME>
+
+<DESCRIPTION>
+I am replacing the simple linear CZ chain with a more expressive CNOT-based ladder structure. This creates stronger correlations across the register. Additionally, I am replacing the static `RZ` pre-layer with `CRZ` (controlled rotations), which allows the model to learn conditional rotations between qubits, effectively making the circuit's entangling mechanism trainable rather than static. This significantly increases the capacity of the circuit to represent complex decision boundaries for the binary classifier.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+=======
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_01"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_23"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_45"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_67"},
+    {"gate": "CNOT", "wires": [0, 2]},
+    {"gate": "CNOT", "wires": [2, 4]},
+    {"gate": "CNOT", "wires": [4, 6]},
+    {"gate": "CNOT", "wires": [7, 5]},
+    {"gate": "CNOT", "wires": [5, 3]},
+    {"gate": "CNOT", "wires": [3, 1]},
+>>>>>>> REPLACE
+</DIFF>

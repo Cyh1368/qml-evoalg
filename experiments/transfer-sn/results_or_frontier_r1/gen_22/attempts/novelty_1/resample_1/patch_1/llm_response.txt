@@ -1,0 +1,188 @@
+Looking at the performance data, the best-scoring program (0.98) uses a two-axis input mixer (RY+RX) before the CZ block, while the current program (0.78) only has a single-axis input (RY). Additionally, the recommendation suggests inserting a two-axis mixer between entanglement layers to break CZ commutativity.
+
+My plan: 
+1. Add the missing RX input layer (proven to help in the 0.98 program)
+2. Split the CZ complete graph into two halves with a two-axis mid-mixer between them, breaking the diagonal commutativity and dramatically increasing expressivity with only +2 params per block
+
+<NAME>
+two_axis_input_plus_mid_mixer
+</NAME>
+
+<DESCRIPTION>
+The current ansatz only has a single-axis (RY) input mixer, whereas the best-performing prior (0.98) uses two axes (RY+RX). Additionally, all 28 CZ gates commute and effectively form a single diagonal unitary regardless of ordering. By splitting the CZ block into two halves and inserting a collective two-axis mixer (RY+RX) between them, we break this commutativity, creating a much richer unitary that can capture more complex feature interactions. This adds only 2 shared parameters (mid_ry, mid_rx) beyond the proven 4-parameter structure, totaling 6 params per block (38 total). The increased expressivity should push validation accuracy higher and reduce loss, outweighing any parameter efficiency penalty.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Collective input mixer: parameter sharing respects the symmetry of the
+    # mean-Z readout and aggregates gradient information from all eight wires.
+    {"gate": "RY", "wire": 0, "param": "collective_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry"},
+
+    # Complete-graph CZ entangler arranged as seven perfect matchings. Since
+    # the CZ gates commute, this realizes all 28 edges at minimum edge depth.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [4, 7]},
+    {"gate": "CZ", "wires": [5, 6]},
+
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 7]},
+    {"gate": "CZ", "wires": [3, 6]},
+
+    {"gate": "CZ", "wires": [0, 6]},
+    {"gate": "CZ", "wires": [1, 7]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 4]},
+
+    # A collective phase followed by a non-diagonal mixer converts encoded
+    # pairwise phases into populations visible to the fixed Z measurement.
+    {"gate": "RZ", "wire": 0, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx"},
+]
+=======
+ANSATZ_SPEC = [
+    # Two-axis input mixer (proven effective in the 0.98-scoring prior).
+    {"gate": "RY", "wire": 0, "param": "collective_ry"},
+    {"gate": "RY", "wire": 1, "param": "collective_ry"},
+    {"gate": "RY", "wire": 2, "param": "collective_ry"},
+    {"gate": "RY", "wire": 3, "param": "collective_ry"},
+    {"gate": "RY", "wire": 4, "param": "collective_ry"},
+    {"gate": "RY", "wire": 5, "param": "collective_ry"},
+    {"gate": "RY", "wire": 6, "param": "collective_ry"},
+    {"gate": "RY", "wire": 7, "param": "collective_ry"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_in"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_in"},
+
+    # First half of complete-graph CZ: matchings 1-4 (16 edges).
+    # These CZ gates commute; the mid-mixer below breaks this commutativity
+    # with respect to the second half, doubling effective entangling depth.
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    {"gate": "CZ", "wires": [0, 3]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [4, 7]},
+    {"gate": "CZ", "wires": [5, 6]},
+
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Mid-circuit two-axis mixer: breaks CZ commutativity between the two
+    # halves, dramatically increasing the expressivity of the entangling
+    # block with only two additional shared parameters.
+    {"gate": "RY", "wire": 0, "param": "mid_ry"},
+    {"gate": "RY", "wire": 1, "param": "mid_ry"},
+    {"gate": "RY", "wire": 2, "param": "mid_ry"},
+    {"gate": "RY", "wire": 3, "param": "mid_ry"},
+    {"gate": "RY", "wire": 4, "param": "mid_ry"},
+    {"gate": "RY", "wire": 5, "param": "mid_ry"},
+    {"gate": "RY", "wire": 6, "param": "mid_ry"},
+    {"gate": "RY", "wire": 7, "param": "mid_ry"},
+
+    {"gate": "RX", "wire": 0, "param": "mid_rx"},
+    {"gate": "RX", "wire": 1, "param": "mid_rx"},
+    {"gate": "RX", "wire": 2, "param": "mid_rx"},
+    {"gate": "RX", "wire": 3, "param": "mid_rx"},
+    {"gate": "RX", "wire": 4, "param": "mid_rx"},
+    {"gate": "RX", "wire": 5, "param": "mid_rx"},
+    {"gate": "RX", "wire": 6, "param": "mid_rx"},
+    {"gate": "RX", "wire": 7, "param": "mid_rx"},
+
+    # Second half of complete-graph CZ: matchings 5-7 (12 edges).
+    {"gate": "CZ", "wires": [0, 5]},
+    {"gate": "CZ", "wires": [1, 4]},
+    {"gate": "CZ", "wires": [2, 7]},
+    {"gate": "CZ", "wires": [3, 6]},
+
+    {"gate": "CZ", "wires": [0, 6]},
+    {"gate": "CZ", "wires": [1, 7]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+
+    {"gate": "CZ", "wires": [0, 7]},
+    {"gate": "CZ", "wires": [1, 6]},
+    {"gate": "CZ", "wires": [2, 5]},
+    {"gate": "CZ", "wires": [3, 4]},
+
+    # Output two-axis mixer: collective phase + non-diagonal rotation
+    # converts encoded pairwise phases into Z-basis populations.
+    {"gate": "RZ", "wire": 0, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 1, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 2, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 3, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 4, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 5, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 6, "param": "collective_rz"},
+    {"gate": "RZ", "wire": 7, "param": "collective_rz"},
+
+    {"gate": "RX", "wire": 0, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 1, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 2, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 3, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 4, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 5, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 6, "param": "collective_rx_out"},
+    {"gate": "RX", "wire": 7, "param": "collective_rx_out"},
+]
+>>>>>>> REPLACE
+</DIFF>

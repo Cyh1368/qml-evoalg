@@ -1,0 +1,81 @@
+Looking at the current program's performance, it already achieves excellent accuracy (0.99 val, 0.98 test) with 146 parameters. The main opportunity is to reduce parameter count and circuit depth while maintaining accuracy, which should improve the combined score through better parameter efficiency and faster execution.
+
+**Key observations:**
+1. The current design has `RY + RZ_pre + CZ_chain + RZ_post` = 24 params/block. With N_REPEATS=2, consecutive blocks create redundant rotation layers (RZ_post → RY → RZ_pre is 3 rotations where 2 suffice).
+2. The linear CZ chain (0-1, 1-2, ..., 6-7) has depth 7 since each gate shares a qubit with the next. A brick-wall CZ ring has depth 2 with better connectivity.
+3. Removing the redundant RZ layer and using brick-wall CZ reduces from 24→16 params/block (146→98 total) and dramatically reduces depth.
+
+<NAME>lean_brickwall_ring_ansatz</NAME>
+
+<DESCRIPTION>
+Replace the 3-rotation-layer + chain-CZ design with a 2-rotation-layer (RY+RZ) + brick-wall ring CZ design. This removes the redundant post-CZ RZ layer (redundancy arises because with N_REPEATS=2, the next block's RY+RZ already provides full rotation after CZ). The brick-wall CZ creates a ring topology in just 2 parallel layers instead of 7 sequential steps, significantly reducing depth. Parameters drop from 24→16 per block (146→98 total), gates from 31→24 per block, and depth per block from ~10→4. The design maintains full expressibility through the Euler-angle-complete RY+RZ rotation and ring entanglement topology.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # RY rotation layer
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    # RZ rotation layer
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+    # Brick-wall CZ entanglement - even pairs (parallel, depth 1)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Brick-wall CZ entanglement - odd pairs with ring closure (parallel, depth 1)
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [7, 0]},
+]
+>>>>>>> REPLACE
+</DIFF>

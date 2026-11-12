@@ -1,0 +1,120 @@
+<NAME>
+reduce_params_improve_connectivity
+</NAME>
+
+<DESCRIPTION>
+The current program has 146 parameters (24 per block) which is too high and leads to worse performance than the second program (98 params, 16 per block, score 0.23) despite having more parameters. This indicates overfitting and poor parameter efficiency.
+
+The recommendation is to reduce back to ~16 parameters per block by:
+1. Removing the redundant individual RZ-pre layer (8 params) that adds little value
+2. Removing the individual RX-post layer (8 params) that duplicates functionality
+3. Adopting the proven parameter-sharing structure from the second program:
+   - Individual RY on each qubit for input flexibility (8 params)
+   - Fixed CZ gates for entanglement: diagonal pairs [0,4],[1,5],[2,6],[3,7] plus local adjacent pairs
+   - RZ layer with 2-qubit parameter sharing by symmetry: 4 params shared across mirror-symmetric qubit pairs
+   - RY layer with 2-qubit parameter sharing: 4 params shared across mirror-symmetric qubit pairs
+
+This reduces to 16 params/block (96 total circuit params) which matches the best-performing second program, reducing overfitting while maintaining expressive power through diverse fixed CZ connectivity and strategic parameter sharing.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RX", "wire": 0, "param": "rx_post_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_post_1"},
+    {"gate": "RX", "wire": 2, "param": "rx_post_2"},
+    {"gate": "RX", "wire": 3, "param": "rx_post_3"},
+    {"gate": "RX", "wire": 4, "param": "rx_post_4"},
+    {"gate": "RX", "wire": 5, "param": "rx_post_5"},
+    {"gate": "RX", "wire": 6, "param": "rx_post_6"},
+    {"gate": "RX", "wire": 7, "param": "rx_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Input RY layer: individual parameters for each qubit
+    {"gate": "RY", "wire": 0, "param": "ry_in_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_in_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_in_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_in_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_in_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_in_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_in_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_in_7"},
+    # Diagonal CZ gates: long-range entanglement
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+    # Local CZ gates: adjacent pair entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [6, 7]},
+    # Middle RZ layer: shared parameters by mirror symmetry
+    {"gate": "RZ", "wire": 0, "param": "rz_mid_0"},
+    {"gate": "RZ", "wire": 7, "param": "rz_mid_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_mid_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_mid_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_mid_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_mid_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_mid_3"},
+    # Output RY layer: shared parameters by mirror symmetry
+    {"gate": "RY", "wire": 0, "param": "ry_out_0"},
+    {"gate": "RY", "wire": 7, "param": "ry_out_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_out_1"},
+    {"gate": "RY", "wire": 6, "param": "ry_out_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_out_2"},
+    {"gate": "RY", "wire": 5, "param": "ry_out_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_out_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_out_3"},
+]
+>>>>>>> REPLACE
+
+</DIFF>
+
+**Rationale for this change:**
+
+1. **Parameter count reduction**: From 24→16 params per block (146→98 total circuit params), matching the best-performing program that achieved score 0.23.
+
+2. **Connectivity structure**: Maintains diverse entanglement through:
+   - Diagonal CZ for long-range qubit interactions
+   - Local CZ for adjacent-qubit coupling
+   - Proven to balance expressivity with generalization
+
+3. **Parameter sharing strategy**: Uses mirror-symmetric sharing (0↔7, 1↔6, 2↔5, 3↔4) which:
+   - Leverages the natural symmetry of 8-qubit systems
+   - Reduces overfitting while preserving model capacity
+   - Improves parameter efficiency (score 0.01 in prior programs)
+
+4. **Simplified layer structure**: Removes redundant layers (RZ-pre and RX-post) that don't contribute meaningfully but add 16 extra parameters causing overfitting.
+
+This design directly addresses why the current program (score -0.13) underperforms despite higher parameter count, aligning with the high-scoring second program's architecture while maintaining the fixed training pipeline.

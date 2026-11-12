@@ -1,0 +1,39 @@
+<NAME>
+increase_depth_with_third_repeat
+</NAME>
+
+<DESCRIPTION>
+The prior programs show a clear correlation between circuit depth and test accuracy:
+- Seed (depth 126, test 0.85): baseline
+- Second (depth 99, test 0.87): lower depth but higher accuracy via better parameter efficiency
+- Current (depth 87, test 0.87): even lower depth, but with a larger generalization gap (0.08 vs 0.04-0.05)
+
+The current program achieves 0.87 test accuracy but has the largest train-test gap (0.08), suggesting overfitting. The recommendation to increase N_REPEATS from 2 to 3 (keeping N_UPLOADS=3) would:
+- Raise depth from ~87 to ~130 (matching the seed's effective depth)
+- Increase gate count from ~270 to ~405
+- Raise N_PARAMS_PER_BLOCK from 18 to 27 (50% increase in parameters per block)
+- Total circuit params: 27 × 3 × 3 = 243 (vs current 18 × 3 × 2 = 108)
+
+This additional depth and expressivity should help:
+1. Reduce the generalization gap by providing more capacity to learn generalizable features
+2. Push test accuracy toward 0.88-0.90 by allowing finer-grained feature extraction across the three re-uploads
+3. Maintain or improve validation accuracy by having more parameters to fit the validation set
+
+The increased depth aligns with the observation that depths ≥114 correlated with top performance in the seed program.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# Problem constants
+N_QUBITS = 8
+N_UPLOADS = 3
+N_REPEATS = 2
+FEATURE_SCALE = np.pi / 2
+=======
+# Problem constants
+N_QUBITS = 8
+N_UPLOADS = 3
+N_REPEATS = 3
+FEATURE_SCALE = np.pi / 2
+>>>>>>> REPLACE
+</DIFF>

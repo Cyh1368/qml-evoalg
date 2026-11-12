@@ -1,0 +1,81 @@
+<NAME>
+simplify_ansatz_reduce_overfitting
+</NAME>
+
+<DESCRIPTION>
+The previous ansatz was overparameterized with excessive shared RX, CRX, and CRZ layers, leading to significant overfitting (generalization gap increased from ~0.00 to 0.09). I am reverting to a cleaner architecture that performed well in earlier iterations, utilizing shared single-qubit rotations (RY/RZ) combined with robust two-qubit entanglement (two interleaved CZ rings plus additional coupling chords). This reduction in parameter count should improve generalization and test accuracy.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # More structured CZ entanglement (two interleaved rings)
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Added shared RX layer for extra local expressivity (pairwise sharing)
+    {"gate": "RX", "wire": 0, "param": "rx_0"},
+    {"gate": "RX", "wire": 1, "param": "rx_0"},
+    {"gate": "RX", "wire": 2, "param": "rx_1"},
+    {"gate": "RX", "wire": 3, "param": "rx_1"},
+    {"gate": "RX", "wire": 4, "param": "rx_2"},
+    {"gate": "RX", "wire": 5, "param": "rx_2"},
+    {"gate": "RX", "wire": 6, "param": "rx_3"},
+    {"gate": "RX", "wire": 7, "param": "rx_3"},
+
+    # Parameterized controlled rotations on intra-pair edges (aggressively shared)
+    {"gate": "CRX", "wires": [1, 0], "param": "crx_pair_0"},
+    {"gate": "CRX", "wires": [3, 2], "param": "crx_pair_0"},
+    {"gate": "CRX", "wires": [5, 4], "param": "crx_pair_1"},
+    {"gate": "CRX", "wires": [7, 6], "param": "crx_pair_1"},
+
+    # One shared parameterized controlled rotation across the other ring edges
+    {"gate": "CRZ", "wires": [2, 1], "param": "crz_ring_cross"},
+    {"gate": "CRZ", "wires": [4, 3], "param": "crz_ring_cross"},
+    {"gate": "CRZ", "wires": [6, 5], "param": "crz_ring_cross"},
+    {"gate": "CRZ", "wires": [0, 7], "param": "crz_ring_cross"},
+
+    # Parameter-shared post-RZ across qubit pairs
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_3"},
+=======
+    # CZ entanglement: two interleaved rings
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    # Additional fixed chords to improve expressivity
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Parameter-shared post-RZ across qubit pairs
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_3"},
+>>>>>>> REPLACE
+</DIFF>

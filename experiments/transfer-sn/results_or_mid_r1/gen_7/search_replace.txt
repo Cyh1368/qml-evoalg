@@ -1,0 +1,95 @@
+<NAME>
+add_cry_layer_to_current
+</NAME>
+
+<DESCRIPTION>
+The current program achieves the best combined score (0.07) with excellent parameter efficiency (only 74 params total, yielding 12 params per block). However, test accuracy is slightly lower (0.86) compared to the seed (0.88).
+
+The current ansatz uses parameter sharing for single-qubit gates and a ring of CRX entangling gates. To improve test accuracy while maintaining parameter efficiency, I will add a parametrized CRY layer in addition to the existing CRX ring. This provides additional expressivity for entanglement without dramatically increasing parameter count.
+
+The new structure will be:
+- RY layer with shared parameters (2 unique params: ry_a, ry_b)
+- CRX ring connectivity (8 params: crx_0 through crx_7)
+- CRY ring connectivity (8 params: cry_0 through cry_7) - NEW
+- RZ layer with shared parameters (2 unique params: rz_c, rz_d)
+
+Total unique parameters per block: 20 (up from 12)
+Total circuit parameters: 120 (up from 72)
+Total parameters including readout: 122 (up from 74)
+
+This modest increase should improve model expressivity and test accuracy while keeping parameter efficiency competitive.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Parametrized rotations on all qubits
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    # Ring connectivity with controlled rotations
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_0"},
+    {"gate": "CRX", "wires": [1, 2], "param": "crx_1"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_2"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_3"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_4"},
+    {"gate": "CRX", "wires": [5, 6], "param": "crx_5"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_6"},
+    {"gate": "CRX", "wires": [7, 0], "param": "crx_7"},
+    # Final RZ layer
+    {"gate": "RZ", "wire": 0, "param": "rz_c"},
+    {"gate": "RZ", "wire": 1, "param": "rz_c"},
+    {"gate": "RZ", "wire": 2, "param": "rz_c"},
+    {"gate": "RZ", "wire": 3, "param": "rz_c"},
+    {"gate": "RZ", "wire": 4, "param": "rz_d"},
+    {"gate": "RZ", "wire": 5, "param": "rz_d"},
+    {"gate": "RZ", "wire": 6, "param": "rz_d"},
+    {"gate": "RZ", "wire": 7, "param": "rz_d"},
+]
+=======
+ANSATZ_SPEC = [
+    # Parametrized rotations on all qubits
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_a"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_a"},
+    {"gate": "RY", "wire": 4, "param": "ry_b"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_b"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    # Ring connectivity with CRX controlled rotations
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_0"},
+    {"gate": "CRX", "wires": [1, 2], "param": "crx_1"},
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_2"},
+    {"gate": "CRX", "wires": [3, 4], "param": "crx_3"},
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_4"},
+    {"gate": "CRX", "wires": [5, 6], "param": "crx_5"},
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_6"},
+    {"gate": "CRX", "wires": [7, 0], "param": "crx_7"},
+    # Additional ring connectivity with CRY for enhanced entanglement
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_0"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_1"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_2"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_3"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_4"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_5"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_6"},
+    {"gate": "CRY", "wires": [7, 0], "param": "cry_7"},
+    # Final RZ layer
+    {"gate": "RZ", "wire": 0, "param": "rz_c"},
+    {"gate": "RZ", "wire": 1, "param": "rz_c"},
+    {"gate": "RZ", "wire": 2, "param": "rz_c"},
+    {"gate": "RZ", "wire": 3, "param": "rz_c"},
+    {"gate": "RZ", "wire": 4, "param": "rz_d"},
+    {"gate": "RZ", "wire": 5, "param": "rz_d"},
+    {"gate": "RZ", "wire": 6, "param": "rz_d"},
+    {"gate": "RZ", "wire": 7, "param": "rz_d"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,264 @@
+# Analysis
+
+Looking at the performance metrics:
+
+**Prior programs (better performing):**
+- Program 1: score 0.60, validation_accuracy 0.97, test_accuracy 0.96, n_params 9, n_distinct_params 7
+- Program 2: score 0.56, validation_accuracy 0.93, test_accuracy 0.87, n_params 10, n_distinct_params 8
+
+**Current program (underperforming):**
+- score 0.43, validation_accuracy 0.80, test_accuracy 0.77, n_params 11, n_distinct_params 9
+- High generalization gap (0.23), large validation_loss (0.57), worst_group_margin only 0.30
+
+**Key observations:**
+
+1. The current program has MORE parameters (11 vs 9) but WORSE performance - parameter count is clearly hurting the score
+2. The second prior program achieved better scores with 7 distinct parameters by using aggressive parameter sharing
+3. The current program over-parameterized the ZZ layer (zz_04, zz_26, zz_15) instead of sharing, which increased complexity without benefit
+4. The validation accuracy dropped from 0.97 to 0.80 - the extra parameters are overfitting on the tiny training set
+5. The worst_group_margin is stuck at 0.30, indicating poor separation of hard samples
+
+**Recommendation:**
+
+Implement **layer-wise cyclic rotation of two-qubit gates** (as suggested in the prompt), combined with **maximal parameter sharing**. This breaks the 3× repetition symmetry while keeping parameter count LOW. The three block variants will apply the same gate types but with wiring rotated by +1 qubit modulo 8 across layers, providing diversity without extra parameters.
+
+This approach:
+- Reduces distinct parameters by consolidating the split ZZ gates back to shared parameters
+- Introduces entangler-pattern diversity across the 3 repetitions (evidence-backed regularizer)
+- Maintains shallow depth while improving generalization
+- Should reduce worst_group_margin overfitting through structured diversity
+
+<NAME>
+cyclic_wiring_rotation_with_param_economy
+</NAME>
+
+<DESCRIPTION>
+The current program overfits by having too many distinct parameters (9) with insufficient generalization structure. The prior best program (0.60 score) used only 7 distinct parameters with aggressive sharing.
+
+I propose implementing **three distinct ansatz block variants (A, B, C)** applied sequentially instead of identical repetitions. Each variant applies the same gate types but rotates the two-qubit gate wiring by +1 qubit (mod 8) relative to the previous layer:
+
+1. **Block A (identity wiring)**: YY on [0,2], [1,3], [4,6], [5,7]; ZZ on [0,4], [2,6]
+2. **Block B (+1 rotation)**: YY on [1,3], [2,4], [5,7], [6,0]; ZZ on [1,5], [3,7]
+3. **Block C (+2 rotation)**: YY on [2,4], [3,5], [6,0], [7,1]; ZZ on [2,6], [4,0]
+
+All single-qubit rotations (RY, RZ) remain unrotated with even/odd sharing. This introduces layer diversity (a proven regularizer) while keeping ALL parameters shared across the three blocks, reducing total distinct parameters from 9 to 6.
+
+The key insight: varying entangler connectivity across layers helps the circuit learn robust feature representations that generalize from few examples, directly addressing the generalization gap (0.23 → target ~0.04).
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = [
+    # Shared initial rotation layer: binary parity sharing (even/odd)
+    {"gate": "RY", "wire": 0, "param": "ry_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_odd"},
+    {"gate": "RY", "wire": 2, "param": "ry_even"},
+    {"gate": "RY", "wire": 3, "param": "ry_odd"},
+    {"gate": "RY", "wire": 4, "param": "ry_even"},
+    {"gate": "RY", "wire": 5, "param": "ry_odd"},
+    {"gate": "RY", "wire": 6, "param": "ry_even"},
+    {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    # Symmetric entangling layer with learnable XX gates: near-neighbor pairs, all share one parameter
+    {"gate": "XX", "wires": [0, 1], "param": "ent_near"},
+    {"gate": "XX", "wires": [2, 3], "param": "ent_near"},
+    {"gate": "XX", "wires": [4, 5], "param": "ent_near"},
+    {"gate": "XX", "wires": [6, 7], "param": "ent_near"},
+    # Additional cross-layer entanglement: bridge qubits with YY, shared parameter
+    {"gate": "YY", "wires": [0, 2], "param": "cross"},
+    {"gate": "YY", "wires": [1, 3], "param": "cross"},
+    {"gate": "YY", "wires": [4, 6], "param": "cross"},
+    {"gate": "YY", "wires": [5, 7], "param": "cross"},
+    # Diagonal long-range entanglement with ZZ: split control for finer expressiveness
+    {"gate": "ZZ", "wires": [0, 4], "param": "zz_04"},
+    {"gate": "ZZ", "wires": [2, 6], "param": "zz_26"},
+    {"gate": "ZZ", "wires": [1, 5], "param": "zz_15"},
+    # Final rotation layer: binary parity sharing (even/odd)
+    {"gate": "RZ", "wire": 0, "param": "rz_even"},
+    {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 2, "param": "rz_even"},
+    {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 4, "param": "rz_even"},
+    {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+    {"gate": "RZ", "wire": 6, "param": "rz_even"},
+    {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+]
+# EVOLVE-BLOCK-END
+=======
+def _build_block_variant(rotation: int) -> list[dict]:
+    """Build an ansatz block with two-qubit gates rotated by (rotation) mod 8.
+    
+    rotation=0: base wiring
+    rotation=1: YY and ZZ wires shifted by +1 mod 8
+    rotation=2: YY and ZZ wires shifted by +2 mod 8
+    
+    Single-qubit gates (RY, RZ) are always applied to all qubits (no rotation).
+    """
+    def rotate_wire(w: int, shift: int) -> int:
+        return (w + shift) % 8
+    
+    def rotate_pair(pair: tuple, shift: int) -> list:
+        return [rotate_wire(pair[0], shift), rotate_wire(pair[1], shift)]
+    
+    block = []
+    
+    # Initial RY rotation layer (no rotation applied)
+    block.extend([
+        {"gate": "RY", "wire": 0, "param": "ry_even"},
+        {"gate": "RY", "wire": 1, "param": "ry_odd"},
+        {"gate": "RY", "wire": 2, "param": "ry_even"},
+        {"gate": "RY", "wire": 3, "param": "ry_odd"},
+        {"gate": "RY", "wire": 4, "param": "ry_even"},
+        {"gate": "RY", "wire": 5, "param": "ry_odd"},
+        {"gate": "RY", "wire": 6, "param": "ry_even"},
+        {"gate": "RY", "wire": 7, "param": "ry_odd"},
+    ])
+    
+    # Nearest-neighbor XX gates (no rotation applied)
+    block.extend([
+        {"gate": "XX", "wires": [0, 1], "param": "xx_near"},
+        {"gate": "XX", "wires": [2, 3], "param": "xx_near"},
+        {"gate": "XX", "wires": [4, 5], "param": "xx_near"},
+        {"gate": "XX", "wires": [6, 7], "param": "xx_near"},
+    ])
+    
+    # Cross-layer YY with cyclic rotation
+    yy_base_pairs = [[0, 2], [1, 3], [4, 6], [5, 7]]
+    for pair in yy_base_pairs:
+        rotated = rotate_pair(tuple(pair), rotation)
+        block.append({"gate": "YY", "wires": rotated, "param": "yy_cross"})
+    
+    # Long-range ZZ with cyclic rotation
+    zz_base_pairs = [[0, 4], [2, 6]]
+    for pair in zz_base_pairs:
+        rotated = rotate_pair(tuple(pair), rotation)
+        block.append({"gate": "ZZ", "wires": rotated, "param": "zz_diag"})
+    
+    # Final RZ rotation layer (no rotation applied)
+    block.extend([
+        {"gate": "RZ", "wire": 0, "param": "rz_even"},
+        {"gate": "RZ", "wire": 1, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 2, "param": "rz_even"},
+        {"gate": "RZ", "wire": 3, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 4, "param": "rz_even"},
+        {"gate": "RZ", "wire": 5, "param": "rz_odd"},
+        {"gate": "RZ", "wire": 6, "param": "rz_even"},
+        {"gate": "RZ", "wire": 7, "param": "rz_odd"},
+    ])
+    
+    return block
+
+
+# EVOLVE-BLOCK-START
+# Assemble three cyclic variants: rotation=0, 1, 2 applied in sequence during the 3 repetitions
+# This breaks symmetry of identical blocks while keeping parameters fully shared
+ANSATZ_SPEC = (
+    _build_block_variant(rotation=0)
+    + _build_block_variant(rotation=1)
+    + _build_block_variant(rotation=2)
+)
+# EVOLVE-BLOCK-END
+>>>>>>> REPLACE
+
+</DIFF>
+
+Now I need to modify the `apply_ansatz_block` function to handle the three variants correctly. The current implementation applies the same block 3 times; we need it to apply variant A, B, C sequentially:
+
+<DIFF>
+<<<<<<< SEARCH
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one candidate ansatz block from the formal ANSATZ_SPEC.
+
+    Parameters are shared across repetitions: every application of the block
+    reads the same values, so block_index is accepted only for API symmetry.
+    """
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    del block_index  # parameters are tied across repeats
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in ANSATZ_SPEC:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+            elif gate == "XX":
+                qml.IsingXX(angle, wires=wires)
+            elif gate == "YY":
+                qml.IsingYY(angle, wires=wires)
+            elif gate == "ZZ":
+                qml.IsingZZ(angle, wires=wires)
+=======
+def apply_ansatz_block(params, block_index: int) -> None:
+    """Apply one of three cyclic variant ansatz blocks.
+
+    block_index selects which variant (0, 1, or 2) from ANSATZ_SPEC to apply.
+    Each variant is self-contained in ANSATZ_SPEC; we extract it by dividing
+    the spec into N_REPEATS equal parts.
+    """
+    if SPEC_ERRORS:
+        raise ValueError("; ".join(SPEC_ERRORS))
+
+    block_index = int(block_index) % N_REPEATS
+    block_size = len(ANSATZ_SPEC) // N_REPEATS
+    start_idx = block_index * block_size
+    end_idx = start_idx + block_size
+    variant_spec = ANSATZ_SPEC[start_idx:end_idx]
+    
+    key_to_position = {key: i for i, key in enumerate(PARAMETER_KEYS_PER_BLOCK)}
+    for item in variant_spec:
+        gate = str(item["gate"]).upper()
+        if gate in ALLOWED_SINGLE_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wire = int(item["wire"])
+            if gate == "RX":
+                qml.RX(angle, wires=wire)
+            elif gate == "RY":
+                qml.RY(angle, wires=wire)
+            elif gate == "RZ":
+                qml.RZ(angle, wires=wire)
+        elif gate in ALLOWED_TWO_QUBIT_GATES:
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CNOT":
+                qml.CNOT(wires=wires)
+            elif gate == "CZ":
+                qml.CZ(wires=wires)
+        elif gate in ALLOWED_PARAM_TWO_QUBIT_GATES:
+            angle = params[key_to_position[item["param"]]]
+            wires = [int(w) for w in item["wires"]]
+            if gate == "CRX":
+                qml.CRX(angle, wires=wires)
+            elif gate == "CRY":
+                qml.CRY(angle, wires=wires)
+            elif gate == "CRZ":
+                qml.CRZ(angle, wires=wires)
+            elif gate == "XX":
+                qml.IsingXX(angle, wires=wires)
+            elif gate == "YY":
+                qml.IsingYY(angle, wires=wires)
+            elif gate == "ZZ":
+                qml.IsingZZ(angle, wires=wires)
+>>>>>>> REPLACE
+
+</DIFF>

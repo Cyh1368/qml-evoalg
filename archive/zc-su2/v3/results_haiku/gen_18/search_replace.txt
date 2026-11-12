@@ -1,0 +1,101 @@
+Looking at the performance metrics, I can see that:
+
+1. **Best performer (0.58 score)**: Uses all distinct parameters (10 distinct params) with high validation accuracy (0.97) and test accuracy (0.96), but slower convergence (150 steps).
+
+2. **Current program (0.47 score)**: Over-aggressive parameter sharing (only 5 distinct params) leads to underfitting - validation accuracy drops to 0.82 and test accuracy to 0.79. The worst_group_margin (0.25) and validation_margin (0.47) are both weak.
+
+3. **First program (0.55 score)**: Uses 8 distinct params with balanced results (92% validation, 88% test, 0.24 worst_group_margin).
+
+The key insight is that **extreme parameter sharing hurts generalization and robustness**. The current program sacrifices too much expressiveness by tying all RY gates to one parameter, all XX gates to one parameter, and all YY gates to one parameter.
+
+The recommendation in the prompt suggests moderate parameter tying in the entanglement layer: tie XX gates together, tie some YY gates together, but keep ZZ gates distinct. This balances parameter economy with expressiveness.
+
+The strategy:
+- Separate the uniform RY across all qubits into alternating parameters (ry_a, ry_b) to allow per-qubit discrimination
+- Group XX gates with a shared parameter (less diverse connections than YY/ZZ)
+- Group YY gates with a shared parameter (they appear on more diverse pairs)
+- Keep ZZ gates distinct (they are on specific important pairs)
+- Add back pre/post RZ layers with sharing for structured phase control
+
+This gives us 7-8 distinct parameters, better than the current 5 but more economical than the best's 10.
+
+<NAME>
+moderate_param_tying_yy_xx_separation
+</NAME>
+
+<DESCRIPTION>
+The current program over-shares parameters (5 distinct), leading to underfitting and poor worst-group margins (0.25). The best performer uses 10 distinct parameters with excellent generalization. This edit implements moderate parameter tying by:
+
+1. Using alternating RY parameters (ry_a, ry_b) instead of one global ry, allowing some per-qubit discrimination
+2. Grouping XX gates with shared xx parameter (less diverse connectivity)
+3. Grouping YY gates with shared yy parameter (more diverse pairs benefit from shared learning)
+4. Keeping ZZ gates distinct to maintain expressiveness on long-range entanglement
+5. Adding pre/post RZ layers with shared parameters for structured phase control
+
+This reduces distinct parameters from the best's 10 to 8, balancing parameter economy with improved generalization and robustness. The goal is to recover the worst_group_margin and validation margin while maintaining parameter efficiency.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry"},
+    {"gate": "RY", "wire": 1, "param": "ry"},
+    {"gate": "RY", "wire": 2, "param": "ry"},
+    {"gate": "RY", "wire": 3, "param": "ry"},
+    {"gate": "RY", "wire": 4, "param": "ry"},
+    {"gate": "RY", "wire": 5, "param": "ry"},
+    {"gate": "RY", "wire": 6, "param": "ry"},
+    {"gate": "RY", "wire": 7, "param": "ry"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy"},
+    {"gate": "XX", "wires": [4, 5], "param": "xx"},
+    {"gate": "YY", "wires": [6, 7], "param": "yy"},
+    {"gate": "RZ", "wire": 0, "param": "rz"},
+    {"gate": "RZ", "wire": 1, "param": "rz"},
+    {"gate": "RZ", "wire": 2, "param": "rz"},
+    {"gate": "RZ", "wire": 3, "param": "rz"},
+    {"gate": "RZ", "wire": 4, "param": "rz"},
+    {"gate": "RZ", "wire": 5, "param": "rz"},
+    {"gate": "RZ", "wire": 6, "param": "rz"},
+    {"gate": "RZ", "wire": 7, "param": "rz"},
+    {"gate": "XX", "wires": [1, 2], "param": "xx"},
+    {"gate": "YY", "wires": [3, 4], "param": "yy"},
+    {"gate": "XX", "wires": [5, 6], "param": "xx"},
+    {"gate": "ZZ", "wires": [0, 3], "param": "zz"},
+    {"gate": "ZZ", "wires": [4, 7], "param": "zz"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "RY", "wire": 0, "param": "ry_a"},
+    {"gate": "RY", "wire": 1, "param": "ry_b"},
+    {"gate": "RY", "wire": 2, "param": "ry_a"},
+    {"gate": "RY", "wire": 3, "param": "ry_b"},
+    {"gate": "RY", "wire": 4, "param": "ry_a"},
+    {"gate": "RY", "wire": 5, "param": "ry_b"},
+    {"gate": "RY", "wire": 6, "param": "ry_a"},
+    {"gate": "RY", "wire": 7, "param": "ry_b"},
+    {"gate": "XX", "wires": [0, 1], "param": "xx_nn"},
+    {"gate": "YY", "wires": [2, 3], "param": "yy_shared"},
+    {"gate": "ZZ", "wires": [4, 5], "param": "zz_45"},
+    {"gate": "XX", "wires": [6, 7], "param": "xx_nn"},
+    {"gate": "YY", "wires": [1, 4], "param": "yy_shared"},
+    {"gate": "ZZ", "wires": [3, 6], "param": "zz_36"},
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+</DIFF>

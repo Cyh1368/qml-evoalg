@@ -1,0 +1,35 @@
+<NAME>
+cyclic_crx_closure
+</NAME>
+
+<DESCRIPTION>
+The current program scores 0.65 with a worst_group_margin of 0.34, which is the bottleneck limiting robust separation. Comparing to the prior generation (score 0.67, worst_group_margin 0.36), we see that the key loss came from:
+1. Increased n_distinct_params (8 vs 7) — parameter economy directly impacts scoring
+2. Reduced worst_group_margin (0.34 vs 0.36) — harder samples are less well separated
+3. Slower convergence (60 vs 30 steps) — training efficiency degraded
+
+The recommendation is to close the CRX sublayer into a cyclic pattern by adding a CRX gate from qubit 7 back to qubit 0, reusing the existing "ent_crx" parameter. This achieves:
+
+**Connectivity improvement:** The three CRX gates currently form an open chain [1→2, 3→4, 5→6]. Closing the loop [7→0] connects the boundary qubits and reinforces entanglement pathways across the full qubit ring, improving hard-sample discrimination (worst_group_margin).
+
+**Parameter efficiency:** Reusing "ent_crx" maintains n_distinct_params at 8 (no increase), but the shared gate pattern creates a more coherent entanglement structure that generalizes better from the small training set.
+
+**Analogy to prior success:** The prior generation used shared XX gates [0-1, 2-3, 4-5, 6-7] and shared YY gates [1-2, 3-4, 5-6]. This new CRX closure mirrors that proven ring-closure strategy, extending the internal connectivity without parameter proliferation.
+
+The cyclic closure should tighten the qubit graph, improve separation on hard samples, and recover the robust margin performance lost in the current version.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # CRX bridge layer: controlled rotation mixing between XX and YY
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_crx"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_crx"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_crx"},
+=======
+    # CRX bridge layer: controlled rotation mixing between XX and YY
+    {"gate": "CRX", "wires": [1, 2], "param": "ent_crx"},
+    {"gate": "CRX", "wires": [3, 4], "param": "ent_crx"},
+    {"gate": "CRX", "wires": [5, 6], "param": "ent_crx"},
+    {"gate": "CRX", "wires": [7, 0], "param": "ent_crx"},
+>>>>>>> REPLACE
+</DIFF>

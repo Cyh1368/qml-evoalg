@@ -1,0 +1,110 @@
+<NAME>
+hybrid_crx_cz_ring
+</NAME>
+
+<DESCRIPTION>
+This edit implements a hybrid entangling strategy that interleaves parameterized CRX gates with fixed CZ gates in a ring topology. The approach combines the parameter efficiency of CZ gates with the expressivity of CRX gates. By alternating between even and odd indexed CRX/CZ pairs, we create a more flexible entangling structure while maintaining a relatively low parameter count. This should improve the model's ability to learn complex patterns in the data while keeping the circuit depth manageable.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+ANSATZ_SPEC = [
+    # Local rotations (keep full per-qubit flexibility for the "input" phase)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+
+    # Higher-connectivity fixed entangling scaffold (no new parameters)
+    # Ring / nearest-neighbor mixing
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [0, 7]},
+
+    # Parameter reduction: share final RZ across all qubits
+    {"gate": "RZ", "wire": 0, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_shared"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_shared"},
+]
+
+=======
+
+ANSATZ_SPEC = [
+    # Local rotations (keep full per-qubit flexibility for the "input" phase)
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+
+    # Hybrid entangling layer: alternating CRX and CZ gates in ring topology
+    # Even indices: CRX gates (parameterized)
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_0"},
+    {"gate": "CZ", "wires": [1, 2]},  # Odd indices: CZ gates (fixed)
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_2"},
+    {"gate": "CZ", "wires": [3, 4]},  # Odd indices: CZ gates (fixed)
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_4"},
+    {"gate": "CZ", "wires": [5, 6]},  # Odd indices: CZ gates (fixed)
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_6"},
+    {"gate": "CZ", "wires": [0, 7]},  # Odd indices: CZ gates (fixed)
+
+    # Second hybrid entangling layer (reusing parameters)
+    {"gate": "CRX", "wires": [0, 1], "param": "crx_0"},
+    {"gate": "CZ", "wires": [1, 2]},  # Odd indices: CZ gates (fixed)
+    {"gate": "CRX", "wires": [2, 3], "param": "crx_2"},
+    {"gate": "CZ", "wires": [3, 4]},  # Odd indices: CZ gates (fixed)
+    {"gate": "CRX", "wires": [4, 5], "param": "crx_4"},
+    {"gate": "CZ", "wires": [5, 6]},  # Odd indices: CZ gates (fixed)
+    {"gate": "CRX", "wires": [6, 7], "param": "crx_6"},
+    {"gate": "CZ", "wires": [0, 7]},  # Odd indices: CZ gates (fixed)
+
+    # Final local rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+
+>>>>>>> REPLACE
+
+</DIFF>

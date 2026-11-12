@@ -1,0 +1,14 @@
+{
+  "generation": 59,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "theta_shared_lite_entangler_hybrid",
+  "patch_description": "This design crosses the two 0.80-scoring seeds that both used a *single* shared trainable parameter \"theta\" per block repetition (maximal parameter economy, n_params=8 total across 8 reps). The first seed used a fixed CNOT/CZ ring plus a parametrized antipodal CRZ layer (depth 72, converges in 60 steps); the second seed used an XX/CZ alternating ring plus extra skip-2 and antipodal CZ shortcuts (depth 96, but converges much faster in 30 steps thanks to the non-commuting parametrized XX interaction placed directly in the entangling ring).\n\nThe crossover keeps the fast-converging ingredient (the alternating parametrized-XX/fixed-CZ nearest-neighbor ring, reusing \"theta\") since that was the decisive factor separating 30-step vs 60-step convergence between the two equally-accurate seeds. It drops the extra zero-parameter skip-2 sub-ring (2b) from the second seed, since the antipodal shortcuts (2c) already provide long-range connectivity, and the skip-2 ring only added depth/gate-count without changing convergence speed or accuracy. The result should retain the 30-step convergence advantage while being shallower and having fewer gates than either 0.80 seed, improving the \"PARAMETER ECONOMY\" / gate-count / depth aspects of the score without sacrificing the perfect train/val/test accuracy both seeds already achieve with only 1 trainable parameter per repetition.\n\nStructure per block repetition (single shared parameter \"theta\"):\n1. RX on all 8 qubits (shared theta) \u2014 non-commuting pre-rotation axis 1.\n2. RY on all 8 qubits (shared theta) \u2014 non-commuting pre-rotation axis 2.\n3. Nearest-neighbor ring, alternating: even links get a parametrized XX(theta) interaction, odd links get a fixed, zero-parameter CZ. This is the key ingredient tied to fast (30-step) convergence.\n4. Fixed, zero-parameter antipodal shortcuts (distance-4 on the 8-cycle) for long-range connectivity, kept lightweight (only 4 gates) instead of adding a second skip-2 sub-ring.\n5. RZ on all 8 qubits (shared theta) \u2014 post-entanglement rotation, reusing the same single parameter to keep the unique-parameter count at exactly 1 per block.\n\nThis keeps n_params identical to both parents (1 unique name x 8 repetitions = 8 total), but removes 8 redundant CZ gates (the skip-2 sub-ring) per repetition, reducing depth/gate-count relative to the faster-converging parent while preserving its structural advantage.",
+  "error_msg": null,
+  "timestamp": "2026-07-25T14:01:35.016291",
+  "llm_cost": 0.046754,
+  "llm_model": "anthropic/claude-sonnet-5"
+}

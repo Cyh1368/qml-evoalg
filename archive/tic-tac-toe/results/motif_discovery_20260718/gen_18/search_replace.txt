@@ -1,0 +1,146 @@
+edit_targeted_crz_and_grouped_zzz
+</NAME>
+
+<DESCRIPTION>
+Replace redundant center-edge CZs and the single shared CRZ with two symmetry-aware CRZ parameters applied to opposite edge pairs. Also split the collective ZZZ winning-line rotations into three orientation-specific parameters (horizontal, vertical, diagonal) rather than one shared parameter. Rationale: replacing fixed CZs on center edges with parametrized CRZs concentrates conditional phase control where center-edge correlations matter while keeping short-range CZs on the perimeter; splitting ZZZ by geometric orientation permits the circuit to learn distinct three-in-a-row signatures (horizontal vs vertical vs diagonal) without exploding parameter count. This improves expressive power targeted at tic-tac-toe motifs while keeping parameter sharing to respect symmetry and limit parameter growth.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Symmetry-aware local rotations: share RY across corners, edges, and center
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Small shared pre-phase rotation applied uniformly (parameter-efficient)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre"},
+
+    # Keep the local CZ lattice for short-range entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [1, 8]},
+    {"gate": "CZ", "wires": [3, 8]},
+    {"gate": "CZ", "wires": [5, 8]},
+    {"gate": "CZ", "wires": [7, 8]},
+
+    # Parametrized controlled-phase between center and its edges (shared param)
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_ce"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_ce"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_ce"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_ce"},
+
+    # Motif-discovery: collective ZZZ rotations placed on the eight winning lines.
+    # All winning lines share the same parameter to bias the circuit toward detecting
+    # three-in-a-row correlations while keeping parameter count low.
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_win"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_win"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_win"},
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_win"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_win"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_win"},
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_win"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_win"},
+
+    # Small shared post-phase rotation applied uniformly
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post"},
+]
+=======
+ANSATZ_SPEC = [
+    # Symmetry-aware local rotations: share RY across corners, edges, and center
+    {"gate": "RY", "wire": 0, "param": "ry_corner"},
+    {"gate": "RY", "wire": 2, "param": "ry_corner"},
+    {"gate": "RY", "wire": 4, "param": "ry_corner"},
+    {"gate": "RY", "wire": 6, "param": "ry_corner"},
+    {"gate": "RY", "wire": 1, "param": "ry_edge"},
+    {"gate": "RY", "wire": 3, "param": "ry_edge"},
+    {"gate": "RY", "wire": 5, "param": "ry_edge"},
+    {"gate": "RY", "wire": 7, "param": "ry_edge"},
+    {"gate": "RY", "wire": 8, "param": "ry_center"},
+
+    # Small shared pre-phase rotation applied uniformly (parameter-efficient)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre"},
+    {"gate": "RZ", "wire": 8, "param": "rz_pre"},
+
+    # Keep the local CZ lattice for short-range entanglement (perimeter)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    # Note: center-edge perimeter CZs replaced by targeted parametrized CRZs below
+
+    # Targeted parametrized controlled-phase on center-edge pairs.
+    # Opposite edge pairs share parameters to respect symmetry while allowing
+    # distinct phases for the two orthogonal axis pairs.
+    {"gate": "CRZ", "wires": [1, 8], "param": "crz_edge_pair1"},
+    {"gate": "CRZ", "wires": [5, 8], "param": "crz_edge_pair1"},
+    {"gate": "CRZ", "wires": [3, 8], "param": "crz_edge_pair2"},
+    {"gate": "CRZ", "wires": [7, 8], "param": "crz_edge_pair2"},
+
+    # Motif-discovery: collective ZZZ rotations placed on the eight winning lines.
+    # Use distinct parameters for horizontal / vertical / diagonal lines so the
+    # circuit can learn orientation-specific three-in-a-row signals.
+    # Horizontal lines
+    {"gate": "ZZZ", "wires": [0, 1, 2], "param": "zzz_h"},
+    {"gate": "ZZZ", "wires": [7, 8, 3], "param": "zzz_h"},
+    {"gate": "ZZZ", "wires": [6, 5, 4], "param": "zzz_h"},
+    # Vertical lines
+    {"gate": "ZZZ", "wires": [0, 7, 6], "param": "zzz_v"},
+    {"gate": "ZZZ", "wires": [1, 8, 5], "param": "zzz_v"},
+    {"gate": "ZZZ", "wires": [2, 3, 4], "param": "zzz_v"},
+    # Diagonal lines
+    {"gate": "ZZZ", "wires": [0, 8, 4], "param": "zzz_d"},
+    {"gate": "ZZZ", "wires": [2, 8, 6], "param": "zzz_d"},
+
+    # Small shared post-phase rotation applied uniformly
+    {"gate": "RZ", "wire": 0, "param": "rz_post"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post"},
+    {"gate": "RZ", "wire": 8, "param": "rz_post"},
+]
+>>>>>>> REPLACE
+</DIFF>

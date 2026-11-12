@@ -1,0 +1,88 @@
+<NAME>
+paired_sharing_adaptive_bridge
+</NAME>
+
+<DESCRIPTION>
+Exploit the permutation-like structure induced by all-pairs binary feature encoding and the symmetric mean-Z readout by sharing rotation parameters across paired wires. This reduces each block from 24 to 13 unique parameters and the full model from 146 to 80 parameters, improving regularization and parameter efficiency while preserving independent copies across the six fixed blocks. Replace the redundant duplicated CZ(7,0), whose two consecutive applications cancel exactly, with the previously stronger skip-chain topology. Add one trainable CRZ on the bridge between the even and odd skip chains, allowing Adam to adapt the inter-chain phase correlation without allocating separate parameters to every entangler.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "CZ", "wires": [7, 0]},
+    {"gate": "RY", "wire": 0, "param": "ry_post_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_post_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_post_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_post_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_post_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_post_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_post_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Pair-shared local mixing regularizes the symmetric mean-Z model.
+    {"gate": "RY", "wire": 0, "param": "ry_pre_01"},
+    {"gate": "RY", "wire": 1, "param": "ry_pre_01"},
+    {"gate": "RY", "wire": 2, "param": "ry_pre_23"},
+    {"gate": "RY", "wire": 3, "param": "ry_pre_23"},
+    {"gate": "RY", "wire": 4, "param": "ry_pre_45"},
+    {"gate": "RY", "wire": 5, "param": "ry_pre_45"},
+    {"gate": "RY", "wire": 6, "param": "ry_pre_67"},
+    {"gate": "RY", "wire": 7, "param": "ry_pre_67"},
+    {"gate": "RZ", "wire": 0, "param": "rz_01"},
+    {"gate": "RZ", "wire": 1, "param": "rz_01"},
+    {"gate": "RZ", "wire": 2, "param": "rz_23"},
+    {"gate": "RZ", "wire": 3, "param": "rz_23"},
+    {"gate": "RZ", "wire": 4, "param": "rz_45"},
+    {"gate": "RZ", "wire": 5, "param": "rz_45"},
+    {"gate": "RZ", "wire": 6, "param": "rz_67"},
+    {"gate": "RZ", "wire": 7, "param": "rz_67"},
+
+    # Parallelizable skip chains spread correlations across the register.
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CRZ", "wires": [6, 7], "param": "bridge_crz"},
+
+    # Independent pair-shared readout-basis mixing.
+    {"gate": "RY", "wire": 0, "param": "ry_post_01"},
+    {"gate": "RY", "wire": 1, "param": "ry_post_01"},
+    {"gate": "RY", "wire": 2, "param": "ry_post_23"},
+    {"gate": "RY", "wire": 3, "param": "ry_post_23"},
+    {"gate": "RY", "wire": 4, "param": "ry_post_45"},
+    {"gate": "RY", "wire": 5, "param": "ry_post_45"},
+    {"gate": "RY", "wire": 6, "param": "ry_post_67"},
+    {"gate": "RY", "wire": 7, "param": "ry_post_67"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

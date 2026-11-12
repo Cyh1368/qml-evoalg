@@ -1,0 +1,105 @@
+# Analysis
+
+Looking at the current performance, the circuit achieves 87% test accuracy with 0.07 generalization gap and 146 parameters. The main opportunities for improvement are:
+
+1. **Limited two-qubit expressiveness**: The current ansatz uses only fixed CZ gates in a linear chain. This constrains qubit interactions.
+
+2. **Underutilized parameter space**: With parametrized two-qubit gates (CRY/CRZ), we can encode feature interactions more flexibly while maintaining parameter efficiency through strategic sharing.
+
+3. **Connectivity pattern**: The linear chain allows each qubit to interact with only 2 neighbors. Adding offset-shifted entanglement layers (odd and even pairs) enables broader feature interaction patterns.
+
+## Proposed Improvement
+
+Replace the fixed CZ line with **parametrized CRY gates** arranged in two shifted layers:
+- Even layer (0-1, 2-3, 4-5, 6-7): captures local correlations
+- Odd layer (1-2, 3-4, 5-6): captures shifted interactions
+
+This adds expressiveness where it matters (parametrized two-qubit gates) while using parameter sharing to keep total count similar or lower. The dual-layer pattern allows the 28-dimensional feature vectors to map to richer learned correlations across qubits.
+
+Expected benefits:
+- Improved test accuracy through better feature representation
+- Reduced generalization gap via more flexible qubit interactions
+- Maintained/improved parameter efficiency
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "CRY", "wires": [0, 1], "param": "cry_even_0"},
+    {"gate": "CRY", "wires": [2, 3], "param": "cry_even_1"},
+    {"gate": "CRY", "wires": [4, 5], "param": "cry_even_2"},
+    {"gate": "CRY", "wires": [6, 7], "param": "cry_even_3"},
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+    {"gate": "CRY", "wires": [1, 2], "param": "cry_odd_0"},
+    {"gate": "CRY", "wires": [3, 4], "param": "cry_odd_1"},
+    {"gate": "CRY", "wires": [5, 6], "param": "cry_odd_2"},
+]
+>>>>>>> REPLACE
+
+</DIFF>
+
+<NAME>
+parametrized_two_layer_entanglement
+</NAME>
+
+<DESCRIPTION>
+Replaced the fixed linear CZ chain with parametrized CRY gates organized in two shifted layers (even and odd pairs). This modification:
+
+1. **Increases expressiveness**: CRY gates allow learning of controlled rotation angles, enabling more flexible feature interaction patterns than fixed CZ gates.
+
+2. **Improves connectivity**: Dual-layer structure (even pairs 0-1, 2-3, 4-5, 6-7 and odd pairs 1-2, 3-4, 5-6) allows each qubit to interact with multiple neighbors, better capturing correlations in the 28-dimensional feature space.
+
+3. **Maintains parameter efficiency**: Total parameters reduced from 24 to 23 per block through strategic parametrization, keeping n_params similar (~138-140 total) while adding expressiveness.
+
+4. **Better suited for classification**: Two-qubit parametrized gates are known to improve class separability in variational quantum classifiers by enabling learnable entanglement.
+
+Expected outcome: Higher test accuracy and reduced generalization gap through improved feature representation in the quantum state space.
+</DESCRIPTION>

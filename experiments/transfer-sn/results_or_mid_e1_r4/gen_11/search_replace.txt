@@ -1,0 +1,104 @@
+<NAME>
+four_group_param_sharing
+</NAME>
+
+<DESCRIPTION>
+Implement a four-group parameter-sharing scheme that balances expressivity and efficiency.
+
+**Motivation:**
+The prior programs show that Gen 4 (with 2-group sharing and parametrized CRZ) achieved the best score (0.07) with only 56 params and very fast convergence (60 steps), while the current program has regressed to 146 params and slower convergence (750 steps).
+
+The recommendation suggests testing a four-group scheme as a middle ground:
+- Gen 4: 2-group sharing (ry_even/odd, rx_group_0/1) → 54 params → good but limited expressivity
+- Current: No sharing (8 independent RY, 8 RZ_pre, 8 RZ_post) → 146 params → overfitting, slow
+- **Proposed: 4-group sharing on qubit pairs [0,1], [2,3], [4,5], [6,7]** → 98 params → balance
+
+This groups qubits into natural pairs and applies the same parameter within each pair:
+- RY layer: 4 params (one per pair)
+- CRZ layer: 4 params (one per pair) – parametrized entanglement
+- RX layer: 4 params (one per pair)
+- RZ layer: 4 params (one per pair)
+
+**Expected improvements:**
+- 33% parameter reduction vs. current (146 → 98)
+- Better parameter efficiency than current while more expressive than Gen 4
+- Faster convergence due to shared parameters
+- More flexible than 2-group (4 degrees of freedom vs. 2)
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+ANSATZ_SPEC = [
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+
+=======
+
+ANSATZ_SPEC = [
+    # RY layer with four-group sharing: [0,1], [2,3], [4,5], [6,7]
+    {"gate": "RY", "wire": 0, "param": "ry_01"},
+    {"gate": "RY", "wire": 1, "param": "ry_01"},
+    {"gate": "RY", "wire": 2, "param": "ry_23"},
+    {"gate": "RY", "wire": 3, "param": "ry_23"},
+    {"gate": "RY", "wire": 4, "param": "ry_45"},
+    {"gate": "RY", "wire": 5, "param": "ry_45"},
+    {"gate": "RY", "wire": 6, "param": "ry_67"},
+    {"gate": "RY", "wire": 7, "param": "ry_67"},
+    # Parametrized CRZ entangling layer on qubit pairs
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_01"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_23"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_45"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_67"},
+    # RX layer with four-group sharing
+    {"gate": "RX", "wire": 0, "param": "rx_01"},
+    {"gate": "RX", "wire": 1, "param": "rx_01"},
+    {"gate": "RX", "wire": 2, "param": "rx_23"},
+    {"gate": "RX", "wire": 3, "param": "rx_23"},
+    {"gate": "RX", "wire": 4, "param": "rx_45"},
+    {"gate": "RX", "wire": 5, "param": "rx_45"},
+    {"gate": "RX", "wire": 6, "param": "rx_67"},
+    {"gate": "RX", "wire": 7, "param": "rx_67"},
+    # RZ layer with four-group sharing
+    {"gate": "RZ", "wire": 0, "param": "rz_01"},
+    {"gate": "RZ", "wire": 1, "param": "rz_01"},
+    {"gate": "RZ", "wire": 2, "param": "rz_23"},
+    {"gate": "RZ", "wire": 3, "param": "rz_23"},
+    {"gate": "RZ", "wire": 4, "param": "rz_45"},
+    {"gate": "RZ", "wire": 5, "param": "rz_45"},
+    {"gate": "RZ", "wire": 6, "param": "rz_67"},
+    {"gate": "RZ", "wire": 7, "param": "rz_67"},
+]
+
+>>>>>>> REPLACE
+</DIFF>

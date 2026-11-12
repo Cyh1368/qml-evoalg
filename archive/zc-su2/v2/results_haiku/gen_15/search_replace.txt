@@ -1,0 +1,62 @@
+Looking at the performance metrics across the three programs:
+
+**Program 1 (seed)**: Score 0.65, n_distinct_params=8, worst_group_margin=0.35, convergence=60
+**Program 2 (CRZ upgrade)**: Score 0.66, n_distinct_params=7, worst_group_margin=0.35, convergence=30 ✓ BEST
+**Program 3 (current)**: Score 0.64, n_distinct_params=9, worst_group_margin=0.34, convergence=60
+
+The current program regressed compared to Program 2. Program 2's success came from:
+1. **Replacing ZZ with CRZ gates** (parametrized two-qubit control gates) - more expressive than Ising gates
+2. **Aggressive parameter reduction** (7 distinct params vs 8-9) - critical for small data
+3. **Faster convergence** (30 vs 60 steps)
+
+The current program uses:
+- Too many fixed CZ gates (13 gates with no parameters)
+- Too many distinct parameters (9) spread inefficiently
+- Poor worst_group_margin (0.34)
+
+**Strategy**: Replace the current fixed CZ entangling structure with parametrized CRZ gates (like Program 2), but keep the useful initial RY+RZ pattern. This should:
+- Reduce distinct params through parameter sharing
+- Improve expressivity with tunable two-qubit interactions
+- Speed up convergence (worst_group_margin is sensitive to parameter efficiency)
+
+<NAME>
+replace_fixed_cz_with_crz_entangling
+</NAME>
+
+<DESCRIPTION>
+The current program uses 13 fixed CZ gates with no trainable parameters in the entangling block, limiting expressivity. Program 2 achieved the best score (0.66) by replacing Ising gates with CRZ gates, which are parametrized controlled-rotation gates offering better control over two-qubit interactions.
+
+This edit replaces the fixed CZ entangling structure with parametrized CRZ gates using aggressive parameter sharing. We group the CRZ gates into two entangling blocks with shared parameters (ent_crzA, ent_crzB), which:
+1. Adds trainability to two-qubit interactions
+2. Reduces distinct parameters (from 9 to ~7)
+3. Improves worst_group_margin by giving the optimizer more control
+4. Speeds up convergence (critical for small training sets)
+
+The pattern maintains the nearest-neighbor and mid-range connectivity that was successful in Program 2.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+=======
+    {"gate": "CRZ", "wires": [0, 1], "param": "ent_crzA"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "ent_crzA"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "ent_crzA"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "ent_crzA"},
+    {"gate": "CRZ", "wires": [1, 2], "param": "ent_crzB"},
+    {"gate": "CRZ", "wires": [3, 4], "param": "ent_crzB"},
+    {"gate": "CRZ", "wires": [5, 6], "param": "ent_crzB"},
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,149 @@
+Looking at the performance metrics and the current ansatz design, I can see that the previous best performer used CRZ gates with shared parameters for the ring and chord entanglement, which achieved much better results than the current design that uses fixed CZ gates plus a few CRZ gates.
+
+The key insight is that making the entanglement strengths learnable (using CRZ with shared parameters) significantly improves performance while keeping the parameter count reasonable. Let me propose a modification that combines the best elements:
+
+<NAME>
+replace_fixed_cz_with_learnable_crz
+</NAME>
+
+<DESCRIPTION>
+Replace the fixed CZ entanglement structure with learnable CRZ gates using shared parameters for rings and chords. This follows the successful pattern from the previous best-performing candidate where chi_ring and chi_chord parameters controlled entangling strengths. This should improve expressivity while maintaining parameter efficiency.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+
+ANSATZ_SPEC = [
+    # --- Parameter-efficient shared local rotations (2 params) ---
+    # RY: share across first half / second half
+    {"gate": "RY", "wire": 0, "param": "ry_half0"},
+    {"gate": "RY", "wire": 1, "param": "ry_half0"},
+    {"gate": "RY", "wire": 2, "param": "ry_half0"},
+    {"gate": "RY", "wire": 3, "param": "ry_half0"},
+    {"gate": "RY", "wire": 4, "param": "ry_half1"},
+    {"gate": "RY", "wire": 5, "param": "ry_half1"},
+    {"gate": "RY", "wire": 6, "param": "ry_half1"},
+    {"gate": "RY", "wire": 7, "param": "ry_half1"},
+
+    # Pre RZ: share across first half / second half
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_half0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_half0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_half0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_half0"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_half1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_half1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_half1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_half1"},
+
+    # Shared RX: share across first half / second half (adds some basis change)
+    {"gate": "RX", "wire": 0, "param": "rx_half0"},
+    {"gate": "RX", "wire": 1, "param": "rx_half0"},
+    {"gate": "RX", "wire": 2, "param": "rx_half0"},
+    {"gate": "RX", "wire": 3, "param": "rx_half0"},
+    {"gate": "RX", "wire": 4, "param": "rx_half1"},
+    {"gate": "RX", "wire": 5, "param": "rx_half1"},
+    {"gate": "RX", "wire": 6, "param": "rx_half1"},
+    {"gate": "RX", "wire": 7, "param": "rx_half1"},
+
+    # --- Fixed entangling pattern (no extra parameters) ---
+    # Two interleaved CZ rings + a few chords
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [2, 4]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [6, 0]},
+
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [3, 5]},
+    {"gate": "CZ", "wires": [5, 7]},
+    {"gate": "CZ", "wires": [7, 1]},
+
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # --- One shared controlled rotation parameter (adds nonlinearity) ---
+    # Apply CRZ on four paired edges with the same parameter
+    {"gate": "CRZ", "wires": [1, 0], "param": "crz_pair_shared"},
+    {"gate": "CRZ", "wires": [3, 2], "param": "crz_pair_shared"},
+    {"gate": "CRZ", "wires": [5, 4], "param": "crz_pair_shared"},
+    {"gate": "CRZ", "wires": [7, 6], "param": "crz_pair_shared"},
+
+    # --- Post local rotations (2 params) ---
+    {"gate": "RZ", "wire": 0, "param": "rz_post_half0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_half0"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_half0"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_half0"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_half1"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_half1"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_half1"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_half1"},
+
+    # Global RZ at the end of each block (stabilizes calibration/optimization)
+    {"gate": "RZ", "wire": 0, "param": "global_z"},
+    {"gate": "RZ", "wire": 1, "param": "global_z"},
+    {"gate": "RZ", "wire": 2, "param": "global_z"},
+    {"gate": "RZ", "wire": 3, "param": "global_z"},
+    {"gate": "RZ", "wire": 4, "param": "global_z"},
+    {"gate": "RZ", "wire": 5, "param": "global_z"},
+    {"gate": "RZ", "wire": 6, "param": "global_z"},
+    {"gate": "RZ", "wire": 7, "param": "global_z"},
+]
+
+=======
+
+# Efficient two-bank ansatz design (0-3 and 4-7) with learnable entangling strengths:
+# - Coarse-grained parameter sharing across two 4-qubit banks reduces overfitting.
+# - High-performance baseline structure with learnable CRZ entanglement.
+# - chi_ring and chi_chord parameters control entangling strengths.
+ANSATZ_SPEC = [
+    # Coarse-grained RY sharing (0-3 vs 4-7)
+    {"gate": "RY", "wire": 0, "param": "ry_h"},
+    {"gate": "RY", "wire": 1, "param": "ry_h"},
+    {"gate": "RY", "wire": 2, "param": "ry_h"},
+    {"gate": "RY", "wire": 3, "param": "ry_h"},
+    {"gate": "RY", "wire": 4, "param": "ry_h2"},
+    {"gate": "RY", "wire": 5, "param": "ry_h2"},
+    {"gate": "RY", "wire": 6, "param": "ry_h2"},
+    {"gate": "RY", "wire": 7, "param": "ry_h2"},
+
+    # Coarse-grained RZ_pre sharing (0-3 vs 4-7)
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_h"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_h2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_h2"},
+
+    # Proven interleaved CRZ rings with shared chi_ring parameter
+    {"gate": "CRZ", "wires": [0, 2], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [2, 4], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [4, 6], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [6, 0], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [1, 3], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [3, 5], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [5, 7], "param": "chi_ring"},
+    {"gate": "CRZ", "wires": [7, 1], "param": "chi_ring"},
+
+    # Opposite-chord CRZs with shared chi_chord parameter
+    {"gate": "CRZ", "wires": [0, 4], "param": "chi_chord"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "chi_chord"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "chi_chord"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "chi_chord"},
+
+    # Coarse-grained RZ_post sharing (0-3 vs 4-7)
+    {"gate": "RZ", "wire": 0, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_h"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_h2"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_h2"},
+]
+
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,59 @@
+<NAME>
+single_global_chain
+
+<DESCRIPTION>
+Prior generations showed that collapsing the trainable-parameter set to just 2 unique values (either two global RY/RZ angles, or two group angles reused across RY/RZ) already reaches perfect train/val/test accuracy (score 0.72, n_params=14). The 4-unique-parameter variant only hurt score (0.66) despite identical accuracy, confirming the score is dominated by parameter economy once accuracy saturates. This version pushes economy further: a single scalar angle "theta" drives every RY gate in the pre-entanglement layer and every RZ gate in the post-entanglement layer (reused, not separate), combined with a lightweight open nearest-neighbor CZ chain (no wrap-around) for entanglement, which previously gave the fastest convergence (30 steps) and lowest depth (29) among equally-accurate designs. This yields only 1 trainable parameter per block repetition (n_params expected ≈ 8, versus 14 for the previous best), maximizing parameter_efficiency while keeping the same expressive single-qubit-rotation + linear-entangler backbone that already reliably reaches 100% accuracy with near-zero generalization gap.
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 1. Pre-entanglement rotations: ALL 8 qubits share a SINGLE trainable
+#    parameter "theta" on the RY axis. This is the maximally economical
+#    reduction of prior group-sharing schemes (which used 2 unique
+#    parameters). A single global angle still lets every qubit's Bloch
+#    vector rotate identically before entanglement mixes them.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 2. Entangling layer: an OPEN nearest-neighbor CZ chain (no wrap-around
+#    edge). This fixed, parameter-free layer previously gave the smallest
+#    circuit depth (29) and fastest convergence (30 steps) among designs
+#    that reached perfect accuracy, compared to a closed ring which
+#    roughly doubled depth and convergence time without any accuracy gain.
+for i in range(N_QUBITS - 1):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, i + 1]})
+
+# 3. Post-entanglement rotations: reuse the SAME single parameter "theta"
+#    (now on the RZ axis) for all 8 qubits. Sharing across both axes and
+#    all qubits collapses the trainable-parameter count for this block to
+#    just ONE, while still giving the circuit a non-trivial entangled
+#    transformation (RY then entangle then RZ, all driven by one angle).
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

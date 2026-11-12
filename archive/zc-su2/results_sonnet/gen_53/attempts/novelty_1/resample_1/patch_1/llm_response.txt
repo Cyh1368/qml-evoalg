@@ -1,0 +1,74 @@
+<NAME>
+compact_dual_axis_entangler
+
+<DESCRIPTION>
+Crossover between the "single shared-parameter" seed (low gate-count, low loss, but slow convergence) and the "dual-axis RX/RY + antipodal CRZ" seed (fast convergence, but heavier gate count). Both prior variants use only ONE trainable parameter name ("theta"/"p_shared") reused across every rotation and even across the parametrized entangler, so the total parameter count is driven entirely by the fixed number of block repetitions applied outside this file (all three reference programs reach n_params = 8).
+
+The key design choice here is to keep the single unique parameter name but assemble a *lean* single-block circuit (no redundant block-doubling like the current program, which merely doubles depth/gate-count for zero benefit) that borrows:
+  * the RX -> RY dual-axis pre-rotation (non-commuting axes) from the fast-converging seed, which appears responsible for its low convergence_step (60 steps) since the extra axis gives the shared scalar more effective expressive directions before entanglement,
+  * a single fixed CZ ring (cheap, zero-parameter entangling backbone) from the low-gate-count / low-loss seed instead of the heavier ring+skip-2+alternating-CNOT combination,
+  * a small antipodal CRZ layer reusing "theta" (only 4 extra gates) to inject one tunable long-range entangling interaction, since this was present in the fast-converging seed and likely contributes to its quick convergence,
+  * the RZ post-rotation reusing "theta" to close out the block, as in all three seeds.
+
+This drops the gate count drastically (from 168–432 down to ~36 gates per block) and depth accordingly, while retaining the multi-axis rotation diversity and one tunable entangling gate that seemed to drive fast convergence, aiming for a design that keeps perfect train/val/test accuracy and low loss but converges faster and is far cheaper in depth/gate-count than any of the three prior variants — improving parameter economy and circuit efficiency without adding any new trainable parameter names.
+
+</DESCRIPTION>
+
+<CODE>
+```python
+"""Seed program. Only ANSATZ_SPEC inside the EVOLVE-BLOCK is evolved.
+
+Everything else about the task, that is how inputs are encoded, how the circuit
+is measured, how training works and how metrics are computed, is fixed and lives
+in a module that is not reproduced here. No information about the data is
+available in this file.
+"""
+
+from _backend import run_experiment as _run
+
+N_QUBITS = 8
+ALLOWED_SINGLE_QUBIT_GATES = {"RX", "RY", "RZ"}
+ALLOWED_TWO_QUBIT_GATES = {"CNOT", "CZ"}
+ALLOWED_PARAM_TWO_QUBIT_GATES = {"CRX", "CRY", "CRZ"}
+ALLOWED_ISING_GATES = {"XX", "YY", "ZZ"}
+
+
+# EVOLVE-BLOCK-START
+ANSATZ_SPEC = []
+
+# 1. Dual-axis pre-entanglement rotation: ALL 8 qubits share the SAME single
+#    trainable parameter "theta" on RX, then again on RY (non-commuting
+#    axes). This gives the single shared scalar two effective rotation
+#    directions before any entangling gate is applied, borrowed from the
+#    fast-converging seed design, without adding any new parameter names.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RX", "wire": wire, "param": "theta"})
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RY", "wire": wire, "param": "theta"})
+
+# 2. Cheap, fixed (parameter-free) nearest-neighbor CZ ring backbone —
+#    zero trainable parameters, minimal gate count (8 gates), same
+#    entangling topology as the low-gate-count / low-loss seed.
+for i in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "CZ", "wires": [i, (i + 1) % N_QUBITS]})
+
+# 3. A single small layer of tunable long-range entanglers (antipodal
+#    pairs, distance 4 on the 8-cycle), reusing the SAME "theta"
+#    parameter. Only 4 extra gates, but injects one non-commuting
+#    entangling interaction tied to the trainable scalar, which appeared
+#    to help convergence speed in the richer seed.
+for i in range(N_QUBITS // 2):
+    ANSATZ_SPEC.append({"gate": "CRZ", "wires": [i, i + N_QUBITS // 2], "param": "theta"})
+
+# 4. Post-entanglement rotation layer, axis RZ, reusing the SAME "theta"
+#    parameter, closing out the block with a third rotation axis while
+#    keeping the total unique parameter count per block at exactly 1.
+for wire in range(N_QUBITS):
+    ANSATZ_SPEC.append({"gate": "RZ", "wire": wire, "param": "theta"})
+# EVOLVE-BLOCK-END
+
+
+def run_experiment(**kwargs):
+    return _run(ANSATZ_SPEC, **kwargs)
+```
+</CODE>

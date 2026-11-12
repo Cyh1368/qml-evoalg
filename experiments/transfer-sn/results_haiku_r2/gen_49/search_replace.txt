@@ -1,0 +1,41 @@
+<NAME>
+parametrize_cross_ring_crz
+</NAME>
+
+<DESCRIPTION>
+The current architecture uses fixed CZ gates in the cross-ring layer (Layer 3: wires [0,4], [1,5], [2,6], [3,7]). These long-range entanglement gates are crucial for connecting distant qubits but are currently non-parametrized.
+
+The recommendation is to convert these fixed CZ gates into parametrized CRZ gates with a single shared parameter. This approach:
+
+1. **Adds learnable long-range entanglement**: The cross-ring layer currently provides fixed connectivity. By parametrizing it with CRZ, we allow the optimizer to adjust the strength of long-range entanglement during training.
+
+2. **Minimal parameter overhead**: Using a single shared parameter "crz_cr" across all four cross-ring CRZ gates adds only 1 parameter per block (3 per upload × 2 repeats = 6 total circuit parameters), increasing from 26 to 32 total parameters. This is still parameter-efficient.
+
+3. **Leverages proven pattern**: The prior program already demonstrates that a single shared parameter across multiple two-qubit gates (cry_nnn) is effective. This extends that principle to the long-range layer.
+
+4. **Improves entanglement flexibility**: The cross-ring layer bridges the gap between nearest-neighbor (Layer 2) and next-nearest-neighbor (Layer 5) entanglement. Making it parametrized allows the circuit to dynamically balance global vs. local correlations.
+
+5. **Expected improvements**:
+   - Better test accuracy by enabling adaptive long-range entanglement
+   - Reduced generalization gap through more flexible feature extraction
+   - Faster convergence by having more degrees of freedom to optimize
+
+This is a conservative, targeted change that respects the existing architecture while adding learnable capacity exactly where it can have the most impact.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    # Layer 3: Cross-ring CZ (long-range entanglement)
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+=======
+    # Layer 3: Cross-ring CRZ (parametrized long-range entanglement)
+    {"gate": "CRZ", "wires": [0, 4], "param": "crz_cr"},
+    {"gate": "CRZ", "wires": [1, 5], "param": "crz_cr"},
+    {"gate": "CRZ", "wires": [2, 6], "param": "crz_cr"},
+    {"gate": "CRZ", "wires": [3, 7], "param": "crz_cr"},
+>>>>>>> REPLACE
+
+</DIFF>

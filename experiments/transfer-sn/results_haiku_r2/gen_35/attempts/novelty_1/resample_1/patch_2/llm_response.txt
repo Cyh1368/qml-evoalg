@@ -1,0 +1,125 @@
+I see the issue. The recommendation to make the feature-map strength trainable requires modifications outside the EVOLVE-BLOCK, which is not permitted. Let me instead propose an improvement that stays within the EVOLVE-BLOCK by optimizing the ANSATZ_SPEC itself.
+
+<NAME>
+optimized_ansatz_fewer_params
+</NAME>
+
+<DESCRIPTION>
+The current program has 110 parameters with poor generalization (test accuracy 0.87, gap 0.04). The prior seed achieved 0.93 test accuracy with only 26 parameters using aggressive parameter sharing and a more compact structure.
+
+The current ANSATZ_SPEC has 18 unique parameters per block (2 shared RY + 8 individual RZ pre + 8 individual RZ post), leading to 18 * 3 * 2 = 108 circuit parameters plus 2 readout = 110 total.
+
+The key insight: the prior seed used only 4 unique parameters per block (ry_init, rz_main, cry_nnn, ry_final) and achieved better accuracy. The current design with per-qubit RZ gates is over-parameterized and likely overfitting.
+
+Strategy:
+1. Reduce pre-entanglement RZ to use parameter sharing (like rz_pre for all qubits)
+2. Reduce post-entanglement RZ to use parameter sharing (like rz_post for all qubits)
+3. Keep the efficient nearest-neighbor CZ structure
+4. This reduces unique parameters per block from 18 to 4, matching the prior architecture
+
+Expected outcome: Fewer parameters (26 total), better generalization, higher test accuracy closer to 0.93.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Pre-rotation layer: RY with parameter sharing on symmetric pairs
+    {"gate": "RY", "wire": 0, "param": "ry_pre_even"},
+    {"gate": "RY", "wire": 2, "param": "ry_pre_even"},
+    {"gate": "RY", "wire": 4, "param": "ry_pre_even"},
+    {"gate": "RY", "wire": 6, "param": "ry_pre_even"},
+    {"gate": "RY", "wire": 1, "param": "ry_pre_odd"},
+    {"gate": "RY", "wire": 3, "param": "ry_pre_odd"},
+    {"gate": "RY", "wire": 5, "param": "ry_pre_odd"},
+    {"gate": "RY", "wire": 7, "param": "ry_pre_odd"},
+
+    # Pre-entanglement: RZ layer before nearest-neighbor CZ
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+
+    # Nearest-neighbor CZ gates for efficient entanglement
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+
+    # Post-entanglement: RZ layer after CZ
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Layer 1: Initial RY with full parameter sharing (efficient)
+    {"gate": "RY", "wire": 0, "param": "ry_init"},
+    {"gate": "RY", "wire": 1, "param": "ry_init"},
+    {"gate": "RY", "wire": 2, "param": "ry_init"},
+    {"gate": "RY", "wire": 3, "param": "ry_init"},
+    {"gate": "RY", "wire": 4, "param": "ry_init"},
+    {"gate": "RY", "wire": 5, "param": "ry_init"},
+    {"gate": "RY", "wire": 6, "param": "ry_init"},
+    {"gate": "RY", "wire": 7, "param": "ry_init"},
+
+    # Layer 2: Nearest-neighbor CZ ring (local entanglement)
+    {"gate": "CZ", "wires": [0, 1]},
+    {"gate": "CZ", "wires": [1, 2]},
+    {"gate": "CZ", "wires": [2, 3]},
+    {"gate": "CZ", "wires": [3, 4]},
+    {"gate": "CZ", "wires": [4, 5]},
+    {"gate": "CZ", "wires": [5, 6]},
+    {"gate": "CZ", "wires": [6, 7]},
+    {"gate": "CZ", "wires": [7, 0]},
+
+    # Layer 3: Cross-ring CZ (long-range entanglement)
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+    {"gate": "CZ", "wires": [2, 6]},
+    {"gate": "CZ", "wires": [3, 7]},
+
+    # Layer 4: RZ with parameter sharing (efficient)
+    {"gate": "RZ", "wire": 0, "param": "rz_main"},
+    {"gate": "RZ", "wire": 1, "param": "rz_main"},
+    {"gate": "RZ", "wire": 2, "param": "rz_main"},
+    {"gate": "RZ", "wire": 3, "param": "rz_main"},
+    {"gate": "RZ", "wire": 4, "param": "rz_main"},
+    {"gate": "RZ", "wire": 5, "param": "rz_main"},
+    {"gate": "RZ", "wire": 6, "param": "rz_main"},
+    {"gate": "RZ", "wire": 7, "param": "rz_main"},
+
+    # Layer 5: Parametrized next-nearest-neighbor CRY (flexible entanglement)
+    {"gate": "CRY", "wires": [0, 2], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [2, 4], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [4, 6], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [6, 0], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [1, 3], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [3, 5], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [5, 7], "param": "cry_nnn"},
+    {"gate": "CRY", "wires": [7, 1], "param": "cry_nnn"},
+
+    # Layer 6: Final RY readout layer with sharing (efficient)
+    {"gate": "RY", "wire": 0, "param": "ry_final"},
+    {"gate": "RY", "wire": 1, "param": "ry_final"},
+    {"gate": "RY", "wire": 2, "param": "ry_final"},
+    {"gate": "RY", "wire": 3, "param": "ry_final"},
+    {"gate": "RY", "wire": 4, "param": "ry_final"},
+    {"gate": "RY", "wire": 5, "param": "ry_final"},
+    {"gate": "RY", "wire": 6, "param": "ry_final"},
+    {"gate": "RY", "wire": 7, "param": "ry_final"},
+]
+>>>>>>> REPLACE
+
+</DIFF>

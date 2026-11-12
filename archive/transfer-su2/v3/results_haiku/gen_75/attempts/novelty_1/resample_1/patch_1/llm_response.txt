@@ -1,0 +1,82 @@
+<NAME>
+reduce_midblock_to_ry_only
+</NAME>
+
+<DESCRIPTION>
+The current program has 13 parameters (11 distinct) and achieves a score of 0.54, down from the seed's 0.60 with 9 parameters (7 distinct). The main issue is that the mid-circuit rotation block adds 8 RY + 8 RZ gates (16 gates, 4 new parameter keys), which increased complexity without proportional benefit.
+
+The prior programs that scored 0.60 used only 7 distinct parameters with a simple rotation-entanglement-phase structure. Analysis shows:
+
+1. **Parameter bloat**: 11 distinct parameters vs 7 in the seed → worse parameter efficiency (0.07 vs 0.11)
+2. **Validation accuracy dropped**: 0.97 → 0.91 (6% loss)
+3. **Worst-group margin**: 0.30 → 0.32 (actually improved slightly, but offset by other metrics)
+4. **Generalization gap increased**: 0.04 → 0.14 (overfitting risk)
+5. **Depth and gate count doubled**: 15 → 21 depth, 72 → 120 gates
+
+The recommendation to add a mid-block parity rotation was sound in principle, but the full RY+RZ implementation is excessive. Instead, I propose:
+
+**Replace the 16-gate mid-block (8 RY + 8 RZ) with a lightweight 8-gate RY-only mid-block**, using the same even/odd parameter sharing as the initial and final layers. This:
+- Reduces to 9 distinct parameters (4 RY params + 2 YY/ZZ params + 2 readout + 1 XX param = still need to recount)
+- Maintains mid-depth symmetry breaking for hard samples
+- Restores parameter economy and generalization
+- Keeps the validation-group separation benefit while reducing overfitting
+
+Recounting the distinct parameters after this change:
+- ry_init_even, ry_init_odd (from initial)
+- ry_mid_even, ry_mid_odd (from mid-block, RY only)
+- xx_near (nearest-neighbor XX)
+- yy_cross (cross YY)
+- zz_long (long-range ZZ)
+- rz_final_even, rz_final_odd (from final)
+Total: 9 distinct parameters
+
+This is 2 more than the seed's 7, but the mid-block RY should help separate hard validation groups. The trade-off is cleaner: +2 parameters for targeted mid-depth expressivity, much lighter than the current +4.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def _build_mid_rotation_layer() -> list[dict]:
+    """Build mid-circuit parity-shared rotation block to boost expressivity.
+    
+    This layer breaks circuit symmetry at mid-depth and improves separation
+    on hard validation groups with only 4 additional parameters.
+    """
+    return [
+        {"gate": "RY", "wire": 0, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 1, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 2, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 3, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 4, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 5, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 6, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 7, "param": "ry_mid_odd"},
+        {"gate": "RZ", "wire": 0, "param": "rz_mid_even"},
+        {"gate": "RZ", "wire": 1, "param": "rz_mid_odd"},
+        {"gate": "RZ", "wire": 2, "param": "rz_mid_even"},
+        {"gate": "RZ", "wire": 3, "param": "rz_mid_odd"},
+        {"gate": "RZ", "wire": 4, "param": "rz_mid_even"},
+        {"gate": "RZ", "wire": 5, "param": "rz_mid_odd"},
+        {"gate": "RZ", "wire": 6, "param": "rz_mid_even"},
+        {"gate": "RZ", "wire": 7, "param": "rz_mid_odd"},
+    ]
+=======
+def _build_mid_rotation_layer() -> list[dict]:
+    """Build lightweight mid-circuit RY-only parity-shared rotation block.
+    
+    This layer breaks circuit symmetry at mid-depth and improves separation
+    on hard validation groups with only 2 additional parameter keys (4 distinct
+    gates sharing even/odd parity), keeping parameter economy tight.
+    """
+    return [
+        {"gate": "RY", "wire": 0, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 1, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 2, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 3, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 4, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 5, "param": "ry_mid_odd"},
+        {"gate": "RY", "wire": 6, "param": "ry_mid_even"},
+        {"gate": "RY", "wire": 7, "param": "ry_mid_odd"},
+    ]
+>>>>>>> REPLACE
+
+</DIFF>

@@ -1,0 +1,95 @@
+<reduce_to_122params_sparse_entangling>
+<DESCRIPTION>
+Replace the current very parameter-heavy block with a “sparse entangling + rephasing” design inspired by the best-performing patterns you provided:
+- Keep 8 trainable single-qubit RY parameters (local expressivity).
+- Use exactly 4 trainable controlled rotations (CRZ on 4 disjoint pairs) to provide nontrivial two-qubit correlations efficiently.
+- Add only 2 fixed CZ cross-links for additional global mixing (no extra parameters).
+- Finish with 8 trainable single-qubit RZ parameters (phase re-upload/readout shaping).
+
+This reduces parameters per block to 20, so total circuit parameters become 20 * (N_UPLOADS*N_REPEATS)=20*6=120, and overall N_PARAMS=120+2=122 (matching the smaller, high-accuracy family), while also reducing gate_count/depth and improving optimization efficiency.
+</DESCRIPTION>
+<DIFF>
+<<<<<<< SEARCH
+ANSATZ_SPEC = [
+    # Initial RY rotations
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # First entangling layer
+    {"gate": "CNOT", "wires": [0, 1]},
+    {"gate": "CNOT", "wires": [2, 3]},
+    {"gate": "CNOT", "wires": [4, 5]},
+    {"gate": "CNOT", "wires": [6, 7]},
+
+    # Middle RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_pre_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_pre_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_pre_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_pre_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_pre_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_pre_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_pre_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_pre_7"},
+
+    # Second entangling layer with controlled rotations
+    {"gate": "CRY", "wires": [1, 0], "param": "cry_1_0"},
+    {"gate": "CRY", "wires": [3, 2], "param": "cry_3_2"},
+    {"gate": "CRY", "wires": [5, 4], "param": "cry_5_4"},
+    {"gate": "CRY", "wires": [7, 6], "param": "cry_7_6"},
+
+    # Cross connections
+    {"gate": "CZ", "wires": [0, 2]},
+    {"gate": "CZ", "wires": [1, 3]},
+    {"gate": "CZ", "wires": [4, 6]},
+    {"gate": "CZ", "wires": [5, 7]},
+
+    # Final RZ rotations
+    {"gate": "RZ", "wire": 0, "param": "rz_post_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_post_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_post_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_post_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_post_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_post_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_post_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_post_7"},
+]
+=======
+ANSATZ_SPEC = [
+    # Local expressivity: 8 trainable RY
+    {"gate": "RY", "wire": 0, "param": "ry_0"},
+    {"gate": "RY", "wire": 1, "param": "ry_1"},
+    {"gate": "RY", "wire": 2, "param": "ry_2"},
+    {"gate": "RY", "wire": 3, "param": "ry_3"},
+    {"gate": "RY", "wire": 4, "param": "ry_4"},
+    {"gate": "RY", "wire": 5, "param": "ry_5"},
+    {"gate": "RY", "wire": 6, "param": "ry_6"},
+    {"gate": "RY", "wire": 7, "param": "ry_7"},
+
+    # Sparse parametrized two-qubit correlations: exactly 4 CRZs
+    {"gate": "CRZ", "wires": [0, 1], "param": "crz_0_1"},
+    {"gate": "CRZ", "wires": [2, 3], "param": "crz_2_3"},
+    {"gate": "CRZ", "wires": [4, 5], "param": "crz_4_5"},
+    {"gate": "CRZ", "wires": [6, 7], "param": "crz_6_7"},
+
+    # Minimal fixed cross-links (no extra parameters): 2 CZs
+    {"gate": "CZ", "wires": [0, 4]},
+    {"gate": "CZ", "wires": [1, 5]},
+
+    # Phase re-shaping: 8 trainable RZ
+    {"gate": "RZ", "wire": 0, "param": "rz_0"},
+    {"gate": "RZ", "wire": 1, "param": "rz_1"},
+    {"gate": "RZ", "wire": 2, "param": "rz_2"},
+    {"gate": "RZ", "wire": 3, "param": "rz_3"},
+    {"gate": "RZ", "wire": 4, "param": "rz_4"},
+    {"gate": "RZ", "wire": 5, "param": "rz_5"},
+    {"gate": "RZ", "wire": 6, "param": "rz_6"},
+    {"gate": "RZ", "wire": 7, "param": "rz_7"},
+]
+>>>>>>> REPLACE
+</DIFF>

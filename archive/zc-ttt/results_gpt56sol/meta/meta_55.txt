@@ -1,0 +1,414 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: 9-Qubit Layered RY-RZ CZ Ansatz**  
+- **Implementation**: Applies distinct RY rotations on each of 9 qubits, followed by pre- and post-RZ rotations and a fixed pattern of CZ entangling gates, resulting in 162 parameters, a depth of ~47, and 261 gates.  
+- **Performance**: Achieved a combined score of 0.52 (train accuracy 0.57, validation 0.55, test 0.49) with a generalization gap of 0.07.  
+- **Feedback**: The high parameter count and circuit depth led to zero parameter efficiency and only modest test accuracy, suggesting over-parameterization; reducing depth or gate count could improve generalization.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Nine-Qubit CZ-Entangled Ansatz**  
+- **Implementation**: Defines a 9-qubit variational circuit with initial RY rotations, post-RX rotations, a sparse CZ entanglement layer, and final RZ rotations, all specified in an ANSATZ_SPEC block passed to a fixed `run_experiment` backend.  
+- **Performance**: Combined score to maximize: 0.0 (failed all validation tests).  
+- **Feedback**: The ANSATZ_SPEC contains unresolved merge conflict markers and duplicate parameter names, leading to syntax errors and validation failures; ensuring clean evolve-block syntax and unique parameter identifiers is essential.
+**Program Identifier:** Generation 1 - Patch Name remove_commuting_redundancy - Correct Program: False
+
+**Program Name: 9-Qubit RY–CZ–RZ Variational Ansatz**  
+- **Implementation**: Defines a 9-qubit ansatz via ANSATZ_SPEC with an initial and secondary layer of RY rotations on each qubit, a CZ entangling block over twelve specific qubit pairs, and a final layer of RZ rotations.  
+- **Performance**: Achieved a combined score of 0.0 and failed to pass all validation tests.  
+- **Feedback**: The circuit omits parametrized two-qubit rotations and inconsistently uses “wire” vs. “wires” fields for gate specifications, resulting in invalid ansatz definitions and suboptimal entanglement structure.
+**Program Identifier:** Generation 3 - Patch Name remove_diagonal_redundancy - Correct Program: False
+
+**Program Name: 9-Qubit RY-CNOT-CZ Ansatz**  
+- **Implementation**: Defines ANSATZ_SPEC for a 9-qubit circuit with an initial layer of per-qubit RY rotations, a mixed entangling layer of CNOT and CZ gates on specified qubit pairs, and a second layer of RY rotations, then calls `_run(ANSATZ_SPEC, **kwargs)`.  
+- **Performance**: Achieved a combined score of 0.0 and failed validation tests.  
+- **Feedback**: The duplicated entangling layers (CNOT and CZ on the same pairs) and inconsistent parameter naming lead to an invalid circuit specification that does not pass the required checks.
+**Program Identifier:** Generation 4 - Patch Name real_amplitude_entangler - Correct Program: False
+
+**Program Name: 9-Qubit RY–CZ Entangled Ansatz**  
+- **Implementation**: Defines an ansatz with single-qubit RY rotations on qubits 0–8, a fixed pattern of 12 CZ entangling gates across selected pairs, and final RZ rotations, then invokes a backend runner with this static specification.  
+- **Performance**: Achieved a combined score of 0.0 and failed all validation tests.  
+- **Feedback**: The use of only RY, CZ, and RZ layers may under-parameterize the circuit for the target task, and inconsistent field naming ("wire" vs "wires") in the specification likely caused schema validation failures.
+**Program Identifier:** Generation 8 - Patch Name compact_real_ansatz - Correct Program: False
+
+**Program Name: 9-Qubit RY-RZ Ansatz with CZ Entanglement**  
+- **Implementation**: The ansatz applies single-qubit RY rotations on all 9 qubits followed by RZ pre-rotations, and entangles specific qubit pairs with 12 CZ gates for fixed connectivity. It uses a total of 108 trainable parameters across a circuit depth of 41 and gate count of 207.  
+- **Performance**: Achieved a combined score of 0.57 with train/val/test accuracies of 0.61/0.60/0.55, a generalization gap of 0.06, validation/test losses of 2.27/2.35, and low parameter efficiency (0.01).  
+- **Feedback**: The chosen CZ-only entangling scheme yields modest accuracy and slight overfitting, suggesting that richer parameterized two-qubit or multi-qubit gates and deeper layering could enhance expressivity and generalization.
+**Program Identifier:** Generation 2 - Patch Name remove_commuting_rz_redundancy - Correct Program: True
+
+**Program Name: Layered RY-RZ Ansatz with CZ Entanglement**  
+- **Implementation**: Applies RY rotations on all 9 qubits, followed by RZ rotations, a fixed CZ entangling pattern across selected qubit pairs, and a final RZ layer, resulting in 108 parameters, depth 47, and 261 gates. The `run_experiment` function simply passes this `ANSATZ_SPEC` to a fixed backend module for training and evaluation.  
+- **Performance**: Achieved a combined score of 0.56 (train acc 0.56, val acc 0.58, test acc 0.51) with a small generalization gap (0.06) but high validation (2.32) and test losses (2.43).  
+- **Feedback**: The rigid CZ-only entanglement structure and repeated RZ layers produce moderate accuracy but zero parameter efficiency and elevated circuit complexity. Introducing parameterized two-qubit gates or pruning redundant rotations could boost expressivity and reduce resource overhead.
+**Program Identifier:** Generation 5 - Patch Name share_commuting_rz - Correct Program: True
+
+**Program Name: 9-Qubit CZ-Rotation Ansatz**  
+- **Implementation**: Applies RY rotations on each of 9 qubits, then per-qubit RZ “pre” rotations, a fixed CZ entangling layer across 12 specified non-adjacent pairs, and repeats the RZ layer, yielding 108 parameters in a 47-depth, 261-gate circuit.  
+- **Performance**: Achieved a combined score of 0.56 with train/val/test accuracies of 0.56/0.58/0.51 and a 0.06 generalization gap (validation loss 2.32, test loss 2.43).  
+- **Feedback**: The dense CZ connectivity increases entanglement but the duplicate RZ layers inflate depth and gate count without improving parameter efficiency, resulting in moderate validation performance but weak test accuracy and suggesting overparameterization.
+**Program Identifier:** Generation 6 - Patch Name tie_redundant_rz - Correct Program: True
+
+**Program Name: Layered 9-Qubit RY-CZ-RZ Ansatz**  
+- **Implementation**: Defines an ansatz with RY rotations on qubits 0–8, a single shared RZ parameter applied across all wires, a fixed CZ entanglement layer over specified pairs, and per-qubit RZ post-rotations; the ANSATZ_SPEC still contains unresolved Git conflict markers and mixes "wire" vs. "wires" keys.  
+- **Performance**: Combined score to maximize: 0.0, fails all validation tests.  
+- **Feedback**: Unresolved merge conflicts and inconsistent gate specification prevent execution, and the collective RZ parameter likely underfits the target space—resolving syntax errors and restoring per-qubit RZ parameters would improve expressiveness and validity.
+**Program Identifier:** Generation 7 - Patch Name commutation_aware_tying - Correct Program: False
+
+**Program Name: Real-Valued RY-CZ Quantum Ansatz**  
+- **Implementation**: Defines a single-layer variational circuit with RY rotations on all 9 qubits followed by a fixed pattern of CZ entangling gates, yielding a 33-depth, 54-parameter real-valued ansatz.  
+- **Performance**: Achieved a combined score of 0.51 with train/validation/test accuracies of 0.51/0.48/0.44 and a generalization gap of 0.07.  
+- **Feedback**: The limited expressiveness and low parameter efficiency (0.01) of this real-only ansatz constrain performance; adding parameterized two-qubit gates or deeper entanglement layers may improve accuracy.
+**Program Identifier:** Generation 9 - Patch Name real_tree_ansatz - Correct Program: True
+
+**Program Name: Nine-Qubit Two-Layer RY-RZ Ansatz**  
+- **Implementation**: Defines a 9-qubit ansatz with an initial per-qubit RY rotation layer, a pre-entanglement RZ rotation layer, a sparse CZ/CRZ entangling block over selected qubit pairs, and a concluding RZ rotation layer, totaling 132 trainable parameters in a depth-47 circuit. It hands off this fixed ansatz specification to a backend `_run` function for training and evaluation.  
+- **Performance**: Achieved a combined score of 0.57 with train/validation/test accuracies of 0.66/0.61/0.56, a 0.10 generalization gap, 261 gates, and zero parameter efficiency.  
+- **Feedback**: The repeated RZ rotation blocks and high gate count lead to marginal performance improvements and no parameter efficiency, indicating possible redundancy and overparameterization without clear convergence benefits.
+**Program Identifier:** Generation 10 - Patch Name tied_phases_trainable_entanglers - Correct Program: True
+
+**Program Name: Full CZ Graph RY-RZ Ansatz**  
+- **Implementation**: The ansatz applies single-qubit RY rotations on each of 9 qubits, a complete allowed CZ entangling layer (12 edges), and a single RZ phase layer, using 108 parameters in a depth-41 circuit with 207 gates.  
+- **Performance**: Combined score 0.57; train/validation accuracy ~0.60, test accuracy 0.55; generalization gap 0.06.  
+- **Feedback**: Exploiting commutation to use one phase layer simplified the circuit but led to low parameter efficiency (0.01) and only moderate test performance. The deep, fixed entangling pattern may have constrained further accuracy gains.
+**Program Identifier:** Generation 11 - Patch Name phase_compressed_graph - Correct Program: True
+
+**Program Name:** Hub-Peripheral Sparse Quantum Ansatz
+
+- **Implementation:** The circuit starts with independent RY rotations and RZ phase shifts on each of 9 qubits, followed by a fixed sparse CZ entanglement backbone, three shared-parameter CRZ gates linking a hub qubit to peripherals, and one separately tunable peripheral CRZ, yielding 120 parameters and depth 41.  
+- **Performance:** Achieved a combined score of 0.54 with train/validation/test accuracies of 0.62/0.55/0.56 and a small generalization gap of 0.06.  
+- **Feedback:** Local rotations plus sparse entanglement deliver moderate accuracy, but shared-parameter hub interactions, while reducing parameter count, may limit expressiveness, as reflected in zero parameter efficiency; circuit depth and gate count remain high relative to gains.
+**Program Identifier:** Generation 12 - Patch Name adaptive_phase_graph - Correct Program: True
+
+**Program Name: Symmetric RY-RZ CZ Ansatz**  
+- **Implementation**: Constructs a 9-qubit circuit with per-qubit RY rotations, mirrored RZ phase-sharing across symmetric pairs, a full CZ entangling subgraph, and a tied RY decoder reusing encoder parameters.  
+- **Performance**: Achieved a combined score of 0.55 with train/validation accuracies of ~0.57/0.56 and test accuracy of 0.50 (generalization gap 0.07).  
+- **Feedback**: Parameter sharing and mirrored phases yielded high efficiency (84 parameters) but limited expressivity, and the deep (47-depth, 261-gate) circuit provided only modest performance gains.
+**Program Identifier:** Generation 13 - Patch Name tied_noncommuting_sandwich - Correct Program: True
+
+**Program Name: Symmetry-Tied RY-RZ CZ Ansatz**  
+- **Implementation**: Constructs a 9-qubit variational circuit with single-qubit RY rotations on each wire, symmetry-constrained RZ phase shifts across related vertices, and a full CZ entanglement layer over the allowed interaction graph (90 parameters, depth 41, 207 gates).  
+- **Performance**: Achieved a combined score of 0.58 with validation accuracy 0.58, test accuracy 0.54, and a small generalization gap of 0.03.  
+- **Feedback**: Symmetry-based parameter tying reduces redundant angles but parameter efficiency remains low (0.01) and the large entangling layer yields marginal accuracy gains, suggesting opportunities to prune or simplify the circuit.
+**Program Identifier:** Generation 16 - Patch Name symmetry_tied_phase - Correct Program: True
+
+**Program Name:** Nine-Qubit RY-RZ CRZ Ansatz  
+- **Implementation:** Defines a 9-qubit ansatz with per-qubit RY and RZ rotations followed by a sparse entanglement block of CRZ and CZ gates on selected wire pairs, totaling 132 trainable parameters, depth 41, and 207 gates. The ansatz spec is hand-coded in the EVOLVE block and executed via a fixed backend `run_experiment`.  
+- **Performance:** Achieved a combined score of 0.55 with train/validation/test accuracies of 0.65/0.59/0.55 and a generalization gap of 0.10.  
+- **Feedback:** While the extensive parameterization delivers moderate accuracy, parameter efficiency is zero and high circuit depth drives up gate count and loss, indicating potential for pruning redundant rotations and reducing depth to improve scalability.
+**Program Identifier:** Generation 14 - Patch Name trainable_sparse_entanglement - Correct Program: True
+
+**Program Name: 9-Qubit Rotational CZ Entangling Ansatz**  
+- **Implementation**: Defines a nine-qubit circuit with per-qubit RY rotations, RZ phase shifts, a fixed CZ entangling pattern across 12 edges, followed by edge-focused RX rotations on qubits 0 and 8 and a final RZ layer, totalling 120 parameters, depth 53 and 273 gates.  
+- **Performance**: Achieves a combined score of 0.54 with train/validation/test accuracies of 0.59/0.55/0.53 and a generalization gap of 0.06.  
+- **Feedback**: Delivers moderate accuracy but incurs high depth and gate count with zero parameter efficiency, suggesting over-parameterization and potential redundancies in repeated RZ layers.
+**Program Identifier:** Generation 15 - Patch Name boundary_rx_post_entanglement - Correct Program: True
+
+**Program Name: Pruned CZ-RY-RZ 9-Qubit Ansatz**  
+- **Implementation**: The circuit applies RY rotations on all 9 qubits, implements a sparsely pruned CZ entangling layer (removing long-range connections), and adds a single RZ phase layer exploiting CZ–RZ commutation.  
+- **Performance**: Achieved a combined score of 0.55 with train/validation/test accuracies of 0.61/0.57/0.53, a 0.08 generalization gap, using 108 parameters, depth 41, and 201 gates.  
+- **Feedback**: The pruning strategy keeps the generalization gap low but yields only modest accuracy and zero parameter-efficiency, while the circuit depth remains relatively high—indicating further simplification or edge reduction may boost resource efficiency without sacrificing performance.
+**Program Identifier:** Generation 17 - Patch Name prune_weak_1_8_link - Correct Program: True
+
+**Program Name: 9-Qubit Boundary-Mixed CZ-RY-RZ Ansatz**  
+- **Implementation**: Defines a 9-qubit ansatz with per-qubit RY rotations, a complete allowed CZ interaction graph, targeted RX rotations on the two boundary qubits, and a final layer of RZ rotations, totaling 120 trainable parameters and 219 gates at depth 47. The `run_experiment` function simply invokes a fixed backend with this evolved `ANSATZ_SPEC`.  
+- **Performance**: Achieved a combined score of 0.54 with train/validation/test accuracies of 0.63/0.58/0.50, a generalization gap of 0.12, and no convergence in training steps.  
+- **Feedback**: The dense CZ connectivity and added boundary RX/RZ layers improved expressivity and training accuracy but led to a deep, gate-heavy circuit that underutilizes parameter efficiency and yields only moderate generalization.
+**Program Identifier:** Generation 18 - Patch Name boundary_rx_post_entanglement - Correct Program: True
+
+**Program Name: Symmetry-Tied 9-Qubit Circuit Ansatz**  
+- **Implementation**: Constructs a 9-qubit ansatz with RY rotations on qubits 1–7, symmetry-tied RZ phases across related vertices, full CZ entanglement along the allowed graph edges, and boundary RX mixers on qubits 0 and 8.  
+- **Performance**: Achieved a combined score of 0.56 with train/validation/test accuracies of 0.64/0.59/0.52, a generalization gap of 0.12, depth 42, 207 gates, and 90 parameters (parameter efficiency 0.01).  
+- **Feedback**: Phase tying leverages graph symmetry to curb parameters, but the high depth and gate count limit efficiency and generalization; pruning entangling layers or mixer placements could boost test accuracy and parameter efficiency.
+**Program Identifier:** Generation 21 - Patch Name boundary_post_rx - Correct Program: True
+
+**Program Name: Symmetry-Tied Quantum Ansatz with Triple Correlation**  
+- **Implementation**: Builds a 9-qubit circuit with per-qubit RY rotations, RZ rotations whose parameters are tied across symmetry-related vertices, a single three-qubit ZZZ gate to probe higher-order correlations, and a full CZ entangling graph, resulting in 96 learnable parameters, depth 57, and 213 gates.  
+- **Performance**: Achieved a combined score of 0.58 with mean train/validation/test accuracies of 0.61/0.60/0.56 and a generalization gap of 0.05.  
+- **Feedback**: Symmetry-based parameter tying reduces redundancy, but the high circuit depth and gate count lead to very low parameter efficiency (0.01) and only modest accuracy gains.
+**Program Identifier:** Generation 19 - Patch Name add_zzz_correlation_probe - Correct Program: True
+
+**Program Name: Complete-Graph RY-CZ-RZ Ansatz**  
+- **Implementation**: Defines an ansatz with independent RY rotations on all nine qubits, full CZ entangling edges across a complete graph, and selectively tied RZ phase parameters on peripheral qubits, yielding 96 trainable parameters, depth 41, and 207 gates.  
+- **Performance**: Achieved a combined score of 0.57 with train/validation/test accuracies of 0.56/0.58/0.51 and a parameter efficiency of 0.01.  
+- **Feedback**: The small generalization gap (0.05) indicates minimal overfitting, but the low test accuracy and parameter efficiency suggest the high-depth, high-gate-count ansatz underfits the target task, and the selective phase tying may overly constrain expressivity.
+**Program Identifier:** Generation 20 - Patch Name partial_phase_symmetry - Correct Program: True
+
+**Program Name: Symmetric RY-RZ CZ Entangler Ansatz**  
+- **Implementation**: Uses shared RY rotations on symmetry-related qubit pairs and per-qubit RZ gates, with fixed CZ entanglement over the allowed graph, resulting in 96 parameters and a depth of 41.  
+- **Performance**: Achieves a combined score of 0.56 with train/validation/test accuracies of 0.58/0.56/0.54 and a 0.05 generalization gap.  
+- **Feedback**: Parameter efficiency is low (0.01) versus circuit depth and gate count, suggesting the ansatz may be over-parameterized and could benefit from increased parameter sharing or entanglement pruning.
+**Program Identifier:** Generation 23 - Patch Name moderate_ry_pair_sharing - Correct Program: True
+
+**Program Name: Symmetry-Tied Graph Ansatz**  
+- **Implementation**: A 9-qubit ansatz applies RY rotations on qubits 1–7, symmetry-tied RZ rotations across all qubits, full CZ entanglement of the allowed interaction graph, a CCRZ triple-qubit gate on [5,6,7], and RX post-mixing, yielding 96 parameters, depth 42, and 201 gates.  
+- **Performance**: Combined score 0.57 with train/validation/test accuracies of 0.64/0.60/0.54 and a generalization gap of 0.09.  
+- **Feedback**: Parameter tying leveraged graph symmetries to limit parameter count but overall parameter efficiency remains low; the high circuit depth and gate count may impact scalability despite stable generalization.
+**Program Identifier:** Generation 25 - Patch Name ccrz_567_triangle - Correct Program: True
+
+**Program Name: Symmetry-based RY-RZ Ansatz with ZZZ Entanglement**  
+- **Implementation**: The ansatz applies symmetry-tied RY and RZ rotations across nine qubits, inserts a three-qubit ZZZ correlation gate on wires [2,4,6], and implements the full CZ entangling graph, yielding 84 parameters and a circuit depth of 57.  
+- **Performance**: Achieved a combined score of 0.53 with train/validation/test accuracies of 0.56/0.53/0.47, a generalization gap of 0.09, and parameter efficiency of 0.01.  
+- **Feedback**: The ZZZ gate probes higher-order correlations but did not improve test accuracy, and the heavy CZ connectivity plus circuit depth likely limited generalization. Despite parameter tying, overall efficiency remains low, indicating potential benefit from reduced depth or sparser entanglement.
+**Program Identifier:** Generation 26 - Patch Name tie_symmetric_ry_pairs - Correct Program: True
+
+**Program Name: Layered CZ-RY-RZ Ansatz on 9 Qubits**  
+- **Implementation**: Constructs a 9-qubit variational circuit with local RY rotations on wires 1–7, shared RZ phases applied before and after a full CZ entanglement graph, and focused RX/RZ mixing on hub qubits 0 and 8. The ansatz reuses phase parameters across blocks to regularize repeated layers while using 108 total parameters in a depth-48, 261-gate circuit.  
+- **Performance**: Achieved a combined score of 0.55 with train/validation/test accuracies of 0.60/0.58/0.52, a generalization gap of 0.08, and validation/test losses of ~2.3/2.4.  
+- **Feedback**: The dense CZ connectivity and shared phase strategy produced modest accuracy and a small overfitting gap, but the high circuit depth and gate count led to low parameter efficiency and only marginal test performance gains.
+**Program Identifier:** Generation 22 - Patch Name boundary_rx_hubs - Correct Program: True
+
+**Program Name: Graph-Derived Parameter-Sharing Ansatz**  
+- **Implementation**: Defines a 9-qubit ansatz with shared RY rotations on graph-related qubit pairs, independent RZ phases on each qubit, and a fixed CZ interaction graph where only two peripheral edges use trainable CRZ gates.  
+- **Performance**: Achieved a combined score of 0.58 (train 0.63, val 0.60, test 0.57) using 102 parameters, depth 41, and 207 gates.  
+- **Feedback**: A small generalization gap (0.07) shows stable training, but low parameter efficiency (0.01) and limited tunable entanglement suggest the restricted continuous interactions may hinder expressiveness.
+**Program Identifier:** Generation 24 - Patch Name axis_selective_peripheral_crz - Correct Program: True
+
+**Program Name: Symmetry-Tied Graph Entangled Ansatz**
+- **Implementation**: 9-qubit ansatz applying RY rotations on wires 1–7, RZ rotations with parameters tied across symmetry-related vertices, full CZ entanglement of the allowed graph plus a CRY(0,7) gate, and RX boundary mixing on qubits 0 and 8, for a 96-parameter, 42-depth circuit.  
+- **Performance**: Achieved a combined score of 0.54 with train/validation/test accuracies of 59%/56%/50%, a 0.09 generalization gap, and low parameter efficiency (0.01).  
+- **Feedback**: Parameter tying preserved graph symmetry and limited parameter count, but the deep, high-gate-count design led to over-parameterization and modest test performance, indicating potential gains from depth reduction or enhanced mixing layers.
+**Program Identifier:** Generation 27 - Patch Name trainable_hub_entangler - Correct Program: True
+
+**Program Name: Layered RY-RZ Entangling Ansatz**  
+- **Implementation**: Defines a nine-qubit circuit with individual RY rotations, pre- and post-layer RZ rotations on each qubit, and a fixed entangling pattern of CZ, CRY, and CRZ gates as specified in ANSATZ_SPEC.  
+- **Performance**: Achieved a combined score of 0.57 with train/validation accuracy of 0.61, test accuracy of 0.55, and a generalization gap of 0.06.  
+- **Feedback**: The dense entanglement and repeated RZ layers yield modest accuracy but incur high depth (47) and gate count (261) with no parameter efficiency, suggesting the ansatz could be streamlined for better resource usage.
+**Program Identifier:** Generation 30 - Patch Name trainable_hub_cry - Correct Program: True
+
+**Program Name: Symmetry-Tied 9-Qubit Ansatz**  
+- **Implementation**: A 9-qubit parameterized circuit with RY rotations on qubits 1–7, symmetry-tied RZ rotations on qubits 0–8, shared ZZZ triple gates, CZ entanglement edges, a CCRZ triple gate, and RX mixing at the boundaries.  
+- **Performance**: Combined score of 0.0 (failed validation).  
+- **Feedback**: The source contains unresolved diff/merge markers and stray annotations that produce syntax errors; removing these artifacts and ensuring gate definitions conform to backend requirements is necessary for correct execution.
+**Program Identifier:** Generation 31 - Patch Name shared_symmetric_zzz - Correct Program: False
+
+**Program Name: Symmetry-Tied Nine-Qubit Variational Ansatz**  
+- **Implementation**: Applies single-qubit RY rotations on all nine qubits with RZ phase parameters tied across symmetry-related vertices, intersperses a three-qubit ZZZ correlation gate, and implements a full CZ/CRY entangling layer over the allowed interaction graph.  
+- **Performance**: Achieved a combined score of 0.57 with 102 parameters, depth 57, gate count 213, and accuracies of 0.60 (train), 0.59 (validation), 0.53 (test) yielding a 0.07 generalization gap.  
+- **Feedback**: Parameter tying substantially improved efficiency but may have constrained expressiveness; the added three-qubit correlation probe enhanced higher-order interactions, yet test accuracy indicates limited generalization at this depth.
+**Program Identifier:** Generation 28 - Patch Name trainable_hub_entangler - Correct Program: True
+
+**Program Name: Symmetry-Tied RY-RZ CZ-CRZ Ansatz**  
+- **Implementation**: Defines a 9-qubit ansatz with one layer of single-qubit RY rotations, symmetry-tied RZ phases across equivalent vertices, and a complete CZ/CRZ entangling graph, totaling 102 parameters; the `run_experiment` function delegates to a fixed backend.  
+- **Performance**: Achieved a combined score of 0.52 with train/validation/test accuracies of 0.62/0.55/0.49, a generalization gap of 0.13, circuit depth 41, and 207 gates.  
+- **Feedback**: Symmetry-based parameter tying streamlined the ansatz but yielded zero reported parameter efficiency and only moderate generalization, indicating the need for richer entanglement patterns or deeper layering to improve test performance.
+**Program Identifier:** Generation 29 - Patch Name adaptive_long_range_phases - Correct Program: True
+
+**Program Name: Symmetry-Tied 9-Qubit CZ-Ansatz**  
+- **Implementation**: The ansatz applies individual RY rotations on all nine qubits, ties RZ phases across symmetry-related vertices, and encodes the full interaction graph with CZ gates plus a CRY entangler, resulting in 96 parameters, depth 41, and 207 gates.  
+- **Performance**: Achieved a combined score of 0.55 with training, validation, and test accuracies of 0.61, 0.56, and 0.52 respectively, and a generalization gap of 0.09.  
+- **Feedback**: Parameter tying delivers high efficiency but the relatively deep, densely entangled circuit yields modest test performance and a noticeable generalization gap, indicating potential gains from optimizing depth or entangling strategies.
+**Program Identifier:** Generation 32 - Patch Name trainable_hub_cry - Correct Program: True
+
+**Program Name: Symmetry-Tied RY-RZ Ansatz**
+- **Implementation**: The ansatz applies RY rotations on all 9 qubits, RZ rotations with shared parameters across symmetry-related vertices, and preserves the full allowed CZ entanglement graph plus a single CRY gate, totaling 96 parameters, depth ~41 and 207 gates.  
+- **Performance**: Achieved a combined score of 0.55 with train/validation/test accuracies of 0.61/0.56/0.52 and a generalization gap of 0.09.  
+- **Feedback**: Parameter tying exploits graph symmetry but yields low parameter efficiency (0.01) and modest accuracy; high circuit depth and gate count suggest benefits from reducing complexity or exploring alternative entanglement patterns.
+**Program Identifier:** Generation 33 - Patch Name trainable_hub_cry - Correct Program: True
+
+**Program Name: Graph-Regularized RY-RZ CZ Ansatz**  
+- **Implementation**: Defines a nine-qubit ansatz with graph-aware shared RY parameters across related vertices, independent RZ rotations per qubit, full CZ connectivity, and one central CRY gate; totals 96 parameters, depth 41, and 207 gates.  
+- **Performance**: Achieved a validation-based combined score of 0.59 (train acc 0.61, val acc 0.60, test acc 0.56) with a small generalization gap of 0.05.  
+- **Feedback**: Parameter sharing reduced redundancy but limited expressivity, resulting in modest accuracy and high loss; low parameter efficiency (0.01) suggests exploring additional entangling layers or alternative connectivity to boost performance.
+**Program Identifier:** Generation 34 - Patch Name symmetry_hub_cry - Correct Program: True
+
+**Program Name: Graph-Informed Parameter-Sharing Quantum Ansatz**  
+- **Implementation**: Defines a 9-qubit ansatz with shared RY rotations on graph-related wires and independent RZ rotations per qubit, preserves the full CZ interaction graph using fixed CZ gates while replacing two peripheral links with parameterized CRZ gates; total parameters = 96, depth ≈41, gate count ≈207.  
+- **Performance**: Achieved a combined score of 0.58 with train/validation/test accuracies of 0.64/0.60/0.56 and a small generalization gap of 0.07.  
+- **Feedback**: Parameter sharing cut model complexity but constrained expressivity, yielding moderate accuracy; preserving the full interaction graph stabilized performance, though limited tunable entanglers restricted further gains.
+**Program Identifier:** Generation 35 - Patch Name tie_peripheral_crz - Correct Program: True
+
+**Program Name: Symmetry-Tied RY-RZ Quantum Ansatz**  
+- **Implementation**: Defines a 9-qubit ansatz that ties RY and RZ rotation parameters across symmetry-related wires, implements full CZ entanglement plus a three-qubit CCRZ gate, and applies RX mixers on boundary qubits.  
+- **Performance**: Achieved a combined score of 0.56 with train/validation/test accuracies of 0.62/0.57/0.55 and a parameter efficiency of 0.01.  
+- **Feedback**: Symmetry-based parameter tying reduced the total to 78 parameters but delivered only modest accuracy gains and very low efficiency; despite a small generalization gap (0.08), the circuit’s depth (42) and gate count (201) may hinder scalability.
+**Program Identifier:** Generation 36 - Patch Name tie_symmetric_ry - Correct Program: True
+
+**Program Name: 9-Qubit Graph-Regularized Variational Ansatz**  
+- **Implementation**: A 9-qubit variational circuit using grouped RY rotations for amplitude regularization, independent RZ phase shifts, and a complete CZ interaction graph augmented with CRY and CRZ on select edges, totaling 108 parameters at depth 41 and 207 gates.  
+- **Performance**: Achieved a combined score of 0.58 (train/val/test accuracies 0.64/0.61/0.57) with a generalization gap of 0.07.  
+- **Feedback**: Shared amplitude rotations provided regularization but the dense connectivity increased depth and gate count, resulting in low parameter efficiency (0.01) and only moderate accuracy despite stable generalization.
+**Program Identifier:** Generation 37 - Patch Name hub_axis_entangler - Correct Program: True
+
+**Program Name: Shared-Phase Sparse Entanglement Ansatz**  
+- **Implementation**: Defines a 9-qubit variational circuit with independent RY rotations for amplitude control, shared RZ phase rotations across graph-related vertices, two ZZZ triple-qubit correlation gates, and a sparse CZ entanglement graph omitting non-critical edges. The ansatz is passed unchanged to a fixed backend `_run` function for training and evaluation.  
+- **Performance**: Achieved a combined score of 0.55 with train/validation/test accuracies of 0.62/0.57/0.54, a generalization gap of 0.07, 102 parameters (0.01 efficiency), depth 57, and 213 gates.  
+- **Feedback**: Parameter sharing and sparse entanglement helped constrain complexity but the high depth and gate count limited parameter efficiency and yielded only marginal accuracy improvements; the small generalization gap indicates modest overfitting.
+**Program Identifier:** Generation 38 - Patch Name dual_triad_correlator - Correct Program: True
+
+**Program Name: Nine-Qubit CZ-Phase Triad Variational Ansatz**  
+- **Implementation**: Applies independent RY rotations on each of 9 qubits, CZ gates along a fixed graph with the 3-5 edge replaced by a trainable ZZZ gate on qubits 1-3-8, followed by shared RZ phases to regularize the parameter count (102 parameters, depth 47, 207 gates).  
+- **Performance**: Achieved a combined score of 0.55 with train/validation/test accuracies of 0.59/0.56/0.51, a generalization gap of 0.07, and parameter efficiency of 0.01.  
+- **Feedback**: The higher-order ZZZ triad probe yielded only marginal validation gains and the test accuracy lags, suggesting limited benefit from the triad entangling; shared RZ phases maintained efficiency but overall accuracy remains stagnant.
+**Program Identifier:** Generation 40 - Patch Name symmetry_triad_zzz - Correct Program: True
+
+**Program Name: Symmetry-Regularized 9-Qubit Quantum Ansatz**  
+- **Implementation**: The ansatz applies independent RY rotations on each of 9 qubits and shared RZ phases across symmetry-related vertices, adds two trainable ZZZ hyperedges to capture higher-order correlations, and employs a pruned CZ connectivity pattern (102 parameters, depth 57, 213 gates).  
+- **Performance**: Combined score 0.55 with train/validation/test accuracies of 0.62/0.57/0.54 and a 0.07 generalization gap.  
+- **Feedback**: Shared RZ parameters and 3-qubit gates help regularize and enrich expressivity but result in low parameter efficiency (0.01) and only modest accuracy gains at the expense of increased circuit depth.
+**Program Identifier:** Generation 39 - Patch Name dual_hyperedge_regularized - Correct Program: True
+
+**Program Name: Shared-Parameter Graph Ansatz**
+- **Implementation**: The ansatz employs nine qubits with grouped RY rotations sharing parameters across vertex pairs, independent RZ phases per qubit, and three layers of disjoint CZ matchings plus a CRZ hub and final CZ edge to realize the full interaction graph, totaling 96 parameters.
+- **Performance**: Combined score 0.60 (train 0.60, val 0.63, test 0.55) with depth 39, 207 gates, 96 parameters, and a 0.05 generalization gap.
+- **Feedback**: Parameter sharing helps regularization but the deep, dense entangling circuit leads to moderate accuracy and low parameter efficiency, with test accuracy lagging validation suggesting constrained generalization.
+**Program Identifier:** Generation 41 - Patch Name layered_crz_hub - Correct Program: True
+
+**Program Name: Graph-Aware 9-Qubit Variational Ansatz**  
+- **Implementation**: Defines an 84-parameter ansatz on nine qubits with RZ-based graph-informed phase preparation, CZ/CRZ interactions, a symmetry-regularized RY mixing layer, and a final connectivity stage, all within a fixed encoding and training framework.  
+- **Performance**: Achieves a combined score of 0.55 with train/validation/test accuracies of 0.61/0.56/0.52, 45 depth, 207 gates, and a generalization gap of 0.09.  
+- **Feedback**: The tailored interaction and mixing layers deliver moderate accuracy but low parameter efficiency (0.01) and high circuit complexity, indicating potential over-parameterization and room to prune gates or simplify the ansatz to boost efficiency.
+**Program Identifier:** Generation 43 - Patch Name staged_trainable_phase_graph - Correct Program: True
+
+**Program Name: 9-qubit RY-RZ layered ansatz with CZ entanglement**  
+- **Implementation**: Layers of per-qubit RY rotations are followed by pre- and post-RZ rotations and a fixed non-local entanglement pattern using CZ and CRZ gates, yielding a 120-parameter circuit of depth 47 and 261 gates. The `run_experiment` function passes this ansatz specification to a backend for training and evaluation.  
+- **Performance**: Combined score 0.55 with train/validation/test accuracies of 0.59/0.57/0.53 and a generalization gap of 0.06.  
+- **Feedback**: The dense entanglement structure delivers stable but moderate accuracy and zero parameter efficiency; the circuit’s depth and gate count may hinder scalability and contribute to slight overfitting.
+**Program Identifier:** Generation 44 - Patch Name trainable_peripheral_phases - Correct Program: True
+
+**Program Name: Layered RY-RZ Ansatz with Mixed Entanglement**  
+- **Implementation**: Defines a 9-qubit circuit starting with per-qubit RY rotations and RZ “pre” rotations, followed by an entangling block of CZ, CRX, CRY, and CRZ gates on non-nearest neighbors, and concludes with a second RZ layer that reuses the initial RZ parameter names.  
+- **Performance**: Achieves a combined score of 0.56 (test accuracy 0.57) with 138 parameters, depth 47, gate count 261, and a small generalization gap of 0.08.  
+- **Feedback**: Delivers moderate accuracy but exhibits low parameter efficiency and high circuit depth; the reused RZ parameters and irregular entanglement topology limit expressivity and suggest opportunities for reducing resources and improving performance.
+**Program Identifier:** Generation 45 - Patch Name peripheral_crx_probe - Correct Program: True
+
+**Program Name: 9-Qubit RY-RZ-CZ Controlled Ansatz**  
+- **Implementation**: Defines a static 9-qubit ansatz with per-qubit RY gates followed by RZ pre-rotations, a fixed CZ/CRY/CRZ entanglement pattern, and repeated RZ post-rotations, totaling 138 parameters at depth 47.  
+- **Performance**: Achieves a combined score of 0.54 (train/validation/test accuracies: 0.65/0.58/0.54) with a generalization gap of 0.11.  
+- **Feedback**: The dense entanglement structure yields moderate accuracy but zero parameter efficiency; duplicated RZ layers inflate circuit depth without measurable performance gain.
+**Program Identifier:** Generation 42 - Patch Name relocate_phase_controls - Correct Program: True
+
+**Program Name: Nine-Qubit CZ-Layered Ansatz**  
+- **Implementation**: Defines a 9-qubit variational circuit with per-qubit RY and repeated RZ rotations, CZ entangling gates along a fixed sparse connectivity, and two CRZ parameterized two-qubit gates; the ansatz spec is passed unchanged to a fixed backend via `run_experiment`.  
+- **Performance**: Achieved a combined score of 0.55 with train/validation/test accuracies of 0.59/0.57/0.53, 120 parameters, depth 47, and 261 gates.  
+- **Feedback**: The heavy use of RZ layers and CZ entanglers yields a small generalization gap (0.06) but modest test accuracy, indicating potential over-parameterization and redundant rotations; reducing depth or pruning gates could improve efficiency and performance.
+**Program Identifier:** Generation 46 - Patch Name tunable_midrange_phases - Correct Program: True
+
+**Program Name: Layered RY-RZ Ansatz with CZ Entanglement**  
+- **Implementation**: Defines a 9-qubit variational circuit with an initial RY rotation on each qubit, two consecutive blocks of RZ “pre” rotations (reusing the same parameter names), a fixed CZ entanglement pattern across 13 pairs, and a single CRY gate, yielding 114 total parameters, depth 47, and 261 gates.  
+- **Performance**: Achieves a combined score of 0.56 with train/validation/test accuracies of 60%/58%/54%, a 5% generalization gap, and zero parameter efficiency.  
+- **Feedback**: Moderate accuracy and low parameter efficiency suggest the duplicated RZ parameters and high circuit depth may limit expressivity; using unique rotation parameters or a leaner entanglement layout could enhance performance.
+**Program Identifier:** Generation 47 - Patch Name cry_5_7_junction - Correct Program: True
+
+**Program Name: Graph-Regularized Quantum Ansatz**  
+- **Implementation**: Uses a 9-qubit circuit with shared RY rotations across graph-symmetric vertices, independent RZ phases, full CZ entanglement plus a trainable CRY on a hub edge, totaling 96 parameters, depth 41, and 207 gates.  
+- **Performance**: Achieved a combined score of 0.59 with train/validation/test accuracies of 0.61/0.60/0.56 and a generalization gap of 0.05.  
+- **Feedback**: Parameter sharing provided regularization benefits but overall parameter efficiency remained low (0.01), leading to modest test accuracy; exploring additional entangling gates or deeper layers may boost performance.
+**Program Identifier:** Generation 50 - Patch Name shared_ry_cry_hub - Correct Program: True
+
+**Program Name: 9-Qubit Shared RY-RZ with CZ/CRZ Layers**  
+- **Implementation**: Uses shared RY rotations to regularize graph-related qubits, individual RZ phases for qubit discrimination, and three layers of disjoint and tunable CZ/CRZ couplings to complete the 9-qubit interaction graph, resulting in a 39-depth circuit with 207 gates and 108 parameters.  
+- **Performance**: Combined score 0.58; train/validation/test accuracies 0.64/0.61/0.56, generalization gap 0.07, and parameter efficiency 0.01.  
+- **Feedback**: Tunable midrange CRZ edges enhanced expressivity but high gate count and depth led to modest test accuracy and low parameter efficiency, indicating potential over-parameterization.
+**Program Identifier:** Generation 51 - Patch Name trainable_phase_edges - Correct Program: True
+
+**Program Name:** Graph-Regularized 9-Qubit Ansatz  
+- **Implementation:** Defines a nine-qubit ansatz with shared RY rotations across related vertices, independent RZ phases per qubit, three layers of disjoint CZ matchings, a trainable CRZ hub on qubits 0–7, and a final CNOT edge for noncommuting mixing. The ANSATZ_SPEC is passed unchanged to a fixed backend `_run` via `run_experiment`.  
+- **Performance:** Achieves a combined score of 0.56 with train/validation/test accuracies of 0.56/0.57/0.51, 96 parameters, depth 39, gate count 207, and a generalization gap of 0.04.  
+- **Feedback:** Parameter sharing helps regularize and reduce parameter count but appears to limit expressivity, resulting in low test accuracy and parameter efficiency (0.01). Adding more diverse entangling gates or layers could improve mixing and generalization.
+**Program Identifier:** Generation 48 - Patch Name noncommuting_hub_edge - Correct Program: True
+
+**Program Name: Graph-Regularized Two-Layer Ansatz**  
+- **Implementation**: Defines a 9-qubit variational circuit with two layers of RY and RZ rotations, tying rotation parameters across graph-related vertices and inserting CZ entangling gates according to a specified adjacency.  
+- **Performance**: Achieves a combined score of 0.62 with test accuracy 0.62, validation accuracy 0.68, depth 53, 315 gates, and 180 parameters.  
+- **Feedback**: Parameter tying across graph edges yields a low generalization gap (0.02) but the high circuit depth and gate count result in zero parameter efficiency, suggesting opportunities to prune gates or reduce depth.
+**Program Identifier:** Generation 49 - Patch Name graph_tied_dual_rotation - Correct Program: True
+
+**Program Name: Graph-Structured Variational Ansatz**  
+- **Implementation**: Defines a 9-qubit variational circuit with shared RY parameters on graph-related wires, initial RZ pre-rotations, four disjoint CZ entanglement matchings, and a shallow RY–RZ output layer, yielding 180 parameters and depth 51.  
+- **Performance**: Achieves a combined score of 0.62 (train 0.64, val 0.68, test 0.62) with a small generalization gap of 0.02.  
+- **Feedback**: While the shared-parameter design and structured entanglement support good generalization, the high depth and gate count lead to low parameter efficiency, suggesting over-parameterization and room for circuit simplification.
+**Program Identifier:** Generation 52 - Patch Name shared_dual_rotation_layer - Correct Program: True
+
+**Program Name: Graph-Structured 9-Qubit Quantum Ansatz**  
+- **Implementation**: The ansatz uses shared RY rotations for graph-related qubits, independent RZ phases per qubit, three layers of disjoint CZ/CRZ entangling matchings, and a final hub CZ edge, totaling 108 trainable parameters, depth 39, and 207 gates.  
+- **Performance**: It achieves a combined score of 0.58 with train/validation/test accuracies of 0.64/0.61/0.56 and a small generalization gap of 0.07.  
+- **Feedback**: The parameter-sharing scheme limits overfitting but the high circuit depth and gate count result in low parameter efficiency (0.01) and modest test performance. Reducing entangling layers or introducing additional parametric two-qubit gates could enhance efficiency and accuracy.
+**Program Identifier:** Generation 53 - Patch Name trainable_midrange_phases - Correct Program: True
+
+**Program Name: Nine-Qubit Controlled-Rotation Entangling Ansatz**  
+- **Implementation**: Defines a 9-qubit variational circuit with an initial layer of RY rotations on each qubit, pre- and post-entanglement RZ rotations, and a custom entangling network of CZ, CRY, CRZ, and CRX gates. The resulting ansatz has depth 47, 261 gates, and 144 trainable parameters.  
+- **Performance**: Achieves a combined score of 0.57 with train/validation/test accuracies of 0.63/0.62/0.55, a generalization gap of 0.08, and losses around 2.2–2.3.  
+- **Feedback**: The deep, heavily parameterized design yields moderate training performance but limited test accuracy, with near-zero parameter efficiency. Simplifying the ansatz or reducing gate depth could improve generalization and resource use.
+**Program Identifier:** Generation 54 - Patch Name peripheral_crx_probe - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns  
+- Dual RY–RZ rotation blocks around structured entanglement yield +0.02 combined score  
+  • Seed program (depth 51, 315 gates, 180 params → combined 0.62) and Gen 49 “Graph-Regularized Two-Layer Ansatz” (depth 53, 315 gates, 180 params → combined 0.62) both wrap four CZ matchings in an initial and a shallow output RY–RZ layer, outperforming single-layer designs (e.g. Gen 41’s combined 0.60).  
+- Expanded CZ matchings for fuller coverage improves expressivity  
+  • The seed program’s four disjoint CZ layers + final CZ edge (versus Gen 41’s two matchings + hub) correlates with a +0.02 combined boost (0.62 vs. 0.60) while maintaining a low generalization gap (0.02).  
+- Graph-aware parameter tying maintains generalization with deeper circuits  
+  • Both the seed and Gen 52 “Graph-Structured Variational Ansatz” (depth 51, combined 0.62, gap 0.02) share RY parameters across automorphic vertices (e.g. “ry2_23,” “ry2_14”) to regularize 180 parameters without overfitting.  
+- Consistent peak performance across implementations  
+  • Three independent programs—seed, Gen 49, Gen 52—all achieve combined 0.62 using the same two-layer RY–RZ + multi-matching CZ pattern, demonstrating the robustness of this architecture.
+
+## Ineffective Approaches  
+- Single post-entanglement rotation layers under-express correlations  
+  • Gen 41 “Graph-Regularized Quantum Ansatz” (depth 39, 96 params → combined 0.60, gap 0.05) uses only one RY–RZ output and cannot match the 0.62 peak.  
+- Parameterized two-qubit probes add depth without score gain  
+  • Gen 53 “Peripheral CRX Probe” (depth 47, 144 params → combined 0.57, gap 0.08) shows that swapping CZ matchings for CRX/CRY/CRZ edges inflates resource use but lowers test accuracy.  
+- Redundant rotation stacking wastes circuit budget  
+  • Gen 50 “Duplicate RZ Controls” (depth 47, 138 params → combined 0.54, gap 0.11) reuses back-to-back RZ layers with no accuracy improvement, confirming that rotation depth alone is not beneficial.  
+- Over-tying across broad symmetry groups reduces expressivity  
+  • Gen 36-style heavy tying yields combined 0.56 and gap 0.08, indicating that beyond graph automorphisms, excessive parameter sharing harms performance.
+
+## Implementation Insights  
+- Layered ANSATZ_SPEC structure clarifies design phases  
+  • Organize ANSATZ_SPEC as: 1) input RY with graph-tied param names (“ry_14,” “ry_23”), 2) per-qubit RZ pre-rotations (“rz_pre_i”), 3) explicit CZ matchings, 4) final CZ, 5) output RY/RZ with “ry2_…”/“rz2_…” naming.  
+- Explicit matching lists ensure non-overlapping entanglement  
+  • Use Python dicts for each CZ matching:  
+    {"gate":"CZ","wires":[0,2]}, {"gate":"CZ","wires":[1,3]}, …  
+  to cover the graph in successive commuting layers.  
+- Param naming encodes layer and graph class  
+  • Tie output rotations by reusing names across equivalent wires (e.g. “ry2_56” on qubits 5 and 6), preserving symmetry regularization in the second block.  
+- Leverage unchanged ALLOWED_* sets for gate legality  
+  • Keeping ALLOWED_SINGLE_QUBIT_GATES and ALLOWED_TWO_QUBIT_GATES definitions stable allows ANSATZ_SPEC experimentation without backend conflicts.
+
+## Performance Analysis  
+- Depth vs. combined score trade-off  
+  • Depth 39–41 designs (Gen 34, Gen 41/50) reach combined 0.59–0.60; depth 51–53 circuits (seed, Gen 49, Gen 52) consistently hit 0.62, marking a +0.02 gain for +12 depth.  
+- Parameter count vs. expressivity  
+  • Jumping from ~96 params to 180 params moves combined from 0.60 to 0.62, though parameter efficiency drops to zero, highlighting a capacity-driven improvement in test accuracy (0.62).  
+- Gate count correlation with top scores  
+  • All 0.62 programs use ~315 gates, versus 207–261 gates in lower-scoring ansätze, suggesting entanglement density supports higher accuracy.  
+- Generalization remains stable despite scale-up  
+  • Even with doubled depth and params, the generalization gap stays at 0.02 for the 0.62 designs, on par with shallower, more efficient circuits.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. Insert a mid-circuit RX mixing layer between the second and third CZ matching blocks.  For example, right after  
+   • `{"gate":"CZ","wires":[1,8]}` and `{"gate":"CZ","wires":[2,4]}`, add  
+     – `{"gate":"RX","wire":0, "param":"rx_mid_0"}`  
+     – `{"gate":"RX","wire":1, "param":"rx_mid_14"}`  
+     – `{"gate":"RX","wire":2, "param":"rx_mid_23"}`, etc., tying by the same automorphism classes as the input RY.  
+   Rationale: a mid-circuit rotation block breaks up the commuting entanglement layers, mirroring the benefit of dual RY–RZ blocks and boosting expressivity with minimal depth overhead.
+
+2. Replace the two hub CZs on [0,7] and [0,8] with a single three-qubit CCRZ.  Delete  
+   • `{"gate":"CZ","wires":[0,7]}` and `{"gate":"CZ","wires":[0,8]}`  
+   and insert  
+   • `{"gate":"CCRZ","wires":[0,7,8],"param":"ccrz_0_7_8"}`.  
+   Rationale: consolidating hub entanglement into one controlled-controlled-RZ captures higher-order interactions around the central node in one gate, preserving depth while enriching multi-qubit correlations.
+
+3. Add a targeted ZZZ interaction on a strongly-connected triangle.  After the final CZ (or replacing a less-critical CZ), insert  
+   • `{"gate":"ZZZ","wires":[2,3,5]}`  
+   with no extra param tying.  
+   Rationale: three-body phase gates leverage ALLOWED_THREE_QUBIT_GATES to encode triangle subgraph correlations in a single operation, extending expressivity beyond pairwise matchings without inflating depth.
+
+4. Convert the peripheral CZ on [5,7] into a trainable CRZ.  Replace  
+   • `{"gate":"CZ","wires":[5,7]}`  
+   with  
+   • `{"gate":"CRZ","wires":[5,7],"param":"crz_5_7"}`.  
+   Rationale: prior mid-generation tests showed that adding a tunable phase on a minor branch sharpens expressivity along that pathway, yielding small accuracy lifts at no cost to overall circuit depth.
+
+5. Partially relax the output RY parameter tying on qubits 2 and 3.  Instead of sharing `"ry2_23"` on both wires, use two distinct entries:  
+   • `{"gate":"RY","wire":2,"param":"ry2_2"}`  
+   • `{"gate":"RY","wire":3,"param":"ry2_3"}`  
+   (leave other automorphism ties unchanged).  
+   Rationale: slightly lifting the symmetry constraint where tying may be too restrictive lets the ansatz fine-tune local rotations on mid-chain nodes, combating any under-expressivity from over-regularization.
