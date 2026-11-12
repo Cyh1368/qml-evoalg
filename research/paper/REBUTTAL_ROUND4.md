@@ -184,8 +184,8 @@ On graphs, `always_repair` wins for every $\pi \ge 0.25$ at $w=0$ (risk 0.46087 
 (measured averaged-inference time minus raw, times $H$), with the record stating that risk is a
 per-prediction MSE (a rate) while the horizon term is cumulative. Averaged time is a timed call over
 the twirl elements, not raw time $\times$ group order; the measured overhead factor is reported
-per candidate (for the ring declared regime, 9.23 against a group order of 12 — the extrapolation
-overstated it), every timing is the median of three repeats with min/max stored, and all timings are
+per candidate (ring declared regime: median **10.17**, range 9.28–12.19, against a group order of 12 —
+so the raw-time × group-order extrapolation was close on average but wrong per candidate), every timing is the median of three repeats with min/max stored, and all timings are
 tagged `measured`.
 
 ## 6. The calibrated screen: the pre-declared negative result
