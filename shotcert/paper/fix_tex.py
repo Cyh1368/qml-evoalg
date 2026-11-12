@@ -11,6 +11,8 @@ for f in glob.glob(sys.argv[1] + "/tabs_*.tex"):
         ln = ln.replace("\\<", "\\langle ").replace("\\>", "\\rangle")
         # The alloc-table header lost one alignment tab to a .replace() in its generator; the rows
         # have nine fields, so restore it here rather than in the fragile string literal.
+        if "tabular}{lrrrrrrr}" in ln and "ideal" in "".join(lines):
+            ln = ln.replace("tabular}{lrrrrrrr}", "tabular}{lrrrrrrrr}")
         if "hat w)$ $" in ln:
             ln = ln.replace("hat w)$ $", "hat w)$ & $")
         out.append(ln)
