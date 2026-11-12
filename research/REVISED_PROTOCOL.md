@@ -630,3 +630,27 @@ simulation), while it remains unrun as a search/repair benchmark. `claim_bind.py
 `check_numbers.py` are described as internal supporting software for this manuscript — self-checks on
 documents produced by this project — and are not offered as external validation or as a novelty
 contribution.
+
+### A7.5a Amendment to the calibration rule (written before any A7 result exists)
+
+As first written, A7.5 says the tolerance is calibrated so that the "false-accept rate on a null
+panel of exactly symmetric targets" stays below $\alpha$. That is incoherent: on a panel where the
+supplied group *is* a label symmetry, accepting is correct at every tolerance, so the rate it
+constrains is identically zero and the rule selects nothing. The error being controlled must be
+stated, and two rules are therefore pre-declared and reported side by side. Both use the one-sided
+95% Clopper--Pearson upper bound on the accept-error rate over the named panel, and both choose the
+**largest** tolerance on the frozen grid whose bound is at most $\alpha = 0.05$; if none qualifies,
+the rule returns "no admissible tolerance" rather than the smallest one.
+
+| rule | panel (entries where...) | error controlled |
+|---|---|---|
+| `calib_exact` | the supplied group is **not** a label symmetry of the target on the probe set | accepting a group that is not a symmetry |
+| `calib_harm` | the realized change in risk is **positive** ($\Delta > 0$, repair hurt) | accepting a repair that actually harms this predictor |
+
+The two answer different questions and their gap is itself a reported result: `calib_exact` is the
+literal exactness screen, and it is the rule that approximate symmetry defeats; `calib_harm` is the
+decision-relevant calibration, which tolerates inexactness exactly when it is harmless. The
+tolerance grid is scale-free, $\{0, 10^{-9}, 10^{-6}, 10^{-4}, 10^{-3}, 3{\times}10^{-3},
+10^{-2}, 3{\times}10^{-2}\}$ multiplied by the target's own standard deviation, so the grid does not
+encode a preference for one dataset's units. Calibration data are recorded with the choice they
+produced.

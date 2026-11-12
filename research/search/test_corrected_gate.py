@@ -170,3 +170,86 @@ class TestCanonicalPanel(unittest.TestCase):
         self.assertEqual(len(c3), 3)
         self.assertEqual(len(c2), 2)
         self.assertNotEqual(CG.sha_sorted(c3), CG.sha_sorted(c2))
+
+
+class TestSubgroupSamplingA7(unittest.TestCase):
+    """A7.1: the capped fallback must stay inside the hypothesized subgroup."""
+
+    CYC9 = [(i + 1) % 9 for i in range(9)]
+    TRANS = [1, 0, 2, 3, 4, 5, 6, 7, 8]
+
+    def test_capped_return_is_always_subgroup_words(self):
+        # a group of order 4 (two disjoint transpositions), capped below its order
+        g1 = [1, 0, 2, 3, 4, 5, 6, 7, 8]
+        g2 = [0, 1, 3, 2, 4, 5, 6, 7, 8]
+        full = CG.closure([g1, g2], 9)
+        self.assertEqual(len(full), 4)
+        elems, complete = CG.closure_capped([g1, g2], 9, cap=2)
+        self.assertFalse(complete)
+        self.assertGreater(len(elems), 1)
+        for g in elems:                                 # every element is a bijection
+            self.assertEqual(sorted(g), list(range(9)))
+        # and every element is a word in the proposed generators, i.e. inside the subgroup
+        self.assertTrue(set(elems) <= set(full),
+                        "capped fallback returned an element outside the hypothesized subgroup")
+        # a genuinely un-enumerable case stays a subset of bijections and reports incomplete
+        big, comp = CG.closure_capped([self.CYC9, self.TRANS], 9, cap=200)
+        self.assertFalse(comp)
+        self.assertTrue(all(sorted(b) == list(range(9)) for b in big))
+
+    def test_small_subgroup_enumerates_completely(self):
+        elems, complete = CG.closure_capped([self.CYC9], 9, cap=2000)
+        self.assertTrue(complete)
+        self.assertEqual(len(elems), 9)
+
+    def test_label_test_scope_vocabulary(self):
+        task = _tasks.load_family("ring_n6", development=True, locked=False)
+        n = int(task.n_qubits)
+        probe = list(range(32))
+        rows = np.asarray(task.x)[:32]
+        r_ok = CG.label_test(task, [list(g) for g in task.generators], task.primary_target,
+                             rows)
+        self.assertEqual(r_ok["scope"], "exhaustive_subgroup_on_probe_set")
+        self.assertTrue(r_ok["closure_enumeration_complete"])
+        self.assertTrue(r_ok["acceptance_is_conclusive"])
+        self.assertNotIn("certifies_soundness", r_ok)
+        # an un-enumerable subgroup is inconclusive, never a pass
+        _, comp = CG.closure_capped([self.CYC9, self.TRANS], 9, cap=50)
+        self.assertFalse(comp)
+
+    def test_zero_acceptance_reports_a_bound_not_zero(self):
+        self.assertAlmostEqual(CG.cp_upper_95(0, 400), 0.00746, places=4)
+        self.assertGreater(CG.cp_upper_95(0, 400), 0.0)
+        self.assertAlmostEqual(CG.cp_upper_95(0, 1), 0.95, places=3)
+
+
+class TestPoolDefinitionA7(unittest.TestCase):
+    """A7.2: Q is filtered by arm and family and carries no selection duplicates."""
+
+    def test_pool_is_family_and_arm_filtered(self):
+        pool = CG.empirical_pool("logs/runs_confirm", "ring_n6")
+        self.assertEqual(pool["family"], "ring_n6")
+        self.assertTrue(set(pool["arms"]) <= set(CG.LLM_ARMS))
+        self.assertGreater(pool["n_hypotheses"], 0)
+        # no double-weighting: the count equals the sum over runs of proposals carrying a
+        # hypothesis, with no extra +1 per run for the selected best
+        self.assertEqual(pool["n_hypotheses"], sum(pool["runs"].values()))
+
+    def test_deprecated_pool_is_larger_than_the_filtered_one(self):
+        old = CG._empirical_hypotheses("logs/runs_confirm")
+        new = CG.empirical_pool("logs/runs_confirm", "ring_n6")["n_hypotheses"]
+        self.assertGreater(len(old), new,
+                           "the unfiltered pool mixed arms and both six-qubit families")
+
+    def test_exact_pool_rate_has_no_monte_carlo_layer(self):
+        task = _tasks.load_family("ring_n6", development=True, locked=False)
+        pool = CG.empirical_pool("logs/runs_confirm", "ring_n6")
+        from research.search.verify_semantics import probe_indices
+        probe = probe_indices(task, n_rows=256, seed=CG.PROBE_SEED)
+        r = CG.accept_pool_exact(task, task.primary_target, pool, "llm_ring_n6", probe)
+        self.assertEqual(r["pool"], "finite_stored_pool")
+        self.assertEqual(r["n_hypotheses"], pool["n_hypotheses"])
+        self.assertIn("exact over the pool", r["interval_kind"])
+        # deterministic: enumeration, not sampling
+        r2 = CG.accept_pool_exact(task, task.primary_target, pool, "llm_ring_n6", probe)
+        self.assertEqual(r["accepted"], r2["accepted"])

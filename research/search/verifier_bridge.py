@@ -49,8 +49,14 @@ def resolve_generators(candidate, task, group="hypothesis"):
         if not gens:
             raise ValueError("task exposes no true generators")
         return gens
+    if isinstance(group, (list, tuple)) and group and isinstance(group[0], (list, tuple)):
+        # An explicit generator list, used by the decision-rule study so that a gate can be asked
+        # about the group of the *current regime* rather than only the candidate's own claim or the
+        # task's true generators. Analysis-side only: nothing here reaches a prompt, and the
+        # prompt-side path continues to pass group="hypothesis" exclusively.
+        return [[int(i) for i in g] for g in group]
     if group != "hypothesis":
-        raise ValueError("group must be 'hypothesis' or 'true'")
+        raise ValueError("group must be 'hypothesis', 'true', or an explicit generator list")
     gens = hypothesis_generators(candidate)
     if gens is None:
         raise ValueError("candidate carries no hypothesis to verify")
