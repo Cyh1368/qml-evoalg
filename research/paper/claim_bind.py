@@ -39,7 +39,7 @@ SPEC_RAW = [
     # --- WP-REPAIR-2: primary estimand E-A, and the eta=0 non-result
     ("repair2.eta1.EA.mean", "research/experiments/repair/repair2_analysis.json",
      "contrasts.[a=repaired,b=control_dup,eta=1.0,steps=200].estimand_EA_seed_vector.mean",
-     5, ["0.03605", "E-A"]),
+     5, ["0.03605", "primary estimand"]),
     ("repair2.eta1.EA.ci_low", "research/experiments/repair/repair2_analysis.json",
      "contrasts.[a=repaired,b=control_dup,eta=1.0,steps=200]"
      ".estimand_EA_seed_vector.ci95_low", 5, ["0.02998"]),
@@ -53,10 +53,10 @@ SPEC_RAW = [
      5, ["0.03134"]),
     ("repair2.eta0.vs_dup.mean", "research/experiments/repair/repair2_analysis.json",
      "contrasts.[a=repaired,b=control_dup,eta=0.0,steps=200].mean_diff_a_minus_b",
-     5, ["0.00060"]),
+     5, ["0.00060", "control\\_dup"]),
     # --- development deployed-averaging effect (E-S1)
     ("search.dev_deployed.mean", "research/search/confirm_analysis2.json",
-     "repair.[family=graphs_n6].mean_diff_averaged_minus_candidate", 5, ["0.04862"]),
+     "repair.[family=graphs_n6].mean_diff_averaged_minus_candidate", 5, ["0.04862", "E-S1"]),
     # --- deployed endpoint on held-out rows (A5.5)
     ("deployed.graphs.repair.mean", "research/HOLDOUT_DEPLOYED.json",
      "contrasts.[family=graphs_n6,arm=llm-verify-repair,"
@@ -70,11 +70,11 @@ SPEC_RAW = [
      "runs.[family=graphs_n6,arm=llm-verify-repair]#mean.test_risk_deployed",
      5, ["0.50067"]),
     ("deployed.graphs.edge_rule", "research/HOLDOUT_DEPLOYED.json",
-     "baselines.graphs_n6.edge_count_rule.risk", 5, ["0.57812"]),
+     "baselines.graphs_n6.edge_count_rule.risk", 5, ["0.57812", "edge-count"]),
     ("deployed.graphs.constant", "research/HOLDOUT_DEPLOYED.json",
      "baselines.graphs_n6.best_constant.risk", 5, ["0.58968"]),
     ("deployed.ring.constructive", "research/HOLDOUT_DEPLOYED.json",
-     "baselines.ring_n6.constructive_equivariant.risk_mean", 5, ["0.00026"]),
+     "baselines.ring_n6.constructive_equivariant.risk_mean", 5, ["0.00026", "constructive"]),
     # --- verifier semantics (A5.2)
     ("semantics.graphs.L_order", "research/search/verify_semantics.json",
      "families.graphs_n6.label_symmetry_groups.connected.order", 0, ["720"]),
@@ -91,7 +91,7 @@ SPEC_RAW = [
     ("decision.ring.R0.realised", "research/search/decision_rules.json",
      "families.ring_n6.rules.R0_supplied_group.mean_realised_delta", 5, ["0.00345"]),
     ("decision.ring.R3.realised", "research/search/decision_rules.json",
-     "families.ring_n6.rules.R3_predictor_defect_q1.mean_realised_delta", 5, ["0.00274"]),
+     "families.ring_n6.rules.R3_predictor_defect_q1.mean_realised_delta", 5, ["0.00274", "R3"]),
     ("decision.ring.mismatch.mean", "research/search/decision_rules.json",
      "families.ring_n6.R4_mismatch_control.mean_delta_mismatch", 5, ["0.00399"]),
     ("decision.graphs.R0.realised", "research/search/decision_rules.json",
@@ -100,6 +100,34 @@ SPEC_RAW = [
 
 SPEC = [{"id": a, "file": b, "path": c, "decimals": d, "context": e}
         for a, b, c, d, e in SPEC_RAW]
+
+# --- external evaluation of the instrument: the same record values, bound into a
+# different artifact (the project claim ledger) with that artifact's own context.
+# The referee asked for detection and false-alarm rates "on artifacts beyond this
+# manuscript"; this is that measurement. Context tokens are ledger phrasings, so a
+# value that merely occurs somewhere in the ledger does not bind.
+SPEC_EXTERNAL_RAW = [
+    ("ledger.repair2.eta1.EA.mean", "research/experiments/repair/repair2_analysis.json",
+     "contrasts.[a=repaired,b=control_dup,eta=1.0,steps=200].estimand_EA_seed_vector.mean",
+     5, ["192 units"]),
+    ("ledger.repair2.eta0.vs_dup.mean", "research/experiments/repair/repair2_analysis.json",
+     "contrasts.[a=repaired,b=control_dup,eta=0.0,steps=200].mean_diff_a_minus_b",
+     5, ["holm 0.246"]),
+    ("ledger.search.dev_deployed.mean", "research/search/confirm_analysis2.json",
+     "repair.[family=graphs_n6].mean_diff_averaged_minus_candidate", 5, ["e-s1"]),
+    ("ledger.deployed.graphs.repair.mean", "research/HOLDOUT_DEPLOYED.json",
+     "contrasts.[family=graphs_n6,arm=llm-verify-repair,"
+     "contrast=deployed - candidate].mean_diff", 5, ["7/12", "deployed"]),
+    ("ledger.deployed.ring.constructive", "research/HOLDOUT_DEPLOYED.json",
+     "baselines.ring_n6.constructive_equivariant.risk_mean", 5, ["0.00648", "constructive"]),
+    ("ledger.deployed.graphs.edge_rule", "research/HOLDOUT_DEPLOYED.json",
+     "baselines.graphs_n6.edge_count_rule.risk", 5, ["edge-count"]),
+    ("ledger.semantics.ring.L_order", "research/search/verify_semantics.json",
+     "families.ring_n6.label_symmetry_groups.alpha_0.order", 0, ["alpha_0"]),
+]
+
+SPEC_EXTERNAL = [{"id": a, "file": b, "path": c, "decimals": d, "context": e}
+                 for a, b, c, d, e in SPEC_EXTERNAL_RAW]
 
 CONTEXT_LINES = 6
 
@@ -200,6 +228,32 @@ def _sign_ok(line, token, value):
     return False
 
 
+SCALE_RE = re.compile(r"10\s*\^\s*\{?[-+]?\d+\}?")   # a scale, not a value
+TOKEN_RE_CACHE = {}
+
+
+def _token_re(token):
+    """Whole-number match: ``12`` must not match inside ``120``, ``0.012`` or ``10^{-12}``.
+
+    Substring matching was the first implementation and it produced false bindings on
+    short integer tokens; the mutation battery found it.
+    """
+    if token not in TOKEN_RE_CACHE:
+        esc = re.escape(token)
+        TOKEN_RE_CACHE[token] = re.compile(r"(?<![0-9.])" + esc + r"(?![0-9])")
+    return TOKEN_RE_CACHE[token]
+
+
+def _plain(line):
+    """A line with LaTeX scale factors removed, so ``10^{-12}`` cannot match ``-12``."""
+    return SCALE_RE.sub(" SC ", line)
+
+
+def _lines_with(lines, token):
+    rx = _token_re(token)
+    return [i for i, ln in enumerate(lines) if rx.search(_plain(ln))]
+
+
 def window(lines, idx, half=CONTEXT_LINES):
     return "\n".join(lines[max(0, idx - half): idx + half + 1]).lower()
 
@@ -222,9 +276,8 @@ def check_bindings(spec, tex_paths):
         rec["record_value"] = v
         token = fmt(v, dec)
         rec["token"] = token
-        hits = [i for i, ln in enumerate(lines)
-                if token in ln and _sign_ok(ln, token, v)]
-        if not [i for i, ln in enumerate(lines) if token in ln]:
+        hits = [i for i in _lines_with(lines, token) if _sign_ok(lines[i], token, v)]
+        if not _lines_with(lines, token):
             rec.update(status="value_absent_from_manuscript")
             out.append(rec)
             continue
@@ -298,9 +351,20 @@ def check_mutations(spec, tex_paths):
             fake[0]["forced_value"] = float(v)
         rows = check_bindings(fake, tex_paths)
         r = rows[0]
+        # A value mutation is *degenerate* when the perturbed value prints to the same
+        # token as the true one (sign flip or 10x change of an exact zero). Context
+        # mutations always change something, so they are never degenerate.
+        degenerate = False
+        if "forced_value" in fake[0]:
+            try:
+                true_token = fmt(resolve(b["file"], b["path"]), b["decimals"])
+                degenerate = fmt(fake[0]["forced_value"], b["decimals"]) == true_token
+            except Exception:                          # noqa: BLE001
+                degenerate = False
         detected = r["status"] != "bound"
         res.append({"mutation": m["mutation"], "base": m["base_id"],
-                    "status": r["status"], "detected": detected})
+                    "status": r["status"], "detected": detected,
+                    "degenerate": degenerate})
     return res
 
 
@@ -308,12 +372,19 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="research/paper/claim_bind.py")
     ap.add_argument("--tex", default="research/paper/main.tex")
     ap.add_argument("--report", default="research/paper/claim_binding_report.md")
+    ap.add_argument("--extra-doc", default="research/CLAIMS.md",
+                    help="second artifact to evaluate the instrument on (empty to skip)")
     a = ap.parse_args(argv)
     tex = [a.tex]
     rows = check_bindings(SPEC, tex)
     mut = check_mutations(SPEC, tex)
+    ext_rows = ext_mut = []
+    if a.extra_doc and os.path.exists(a.extra_doc):
+        ext_rows = check_bindings(SPEC_EXTERNAL, [a.extra_doc])
+        ext_mut = check_mutations(SPEC_EXTERNAL, [a.extra_doc])
     ok = [r for r in rows if r["status"] == "bound"]
-    det = [m for m in mut if m["detected"]]
+    det = [m for m in mut if m["detected"] and not m.get("degenerate")]
+    mut_tested = [m for m in mut if not m.get("degenerate")]
     # false alarms: unmutated bindings that fail
     false_alarm = 0
     lines = ["# Claim-binding report (generated; do not hand-edit)\n",
@@ -331,34 +402,82 @@ def main(argv=None):
               "|---|---|---|---|"]
     by = {}
     for m in mut:
+        if m.get("degenerate"):
+            continue
         s = by.setdefault(m["mutation"], [0, 0])
         s[0] += 1
         s[1] += int(m["detected"])
     for k, (n, d) in sorted(by.items()):
         lines.append("| %s | %d | %d | %.3f |" % (k, n, d, d / n if n else float("nan")))
+    n_degen = sum(1 for m in mut if m.get("degenerate"))
+    lines += ["",
+              "Excluded from the denominators above: **%d degenerate mutations** where the "
+              "perturbation leaves the *printed* token unchanged (a sign flip or an "
+              "order-of-magnitude change of an exact zero, or a 10x change that rounds back "
+              "to the same digits). No token-based instrument can detect a mutation it does "
+              "not change, so counting them would inflate the rate; listing the exclusion "
+              "keeps it visible." % n_degen, ""]
     lines += ["",
               "**Headline bindings:** %d/%d bound. Unbound bindings are *not* counted as "
               "false alarms of the checker: each is either a real manuscript gap (a value "
               "the paper should carry but does not) or a spec error, and each is listed by "
               "status below." % (len(ok), len(rows)),
-              "**Mutation detection:** %d/%d (%.3f)."
-              % (len(det), len(mut), len(det) / len(mut) if mut else float("nan")),
+              "**Mutation detection:** %d/%d testable (%.3f)."
+              % (len(det), len(mut_tested),
+                 len(det) / len(mut_tested) if mut_tested else float("nan")),
               "",
               "Undetected mutations, if any, are listed so the gap is visible rather than "
               "hidden:", ""]
-    for m in mut:
+    for m in mut_tested:
         if not m["detected"]:
             lines.append("* `%s` on `%s` escaped detection (status `%s`)"
                          % (m["mutation"], m["base"], m["status"]))
     if not any(not m["detected"] for m in mut):
         lines.append("* none")
+    if ext_rows:
+        eok = [r for r in ext_rows if r["status"] == "bound"]
+        edet = [m for m in ext_mut if m["detected"] and not m.get("degenerate")]
+        etest = [m for m in ext_mut if not m.get("degenerate")]
+        lines += ["",
+                  "## External evaluation: the same instrument on a second artifact\n",
+                  "Artifact: `%s` (the project claim ledger). The bindings are the same "
+                  "record values with that document's own context tokens, which is the "
+                  "detection/false-alarm measurement requested beyond this manuscript. "
+                  "It also tests transfer honestly: a ledger row that does not carry the "
+                  "value at all is a *spec* gap, listed by status, not a checker failure.\n"
+                  % a.extra_doc,
+                  "| id | record value | token | status | line(s) |",
+                  "|---|---|---|---|---|"]
+        for r in ext_rows:
+            lines.append("| `%s` | %s | `%s` | %s | %s |"
+                         % (r["id"], r.get("record_value", "?"), r.get("token", "?"),
+                            r["status"], r.get("lines", "")))
+        lines += ["", "**External bindings:** %d/%d bound. "
+                  "**External mutation detection:** %d/%d testable (%.3f)."
+                  % (len(eok), len(ext_rows), len(edet), len(etest),
+                     len(edet) / len(etest) if etest else float("nan")), ""]
+        for m in etest:
+            if not m["detected"]:
+                lines.append("* external: `%s` on `%s` escaped detection (status `%s`)"
+                             % (m["mutation"], m["base"], m["status"]))
+        ebad = [r for r in ext_rows if r["status"] not in ("bound",)]
+        if not any(not m["detected"] for m in ext_mut):
+            lines.append("* external mutations: none escaped detection")
+        del ebad
     with open(a.report, "w") as fh:
         fh.write("\n".join(lines) + "\n")
-    print("wrote %s: %d/%d bound, %d/%d mutations detected"
-          % (a.report, len(ok), len(rows), len(det), len(mut)))
+    print("wrote %s: %d/%d bound, %d/%d testable mutations detected"
+          % (a.report, len(ok), len(rows), len(det), len(mut_tested)))
+    if ext_rows:
+        eok = [r for r in ext_rows if r["status"] == "bound"]
+        print("  external (%s): %d/%d bound, %d/%d testable mutations detected"
+              % (a.extra_doc, len(eok), len(ext_rows), len(edet), len(etest)))
     for r in rows:
         if r["status"] != "bound":
             print("  UNBOUND %-38s %s" % (r["id"], r["status"]))
+    for r in (ext_rows or []):
+        if r["status"] != "bound":
+            print("  UNBOUND(external) %-38s %s" % (r["id"], r["status"]))
     return 0 if len(ok) == len(rows) else 1
 
 

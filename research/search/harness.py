@@ -81,12 +81,55 @@ def _structural_summary(candidate):
     return prompts.structural_summary(candidate)
 
 
+def _label_corrected(task, hypothesis, n_rows):
+    """A6.1 corrected label test, shaped like ``verifier_bridge.label_preservation``.
+
+    Scored target only (not every target column) and the frozen tolerance
+    ``1e-12 + 1e-9 * |y|`` instead of exact equality. Same row budget, so gate cost is
+    comparable to the implemented screen.
+    """
+    from research.search import corrected_gate as _cg
+    rows = np.asarray(task.x)
+    splits = getattr(task, "splits", None) or {}
+    mask = splits.get("train")
+    if mask is not None:
+        rows = rows[np.asarray(mask, dtype=bool)]
+    rows = rows[:int(n_rows)]
+    tgt = target_key_of(task)
+    out = _cg.label_test(task, hypothesis["generators"], tgt, rows)
+    return {"mean_abs_discrepancy": out["max_discrepancy"],
+            "max_discrepancy": out["max_discrepancy"],
+            "violated_fraction": out["violated_fraction"],
+            "group_order": out["closure_order"], "n_rows": int(len(rows)),
+            "mode": "corrected", "tolerance": [_cg.ATOL_ABS, _cg.ATOL_REL]}
+
+
+def target_key_of(task):
+    """The scored target of a family (the one the arms are evaluated on)."""
+    return getattr(task, "primary_target", None) or list(task.targets)[0]
+
+
 def run_search(arm, family, seed, budget, out_dir, model="ycrc-local",
                reasoning_effort="none", mock_llm=False, task=None,
                target=None, label_rows=LABEL_ROWS,
                max_proposals=None, llm_timeout=None, client=None,
-               write_log=True, steps=200, max_train=None):
-    """Execute one search run; returns the run-log dict (also written to JSON)."""
+               write_log=True, steps=200, max_train=None, label_mode="implemented"):
+    """Execute one search run; returns the run-log dict (also written to JSON).
+
+    ``label_mode`` selects the label-preservation semantics used both for verifier
+    feedback and for the repair gate:
+
+    ``implemented``  the historical screen: every target column, exact equality
+    (``verifier_bridge.label_preservation`` defaults to ``tolerance=0.0`` and calls
+    ``label_oracle`` with no ``target=``).
+    ``corrected``    Addendum A6.1: the scored target only, with the frozen tolerance
+    ``1e-12 + 1e-9 * |y|``.
+
+    The mode is recorded in the run log, so a corrected-feedback run can never be pooled
+    with a frozen defective-feedback run by accident.
+    """
+    if label_mode not in ("implemented", "corrected"):
+        raise ValueError("label_mode must be 'implemented' or 'corrected'")
     check_locked_path(family=family, out_dir=out_dir, model=model,
                       target=target, reasoning_effort=reasoning_effort)
     if arm not in ARMS:
@@ -174,7 +217,9 @@ def run_search(arm, family, seed, budget, out_dir, model="ycrc-local",
                 verifier_bridge.sample_param_dicts(cand, verify_rng,
                                                    VERIFY_PARAM_SAMPLES),
                 group="hypothesis")
-            lp = verifier_bridge.label_preservation(task, hyp, label_rows)
+            lp = (_label_corrected(task, hyp, label_rows)
+                  if label_mode == "corrected" else
+                  verifier_bridge.label_preservation(task, hyp, label_rows))
             report = {"status": "ok", **{k: vr[k] for k in
                       ("group_order", "parameter_samples", "mean_channel_residual",
                        "max_channel_residual", "tolerance", "sampled_pass")},
@@ -287,6 +332,7 @@ def run_search(arm, family, seed, budget, out_dir, model="ycrc-local",
         "arm": arm, "family": family_name, "model": client.model
         if arm in LLM_ARMS else None, "reasoning_effort":
         reasoning_effort if arm in LLM_ARMS else None,
+        "label_mode": label_mode,
         "mock_llm": bool(mock_llm), "seed": int(seed), "budget": int(budget),
         "steps": int(steps), "max_train": max_train,
         "target": target_key, "proposals_total": counters["proposals_total"],
@@ -337,6 +383,9 @@ def main(argv=None):
                      help="Adam steps per candidate (protocol default 200)")
     run.add_argument("--max-train", type=int, default=None,
                      help="cap the training pool (uniform compute control)")
+    run.add_argument("--label-mode", default="implemented",
+                     choices=("implemented", "corrected"),
+                     help="A6.1 corrected label semantics for feedback and repair gate")
     args = parser.parse_args(argv)
     check_locked_path(out=args.out, family=args.family, model=args.model)
     log = run_search(arm=args.arm, family=args.family, seed=args.seed,
@@ -344,7 +393,8 @@ def main(argv=None):
                      reasoning_effort=args.reasoning_effort,
                      mock_llm=args.mock_llm, target=args.target,
                      max_proposals=args.max_proposals,
-                     steps=args.steps, max_train=args.max_train)
+                     steps=args.steps, max_train=args.max_train,
+                     label_mode=args.label_mode)
     print(json.dumps({"log": log.get("log_path"),
                       "evaluated_valid": log["evaluated_valid"],
                       "proposals_total": log["proposals_total"],

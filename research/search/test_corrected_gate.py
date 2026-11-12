@@ -149,3 +149,24 @@ class TestBoardSymmetries(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCanonicalPanel(unittest.TestCase):
+    """A6.6: the panel analysed must be the panel A5.3 defined, not a copy of it."""
+
+    def test_panel_is_the_canonical_mapping(self):
+        from research.search.verify_semantics import panel as canonical
+        for n in (6, 9):
+            a, b = CG.panel(n), canonical(n)
+            self.assertEqual(list(a.keys()), list(b.keys()))
+            for k in a:
+                self.assertEqual([tuple(g) for g in a[k]], [tuple(g) for g in b[k]],
+                                 "panel entry %r drifted at n=%d" % (k, n))
+
+    def test_rotation_subgroups_are_distinct_subgroups(self):
+        # with the canonical panel these are <rho^2> (order 3) and <rho^3> (order 2) at n=6
+        c3 = CG.closure(CG.panel(6)["rotation_subgroup_c3"], 6)
+        c2 = CG.closure(CG.panel(6)["rotation_subgroup_c2"], 6)
+        self.assertEqual(len(c3), 3)
+        self.assertEqual(len(c2), 2)
+        self.assertNotEqual(CG.sha_sorted(c3), CG.sha_sorted(c2))
