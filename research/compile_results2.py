@@ -443,8 +443,9 @@ def semantics_section(path, out):
     out.append("### Panel members: truth, gate decision under each variant, and margin\n")
     out.append("| family | target | member | closure order | sound on probe | accepted "
                "(implemented) | accepted (scored, tol 0) | accepted (scored, tol 1e-9) | "
-               "gate margin (implemented) | worst violated fraction (probe) |")
-    out.append("|---|---|---|---|---|---|---|---|---|---|")
+               "gate margin (implemented) | gate margin (scored, tol 0) | "
+               "gate margin (scored, tol 1e-9) | worst violated fraction (probe) |")
+    out.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
     members = {}
     for key, v in d["panel"].items():
         fam, tgt, gate = key.split("|")
@@ -456,11 +457,13 @@ def semantics_section(path, out):
             row["acc_" + gate] = m["accepted"]
             row["margin_" + gate] = m["gate_margin"]
     for (fam, tgt, name), r in sorted(members.items()):
-        out.append("| %s | %s | %s | %d | %s | %s | %s | %s | %.5f | %.5f |"
+        out.append("| %s | %s | %s | %d | %s | %s | %s | %s | %.5f | %.5f | %.5f | %.5f |"
                    % (fam, tgt, name, r["order"], r["sound"],
                       r.get("acc_implemented"), r.get("acc_target_specific"),
                       r.get("acc_target_specific_tol"),
-                      r.get("margin_implemented", float("nan")), r["worst"]))
+                      r.get("margin_implemented", float("nan")),
+                      r.get("margin_target_specific", float("nan")),
+                      r.get("margin_target_specific_tol", float("nan")), r["worst"]))
     out.append("")
     out.append("### Search-generated hypotheses: status and recorded gate decisions\n")
     out.append("| family | target | exact declared | valid proper subgroup | valid supergroup | sound non-comparable | invalid |")
@@ -549,7 +552,25 @@ def deployed_section(path, access_path, out):
     for fam, src in d["sources"].items():
         out.append("- **%s** evaluation rows: %s" % (fam, src))
     out.append("")
-    out.append("### Endpoints per arm (paired, run-level)\n")
+    out.append("### Absolute risk per arm on the shared evaluation rows\n")
+    out.append("| family | arm | candidate endpoint | deployed endpoint | declared-group "
+               "twirl | repair fired (deployed) |")
+    out.append("|---|---|---|---|---|---|")
+    agg = {}
+    for r in d["runs"]:
+        k = (r["family"], r["arm"])
+        e = agg.setdefault(k, {"c": [], "d": [], "t": [], "f": 0})
+        e["c"].append(r["test_risk_candidate"])
+        e["d"].append(r["test_risk_deployed"])
+        e["t"].append(r["test_risk_declared_twirl"])
+        e["f"] += bool(r["deployed_repair_frozen"])
+    for (fam, arm), e in sorted(agg.items()):
+        m = lambda v: sum(v) / len(v)
+        out.append("| %s | %s | %s | %s | %s | %d/%d |"
+                   % (fam, arm, fmt(m(e["c"]), "%.5f"), fmt(m(e["d"]), "%.5f"),
+                      fmt(m(e["t"]), "%.5f"), e["f"], len(e["c"])))
+    out.append("")
+    out.append("### Endpoint contrasts (paired, run-level)\n")
     out.append("| family | arm | contrast | runs | mean diff | 95% CI | verdict |")
     out.append("|---|---|---|---|---|---|---|")
     for c in d["contrasts"]:

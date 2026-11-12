@@ -462,71 +462,71 @@ Family `ring_n6`, target `alpha_1` (the declared group is **not** a label symmet
 
 ### Panel members: truth, gate decision under each variant, and margin
 
-| family | target | member | closure order | sound on probe | accepted (implemented) | accepted (scored, tol 0) | accepted (scored, tol 1e-9) | gate margin (implemented) | worst violated fraction (probe) |
-|---|---|---|---|---|---|---|---|---|---|
-| graphs_n6 | connected | cyclic_rotation | 6 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | connected | dihedral_declared | 12 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | connected | full_symmetric | 720 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | connected | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | connected | random_permutations | 720 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | connected | reflection | 2 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | connected | rotation_subgroup_c2 | 2 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | connected | rotation_subgroup_c3 | 3 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | connected | single_transpositions | 720 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | triangle | cyclic_rotation | 6 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | triangle | dihedral_declared | 12 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | triangle | full_symmetric | 720 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | triangle | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | triangle | random_permutations | 720 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | triangle | reflection | 2 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | triangle | rotation_subgroup_c2 | 2 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | triangle | rotation_subgroup_c3 | 3 | True | True | True | True | 0.00000 | 0.00000 |
-| graphs_n6 | triangle | single_transpositions | 720 | True | True | True | True | 0.00000 | 0.00000 |
-| ring_n6 | alpha_0 | cyclic_rotation | 6 | True | False | False | True | 1.95018 | 0.00000 |
-| ring_n6 | alpha_0 | dihedral_declared | 12 | True | False | False | True | 1.95018 | 0.00000 |
-| ring_n6 | alpha_0 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_0 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
-| ring_n6 | alpha_0 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_0 | reflection | 2 | True | False | False | True | 0.00000 | 0.00000 |
-| ring_n6 | alpha_0 | rotation_subgroup_c2 | 2 | True | False | False | True | 1.93358 | 0.00000 |
-| ring_n6 | alpha_0 | rotation_subgroup_c3 | 3 | True | False | False | True | 1.95018 | 0.00000 |
-| ring_n6 | alpha_0 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_0.1 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_0.1 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_0.1 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_0.1 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
-| ring_n6 | alpha_0.1 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_0.1 | reflection | 2 | True | False | False | True | 0.00000 | 0.00000 |
-| ring_n6 | alpha_0.1 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 |
-| ring_n6 | alpha_0.1 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_0.1 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_0.25 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_0.25 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_0.25 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_0.25 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
-| ring_n6 | alpha_0.25 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_0.25 | reflection | 2 | True | False | False | True | 0.00000 | 0.00000 |
-| ring_n6 | alpha_0.25 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 |
-| ring_n6 | alpha_0.25 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_0.25 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_0.5 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_0.5 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_0.5 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_0.5 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
-| ring_n6 | alpha_0.5 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_0.5 | reflection | 2 | True | False | False | True | 0.00000 | 0.00000 |
-| ring_n6 | alpha_0.5 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 |
-| ring_n6 | alpha_0.5 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_0.5 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_1 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_1 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_1 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_1 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 |
-| ring_n6 | alpha_1 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 |
-| ring_n6 | alpha_1 | reflection | 2 | True | False | False | True | 0.00000 | 0.00000 |
-| ring_n6 | alpha_1 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 |
-| ring_n6 | alpha_1 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 |
-| ring_n6 | alpha_1 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 |
+| family | target | member | closure order | sound on probe | accepted (implemented) | accepted (scored, tol 0) | accepted (scored, tol 1e-9) | gate margin (implemented) | gate margin (scored, tol 0) | gate margin (scored, tol 1e-9) | worst violated fraction (probe) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| graphs_n6 | connected | cyclic_rotation | 6 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | connected | dihedral_declared | 12 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | connected | full_symmetric | 720 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | connected | identity | 1 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | connected | random_permutations | 720 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | connected | reflection | 2 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | connected | rotation_subgroup_c2 | 2 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | connected | rotation_subgroup_c3 | 3 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | connected | single_transpositions | 720 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | cyclic_rotation | 6 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | dihedral_declared | 12 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | full_symmetric | 720 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | identity | 1 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | random_permutations | 720 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | reflection | 2 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | rotation_subgroup_c2 | 2 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | rotation_subgroup_c3 | 3 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| graphs_n6 | triangle | single_transpositions | 720 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0 | cyclic_rotation | 6 | True | False | False | True | 1.95018 | 0.53125 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0 | dihedral_declared | 12 | True | False | False | True | 1.95018 | 0.57812 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0 | reflection | 2 | True | False | False | True | 0.00000 | 0.43750 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0 | rotation_subgroup_c2 | 2 | True | False | False | True | 1.93358 | 0.46875 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0 | rotation_subgroup_c3 | 3 | True | False | False | True | 1.95018 | 0.46875 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.1 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.1 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.1 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.1 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.1 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.1 | reflection | 2 | True | False | False | True | 0.00000 | 0.43750 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.1 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.1 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.1 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.25 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.25 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.25 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.25 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.25 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.25 | reflection | 2 | True | False | False | True | 0.00000 | 0.31250 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.25 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.25 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.25 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.5 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.5 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.5 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.5 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.5 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.5 | reflection | 2 | True | False | False | True | 0.00000 | 0.25000 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_0.5 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.5 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_0.5 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_1 | cyclic_rotation | 6 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_1 | dihedral_declared | 12 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_1 | full_symmetric | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_1 | identity | 1 | True | True | True | True | 0.00000 | 0.00000 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_1 | random_permutations | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_1 | reflection | 2 | True | False | False | True | 0.00000 | 0.20312 | 0.00000 | 0.00000 |
+| ring_n6 | alpha_1 | rotation_subgroup_c2 | 2 | False | False | False | False | 1.93358 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_1 | rotation_subgroup_c3 | 3 | False | False | False | False | 1.95018 | 1.00000 | 1.00000 | 1.00000 |
+| ring_n6 | alpha_1 | single_transpositions | 720 | False | False | False | False | 2.66439 | 1.00000 | 1.00000 | 1.00000 |
 
 ### Search-generated hypotheses: status and recorded gate decisions
 
@@ -590,4 +590,62 @@ Thresholds (development only): median 0.00385, q1 0.00326, q3 0.0044
 | mutation-ea | 12 | -0.00390 | 0.0046 | 12 | 0 |
 | random | 12 | -0.00393 | 0.0045 | 12 | 0 |
 
-_(A5.5 deployed-endpoint evaluation not yet run)_
+## Deployed-endpoint evaluation (A5.5)
+
+- dry run: **False**; self-check gate: PASS (120/120 exact, max |dev diff| 1.73e-18) ; digests unchanged: True; access record: `research/HOLDOUT_DEPLOYED_ACCESS.json`
+
+- **graphs_n6** evaluation rows: v1 sealed split, SECOND READ (post hoc): no fresh class-disjoint graphs data exists (0 unseen isomorphism classes)
+- **ring_n6** evaluation rows: v5 fresh inputs-only holdout (seed 20261205), first read
+
+### Absolute risk per arm on the shared evaluation rows
+
+| family | arm | candidate endpoint | deployed endpoint | declared-group twirl | repair fired (deployed) |
+|---|---|---|---|---|---|
+| graphs_n6 | llm-fitness | 0.54472 | 0.54472 | 0.47449 | 0/12 |
+| graphs_n6 | llm-verify | 0.50941 | 0.50941 | 0.43511 | 0/12 |
+| graphs_n6 | llm-verify-repair | 0.52913 | 0.50067 | 0.44353 | 7/12 |
+| graphs_n6 | mutation-ea | 0.50895 | 0.50895 | 0.42886 | 0/12 |
+| graphs_n6 | random | 0.50548 | 0.50548 | 0.40915 | 0/12 |
+| ring_n6 | llm-fitness | 0.00648 | 0.00648 | 0.00311 | 0/12 |
+| ring_n6 | llm-verify | 0.00712 | 0.00712 | 0.00348 | 0/12 |
+| ring_n6 | llm-verify-repair | 0.00676 | 0.00676 | 0.00319 | 0/12 |
+| ring_n6 | mutation-ea | 0.01052 | 0.01052 | 0.00592 | 0/12 |
+| ring_n6 | random | 0.01036 | 0.01036 | 0.00578 | 0/12 |
+
+### Endpoint contrasts (paired, run-level)
+
+| family | arm | contrast | runs | mean diff | 95% CI | verdict |
+|---|---|---|---|---|---|---|
+| graphs_n6 | llm-fitness | deployed - candidate | 12 | +0.00000 | [+0.00000, +0.00000] | difference not detected (CI includes 0; NOT evidence of no effect) |
+| graphs_n6 | llm-fitness | declared twirl - candidate | 12 | -0.07023 | [-0.09151, -0.05207] | a better (raw CI excludes 0 on the negative side) |
+| graphs_n6 | llm-verify | deployed - candidate | 12 | +0.00000 | [+0.00000, +0.00000] | difference not detected (CI includes 0; NOT evidence of no effect) |
+| graphs_n6 | llm-verify | declared twirl - candidate | 12 | -0.07429 | [-0.09222, -0.05487] | a better (raw CI excludes 0 on the negative side) |
+| graphs_n6 | llm-verify-repair | deployed - candidate | 12 | -0.02846 | [-0.04704, -0.01190] | a better (raw CI excludes 0 on the negative side) |
+| graphs_n6 | llm-verify-repair | declared twirl - candidate | 12 | -0.08560 | [-0.10685, -0.06488] | a better (raw CI excludes 0 on the negative side) |
+| graphs_n6 | mutation-ea | deployed - candidate | 12 | +0.00000 | [+0.00000, +0.00000] | difference not detected (CI includes 0; NOT evidence of no effect) |
+| graphs_n6 | mutation-ea | declared twirl - candidate | 12 | -0.08009 | [-0.09194, -0.06801] | a better (raw CI excludes 0 on the negative side) |
+| graphs_n6 | random | deployed - candidate | 12 | +0.00000 | [+0.00000, +0.00000] | difference not detected (CI includes 0; NOT evidence of no effect) |
+| graphs_n6 | random | declared twirl - candidate | 12 | -0.09633 | [-0.12086, -0.07526] | a better (raw CI excludes 0 on the negative side) |
+| ring_n6 | llm-fitness | deployed - candidate | 12 | +0.00000 | [+0.00000, +0.00000] | difference not detected (CI includes 0; NOT evidence of no effect) |
+| ring_n6 | llm-fitness | declared twirl - candidate | 12 | -0.00336 | [-0.00367, -0.00302] | a better (raw CI excludes 0 on the negative side) |
+| ring_n6 | llm-verify | deployed - candidate | 12 | +0.00000 | [+0.00000, +0.00000] | difference not detected (CI includes 0; NOT evidence of no effect) |
+| ring_n6 | llm-verify | declared twirl - candidate | 12 | -0.00364 | [-0.00400, -0.00331] | a better (raw CI excludes 0 on the negative side) |
+| ring_n6 | llm-verify-repair | deployed - candidate | 12 | +0.00000 | [+0.00000, +0.00000] | difference not detected (CI includes 0; NOT evidence of no effect) |
+| ring_n6 | llm-verify-repair | declared twirl - candidate | 12 | -0.00357 | [-0.00381, -0.00332] | a better (raw CI excludes 0 on the negative side) |
+| ring_n6 | mutation-ea | deployed - candidate | 12 | +0.00000 | [+0.00000, +0.00000] | difference not detected (CI includes 0; NOT evidence of no effect) |
+| ring_n6 | mutation-ea | declared twirl - candidate | 12 | -0.00460 | [-0.00487, -0.00436] | a better (raw CI excludes 0 on the negative side) |
+| ring_n6 | random | deployed - candidate | 12 | +0.00000 | [+0.00000, +0.00000] | difference not detected (CI includes 0; NOT evidence of no effect) |
+| ring_n6 | random | declared twirl - candidate | 12 | -0.00458 | [-0.00488, -0.00430] | a better (raw CI excludes 0 on the negative side) |
+
+### Baselines fitted on training rows, scored on the same rows as the arms
+
+| family | baseline | risk on evaluation rows | note |
+|---|---|---|---|
+| graphs_n6 | best constant (train mean) | +0.58968 | classical |
+| graphs_n6 | edge-count rule (threshold 6, train-fitted) | +0.57812 | train risk +0.44095 |
+| graphs_n6 | constructive equivariant (4 seeds, 120 steps) | +0.59936 | per-fit budget equals the search protocol's; total search budget is not equal (the arms also spend proposals) |
+| graphs_n6 | oracle | +0.00000 | reference value, not a learned baseline: this is the function the synthetic target is |
+| ring_n6 | best constant (train mean) | +0.01946 | classical |
+| ring_n6 | constructive equivariant (4 seeds, 120 steps) | +0.00026 | per-fit budget equals the search protocol's; total search budget is not equal (the arms also spend proposals) |
+| ring_n6 | oracle | +0.00000 | reference value, not a learned baseline: this is the function the synthetic target is |
+

@@ -88,7 +88,40 @@ development plus holdouts v1/v2. So:
   benchmark cannot supply. The exhausted-isomorphism-class fact is itself reported as a
   benchmark-design limitation.
 
-**Result.** <!-- FILL: deployed vs candidate vs declared-twirl, per family/arm, with CIs -->
+**Result** (gate first: 120/120 refits exact, max |dev diff| 1.73e-18; sealed digests
+unchanged; access record `research/HOLDOUT_DEPLOYED_ACCESS.json`):
+
+| family | arm | candidate | deployed | declared-group twirl | repair fired |
+|---|---|---|---|---|---|
+| graphs | random | 0.50548 | 0.50548 | **0.40915** | 0/12 |
+| graphs | mutation-ea | 0.50895 | 0.50895 | 0.42886 | 0/12 |
+| graphs | llm-fitness | 0.54472 | 0.54472 | 0.47449 | 0/12 |
+| graphs | llm-verify | 0.50941 | 0.50941 | 0.43511 | 0/12 |
+| graphs | llm-verify-repair | 0.52913 | **0.50067** | 0.44353 | 7/12 |
+| ring | random | 0.01036 | 0.01036 | **0.00578** | 0/12 |
+| ring | mutation-ea | 0.01052 | 0.01052 | 0.00592 | 0/12 |
+| ring | llm-fitness | 0.00648 | 0.00648 | **0.00311** | 0/12 |
+| ring | llm-verify | 0.00712 | 0.00712 | 0.00348 | 0/12 |
+| ring | llm-verify-repair | 0.00676 | 0.00676 | 0.00319 | 0/12 |
+
+* The repair step on the endpoint the paper emphasises: **−0.02846, CI [−0.04704, −0.01190]**,
+  7/12 runs (graphs). Everywhere else deployed equals candidate exactly.
+* On the **fresh** ring inputs the deployed gate fires on **0/12** runs, so deployed and
+  candidate coincide for every arm there — an independent replication of the 0/60 firing rate
+  of §4, on data no pipeline stage had seen.
+* The declared-group twirl helps every arm on both families (graphs −0.070 to −0.096, ring
+  −0.0034 to −0.0046, all CIs excluding 0), and `random` + twirl (0.40915) beats every arm's
+  deployed risk (0.50067–0.54472).
+* Matched-row baselines: on fresh ring inputs the constructive equivariant block reaches
+  **0.00026**, 25× below the best arm's candidate and 12× below the best arm's own twirl.
+
+**And one of our own claims fell out of it.** The edge-count rule reaches development risk
+0.351 against the arms' 0.538–0.566, and the previous manuscript said it "beats every arm".
+On matched held-out rows it reaches 0.57812 against the arms' 0.50067–0.54472 — it does not.
+The best-constant reference moves from 0.65667 (development validation) to 0.58968 (sealed),
+so the two splits differ in label composition and their risk levels were never comparable.
+The referee's point 7 is not merely a wording issue: fixing it reversed a headline baseline
+claim of ours, and the paper now states the split-scoped version.
 
 ---
 
@@ -300,7 +333,8 @@ runs as part of the reproduction list, so a future stale number fails the build.
   constructive equivariant block, the best constant and the oracle on the same rows as the
   arms, each fitted on training rows only. The E-S7 caption no longer compares sealed-test arm
   risk with a development-split baseline risk; the development number stays in the development
-  section, labelled as such.
+  section, labelled as such. This change reversed one of our own claims (see the end of §1): the
+  edge-count rule's advantage exists on development validation and not on the sealed split.
 * **Expressivity claim removed.** "Cannot express connectedness" is replaced with the
   empirical statement: at the search protocol's per-fit budget this exactly equivariant
   three-parameter block did not reach the arms' risk (0.667 vs 0.538–0.566), and no proof or
@@ -425,6 +459,9 @@ we do not believe this submission meets it, and we would rather say that than in
 
 Test suites: `research/core` (20), `research/search` (including the two new files),
 `research/experiments/repair` — all green. Jobs: `33033493`/`33034704`/`33039560`
-(decision rules, final `33039560`), `33039574`/`33040509`/`33041014` (deployed dry runs,
-final gate 120/120 exact), plus the A5.5 one-shot run recorded in
-`research/HOLDOUT_DEPLOYED_ACCESS.json`.
+(decision rules, final `33039560`), `33039574`/`33040509`/`33041014`/`33041668` (deployed dry
+runs, final gate 120/120 exact), `33042529` (aborted at a `Path`-vs-`hashlib` digest bug *before*
+any sealed array was opened, recorded in the module docstring), `33044945` (A5.5 one-shot, result
+in `research/HOLDOUT_DEPLOYED.json`, access in `research/HOLDOUT_DEPLOYED_ACCESS.json`, and
+appended to the shared ledger `research/HOLDOUT_ACCESS.json` with the graphs second read
+explicitly authorised and its reason recorded).

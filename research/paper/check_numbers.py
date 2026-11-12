@@ -35,11 +35,17 @@ ALLOW = {
 }
 NUM = re.compile(r"(?<![\w.])(-?\d+\.\d+)(?![\w.])")
 
+def strip_dashes(text: str) -> str:
+    """LaTeX en/em dashes set off ranges ("0.50067--0.54472"); they are not minus
+    signs. Without this, a range's upper bound is read as a negative number and
+    reported as unmatched (a false positive that cost one debugging cycle)."""
+    return text.replace("---", " to ").replace("--", " to ")
+
 
 def numbers(text, min_len=5):
     """Numeric tokens with at least ``min_len - 1`` digits, kept as (string, float, dp)."""
     out = {}
-    for m in NUM.finditer(text):
+    for m in NUM.finditer(strip_dashes(text)):
         tok = m.group(1)
         digits = tok.replace("-", "").replace(".", "").lstrip("0")
         if not digits:

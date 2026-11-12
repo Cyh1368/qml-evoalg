@@ -62,17 +62,28 @@ predictor --- is the one effect that is consistent and large
 ($-0.0486$, CI $[-0.0708,-0.0284]$, $7/12$ runs eligible on \texttt{graphs\_n6}), whereas
 verifier \emph{feedback} changes development-selected risk by an undetected amount; the
 same averaging applied to non-LLM arms also helps, so the gain is not attributable to the
-LLM (we do \emph{not} establish that the two are equal). (iv)~Verification as implemented
+LLM (we do \emph{not} establish that the two are equal). On the held-out endpoint that had
+been missing, the same repair step gives $-0.02846$ (CI $[-0.04704,-0.01190]$, $7/12$ runs)
+on \texttt{graphs\_n6}; on fresh \texttt{ring\_n6} inputs the deployed gate fires on $0/12$
+runs, so deployed and candidate coincide there. (iv)~Verification as implemented
 does not identify the group: $10$ of $299$ graph proposals carried the task's declared
 group, and the other $289$ are \emph{valid} symmetry hypotheses of proper subgroups --- none
 violated label preservation, and none could have, because every permutation of six vertices
 preserves that target's labels, so the gate cannot fail there by construction. On the ring,
 where the scored target admits only $12$ of $720$ permutations, the same gate rejected
 $95$ of $102$ hypotheses that \emph{were} symmetries of the scored target, with $0$ false
-accepts: it is an under-sensitive soundness filter, not an identification test. A hand-built
+accepts: it is an under-sensitive soundness filter, not an identification test. (v)~Treated
+as a \emph{decision rule} rather than a tool, the gate is a recall bottleneck and not a safety
+device: averaging over the supplied group never harmed any of the $120$ frozen candidates, the
+implemented gate forfeits $100\%$ of the available benefit on the ring (realised $0.00000$
+against $-0.00345$), a verifier-free defect gate recovers $79\%$ of it ($-0.00274$) at
+precision $45/45$ with no candidate harmed, and a mismatched group costs $+0.00399$ --- the
+one regime in which a gate earns its keep. A hand-built
 equivariant architecture beats every search arm on the ring
-($+0.0060$ to $+0.0097$ worse for the arms), and a one-threshold classical rule beats
-every arm on graphs (development risk $0.351$ vs $0.538$--$0.566$). All endpoints are labelled
+($+0.0060$ to $+0.0097$ worse for the arms), and a one-threshold classical rule beats every
+arm on \emph{development validation} on graphs ($0.351$ vs $0.538$--$0.566$) but not on
+matched held-out rows ($0.578$ vs $0.501$--$0.545$) --- a claim of ours that the matched-row
+comparison corrected. All endpoints are labelled
 development, sealed or fresh; we do not claim held-out generalisation from development
 risk, we do not claim quantum advantage, and we record two provenance defects in our own
 earlier run records rather than quietly fixing them.
@@ -755,8 +766,10 @@ budget this exactly equivariant three-parameter block did not reach the arms' ri
 that as an optimisation outcome at a fixed budget, \emph{not} as an expressivity impossibility
 --- no proof or exhaustive representational argument is offered --- which is the two-sided
 lesson of \cite{baumann2026}. The classical edge-count rule (threshold fitted on training rows only,
-$k{=}6$) reaches development risk $0.351$ and accuracy $0.912$ on graphs, beating every arm;
-the best constant predictor reaches $0.657$; the invariant oracle on the ring is $0$ by
+$k{=}6$) reaches development risk $0.351$ and accuracy $0.912$ on graphs, beating every arm on
+that split; on matched held-out rows the advantage does not transfer
+($0.57812$ vs the arms' $0.501$--$0.545$, Table~\ref{tab:deployed}).
+The best constant predictor reaches $0.657$; the invariant oracle on the ring is $0$ by
 construction. Density stratification (E-S5) puts the arms' error where the shortcut lives:
 in the $0$--$5$ edge band the five arms' mean risk is $1.439$ against $0.167$ in the
 $8$--$9$ band, and the edge-count rule's band risks are $1.13$ ($0$--$5$), $0.13$ ($6$--$7$),
@@ -764,20 +777,23 @@ $0.00$ ($8$--$9$) and $0.05$ ($10$--$11$) --- the same profile, which is
 why we describe the graphs task as shortcut-dominated rather than claiming the shortcut
 \emph{caused} the null without an intervention that changes arm ordering.
 
-\subsection{One-shot sealed evaluation of the search arms (E-S7)}
+\subsection{One-shot sealed evaluation of the search arms (E-S7, candidate endpoint)}
 \label{sec:holdout}
 
 Every development-selected candidate was refitted deterministically (reproducing its logged
 development risk to $1.7\times10^{-18}$) and scored once on the sealed split, with the file
-digests recorded before and after (\texttt{research/HOLDOUT\_ACCESS.json}).
+digests recorded before and after (\texttt{research/HOLDOUT\_ACCESS.json}). This is the
+\emph{candidate} endpoint: it scores the circuit the search selected, before the deployment
+averaging step, which is measured separately in \S\ref{sec:deployed}.
 
 \begin{table}[t]
 \centering
-\caption{E-S7: sealed-test risk of the frozen $120$-run candidates, refitted deterministically
-(reproducing logged development risk to $1.7\times10^{-18}$) and scored once. The sealed split
-reproduces the development pattern: on the ring the LLM arms beat the non-LLM arms and the
-verifier-versus-fitness difference is undetected; on graphs no arm difference is detected and
-every arm sits far above the $0.351$ edge-count rule.}
+\caption{E-S7: sealed-test risk of the frozen $120$-run \emph{candidates}, refitted
+deterministically (reproducing logged development risk to $1.7\times10^{-18}$) and scored
+once. The sealed split reproduces the development pattern: on the ring the LLM arms beat the
+non-LLM arms and the verifier-versus-fitness difference is undetected; on graphs no arm
+difference is detected. Baselines are not compared across endpoints or splits here; the
+matched-row comparison is Table~\ref{tab:deployed}.}
 \label{tab:holdout}
 \small
 \begin{tabular}{@{}llrrl@{}}
@@ -860,6 +876,85 @@ CI $[-0.00176,+0.00028]$; we do not claim the two are equal), and enforcing it c
 the target variance when the target is not. The file digests before and after the read are identical
 (\texttt{research/HOLDOUT\_ACCESS\_v4.json}), and the evaluator now refuses to open the two
 splits consumed by the defective run.
+
+\subsection{The deployed endpoint on held-out inputs (A5.5)}
+\label{sec:deployed}
+
+The previous version's held-out search numbers scored the selected \emph{candidate} circuit,
+so they did not evaluate the pipeline the paper emphasises: averaging at inference time. This
+subsection measures that pipeline on held-out rows, with the development self-check running
+\emph{before} any held-out array is opened ($120/120$ refits reproduce their logged
+development risk, max $1.73\times10^{-18}$). Three endpoints are scored on one shared
+$1024$-row subsample per family (seed $5150$), so every comparison below is on identical rows:
+the \emph{candidate} (as before), the \emph{deployed} predictor (candidate averaged over the
+group its development-frozen repair decision selected), and the \emph{declared-group twirl}
+applied to every arm including \texttt{random}.
+
+Two data facts are part of the result. \texttt{ring\_n6} uses genuinely fresh inputs
+(v5, seed $20261205$, dihedral-orbit-disjoint from development and from splits v1--v4, first
+read, digests logged). For \texttt{graphs\_n6} a first-and-only read is \emph{impossible}:
+exhaustive enumeration of all $2^{15}$ labeled six-vertex graphs leaves $0$ isomorphism
+classes unused by development and splits v1--v4, so the graphs numbers below are a
+\emph{second} read of the v1 split, labelled post hoc, authorised explicitly in the run
+command and recorded in the consumption ledger.
+
+\begin{table}[t]
+\centering
+\caption{Deployed-endpoint evaluation on held-out rows (means over the $12$ frozen runs per
+arm, identical rows within a family). ``Repair fired'' counts the development-frozen deployed
+decision. The graphs twirl is a $24$-element Monte-Carlo average of a $720$-element group; the
+ring twirl is exact.}
+\label{tab:deployed}
+\small
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+family & arm & candidate & deployed & declared-group twirl & fired \\
+\midrule
+graphs & random            & 0.50548 & 0.50548 & \textbf{0.40915} & 0/12 \\
+graphs & mutation-ea       & 0.50895 & 0.50895 & 0.42886 & 0/12 \\
+graphs & llm-fitness       & 0.54472 & 0.54472 & 0.47449 & 0/12 \\
+graphs & llm-verify        & 0.50941 & 0.50941 & 0.43511 & 0/12 \\
+graphs & llm-verify-repair & 0.52913 & \textbf{0.50067} & 0.44353 & 7/12 \\
+\midrule
+ring & random            & 0.01036 & 0.01036 & \textbf{0.00578} & 0/12 \\
+ring & mutation-ea       & 0.01052 & 0.01052 & 0.00592 & 0/12 \\
+ring & llm-fitness       & 0.00648 & 0.00648 & \textbf{0.00311} & 0/12 \\
+ring & llm-verify        & 0.00712 & 0.00712 & 0.00348 & 0/12 \\
+ring & llm-verify-repair & 0.00676 & 0.00676 & 0.00319 & 0/12 \\
+\midrule
+graphs & edge-count rule ($k{=}6$, train-fitted) & --- & 0.57812 & --- & --- \\
+graphs & constructive equivariant & --- & 0.59936 & --- & --- \\
+graphs & best constant & --- & 0.58968 & --- & --- \\
+ring & constructive equivariant & --- & \textbf{0.00026} & --- & --- \\
+ring & best constant & --- & 0.01946 & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Repair on the endpoint that matters.} Deployed averaging changes the risk only
+where the frozen decision fires: \texttt{llm-verify-repair} on graphs, $0.52913 \to 0.50067$
+($-0.02846$, CI $[-0.04704, -0.01190]$, $7/12$ runs). Everywhere else deployed equals
+candidate exactly. On the ring that equality is itself a result: the deployed gate fires on
+$0/12$ runs on \emph{fresh} inputs, independently reproducing the $0/60$ firing rate of the
+decision-rule ablation (\S\ref{sec:decision}).
+
+\paragraph{The tool still dominates the arm.} Applying the declared group to every arm beats
+every arm's own selection: \texttt{random} with the twirl reaches $0.40915$ on graphs, below
+all five deployed arm risks ($0.50067$--$0.54472$), and $0.00578$ on the ring, below the best
+arm's candidate ($0.00648$). The constructive equivariant block reaches $0.00026$ on the
+\emph{fresh} ring inputs --- $25\times$ below the best arm's candidate and $12\times$ below the
+best arm's own twirl. Held-out data does not rescue the search from either comparison.
+
+\paragraph{A baseline claim of ours does not survive matched rows.} The edge-count rule
+reaches development risk $0.351$ against the arms' $0.538$--$0.566$
+(\S\ref{sec:baselines}), and the previous version of this paper stated that it ``beats every
+arm''. Scored on the \emph{same} held-out rows as the arms it does not: $0.57812$ against
+$0.50067$--$0.54472$. Its development advantage does not transfer. The splits also differ in
+label composition --- the best-constant reference moves from $0.65667$ on development
+validation to $0.58968$ here --- so risk \emph{levels} are not comparable across splits, which
+is exactly why cross-split comparisons were removed from every other table. We report this as
+a correction produced by the referee's point about mixed splits, not as a new finding about
+the rule.
 
 \subsection{What a label-preservation verifier can decide (A5.2, A5.3)}
 \label{sec:semantics}
