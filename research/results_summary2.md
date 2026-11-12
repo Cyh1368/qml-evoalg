@@ -994,3 +994,16 @@ Thresholds (development only): median 0.00385, q1 0.00326, q3 0.0044
 
 _not run yet; see Addendum A6.7 for the frozen design._
 
+## Uniform proposal models vs measured acceptance (A6.5 addendum)
+
+- 4000 independent draws, seed 20261112, probe 256 rows (seed 777), tolerance abs 1e-12 rel 1e-09
+
+| family | target | $|L_t|$ | $|S_n|$ | ratio | k | measured | Wilson 95% | model $(|L_t|/|S_n|)^k$ |
+|---|---|---|---|---|---|---|---|---|
+| ring_n6 | alpha_0 | 12 | 720 | 8.326672684688674e-17 | 1 | 0.01875 | [0.01498, 0.02344] | 0.016667 |
+| ring_n6 | alpha_0 | 12 | 720 | 8.326672684688674e-17 | 2 | 0.00025 | [0.00004, 0.00141] | 0.000278 |
+| ring_n6 | alpha_0 | 12 | 720 | 8.326672684688674e-17 | 3 | 0.00000 | [0.00000, 0.00096] | 0.000005 |
+| graphs_n6 | connected | 720 | 720 | 0.0 | 1 | 1.00000 | [0.99904, 1.00000] | 1.000000 |
+| graphs_n6 | connected | 720 | 720 | 0.0 | 2 | 1.00000 | [0.99904, 1.00000] | 1.000000 |
+| graphs_n6 | connected | 720 | 720 | 0.0 | 3 | 1.00000 | [0.99904, 1.00000] | 1.000000 |
+

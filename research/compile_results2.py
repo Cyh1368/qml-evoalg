@@ -743,12 +743,12 @@ def corrected_search_section(path, out):
         out.append("## Corrected-feedback search runs (A6.7)\n\n"
                    "_not run yet; see Addendum A6.7 for the frozen design._\n")
         return
-    d = _load(path)
+    d = load(path)
     out.append("## Corrected-feedback search runs (A6.7)\n")
     out.append("- frozen decision rule: a contrast is *detected at the prespecified threshold* "
                "only if the seed-pair bootstrap CI excludes 0 **and** |mean| >= %s absolute risk; "
                "otherwise the wording stays \"difference not detected\", which is not \"no effect\". "
-               "Unit is the paired seed.\n" % _fmt(d["threshold_abs_risk"], 3))
+               "Unit is the paired seed.\n" % fmt(d["threshold_abs_risk"], 3))
     out.append("- corrected runs per cell: %s\n" % json.dumps(d["runs_per_cell"]))
     out.append("| family | arm | seeds | mean dev risk | repaired | LLM calls | tokens |")
     out.append("|---|---|---|---|---|---|---|")
@@ -763,11 +763,34 @@ def corrected_search_section(path, out):
     for c in d["contrasts"]:
         out.append("| %s | %s | %s | %d | %s | [%s, %s] | %s | %s | %.2f | %s |"
                    % (c["family"], c["a"], c["b"], c["n_pairs"],
-                      _fmt(c["mean_diff"], 5), _fmt(c["ci95_low"], 5),
-                      _fmt(c["ci95_high"], 5), _fmt(c["sign_flip_p"], 4),
-                      _fmt(c.get("holm_p"), 4), c["a_better_fraction"], c["verdict"]))
+                      fmt(c["mean_diff"], 5), fmt(c["ci95_low"], 5),
+                      fmt(c["ci95_high"], 5), fmt(c["sign_flip_p"], 4),
+                      fmt(c.get("holm_p"), 4), c["a_better_fraction"], c["verdict"]))
     out.append("")
     out.append("_%s_\n" % d["note"])
+
+
+
+def uniform_model_check_section(path, out):
+    """A6.5 addendum: idealised uniform proposal models vs measured acceptance."""
+    import os
+    out.append("## Uniform proposal models vs measured acceptance (A6.5 addendum)\n")
+    if not os.path.exists(path):
+        out.append("_not run yet._\n")
+        return
+    d = load(path)
+    out.append("- %d independent draws, seed %s, probe %s rows (seed %s), tolerance "
+               "abs %s rel %s\n" % (d["draws"], d["seed"], d["probe_rows"], d["probe_seed"],
+                                     d["atol_abs"], d["atol_rel"]))
+    out.append("| family | target | $|L_t|$ | $|S_n|$ | ratio | k | measured | Wilson 95% | model $(|L_t|/|S_n|)^k$ |")
+    out.append("|---|---|---|---|---|---|---|---|---|")
+    for fam, e in d["families"].items():
+        for key, c in e["cells"].items():
+            out.append("| %s | %s | %s | %d | %s | %d | %.5f | [%.5f, %.5f] | %.6f |"
+                       % (fam, e["target"], e["exact_L_order"], e["factorial_n"],
+                          fmt(e["ratio"], 6), c["k"], c["measured"], c["ci95_low"],
+                          c["ci95_high"], c["model"]))
+    out.append("")
 
 
 def main(argv=None):
@@ -799,6 +822,7 @@ def main(argv=None):
     corrected_section("research/search/decision_rules2.json", out)
     gatefix_section("research/search/corrected_gate.json", out)
     corrected_search_section("research/search/corrected_search.json", out)
+    uniform_model_check_section("research/search/uniform_model_check.json", out)
     with open(a.out, "w") as fh:
         fh.write("\n".join(out) + "\n")
     print("wrote %s (%d lines)" % (a.out, len(out)))

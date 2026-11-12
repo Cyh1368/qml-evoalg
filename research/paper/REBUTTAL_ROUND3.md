@@ -123,9 +123,9 @@ panel).
 
 Three points, stated with the limits the referee asked for.
 
-- **The uniform models are not wrong; they are irrelevant to these proposals.** An independent
-  check (4000 draws) gives single-generator soundness 0.0179 and two-generator 0.00025, matching
-  $|L_t|/|S_n|$ and $(|L_t|/|S_n|)^k$. But the actual proposal distribution accepts at 0.47 —
+- **The uniform models are not wrong; they are irrelevant to these proposals.** An independent check (`research/search/uniform_model_check.json`, 4000 draws) gives
+  single-generator soundness 0.01875 against the predicted 0.016667, and two-generator
+  0.00025 against 0.000278. But the actual proposal distribution accepts at 0.47 —
   21× the uniform single-permutation rate and about 1700× the two-generator model. A diagnostic
   that ignores $Q$ is off by three orders of magnitude on the only $Q$ this paper studies. That
   is now the claim: not "the ratio predicts gate behaviour" but "the ratio is the wrong
